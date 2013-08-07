@@ -774,26 +774,37 @@ lemma cdf_unique:
   assumes "finite_borel_measure.cdf M1 = finite_borel_measure.cdf M2"
   shows "M1 = M2"
 proof (rule measure_eqI_generator_eq)
-  show "Int_stable half_open_intervals"
-    by (rule Int_stableI, force)
-  next show "half_open_intervals \<subseteq> Pow UNIV" by auto
-  next fix X
+  show "Int_stable half_open_intervals" by (rule Int_stableI, force) 
+  show "half_open_intervals \<subseteq> Pow UNIV" by auto
+  {
+    fix X
     assume "X \<in> half_open_intervals"
-    then obtain a b where "X = {a<..b}" by auto
-    thus "emeasure M1 X = emeasure M2 X"
-      apply (auto intro: finite_measure.emeasure_eq_measure)
-      apply (subst finite_measure.emeasure_eq_measure)
-      sorry
-  next show "sets M1 = sigma_sets UNIV half_open_intervals"
+    then obtain a b where Xeq: "X = {a<..b}" by auto
+    interpret M1: real_distribution M1
+      by (rule assms)
+    have [simp]: "finite_measure M1" by (auto intro: finite_measureI)
+    interpret M2: real_distribution M2
+      by (rule assms)
+    have [simp]: "finite_measure M2" by (auto intro: finite_measureI)
+    have abeq: "{a<..b} = {..b} - {..a}" by auto
+    show "emeasure M1 X = emeasure M2 X"
+      apply (auto simp add: Xeq intro: finite_measure.emeasure_eq_measure)
+      apply (subst finite_measure.emeasure_eq_measure, auto)+
+      apply (case_tac "a \<le> b", auto)
+      apply (auto simp add: abeq)
+      apply (subst Measure_Space.finite_measure.finite_measure_Diff, auto)+
+      by (simp add: M1.cdf_def [symmetric] assms M2.cdf_def)
+  }
+  show "sets M1 = sigma_sets UNIV half_open_intervals"
     apply (subst real_distribution.events_eq_borel, rule assms)
     apply (subst sigma_sets_half_open_intervals)
     by auto
-  next show "sets M2 = sigma_sets UNIV half_open_intervals"
+  show "sets M2 = sigma_sets UNIV half_open_intervals"
     apply (subst real_distribution.events_eq_borel, rule assms)
     apply (subst sigma_sets_half_open_intervals)
     by auto
-  next show "range (\<lambda>i :: nat. {-real i<..real i}) \<subseteq> half_open_intervals" by auto
-  next show "(\<Union>i. {- real (i::nat)<..real i}) = UNIV"
+  show "range (\<lambda>i :: nat. {-real i<..real i}) \<subseteq> half_open_intervals" by auto
+  show "(\<Union>i. {- real (i::nat)<..real i}) = UNIV"
     apply auto
     apply (rule exI, rule conjI)
     apply (subgoal_tac "-real (natceiling (abs x) + 1) < x")
@@ -804,9 +815,12 @@ proof (rule measure_eqI_generator_eq)
     apply (case_tac "x >= 0")
     apply auto
     by (metis Suc_n_not_le_n linear natceiling_mono natceiling_real_of_nat)
-  next fix i :: "nat" 
-    show "emeasure M1 {- real i<..real i} \<noteq> \<infinity>"
-    sorry
+  { 
+    fix i :: "nat" 
+    interpret M1: real_distribution M1
+      by (rule assms)
+    show "emeasure M1 {- real i<..real i} \<noteq> \<infinity>" by auto
+  }
 qed
 
 lemma distrib_unique:
@@ -844,13 +858,65 @@ proof -
   then obtain \<mu> :: "real set \<Rightarrow> ereal" where 
       1: "\<forall>(a::real) b. a < b \<longrightarrow> \<mu> {a<..b} = F b - F a" and 
       2: "measure_space UNIV (sets borel) \<mu>" by auto
+  have UNIVeq: "UNIV = (\<Union>i. {-real (i + 1::nat)<..real (i + 1::nat)})"
+    by (auto, metis euclidean_trans(1) leI less_asym minus_less_iff reals_Archimedean2)
   let ?M = "measure_of UNIV (sets borel) \<mu>"
-  have "real_distribution ?M" 
+  have [simp]: "sigma_algebra UNIV borel"
+    by (auto simp add: borel_def intro: sigma_algebra_sigma_sets)
+  have [simp]: "sigma_sets UNIV (sets borel) = sets borel"
+    by (rule sigma_algebra.sigma_sets_eq, simp)
+  have [simp, intro]: "ring_of_sets UNIV (sets borel)"
+    by (rule ring_of_setsI, auto)
+  have cts_from_below [rule_format]: "(\<forall>A. range A \<subseteq> sets ?M \<longrightarrow>
+       incseq A \<longrightarrow> (\<Union>i. A i) \<in> sets ?M \<longrightarrow> (\<lambda>i. \<mu> (A i)) ----> \<mu> (\<Union>i. A i))"
+    apply (subst ring_of_sets.countably_additive_iff_continuous_from_below [symmetric])
+    using 2 by (auto simp add: measure_space_def intro: ring_of_sets.countably_additive_additive)
+  have 3: "real_distribution ?M" 
     unfolding real_distribution_def real_distribution_axioms_def
-    sorry
-  moreover have "finite_borel_measure.cdf ?M = F"
-    sorry
-  ultimately show ?thesis by blast 
+    apply (rule conjI)
+    prefer 2 apply (metis sets.sets_measure_of_eq space_borel)
+    apply (rule prob_spaceI)
+    apply (subst emeasure_measure_of_sigma, auto)
+    using 2 apply (auto simp add: measure_space_def)
+    apply (subst UNIVeq)
+    apply (rule LIMSEQ_unique)
+    apply (rule cts_from_below)
+    unfolding incseq_def apply auto
+    apply (subst 1)
+    apply auto
+    apply (subgoal_tac "(1 :: ereal) = ereal (1::real)")
+    apply (erule ssubst)
+    apply (rule isCont_tendsto_compose) back
+    apply (auto simp add: one_ereal_def)
+    apply (subgoal_tac "(1 :: real) = 1 - 0")
+    apply (erule ssubst)
+    apply (subst LIMSEQ_Suc_iff)
+    apply (rule tendsto_diff)
+    apply auto
+    apply (rule filterlim_compose) back
+    apply (rule lim_F_at_top)
+    apply (rule filterlim_real_sequentially)
+    apply (rule filterlim_compose) back
+    apply (rule lim_F_at_bot)
+    apply (subst filterlim_uminus_at_top [symmetric])
+    by (rule filterlim_real_sequentially)
+  then interpret M: real_distribution ?M .
+  have "finite_borel_measure.cdf ?M = F"
+    apply (rule distrib_unique)
+    prefer 3 apply (rule lim_F_at_bot)
+    prefer 2 apply (rule M.cdf_lim_at_bot)
+    apply (auto simp add: M.cdf_def M.finite_measure_Diff [symmetric])
+    apply (subgoal_tac "{..x} - {..y} = {y<..x}")
+    prefer 2 apply force
+    apply (erule ssubst)
+    apply (unfold measure_def)
+    apply (subst emeasure_measure_of)
+    apply (rule refl)
+    apply auto
+    using 2 apply (auto simp add: measure_space_def)
+    apply (subst 1)
+    by auto
+  with 3 show ?thesis by blast 
 qed
 
 end
