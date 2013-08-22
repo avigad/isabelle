@@ -1,4 +1,4 @@
-theory RealToComplex
+theory Real_to_Complex
 imports Library_Misc "~~/src/HOL/Multivariate_Analysis/Derivative"
 "~~/src/HOL/Probability/Lebesgue_Integration"
 
