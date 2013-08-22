@@ -356,7 +356,7 @@ lemma interval_lb_integral_endpoints_same [simp]: "(LBINT x=a..a. f x) = 0"
   unfolding interval_lebesgue_integral_def einterval_def apply simp
   by (cases a rule: ereal2_cases, auto)
 
-lemma interval_lb_integral_endpoints_reverse: "(LBINT x=a..b. f) = -(LBINT x=b..a. f)"
+lemma interval_lb_integral_endpoints_reverse: "(LBINT x=a..b. f x) = -(LBINT x=b..a. f x)"
   apply (case_tac "a = b", auto)
   by (case_tac "a \<le> b", auto simp add: interval_lebesgue_integral_def)
 
@@ -391,35 +391,74 @@ lemma interval_lb_integral_Ici:
   apply (rule AE_I [where N = "{a}"])
   by (auto simp add: indicator_def)
 
-(* TODO: remove the hypotheses a \<le> b, b \<le> c *)
 lemma interval_lb_integral_sum: 
   fixes a b c :: real
-  assumes "a \<le> b" "b \<le> c"
-  assumes "interval_lebesgue_integrable lborel a c f" 
+  assumes integrable: "interval_lebesgue_integrable lborel (min a (min b c)) (max a (max b c)) f" 
 
   shows "(LBINT x=a..b. f x) + (LBINT x=b..c. f x) = (LBINT x=a..c. f x)"
-
-  apply (case_tac "b = c", simp) 
-  apply (subst interval_lb_integral_Iic)
-  using assms apply (auto simp add: interval_lebesgue_integral_def einterval_def
-    interval_lebesgue_integrable_def)
-  apply (subst integral_add(2) [symmetric])
-  apply (subgoal_tac "(\<lambda>x. f x * indicator {a<..b} x) = 
-    (\<lambda>x. (f x * indicator {x. a < x \<and> x < c} x) * indicator {a<..b} x)")
-  apply (erule ssubst, rule integrable_mult_indicator, auto)
-  apply (rule ext, simp add: indicator_def)
-  apply (subgoal_tac "(\<lambda>x. f x * indicator {x. b < x \<and> x < c} x) =
-    (\<lambda>x. (f x * indicator {x. a < x \<and> x < c} x) * indicator {x. b < x \<and> x < c} x)")
-  apply (erule ssubst, rule integrable_mult_indicator, auto)
-  apply (rule ext, simp add: indicator_def)
-  apply (rule integral_cong)
-  apply (subst ring_distribs [symmetric])
-  apply (subst indicator_add)
-  apply force
-  apply (rule arg_cong) back
-  apply (rule arg_cong) back
-  apply auto
-done
+proof -
+  {
+    fix a b c :: real
+    assume local: "a \<le> b" "b \<le> c" "interval_lebesgue_integrable lborel a c f"
+    have "(LBINT x=a..b. f x) + (LBINT x=b..c. f x) = (LBINT x=a..c. f x)"
+      apply (case_tac "b = c", simp) 
+      apply (subst interval_lb_integral_Iic)
+      using local apply (auto simp add: interval_lebesgue_integral_def einterval_def
+        interval_lebesgue_integrable_def)
+      apply (subst integral_add(2) [symmetric])
+      apply (erule set_integrable_subset, auto)+
+      apply (rule integral_cong)
+      apply (subst ring_distribs [symmetric])
+      apply (subst indicator_add)
+      apply force
+      apply (rule arg_cong) back
+      apply (rule arg_cong) back
+      by auto
+  } note 1 = this
+  {
+    fix a b c :: real
+    assume local: "a \<le> min b c" and
+      integ: "interval_lebesgue_integrable lborel (min a (min b c)) (max a (max b c)) f"
+    then have
+      integ1: "interval_lebesgue_integrable lborel a (max b c) f"
+      by (auto simp del: ereal_min ereal_max 
+        simp add: ereal_min [symmetric] ereal_max [symmetric] max_absorb2 min_absorb1)
+    have "(LBINT x=a..b. f x) + (LBINT x=b..c. f x) + (LBINT x=c..a. f x) = 0"
+      apply (case_tac "b \<le> c")
+      apply (subst interval_lb_integral_endpoints_reverse [of c a], simp)
+      apply (rule 1)
+      (* why aren't max_absorb1 and max_absorb2 simplifier rules?? *)
+      (* ereal_min and ereal_max go the wrong way when we have comparisons for the reals *)
+      using local integ1 apply (auto simp del: ereal_min ereal_max 
+        simp add: ereal_min [symmetric] ereal_max [symmetric] max_absorb2) [3]
+      apply (subst interval_lb_integral_endpoints_reverse [of c a], 
+        subst interval_lb_integral_endpoints_reverse [of b c], simp add: field_simps)
+      apply (subst 1)
+      using local integ1 by (auto simp del: ereal_min ereal_max 
+        simp add: ereal_min [symmetric] ereal_max [symmetric] max_absorb1)
+  } note 2 = this
+  have "a \<le> min b c | b \<le> min a c | c \<le> min a b" by auto
+  moreover have "a \<le> min b c \<Longrightarrow> 
+      (LBINT x=a..b. f x) + (LBINT x=b..c. f x) + (LBINT x=c..a. f x) = 0"
+    by (frule 2, rule integrable, auto)
+  moreover have "b \<le> min a c \<Longrightarrow> 
+      (LBINT x=a..b. f x) + (LBINT x=b..c. f x) + (LBINT x=c..a. f x) = 0"
+    apply (frule 2)
+    (* the ac rules for min and max should be added to the simplifier, no? *)
+    using integrable by (auto simp add: min.commute min.left_commute min.assoc
+      max.commute max.left_commute max.assoc interval_lb_integral_endpoints_reverse [of c a]
+      interval_lb_integral_endpoints_reverse [of b a] 
+      interval_lb_integral_endpoints_reverse [of c b])
+  moreover have "c \<le> min a b \<Longrightarrow> 
+      (LBINT x=a..b. f x) + (LBINT x=b..c. f x) + (LBINT x=c..a. f x) = 0"
+    apply (frule 2)
+    using integrable by (auto simp add: min.commute min.left_commute min.assoc
+      max.commute max.left_commute max.assoc)
+  ultimately have "(LBINT x=a..b. f x) + (LBINT x=b..c. f x) + (LBINT x=c..a. f x) = 0"
+    by blast
+  thus ?thesis
+    by (simp add: interval_lb_integral_endpoints_reverse [of c a])
+qed
 
 lemma interval_lb_integral_Icc_approx_nonneg:
   fixes a b :: ereal
