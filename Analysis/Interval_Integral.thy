@@ -351,6 +351,23 @@ lemma interval_lb_integral_Iic:
   apply (rule AE_I [where N = "{b}"])
   by (auto simp add: indicator_def)
 
+(* TODO: delete the previous version, and do the same for Ici and Icc? *)
+lemma interval_lb_integral_Iic':
+  fixes a b :: ereal
+  assumes "a \<le> b" 
+  shows "(LBINT x=a..b. f x) = (LBINT x : {x. a < ereal x \<and> ereal x \<le> b}. f x)"
+  
+using assms unfolding interval_lebesgue_integral_def einterval_def apply simp
+apply (cases b rule: ereal_cases, auto)
+apply (rule integral_cong_AE)
+proof -
+  fix r
+  show  "AE x in lborel. f x * indicator {x. a < ereal x \<and> x < r} x =
+                       f x * indicator {x. a < ereal x \<and> x \<le> r} x"
+    apply (rule AE_I [where N = "{r}"])
+    by (auto simp add: indicator_def)
+qed
+
 lemma interval_lb_integral_Ici:
   fixes a b :: real
   assumes "a \<le> b" 
@@ -361,39 +378,43 @@ lemma interval_lb_integral_Ici:
   apply (rule AE_I [where N = "{a}"])
   by (auto simp add: indicator_def)
 
-(* TODO: generalize to ereals! *)
 lemma interval_lb_integral_sum: 
-  fixes a b c :: real
+  fixes a b c :: ereal
   assumes integrable: "interval_lebesgue_integrable lborel (min a (min b c)) (max a (max b c)) f" 
 
   shows "(LBINT x=a..b. f x) + (LBINT x=b..c. f x) = (LBINT x=a..c. f x)"
 proof -
   {
-    fix a b c :: real
+    fix a b c :: ereal
     assume local: "a \<le> b" "b \<le> c" "interval_lebesgue_integrable lborel a c f"
-    have "(LBINT x=a..b. f x) + (LBINT x=b..c. f x) = (LBINT x=a..c. f x)"
+    from local have "(LBINT x=a..b. f x) + (LBINT x=b..c. f x) = (LBINT x=a..c. f x)"
       apply (case_tac "b = c", simp)
-      apply (subst interval_lb_integral_Iic)
+      apply (cases b rule: ereal_cases, auto)
+      apply (subst interval_lb_integral_Iic', assumption)
       using local apply (auto simp add: interval_lebesgue_integral_def einterval_def
-        interval_lebesgue_integrable_def)
+        interval_lebesgue_integrable_def) [1]
       apply (subst integral_add(2) [symmetric])
       apply (erule set_integrable_subset, auto)+
+      apply (metis dual_order.order_iff_strict ereal_less_eq(3) less_trans)
+      apply (erule set_integrable_subset, auto)+
+      apply (erule order_le_less_trans, force)
       apply (rule integral_cong)
       apply (subst ring_distribs [symmetric])
       apply (subst indicator_add)
       apply force
       apply (rule arg_cong) back
       apply (rule arg_cong) back
-      by auto
+      apply auto
+      apply (metis dual_order.order_iff_strict ereal_less_eq(3) less_trans not_le)
+      by (erule order_le_less_trans, force)
   } note 1 = this
   {
-    fix a b c :: real
+    fix a b c :: ereal
     assume local: "a \<le> min b c" and
       integ: "interval_lebesgue_integrable lborel (min a (min b c)) (max a (max b c)) f"
     then have
       integ1: "interval_lebesgue_integrable lborel a (max b c) f"
-      by (auto simp del: ereal_min ereal_max 
-        simp add: ereal_min [symmetric] ereal_max [symmetric] max_absorb2 min_absorb1)
+      by (auto simp add: max_absorb2 min_absorb1 max_def)
     have "(LBINT x=a..b. f x) + (LBINT x=b..c. f x) + (LBINT x=c..a. f x) = 0"
       apply (case_tac "b \<le> c")
       apply (subst interval_lb_integral_endpoints_reverse [of c a], simp)
@@ -698,7 +719,5 @@ proof -
       by (subst 5, rule 3)
   qed
 qed
-
-
 
 end
