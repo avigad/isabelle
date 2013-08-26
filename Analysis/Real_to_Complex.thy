@@ -4,6 +4,7 @@ imports Library_Misc "~~/src/HOL/Multivariate_Analysis/Derivative"
 
 begin
 
+
 (** Real and complex parts of a function. **)
 
 abbreviation RE :: "('a \<Rightarrow> complex) \<Rightarrow> 'a \<Rightarrow> real" where
@@ -112,6 +113,61 @@ definition complex_deriv :: "[real \<Rightarrow> complex, real, complex] \<Right
 ("(CDERIV (_)/ (_)/ :> (_))" [1000, 1000, 60] 60) where
   "CDERIV f z :> D \<equiv> (DERIV (RE f) z :> Re D) \<and> (DERIV (IM f) z :> Im D)"
 
+lemma Re_has_derivative: "FDERIV Re x :> Re"
+  apply (rule FDERIV_I, auto)
+  by (rule bounded_linearI [of _ 1], auto simp add: abs_Re_le_cmod)
+
+lemma Im_has_derivative: "FDERIV Im x :> Im"
+  apply (rule FDERIV_I, auto)
+  by (rule bounded_linearI [of _ 1], auto simp add: abs_Im_le_cmod)
+
+lemma complex_of_real_has_derivative: 
+    "FDERIV complex_of_real x :> complex_of_real"
+  apply (rule FDERIV_I, auto)
+  by (rule bounded_linearI [of _ 1], auto simp add: scaleR_conv_of_real)
+
+lemma has_vector_derivative_complex_mul:
+  "(f has_vector_derivative f') net ==> ((\<lambda>x. (c\<Colon>complex) * f x) has_vector_derivative (c * f')) net"
+  unfolding has_vector_derivative_def
+  apply (subst mult_scaleR_right [symmetric])
+  by (rule FDERIV_mult_right)
+
+lemma DERIV_has_vector_derivative: "(CDERIV f z :> D) = (f has_vector_derivative D) (at z)"
+proof (auto simp add: complex_deriv_def)
+  assume "(DERIV (RE f) z :> Re D)"
+  hence 1: "FDERIV (RE f) z :> op * (Re D)" by (simp add: DERIV_conv_has_derivative)
+  have 2: "((\<lambda>x. complex_of_real (Re (f x))) has_vector_derivative 
+      (complex_of_real (Re D))) (at z)"
+    apply (subst has_vector_derivative_def, subst scaleR_conv_of_real)
+    apply (subst of_real_mult [symmetric], subst mult_commute)
+    by (rule FDERIV_compose [OF 1 "complex_of_real_has_derivative" [of _]])
+  assume "DERIV (IM f) z :> Im D"
+  hence 3: "FDERIV (IM f) z :> op * (Im D)" by (simp add: DERIV_conv_has_derivative)
+  have 4: "((\<lambda>x. complex_of_real (Im (f x))) has_vector_derivative 
+      (complex_of_real (Im D))) (at z)"
+    apply (subst has_vector_derivative_def, subst scaleR_conv_of_real)
+    apply (subst of_real_mult [symmetric], subst mult_commute)
+    by (rule FDERIV_compose [OF 3 "complex_of_real_has_derivative" [of _]])
+  have feq: "f = (\<lambda>x. complex_of_real (Re (f x)) + ii * complex_of_real (Im (f x)))"
+    by simp
+  have "D = complex_of_real (Re D) + ii * complex_of_real (Im D)" by simp
+  thus "(f has_vector_derivative D) (at z)"
+    apply (elim ssubst, subst feq)
+    apply (rule has_vector_derivative_add [OF 2])
+    by (rule has_vector_derivative_complex_mul [OF 4])
+next
+  assume "(f has_vector_derivative D) (at z)"
+  hence 1: "FDERIV f z :> (\<lambda>x. x *\<^sub>R D)" by (simp add: has_vector_derivative_def)
+  from FDERIV_compose [OF 1, OF Re_has_derivative] 
+  show "DERIV (RE f) z :> Re D"
+    apply (simp add: DERIV_conv_has_derivative)
+    by (subst (asm) mult_commute)
+  from FDERIV_compose [OF 1, OF Im_has_derivative] 
+  show "DERIV (IM f) z :> Im D"
+    apply (simp add: DERIV_conv_has_derivative)
+    by (subst (asm) mult_commute)
+qed
+ 
 lemma CDERIV_iexp: "CDERIV iexp x :> \<i> * iexp x"
   apply (unfold complex_deriv_def)
   apply (auto intro!: DERIV_intros)
