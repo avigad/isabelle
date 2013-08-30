@@ -1,16 +1,19 @@
-(*
-  Theory Set_Integral.thy
+(*  
+Theory: Set_Integral.thy
+Authors: Jeremy Avigad, Johannes Hölzl, Luke Serafin 
 
-  Authors: Jeremy Avigad, Johannes Hölzl, Luke Serafin 
+Notation and useful facts for working with integrals over a set.
 
-  Notation and useful facts for working with integrals over a set.
-
-  TODO: keep all these? Need unicode translations as well.
+TODO: keep all these? Need unicode translations as well.
 *)
 
 theory Set_Integral
   imports Probability
 begin
+
+(* 
+    Notation 
+*)
 
 syntax
 "_ascii_lebesgue_integral" :: "pttrn \<Rightarrow> 'a measure \<Rightarrow> real \<Rightarrow> real"
@@ -42,8 +45,11 @@ syntax
 translations
   "AE x\<in>A in M. P" == "CONST set_almost_everywhere A M (\<lambda>x. P)"
 
+(* 
+    Basic properties 
+*)
 
-lemma indicator_abs_eq: "\<And>A x. ((indicator A x) :: real) = abs (indicator A x)"
+lemma indicator_abs_eq: "\<And>A x. abs (indicator A x) = ((indicator A x) :: real)"
   by (auto simp add: indicator_def)
 
 lemma set_AE_func_int_eq:
@@ -67,6 +73,39 @@ proof -
     using `B \<subseteq> A` by (auto simp add: indicator_def)
   finally show ?thesis .
 qed
+
+(* TODO: integral_cmul_indicator should be named set_integral_const *)
+(* TODO: borel_integrable_atLeastAtMost should be named something like set_integrable_Icc_isCont *)
+
+lemma set_integral_cmult [simp, intro]:
+  assumes "set_integrable M A f"
+  shows "set_integrable M A (\<lambda>t. a * f t)"
+  and "LINT t:A|M. a * f t = a * (LINT t:A|M. f t)"
+using assms by (auto simp add: mult_assoc)
+
+lemma set_integral_add [simp, intro]:
+  assumes "set_integrable M A f" "set_integrable M A g"
+  shows "set_integrable M A (\<lambda>x. f x + g x)" and "LINT x:A|M. f x + g x =
+    (LINT x:A|M. f x) + (LINT x:A|M. g x)"
+using assms by (auto simp add: field_simps)
+
+lemma set_integral_diff [simp, intro]:
+  assumes "set_integrable M A f" "set_integrable M A g"
+  shows "set_integrable M A (\<lambda>x. f x - g x)" and "LINT x:A|M. f x - g x =
+    (LINT x:A|M. f x) - (LINT x:A|M. g x)"
+using assms by (auto simp add: field_simps)
+
+lemma set_integral_mono: 
+  assumes "set_integrable M A f" "set_integrable M A g"
+    "\<And>x. x \<in> A \<Longrightarrow> f x \<le> g x"
+  shows "(LINT x:A|M. f x) \<le> (LINT x:A|M. g x)"
+using assms by (auto intro: integral_mono split: split_indicator)
+
+lemma set_integral_mono_AE: 
+  assumes "set_integrable M A f" "set_integrable M A g"
+    "AE x \<in> A in M. f x \<le> g x"
+  shows "(LINT x:A|M. f x) \<le> (LINT x:A|M. g x)"
+using assms by (auto intro: integral_mono_AE split: split_indicator)
 
 lemma set_integrable_abs: "set_integrable M A f \<Longrightarrow> set_integrable M A (\<lambda>x. \<bar>f x\<bar>)"
   using integrable_abs[of M "\<lambda>x. f x * indicator A x"] by (simp add: abs_mult)
@@ -97,35 +136,25 @@ lemma set_integrable_UN:
   assumes "finite I" "\<And>i. i\<in>I \<Longrightarrow> set_integrable M (A i) f"
     "\<And>i. i\<in>I \<Longrightarrow> A i \<in> sets M"
   shows "set_integrable M (\<Union>i\<in>I. A i) f"
-  using assms
-  by (induct I, auto intro!: set_integrable_Un)
+using assms by (induct I, auto intro!: set_integrable_Un)
 
 lemma set_integral_Un:
   assumes "A \<inter> B = {}"
   and "set_integrable M A f"
   and "set_integrable M B f"
   shows "LINT x:A\<union>B|M. f x = (LINT x:A|M. f x) + (LINT x:B|M. f x)"
-  by (auto simp add: indicator_union_arith indicator_inter_arith[symmetric]
+by (auto simp add: indicator_union_arith indicator_inter_arith[symmetric]
       distrib_left assms)
 
 lemma set_integral_finite_Union:
   assumes "finite I" "disjoint_family_on A I"
     and "\<And>i. i \<in> I \<Longrightarrow> set_integrable M (A i) f" "\<And>i. i \<in> I \<Longrightarrow> A i \<in> sets M"
   shows "(LINT x:(\<Union>i\<in>I. A i)|M. f x) = (\<Sum>i\<in>I. LINT x:A i|M. f x)"
+
   using assms
   apply induct
   apply (auto intro!: set_integral_Un set_integrable_Un set_integrable_UN simp: disjoint_family_on_def)
-  by (subst set_integral_Un, auto intro: set_integrable_UN)
-
-lemma set_integral_cmult:
-  assumes "set_integrable M A f"
-  shows "set_integrable M A (\<lambda>t. a * f t)"
-  and "LINT t:A|M. a * f t = a * (LINT t:A|M. f t)"
-  (* Expressions which are the same up to rearrangement of parentheses should be easier to identify. *)
-  apply (subst mult_assoc)
-  apply (auto intro: integral_cmult assms)
-  apply (subst mult_assoc)
-  by (auto intro: integral_cmult assms)
+by (subst set_integral_Un, auto intro: set_integrable_UN)
 
 lemma pos_integrable_to_top:
   fixes l::real
@@ -134,6 +163,7 @@ lemma pos_integrable_to_top:
   and intgbl: "\<And>i::nat. set_integrable M (A i) f"
   and lim: "(\<lambda>i::nat. LINT x:A i|M. f x) ----> l"
   shows "set_integrable M (\<Union>i. A i) f"
+
   apply (rule integral_monotone_convergence_pos[where f = "\<lambda>i::nat. \<lambda>x. f x * indicator (A i) x" and x = l])
   apply (rule intgbl)
   prefer 4 apply (rule lim)
@@ -165,6 +195,7 @@ lemma lebesgue_integral_countable_add:
   and disj: "\<And>i j. i \<noteq> j \<Longrightarrow> A i \<inter> A j = {}"
   and intgbl: "set_integrable M (\<Union>i. A i) f"
   shows "LINT x:(\<Union>i. A i)|M. f x = (\<Sum>i. (LINT x:(A i)|M. f x))"
+
   apply (subst integral_sums(2)[THEN sums_unique, symmetric])
   apply (rule set_integrable_subset[OF intgbl])
   apply auto []
@@ -249,8 +280,8 @@ next
     by simp_all
 next
   show "set_integrable M (\<Union>i. A i) (\<lambda>x. \<bar>f x\<bar>)"
-    apply (subst indicator_abs_eq)
-    apply (subst abs_mult[symmetric])
+    apply (subst indicator_abs_eq [symmetric])
+    apply (subst abs_mult [symmetric])
     apply (rule integrable_abs)
     using assms by auto
 next
@@ -302,7 +333,7 @@ proof (rule integral_dominated_convergence(3))
     using LIMSEQ by (rule borel_measurable_LIMSEQ) (auto intro: borel_measurable_integrable int)
 qed
 
-lemma integral_at_point:
+lemma set_integral_at_point:
   fixes a :: real
   assumes "set_integrable M {a} f"
   and "{a} \<in> sets M" and "(emeasure M) {a} \<noteq> \<infinity>"
