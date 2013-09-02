@@ -1056,8 +1056,8 @@ lemma interval_integral_substitution_nonneg:
   and contg': "\<And>x. a < ereal x \<Longrightarrow> ereal x < b \<Longrightarrow> isCont g' x"
   and f_nonneg: "\<And>x. a < ereal x \<Longrightarrow> ereal x < b \<Longrightarrow> 0 \<le> f (g x)" (* TODO: make these AE? *)
   and g'_nonneg: "\<And>x. a \<le> ereal x \<Longrightarrow> ereal x \<le> b \<Longrightarrow> 0 \<le> g' x"
-  and "((ereal \<circ> g \<circ> real) ---> A) (at_left a)"
-  assumes "((ereal \<circ> g \<circ> real) ---> B) (at_right b)"
+  and A: "((ereal \<circ> g \<circ> real) ---> A) (at_right a)"
+  assumes B: "((ereal \<circ> g \<circ> real) ---> B) (at_left b)"
   assumes integrable: "set_integrable lborel (einterval a b) (\<lambda>x. f (g x) * g' x)"
   shows "(LBINT x=A..B. f x) = (LBINT x=a..b. (f (g x) * g' x))"
 proof -
@@ -1074,7 +1074,6 @@ proof -
   have [simp]: "\<And>i j. i \<le> j \<Longrightarrow> l j \<le> l i" by (rule decseqD, rule approx)
   have [simp]: "\<And>i j. i \<le> j \<Longrightarrow> u i \<le> u j" by (rule incseqD, rule approx)
   have g_nondec [simp]: "\<And>x y. a < x \<Longrightarrow> x \<le> y \<Longrightarrow> y < b \<Longrightarrow> g x \<le> g y"
-    (* ouch! can this be automated more? *)
     apply (erule DERIV_nonneg_imp_nondecreasing, auto)
     apply (rule exI, rule conjI, rule deriv_g)
     apply (erule order_less_le_trans, auto)
@@ -1113,8 +1112,34 @@ proof -
     by (frule (1) img, auto, rule f_nonneg, auto)
   have contf_2: "\<And>x i. g (l i) \<le> x \<Longrightarrow> x \<le> g (u i) \<Longrightarrow> isCont f x"
     by (frule (1) img, auto, rule contf, auto)
-  have un: "einterval A B = (\<Union>i. {g(l i)<..<g(u i)})" sorry
-  have "A \<le> B" sorry
+  have A2: "(\<lambda>i. g (l i)) ----> A"
+    using A apply (auto simp add: einterval_def tendsto_at_iff_sequentially comp_def)
+    by (drule_tac x = "\<lambda>i. ereal (l i)" in spec, auto simp add: approx)
+  hence A3: "\<And>i. g (l i) \<ge> A"
+    by (intro decseq_le, auto simp add: decseq_def approx)
+  have B2: "(\<lambda>i. g (u i)) ----> B"
+    using B apply (auto simp add: einterval_def tendsto_at_iff_sequentially comp_def)
+    by (drule_tac x = "\<lambda>i. ereal (u i)" in spec, auto simp add: approx)
+  hence B3: "\<And>i. g (u i) \<le> B"
+    by (intro incseq_le, auto simp add: incseq_def approx less_imp_le)
+  have "A \<le> B"
+    apply (rule order_trans [OF A3 [of 0]])
+    apply (rule order_trans [OF _ B3 [of 0]])
+    by (auto simp add: approx less_imp_le)
+  { fix x :: real
+    assume "A < x" and "x < B"   
+    then have "eventually (\<lambda>i. ereal (g (l i)) < x \<and> x < ereal (g (u i))) sequentially"
+      apply (intro eventually_conj order_tendstoD)
+      by (rule A2, assumption, rule B2, assumption)
+    hence "\<exists>i. g (l i) < x \<and> x < g (u i)"
+      by (simp add: eventually_sequentially, auto)
+  } note AB = this
+  have un: "einterval A B = (\<Union>i. {g(l i)<..<g(u i)})"
+    apply (auto simp add: einterval_def)
+    apply (erule (1) AB)
+    apply (rule order_le_less_trans, rule A3, simp)
+    apply (rule order_less_le_trans) prefer 2
+    by (rule B3, simp) 
   (* finally, the main argument *)
   {
      fix i
@@ -1136,7 +1161,7 @@ proof -
     apply (rule g_nondec, auto simp add: approx less_imp_le)
     apply (subst interval_lebesgue_integral_le_eq, rule `A \<le> B`)
     apply (subst un, rule set_integral_cont_up, auto)
-    apply (rule incseq)
+    apply (rule incseq) 
     apply (rule pos_integrable_to_top, auto)
     apply (subst incseq_mono, rule incseq)
     apply (rule nonneg_f2, erule less_imp_le, erule less_imp_le)
