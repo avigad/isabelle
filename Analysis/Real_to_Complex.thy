@@ -105,9 +105,6 @@ abbreviation iexp :: "real \<Rightarrow> complex" where
 
   (** Differentiation of functions of type real \<Rightarrow> complex. **)
 
-  (* As suggested by Johannes Hölzl, has_vector_derivative dispenses with the
-  need for the following definition; however, I do not see how to take the
-  derivative of an exponential using has_vector derivative at this time. *)
 
 definition complex_deriv :: "[real \<Rightarrow> complex, real, complex] \<Rightarrow> bool"
 ("(CDERIV (_)/ (_)/ :> (_))" [1000, 1000, 60] 60) where
@@ -132,7 +129,7 @@ lemma has_vector_derivative_complex_mul:
   apply (subst mult_scaleR_right [symmetric])
   by (rule FDERIV_mult_right)
 
-lemma DERIV_has_vector_derivative: "(CDERIV f z :> D) = (f has_vector_derivative D) (at z)"
+lemma CDERIV_has_vector_derivative: "(CDERIV f z :> D) = (f has_vector_derivative D) (at z)"
 proof (auto simp add: complex_deriv_def)
   assume "(DERIV (RE f) z :> Re D)"
   hence 1: "FDERIV (RE f) z :> op * (Re D)" by (simp add: DERIV_conv_has_derivative)
