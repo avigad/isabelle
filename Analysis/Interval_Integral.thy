@@ -1175,6 +1175,8 @@ proof -
   thus ?thesis by (intro LIMSEQ_unique [OF _ 2])
 qed
 
+(* TODO: is it possible to lift the assumption here that g' is nonnegative? *)
+
 lemma interval_integral_substitution_integrable:
   fixes f g g':: "real \<Rightarrow> real" and a b u v :: ereal
   assumes "a < b" 
