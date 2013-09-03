@@ -80,11 +80,16 @@ lemma intersection_bdd_below [simp]:
   shows "bdd_below (A \<inter> B)"
 using subset_bdd_below assms by auto
 
+lemma empty_bdd_above [simp]: "bdd_above {}"
+  unfolding bdd_above_def by auto
+
+lemma empty_bdd_below [simp]: "bdd_below {}"
+  unfolding bdd_below_def by auto
+
 lemma bdd_finite [simp]:
   assumes "finite A"
   shows "bdd_above A" and "bdd_below A"
-unfolding bdd_above_def bdd_below_def using assms
-by (metis Sup_fin.in_idem sup_ge1) (metis assms fold1_belowI)
+using assms by (induct rule: finite_induct, auto)
 
 end
 
@@ -356,7 +361,7 @@ lemma SUP_cong:
 
 lemma Inf_mono:
   assumes "A \<noteq> {}" and "bdd_below A"
-  and "B \<noteq> {}" and "bdd_below B"
+  and "B \<noteq> {}"
   and "\<And>b. b \<in> B \<Longrightarrow> \<exists>a\<in>A. a \<le> b"
   shows "\<Sqinter>A \<le> \<Sqinter>B"
 proof (rule Inf_greatest)
@@ -367,13 +372,13 @@ proof (rule Inf_greatest)
 qed (rule assms)
 
 lemma InfI_mono:
-  assumes "A \<noteq> {}" and "bdd_below A"
-  and "B \<noteq> {}" and "bdd_below B"
+  assumes "A \<noteq> {}" and "bdd_below (f ` A)" 
+  and "B \<noteq> {}" 
   shows "(\<And>m. m \<in> B \<Longrightarrow> \<exists>n\<in>A. f n \<le> g m) \<Longrightarrow> InfI A f \<le> InfI B g"
-  unfolding InfI_def using Inf_mono sorry
+  unfolding InfI_def using assms by (auto intro: Inf_mono)
 
 lemma Sup_mono:
-  assumes "A \<noteq> {}" and "bdd_above A"
+  assumes "A \<noteq> {}" 
   and "B \<noteq> {}" and "bdd_above B"
   and "\<And>a. a \<in> A \<Longrightarrow> \<exists>b\<in>B. a \<le> b"
   shows "\<Squnion>A \<le> \<Squnion>B"
@@ -385,23 +390,22 @@ proof (rule Sup_least)
 qed (rule assms)
 
 lemma SupR_mono:
-  assumes "A \<noteq> {}" and "bdd_above A"
-  and "B \<noteq> {}" and "bdd_above B"
+  assumes "A \<noteq> {}"
+  and "B \<noteq> {}" and "bdd_above (g ` B)"
   shows "(\<And>n. n \<in> A \<Longrightarrow> \<exists>m\<in>B. f n \<le> g m) \<Longrightarrow> SupR A f \<le> SupR B g"
-unfolding SupR_def using assms Sup_mono sorry
+unfolding SupR_def using assms by (auto intro: Sup_mono)
 
 (* TODO: Cleanup. *)
 lemma SupR_subset_mono:
-  assumes "A \<noteq> {}" and "bdd_above B"
+  assumes "A \<noteq> {}" and "bdd_above (g ` B)"
   and "A \<subseteq> B"
   and "\<And>x. x \<in> B \<Longrightarrow> f x \<le> g x"
   shows "SupR A f \<le> SupR B g"
 apply (rule SupR_mono)
 apply (rule assms)
-prefer 2 using assms apply force
-prefer 2 apply (rule assms)
-using subset_bdd_above assms apply force
-using assms by auto
+using assms apply force
+apply (rule assms)
+using subset_bdd_above assms by force
 
 lemma Inf_less_eq:
   assumes "\<And>v. v \<in> A \<Longrightarrow> v \<le> u"
@@ -447,11 +451,10 @@ proof (rule antisym, auto)
 qed
 
 lemma InfI_union:
-  assumes "M`A \<noteq> {}" and "bdd_below (M`A)"
-  and "M`B \<noteq> {}" and "bdd_below (M`B)"
-  shows "InfI (A \<union> B) M = (InfI A M) \<squnion> (InfI B M)"
-  sorry
-  (* by (auto intro!: antisym InfI_mono intro: assms le_infI1 le_infI2 InfI_greatest InfI_lower) *)
+  assumes "A \<noteq> {}" and "bdd_below (f`A)"
+  and "B \<noteq> {}" and "bdd_below (f`B)"
+  shows "InfI (A \<union> B) f = (InfI A f) \<sqinter> (InfI B f)"
+unfolding InfI_def using assms by (auto simp add: image_Un intro: Inf_union_distrib)
 
 lemma Sup_union_distrib: "\<Squnion>(A \<union> B) = \<Squnion>A \<squnion> \<Squnion>B"
   by (rule antisym) (auto intro: Sup_least Sup_upper le_supI1 le_supI2)
@@ -470,7 +473,6 @@ next
   show "?R \<le> ?L" by (rule SUP_least) (auto intro: le_supI1 le_supI2 SUP_upper)
 qed
 
-****)
 
 end
 
