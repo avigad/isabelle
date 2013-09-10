@@ -5,44 +5,21 @@ begin
 
 (** General miscellaneous. **)
 
-(*
-lemma Un_disj_decomp: "\<And>A B. A \<union> B = (A - B) \<union> (B - A) \<union> (A \<inter> B)"
-  "disjoint_family (nat_case (A - B) (nat_case (B - A) (nat_case (A \<inter> B) (\<lambda>i. {}))))"
-  apply (auto intro: Int_Diff_Un Un_Diff_cancel sup_commute sup_left_commute)
-unfolding disjoint_family_on_def proof auto
-  fix m n::nat assume neq: "m \<noteq> n"
-  fix x assume m: "x \<in> (case m of 0 \<Rightarrow> A - B | Suc 0 \<Rightarrow> B - A | Suc (Suc 0) \<Rightarrow> A \<inter> B |
-  Suc (Suc (Suc i)) \<Rightarrow> {})"
-  and n: "x \<in> (case n of 0 \<Rightarrow> A - B | Suc 0 \<Rightarrow> B - A | Suc (Suc 0) \<Rightarrow> A \<inter> B | Suc (Suc (Suc i)) \<Rightarrow> {})"
-  thus False
-  proof (cases m, simp)
-    assume x: "x \<in> A \<and> x \<notin> B" and m: "m = 0"
-    and n: "x \<in> (case n of 0 \<Rightarrow> A - B | Suc 0 \<Rightarrow> B - A | Suc (Suc 0) \<Rightarrow> A \<inter> B | Suc (Suc (Suc i)) \<Rightarrow> {})"
-    moreover hence "n \<noteq> 0" using neq m by simp
-    thus False
-    proof (cases n, simp)
-      fix i assume i: "n = Suc i"
-      thus False
-      proof (cases i)
-        assume "i = 0" thus False using x n i by simp
-      next
-        fix j assume j: "i = Suc j"
-        thus False
-        proof (cases j)
-          assume "j = 0" thus False using x n i j by simp
-        next
-          fix k assume "j = Suc k" hence "n = Suc (Suc (Suc k))" using n i j by simp
-          thus False using n x by auto
-        qed
-      qed
-    qed
-  next
-    fix i assume i: "m = Suc i"
-    thus False
-    proof (cases i)
-      assume "i = 0" hence m1: "m = Suc 0" using i by simp
-      from neq m1 moreover have "n \<noteq> Suc 0" by simp
-*)     
+lemma rat_type_infinite: "infinite (UNIV :: rat set)"
+  by (rule Finite_Set.infinite_UNIV_char_0)
+
+lemma inj_on_infinite: "infinite A \<Longrightarrow> inj_on f A \<Longrightarrow> infinite (range f)"
+  apply (simp add: infinite_iff_countable_subset)
+  apply auto
+  apply (rule_tac x = "f o fa" in exI)
+  apply auto
+  by (metis comp_inj_on_iff subset_inj_on)
+
+lemma real_rats_infinite: "infinite \<rat>"
+  apply (subst Rats_def)
+  apply (rule inj_on_infinite)
+  apply (rule Finite_Set.infinite_UNIV_char_0)
+  unfolding inj_on_def by auto
 
 lemma indicator_abs_eq[simp]:
   "\<bar>indicator A x\<bar> = ((indicator A x)::'a::linordered_idom)"
@@ -135,7 +112,7 @@ proof -
   proof (cases "x \<in> (\<Union>i. A i)")
     fix r::real assume pos: "0 < r"
     assume elem: "x \<in> (\<Union>i. A i)"
-    obtain i where inAi: "x \<in> A i" by (auto intro: UN_E elem)
+    obtain i where inAi: "x \<in> A i" using UN_E elem by auto
     hence inAj: "\<And>j. i \<le> j \<Longrightarrow> x \<in> A j" using setseq_inc inc by auto
     have "\<forall>j \<ge> i. dist (indicator (A j) x) (indicator (\<Union>i. A i) x) < r"
     proof -
@@ -171,7 +148,7 @@ proof (rule tendstoI)
     by (auto intro: lim pos tendstoD)
   thus "eventually (\<lambda>x. dist (f x) b < e) F"
     by (metis (lifting, mono_tags) ab_group_add_class.add_diff_cancel_left
-      dist_commute dist_norm eventually_rev_mono)
+      dist_norm eventually_rev_mono)
 qed
 
 lemma tendsto_const_mult:
@@ -192,8 +169,8 @@ proof (rule tendstoI)
       apply (unfold dist_real_def)
       apply (subst linordered_field_class.sign_simps(6)[symmetric])
       apply (subst abs_mult)
-      by (smt comm_semiring_1_class.normalizing_semiring_rules(7) nonzero
-        real_mult_le_cancel_iff2)
+      apply (subst mult_commute)
+      by (simp add: nonzero)
     thus ?thesis
       apply (subst eq[symmetric])
       by (rule ev)

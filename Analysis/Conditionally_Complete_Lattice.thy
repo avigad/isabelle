@@ -456,15 +456,39 @@ lemma InfI_union:
   shows "InfI (A \<union> B) f = (InfI A f) \<sqinter> (InfI B f)"
 unfolding InfI_def using assms by (auto simp add: image_Un intro: Inf_union_distrib)
 
-lemma Sup_union_distrib: "\<Squnion>(A \<union> B) = \<Squnion>A \<squnion> \<Squnion>B"
-  by (rule antisym) (auto intro: Sup_least Sup_upper le_supI1 le_supI2)
+lemma Sup_union_distrib:
+  assumes "A \<noteq> {}" and "bdd_above A"
+  and "B \<noteq> {}" and "bdd_above B"
+  shows "\<Squnion>(A \<union> B) = \<Squnion>A \<squnion> \<Squnion>B"
+proof (rule antisym, auto)
+  from bdd_nonempty_Sup_subset_mono assms show "\<Squnion>A \<le> \<Squnion>(A \<union> B)" by auto
+  from bdd_nonempty_Sup_subset_mono assms show "\<Squnion>B \<le> \<Squnion>(A \<union> B)" by auto
+  show "\<Squnion>(A \<union> B) \<le> \<Squnion>A \<squnion> \<Squnion>B"
+    using Sup_least Sup_upper le_supI1 le_supI2 assms by (metis (full_types) Un_empty Un_iff)
+qed
 
-lemma SUP_union:
-  "(\<Squnion>i \<in> A \<union> B. M i) = (\<Squnion>i \<in> A. M i) \<squnion> (\<Squnion>i\<in>B. M i)"
-  by (auto intro!: antisym SUP_mono intro: le_supI1 le_supI2 SUP_least SUP_upper)
+lemma SupR_union:
+  assumes "A \<noteq> {}" and "bdd_above (f`A)"
+  and "B \<noteq> {}" and "bdd_above (f`B)"
+  shows "SupR (A \<union> B) f = SupR A f \<squnion> SupR B f"
+unfolding SupR_def using assms by (auto simp add: image_Un intro: Sup_union_distrib)
 
-lemma INF_inf_distrib: "(\<Sqinter>a\<in>A. f a) \<sqinter> (\<Sqinter>a\<in>A. g a) = (\<Sqinter>a\<in>A. f a \<sqinter> g a)"
-  by (rule antisym) (rule INF_greatest, auto intro: le_infI1 le_infI2 INF_lower INF_mono)
+lemma InfI_inf_distrib:
+  assumes "A \<noteq> {}" and "bdd_below (f`A)" and "bdd_below (g`A)"
+  shows "InfI A f \<sqinter> InfI A g = InfI A (\<lambda>a. f a \<sqinter> g a)" (is "?L = ?R")
+proof (rule antisym)
+  show "?L \<le> ?R"
+    by (rule InfI_greatest, rule assms) (auto intro: assms le_infI1 le_infI2 InfI_lower)
+  show "?R \<le> ?L"
+  proof -
+    have "bdd_below ((\<lambda>a. f a \<sqinter> g a) ` A)" sorry
+    moreover have "InfI A (\<lambda>a. f a \<sqinter> g a) \<le> InfI A f"
+      by (metis (lifting, full_types) InfI_mono assms(1) calculation inf_le1)
+    moreover have "InfI A (\<lambda>a. f a \<sqinter> g a) \<le> InfI A g"
+      by (metis (lifting, full_types) InfI_mono assms(1) calculation(1) inf_le2)
+    ultimately show ?thesis using le_infI by auto
+  qed
+qed
 
 lemma SUP_sup_distrib: "(\<Squnion>a\<in>A. f a) \<squnion> (\<Squnion>a\<in>A. g a) = (\<Squnion>a\<in>A. f a \<squnion> g a)" (is "?L = ?R")
 proof (rule antisym)
