@@ -481,7 +481,17 @@ proof (rule antisym)
     by (rule InfI_greatest, rule assms) (auto intro: assms le_infI1 le_infI2 InfI_lower)
   show "?R \<le> ?L"
   proof -
-    have "bdd_below ((\<lambda>a. f a \<sqinter> g a) ` A)" sorry
+    have "bdd_below ((\<lambda>a. f a \<sqinter> g a) ` A)" unfolding bdd_below_def
+    proof -
+      let ?m = "Inf (f`A) \<sqinter> Inf (g`A)"
+      { fix x assume "x\<in>((\<lambda>a. f a \<sqinter> g a) ` A)"
+        then obtain a where a: "a \<in> A" and x: "x = f a \<sqinter> g a" by auto
+        from a have "?m \<le> f a" using assms InfI_lower InfI_def le_infI1 by metis
+        moreover from a have "?m \<le> g a" using assms InfI_lower InfI_def le_infI2 by metis
+        ultimately have "?m \<le> x" using x by auto
+      } note lb = this
+      from lb show "\<exists>m. \<forall>x\<in>(\<lambda>a. f a \<sqinter> g a) ` A. m \<le> x" by blast
+    qed
     moreover have "InfI A (\<lambda>a. f a \<sqinter> g a) \<le> InfI A f"
       by (metis (lifting, full_types) InfI_mono assms(1) calculation inf_le1)
     moreover have "InfI A (\<lambda>a. f a \<sqinter> g a) \<le> InfI A g"
@@ -490,11 +500,32 @@ proof (rule antisym)
   qed
 qed
 
-lemma SUP_sup_distrib: "(\<Squnion>a\<in>A. f a) \<squnion> (\<Squnion>a\<in>A. g a) = (\<Squnion>a\<in>A. f a \<squnion> g a)" (is "?L = ?R")
+lemma SUP_sup_distrib: 
+  assumes "A \<noteq> {}" and "bdd_above (f`A)" and "bdd_above (g`A)"
+  shows "SupR A f \<squnion> SupR A g = SupR A (\<lambda>a. f a \<squnion> g a)" (is "?L = ?R")
 proof (rule antisym)
-  show "?L \<le> ?R" by (auto intro: le_supI1 le_supI2 SUP_upper SUP_mono)
+  show "?L \<le> ?R"
+  proof -
+    have "bdd_above ((\<lambda>a. f a \<squnion> g a) ` A)" unfolding bdd_above_def
+    proof -
+      let ?M = "Sup (f`A) \<squnion> Sup (g`A)"
+      { fix x assume "x\<in>((\<lambda>a. f a \<squnion> g a) ` A)"
+        then obtain a where a: "a \<in> A" and x: "x = f a \<squnion> g a" by auto
+        from a have "f a \<le> ?M" using assms SupR_upper SupR_def le_supI1 by metis
+        moreover from a have "g a \<le> ?M" using assms SupR_upper SupR_def le_supI2 by metis
+        ultimately have "x \<le> ?M" using x by auto
+      } note ub = this
+      from ub show "\<exists>M. \<forall>x\<in>(\<lambda>a. f a \<squnion> g a) ` A. x \<le> M" by blast
+    qed
+    moreover have "SupR A f \<le> SupR A (\<lambda>a. f a \<squnion> g a)"
+      by (metis (lifting, full_types) SupR_mono assms(1) calculation sup_ge1)
+    moreover have "SupR A g \<le> SupR A (\<lambda>a. f a \<squnion> g a)"
+      by (metis (lifting, full_types) SupR_mono assms(1) calculation(1) sup_ge2)
+    ultimately show ?thesis using le_supI by auto
+  qed
 next
-  show "?R \<le> ?L" by (rule SUP_least) (auto intro: le_supI1 le_supI2 SUP_upper)
+  show "?R \<le> ?L"
+  by (rule SupR_least, rule assms) (auto intro: assms le_supI1 le_supI2 SupR_upper)
 qed
 
 

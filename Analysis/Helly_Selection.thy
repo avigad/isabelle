@@ -3,6 +3,52 @@ imports Diagonal_Subsequence Conditionally_Complete_Lattice Library_Misc
 
 begin
 
+primrec halfseq :: "real \<Rightarrow> real \<Rightarrow> nat \<Rightarrow> real" where
+  "halfseq l a0 0 = a0"
+| "halfseq l a0 (Suc n) = (halfseq l a0 n - l) / 2"
+
+lemma closed_contains_Inf:
+  assumes cl: "closed A" and nonempty: "A \<noteq> {}" and bdd: "bdd_below A"
+  shows "Inf A \<in> (A::real set)"
+proof -
+  from nonempty obtain a0 where a0: "a0 \<in> A" by auto
+  let ?a = "halfseq (Inf A) a0"
+  have dist_a: "\<And>n. dist (?a n) (Inf A) = dist a0 (Inf A) / 2^n"
+  proof -
+    fix n :: nat show "dist (?a n) (Inf A) = dist a0 (Inf A) / 2^n"
+    apply (induct n, auto)
+    sorry
+  qed
+  have lbd_a: "\<And>n. Inf A \<le> ?a n"
+  proof -
+    fix n show "Inf A \<le> ?a n"
+      apply (induct n, auto intro: assms Inf_lower a0)
+      sorry
+  qed
+  have "?a ----> Inf A"
+  proof (rule metric_LIMSEQ_I)
+    fix r :: real assume r: "0 < r"
+    obtain n0 where n0: "dist a0 (Inf A) / 2^n0 < r"
+    sorry
+    (* proof (cases "a0 = Inf A")
+      assume "a0 = Inf A"
+      then have "dist a0 (Inf A) = 0" by auto *)
+    have "\<forall>n\<ge>n0. dist (?a n) (Inf A) < r"
+    proof (auto)
+      fix n assume le: "n0 \<le> n"
+      from dist_a have "dist (?a n) (Inf A) = dist a0 (Inf A) / 2^n" by simp
+      also have "... = (dist a0 (Inf A) / 2^n0) / 2^(n - n0)" using le sorry
+      also have "... < r" using r le sorry
+      finally show "dist (?a n) (Inf A) < r" by simp
+    qed
+    thus "\<exists>n0. \<forall>n\<ge>n0. dist (?a n) (Inf A) < r" by auto
+  qed
+  have "\<forall>n. \<exists>x. x \<le> ?a n \<and> x \<in> A" sorry
+  then obtain b where "\<forall>n. b n \<le> ?a n \<and> b n \<in> A" sorry
+  hence "b ----> Inf A"
+  thus ?thesis using closed_sequential_limits
+qed
+
 definition rcont_inc :: "(real \<Rightarrow> real) \<Rightarrow> bool"
   where "rcont_inc f \<equiv> (\<forall>x. continuous (at_right x) f) \<and> mono f"
 
