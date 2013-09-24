@@ -5,14 +5,60 @@ begin
 
 primrec halfseq :: "real \<Rightarrow> real \<Rightarrow> nat \<Rightarrow> real" where
   "halfseq l a0 0 = a0"
-| "halfseq l a0 (Suc n) = (halfseq l a0 n - l) / 2"
+| "halfseq l a0 (Suc n) = (halfseq l a0 n + l) / 2"
+
+lemma halfseq_converges: "halfseq l a0 ----> l"
+proof -
+  let ?a = "halfseq l a0"
+  {
+    fix n
+    have "dist (?a n) l = dist a0 l / 2^n"
+      by (induct n, auto simp add: dist_real_def field_simps)
+  } note dist_a = this
+  show ?thesis
+  proof (rule metric_LIMSEQ_I)
+    fix r :: real
+    assume [simp]: "r > 0"
+    from reals_Archimedean2 [of "dist a0 l / r"] guess n .. 
+    with `r > 0` have 2: "dist a0 l < r * n" by (simp add: field_simps)
+    have "(dist a0 l) / 2^n < r"
+      apply (auto simp add: field_simps)
+      apply (rule order_less_trans, rule 2)
+      by (rule mult_strict_left_mono, simp_all)
+    hence "\<forall>m\<ge>n. dist (halfseq l a0 m) l < r"
+      apply (auto simp add: dist_a)
+      apply (rule order_le_less_trans)
+      prefer 2 apply assumption
+      by (auto simp add: field_simps intro!: mult_left_mono)
+    thus "\<exists>n. \<forall>m\<ge>n. dist (halfseq l a0 m) l < r" ..
+  qed
+qed
+
+lemma real_Inf_greatest': 
+  fixes A and x :: real 
+  assumes "A \<noteq> {}" "bdd_below A" and 1: "x > Inf A" 
+  shows "\<exists>y \<in> A. y \<le> x"
+  apply (rule contrapos_pp [OF 1], simp add: not_less not_le)
+using assms by (intro Inf_greatest, auto)
+ 
+thm choice
 
 lemma closed_contains_Inf:
+  fixes A :: "real set"
   assumes cl: "closed A" and nonempty: "A \<noteq> {}" and bdd: "bdd_below A"
-  shows "Inf A \<in> (A::real set)"
+  shows "Inf A \<in> A"
 proof -
   from nonempty obtain a0 where a0: "a0 \<in> A" by auto
+  note 1 = tendsto_const [of "Inf A" sequentially]
+  note 2 = halfseq_converges [of "Inf A" a0]
   let ?a = "halfseq (Inf A) a0"
+  have "\<forall>i. ?a i \<ge> (Inf A)" sorry
+  have "\<forall>i. \<exists>b \<le> ?a i. b \<ge> Inf A \<and> b \<in> A" sorry note 3 = this
+  from choice [OF this] guess g ..
+  
+
+thm real_tendsto_sandwich [OF _ _ 1 2]
+find_theorems Inf
   have dist_a: "\<And>n. dist (?a n) (Inf A) = dist a0 (Inf A) / 2^n"
   proof -
     fix n :: nat show "dist (?a n) (Inf A) = dist a0 (Inf A) / 2^n"
