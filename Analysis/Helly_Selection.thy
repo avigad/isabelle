@@ -38,12 +38,10 @@ lemma real_Inf_greatest':
   fixes A and x :: real 
   assumes "A \<noteq> {}" "bdd_below A" and 1: "x > Inf A" 
   shows "\<exists>y \<in> A. y \<le> x"
-  apply (rule contrapos_pp [OF 1], simp add: not_less not_le)
+apply (rule contrapos_pp [OF 1], simp add: not_less not_le)
 using assms by (intro Inf_greatest, auto)
- 
-thm choice
 
-lemma closed_contains_Inf:
+lemma real_closed_contains_Inf:
   fixes A :: "real set"
   assumes cl: "closed A" and nonempty: "A \<noteq> {}" and bdd: "bdd_below A"
   shows "Inf A \<in> A"
@@ -52,48 +50,90 @@ proof -
   note 1 = tendsto_const [of "Inf A" sequentially]
   note 2 = halfseq_converges [of "Inf A" a0]
   let ?a = "halfseq (Inf A) a0"
-  have "\<forall>i. ?a i \<ge> (Inf A)" sorry
-  have "\<forall>i. \<exists>b \<le> ?a i. b \<ge> Inf A \<and> b \<in> A" sorry note 3 = this
-  from choice [OF this] guess g ..
-  
-
-thm real_tendsto_sandwich [OF _ _ 1 2]
-find_theorems Inf
+  have a_above_Inf: "\<forall>i. ?a i \<ge> Inf A"
+  proof
+    fix i :: nat show "?a i \<ge> Inf A"
+      by (induct i, auto intro: assms a0 Inf_lower)
+  qed
+  have 3: "\<forall>i. \<exists>b \<le> ?a i. b \<ge> Inf A \<and> b \<in> A"
+  proof
+    fix i :: nat show "\<exists>b \<le> ?a i. b \<ge> Inf A \<and> b \<in> A"
+    proof (cases "Inf A \<in> A")
+      assume "Inf A \<in> A" thus "\<exists>b \<le> ?a i. b \<ge> Inf A \<and> b \<in> A" using a_above_Inf by auto
+      next assume notin: "Inf A \<notin> A"
+      hence neq: "a0 \<noteq> Inf A" using a0 by auto
+      have a_gr_Inf: "\<And>k. ?a k > Inf A"
+      proof -
+        fix k :: nat show "?a k > Inf A"
+          by (induct k, auto intro: a0 bdd Inf_lower) (metis (full_types) a0 bdd Inf_lower le_neq_trans neq)
+      qed
+      thus "\<exists>b \<le> ?a i. b \<ge> Inf A \<and> b \<in> A" using real_Inf_greatest' Inf_lower assms by metis
+    qed
+  qed
   have dist_a: "\<And>n. dist (?a n) (Inf A) = dist a0 (Inf A) / 2^n"
   proof -
     fix n :: nat show "dist (?a n) (Inf A) = dist a0 (Inf A) / 2^n"
     apply (induct n, auto)
-    sorry
+    apply (subst divide_inverse)
+    apply (subst mult_commute)
+    apply (subst real_scaleR_def[symmetric])
+    apply (subst midpoint_def[symmetric])
+    by (simp add: dist_midpoint)
   qed
   have lbd_a: "\<And>n. Inf A \<le> ?a n"
   proof -
-    fix n show "Inf A \<le> ?a n"
-      apply (induct n, auto intro: assms Inf_lower a0)
-      sorry
+    fix n show "Inf A \<le> ?a n" by (induct n, auto intro: assms Inf_lower a0)
   qed
-  have "?a ----> Inf A"
-  proof (rule metric_LIMSEQ_I)
-    fix r :: real assume r: "0 < r"
-    obtain n0 where n0: "dist a0 (Inf A) / 2^n0 < r"
-    sorry
-    (* proof (cases "a0 = Inf A")
-      assume "a0 = Inf A"
-      then have "dist a0 (Inf A) = 0" by auto *)
-    have "\<forall>n\<ge>n0. dist (?a n) (Inf A) < r"
-    proof (auto)
-      fix n assume le: "n0 \<le> n"
-      from dist_a have "dist (?a n) (Inf A) = dist a0 (Inf A) / 2^n" by simp
-      also have "... = (dist a0 (Inf A) / 2^n0) / 2^(n - n0)" using le sorry
-      also have "... < r" using r le sorry
-      finally show "dist (?a n) (Inf A) < r" by simp
+  have "?a ----> Inf A" using halfseq_converges by auto
+  have "\<forall>n. \<exists>x. x \<le> ?a n \<and> x \<in> A"
+  proof
+    fix n show "\<exists>x. x \<le> ?a n \<and> x \<in> A"
+    proof (cases "?a n = Inf A")
+      assume an: "?a n = Inf A"
+      hence "dist a0 (Inf A) = 0" using dist_a dist_self
+        by (metis divide_le_0_iff less_le not_less power_eq_0_iff zero_le_divide_iff zero_neq_numeral)
+      hence "a0 = Inf A" by auto
+      hence "a0 \<le> ?a n \<and> a0 \<in> A" using a0 an by auto
+      thus ?thesis by auto
+    next
+      assume "?a n \<noteq> Inf A" hence an: "?a n > Inf A" using a_above_Inf le_neq_trans by metis
+      show ?thesis
+      proof (rule ccontr, auto)
+        assume "\<forall>x\<le>?a n. x \<notin> A"
+        hence "\<And>x. x \<in> A \<Longrightarrow> ?a n \<le> x" using 3 by auto
+        then have "?a n \<le> Inf A" using Inf_greatest assms by auto
+        thus False using an by auto
+      qed
     qed
-    thus "\<exists>n0. \<forall>n\<ge>n0. dist (?a n) (Inf A) < r" by auto
   qed
-  have "\<forall>n. \<exists>x. x \<le> ?a n \<and> x \<in> A" sorry
-  then obtain b where "\<forall>n. b n \<le> ?a n \<and> b n \<in> A" sorry
-  hence "b ----> Inf A"
-  thus ?thesis using closed_sequential_limits
+  from choice[OF this] guess b .. note b = this
+  hence "b ----> Inf A" using real_tendsto_sandwich
+    by (smt "1" bdd conditionally_complete_lattice_class.Inf_lower eventually_sequentially halfseq_converges)
+  thus ?thesis using closed_sequential_limits b cl by auto
 qed
+
+lemma bdd_below_closure:
+  fixes A :: "real set"
+  assumes "bdd_below A"
+  shows "bdd_below (closure A)"
+proof -
+  from assms obtain m where "\<And>x. x \<in> A \<Longrightarrow> m \<le> x" unfolding bdd_below_def by auto
+  hence "A \<subseteq> {m..}" by auto
+  find_theorems "closed _" "{_..}"
+  hence "closure A \<subseteq> {m..}" using closed_real_atLeast closure_minimal by auto
+  thus ?thesis unfolding bdd_below_def by auto
+qed
+
+lemma real_closed_subset_contains_Inf:
+  fixes A C :: "real set"
+  assumes cl: "closed C" and A: "A \<subseteq> C"
+  and nonempty: "A \<noteq> {}" and bdd_below: "bdd_below A"
+  shows "Inf A \<in> C"
+proof -
+  find_theorems (68) closure
+  have "closure A \<subseteq> C" using closure_minimal assms by auto
+  moreover have "bdd_below (closure A)" using assms bdd_below_closure by auto
+  moreover hence "Inf (closure A) \<in> A" using assms real_closed_contains_Inf sorry
 
 definition rcont_inc :: "(real \<Rightarrow> real) \<Rightarrow> bool"
   where "rcont_inc f \<equiv> (\<forall>x. continuous (at_right x) f) \<and> mono f"
@@ -164,8 +204,9 @@ proof -
       using rat_cnv convergent_LIMSEQ_iff by auto
     ultimately show "lim (\<lambda>k. f (?d k) (r n)) \<in> {-M..M}" by auto
   qed
-  hence bdd_below: "\<And>x::real. bdd_below {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}"
-    unfolding bdd_below_def by auto
+  hence limset_bdd: "\<And>x. {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n} \<subseteq> {-M..M}" by auto
+  (*hence bdd_below: "\<And>x::real. bdd_below {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}"
+    unfolding bdd_below_def by auto *)
   have nonempty: "\<And>x::real. {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n} \<noteq> {}"
   proof -
     fix x :: real
@@ -176,23 +217,8 @@ proof -
     then have "?y \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}" by auto
     thus "{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n} \<noteq> {}" by auto
   qed
-  let ?F = "\<lambda>x::real. \<Sqinter>{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}"
-  from lim_bdd have "\<And>x::real. ?F x \<in> {-M..M}"
-  proof -
-    find_theorems name: Inf "closed _"
-    fix x::real
-    have M: "-M \<le> M" using M_nonneg by simp
-    have bd_limset: "{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n} \<subseteq> {-M..M}" using lim_bdd by auto
-    hence 1: "\<forall>y \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}. \<bar>y - 0\<bar> \<le> M"
-    proof -
-      have "(\<forall>y \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}. \<bar>y - 0\<bar> \<le> M) =
-        (\<forall>y \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}. y \<in> {-M..M})" by auto
-      thus ?thesis using bd_limset by blast
-    qed
-    have "\<bar>Inf {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n} - 0\<bar> \<le> M"
-      apply (rule Inf_asclose) by (rule nonempty) (rule 1)
-    thus "Inf {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n} \<in> {-M..M}" by auto
-  qed
+  let ?F = "\<lambda>x. \<Sqinter>{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}"
+  from limset_bdd have "\<And>x. ?F x \<in> {-M..M}" using real_closed_contains_Inf nonempty
   have mono: "mono ?F"
   proof (unfold mono_def, auto)
     fix x y::real assume le: "x \<le> y"
