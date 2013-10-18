@@ -41,10 +41,22 @@ lemma real_Inf_greatest':
 apply (rule contrapos_pp [OF 1], simp add: not_less not_le)
 using assms by (intro Inf_greatest, auto)
 
-lemma real_closed_contains_Inf:
+lemma bdd_below_closure:
   fixes A :: "real set"
-  assumes cl: "closed A" and nonempty: "A \<noteq> {}" and bdd: "bdd_below A"
-  shows "Inf A \<in> A"
+  assumes "bdd_below A"
+  shows "bdd_below (closure A)"
+proof -
+  from assms obtain m where "\<And>x. x \<in> A \<Longrightarrow> m \<le> x" unfolding bdd_below_def by auto
+  hence "A \<subseteq> {m..}" by auto
+  find_theorems "closed _" "{_..}"
+  hence "closure A \<subseteq> {m..}" using closed_real_atLeast closure_minimal by auto
+  thus ?thesis unfolding bdd_below_def by auto
+qed
+
+lemma real_closure_contains_Inf:
+  fixes A :: "real set"
+  assumes  nonempty: "A \<noteq> {}" and bdd: "bdd_below A"
+  shows "Inf A \<in> closure A"
 proof -
   from nonempty obtain a0 where a0: "a0 \<in> A" by auto
   note 1 = tendsto_const [of "Inf A" sequentially]
@@ -109,19 +121,7 @@ proof -
   from choice[OF this] guess b .. note b = this
   hence "b ----> Inf A" using real_tendsto_sandwich
     by (smt "1" bdd conditionally_complete_lattice_class.Inf_lower eventually_sequentially halfseq_converges)
-  thus ?thesis using closed_sequential_limits b cl by auto
-qed
-
-lemma bdd_below_closure:
-  fixes A :: "real set"
-  assumes "bdd_below A"
-  shows "bdd_below (closure A)"
-proof -
-  from assms obtain m where "\<And>x. x \<in> A \<Longrightarrow> m \<le> x" unfolding bdd_below_def by auto
-  hence "A \<subseteq> {m..}" by auto
-  find_theorems "closed _" "{_..}"
-  hence "closure A \<subseteq> {m..}" using closed_real_atLeast closure_minimal by auto
-  thus ?thesis unfolding bdd_below_def by auto
+  thus ?thesis using closure_sequential b by auto
 qed
 
 lemma real_closed_subset_contains_Inf:
@@ -132,16 +132,30 @@ lemma real_closed_subset_contains_Inf:
 proof -
   find_theorems (68) closure
   have "closure A \<subseteq> C" using closure_minimal assms by auto
-  moreover have "bdd_below (closure A)" using assms bdd_below_closure by auto
-  moreover hence "Inf (closure A) \<in> A" using assms real_closed_contains_Inf sorry
+  thus ?thesis
+    apply (elim subsetD)
+    apply (rule real_closure_contains_Inf)
+    using assms by auto
+qed
 
 definition rcont_inc :: "(real \<Rightarrow> real) \<Rightarrow> bool"
   where "rcont_inc f \<equiv> (\<forall>x. continuous (at_right x) f) \<and> mono f"
 
+theorem bdd_below_atLeast: "bdd_below {a..}"
+  unfolding bdd_below_def by auto
+
+theorem rat_unbounded: "\<exists> q \<in> \<rat>. q >= (x :: real)"
+  apply (rule_tac x = "of_nat (natceiling x)" in bexI, auto)
+by (metis real_natceiling_ge real_of_nat_def)
+
+lemma f_inv_f_surj_on: "f ` A = B \<Longrightarrow> x \<in> B \<Longrightarrow> f (inv f x) = x"
+  apply auto
+  unfolding inv_def by (rule someI_ex, auto)
+
 theorem Helley_selection:
   fixes f :: "nat \<Rightarrow> real \<Rightarrow> real"
   assumes rcont_inc: "\<And>n. rcont_inc (f n)"
-  and ubdd: "\<forall>n x. \<bar>f n x\<bar> \<le> M"
+  and unif_bdd: "\<forall>n x. \<bar>f n x\<bar> \<le> M"
   shows "\<exists>s. subseq s \<and> (\<exists>F. rcont_inc F \<and> (\<forall>n x. \<bar>F x\<bar> \<le> M) \<and>
     (\<forall>x.  continuous (at x) F \<longrightarrow> (\<lambda>n. f (s n) x) ----> F x))"
 proof -
@@ -156,7 +170,7 @@ proof -
   proof (unfold convergent_def, unfold subseqs_def, auto)
     fix n :: nat fix s :: "nat \<Rightarrow> nat" assume s: "subseq s"
     have "bounded {-M..M}" using bounded_closed_interval by auto
-    moreover have "\<And>k. f (s k) (r n) \<in> {-M..M}" using ubdd abs_le_interval_iff by auto
+    moreover have "\<And>k. f (s k) (r n) \<in> {-M..M}" using unif_bdd abs_le_interval_iff by auto
     ultimately have "\<exists>l s'. subseq s' \<and> ((\<lambda>k. f (s k) (r n)) \<circ> s') ----> l"
       using bounded_imp_convergent_subsequence[of "{-M..M}"] by auto
     thus "\<exists>s'. subseq s' \<and> (\<exists>l. (\<lambda>k. f (s (s' k)) (r n)) ----> l)" unfolding o_def by auto
@@ -190,7 +204,7 @@ proof -
     qed
   qed
   (* Is this needed? *)
-  have M_nonneg: "0 \<le> M" using ubdd by (metis abs_minus_le_zero less_le less_trans neg_le_0_iff_le)
+  have M_nonneg: "0 \<le> M" using unif_bdd by (metis abs_minus_le_zero less_le less_trans neg_le_0_iff_le)
   have lim_bdd: "\<And>n. lim (\<lambda>k. f (?d k) (r n)) \<in> {-M..M}"
   proof -
     fix n::nat
@@ -199,14 +213,14 @@ proof -
       \<longrightarrow> lim (\<lambda>k. f (?d k) (r n)) \<in> {-M..M}"
       apply (subst (asm) closed_sequential_limits)
       by (drule_tac x = "\<lambda>k. f (?d k) (r n)" in spec) blast
-    moreover have "\<forall>i. (\<lambda>k. f (?d k) (r n)) i \<in> {-M..M}" using ubdd abs_le_interval_iff by auto
+    moreover have "\<forall>i. (\<lambda>k. f (?d k) (r n)) i \<in> {-M..M}" using unif_bdd abs_le_interval_iff by auto
     moreover have "(\<lambda>k. f (?d k) (r n)) ----> lim (\<lambda>k. f (?d k) (r n))"
       using rat_cnv convergent_LIMSEQ_iff by auto
     ultimately show "lim (\<lambda>k. f (?d k) (r n)) \<in> {-M..M}" by auto
   qed
   hence limset_bdd: "\<And>x. {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n} \<subseteq> {-M..M}" by auto
-  (*hence bdd_below: "\<And>x::real. bdd_below {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}"
-    unfolding bdd_below_def by auto *)
+  hence bdd_below: "\<And>x. bdd_below {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}"
+    using bdd_below_atLeast subset_bdd_below sorry
   have nonempty: "\<And>x::real. {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n} \<noteq> {}"
   proof -
     fix x :: real
@@ -217,8 +231,20 @@ proof -
     then have "?y \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}" by auto
     thus "{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n} \<noteq> {}" by auto
   qed
+  { fix x :: real
+    from rat_unbounded [of "x + 1"] guess q ..
+    with bij have "x < r (inv r q)" apply (subst f_inv_f_surj_on [of r])
+      unfolding bij_betw_def by (erule conjE, assumption, auto)
+    hence "\<exists>n. x < r n" ..
+  } note r_unbdd = this
   let ?F = "\<lambda>x. \<Sqinter>{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}"
-  from limset_bdd have "\<And>x. ?F x \<in> {-M..M}" using real_closed_contains_Inf nonempty
+  have "\<And>x. ?F x \<in> {-M..M}"
+    apply (rule real_closed_subset_contains_Inf)
+    using limset_bdd apply auto
+    prefer 2 apply (rule subset_bdd_below)
+    apply (rule bdd_below_atLeast [of "-M"])
+    apply (rule subset_trans, assumption, force)
+    by (rule r_unbdd)
   have mono: "mono ?F"
   proof (unfold mono_def, auto)
     fix x y::real assume le: "x \<le> y"
