@@ -130,7 +130,6 @@ lemma real_closed_subset_contains_Inf:
   and nonempty: "A \<noteq> {}" and bdd_below: "bdd_below A"
   shows "Inf A \<in> C"
 proof -
-  find_theorems (68) closure
   have "closure A \<subseteq> C" using closure_minimal assms by auto
   thus ?thesis
     apply (elim subsetD)
@@ -141,10 +140,19 @@ qed
 definition rcont_inc :: "(real \<Rightarrow> real) \<Rightarrow> bool"
   where "rcont_inc f \<equiv> (\<forall>x. continuous (at_right x) f) \<and> mono f"
 
-theorem bdd_below_atLeast: "bdd_below {a..}"
+lemma bdd_below_atLeast: "bdd_below {a..}"
   unfolding bdd_below_def by auto
 
-theorem rat_unbounded: "\<exists> q \<in> \<rat>. q >= (x :: real)"
+lemma bdd_below_atLeastAtMost: "bdd_below {a..b}"
+  unfolding bdd_below_def by auto
+
+lemma real_atLeastAtMost_subset_contains_Inf:
+  fixes A :: "real set" and a b :: real assumes "A \<noteq> {}" and "bdd_below A"
+  and "a \<le> b" and "A \<subseteq> {a..b}"
+  shows "Inf A \<in> {a..b}"
+by (rule real_closed_subset_contains_Inf, rule closed_real_atLeastAtMost) (simp_all add: assms)
+
+lemma rat_unbounded: "\<exists> q \<in> \<rat>. (x :: real) \<le> q"
   apply (rule_tac x = "of_nat (natceiling x)" in bexI, auto)
 by (metis real_natceiling_ge real_of_nat_def)
 
@@ -203,7 +211,6 @@ proof -
       thus ?thesis unfolding convergent_def by auto
     qed
   qed
-  (* Is this needed? *)
   have M_nonneg: "0 \<le> M" using unif_bdd by (metis abs_minus_le_zero less_le less_trans neg_le_0_iff_le)
   have lim_bdd: "\<And>n. lim (\<lambda>k. f (?d k) (r n)) \<in> {-M..M}"
   proof -
@@ -220,7 +227,11 @@ proof -
   qed
   hence limset_bdd: "\<And>x. {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n} \<subseteq> {-M..M}" by auto
   hence bdd_below: "\<And>x. bdd_below {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}"
-    using bdd_below_atLeast subset_bdd_below sorry
+    (* Why does auto not get this? (auto intro: subset_bdd_below bdd_below_at_LeastAtMost limset_bdd) *)
+  proof -
+    fix x show " bdd_below {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}"
+      by (rule subset_bdd_below) (rule bdd_below_atLeastAtMost, rule limset_bdd)
+  qed
   have nonempty: "\<And>x::real. {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n} \<noteq> {}"
   proof -
     fix x :: real
@@ -258,17 +269,51 @@ proof -
       by (rule subset)
   qed
   moreover have "\<And>x. continuous (at_right x) ?F"
-    (*apply (unfold continuous_def)
+    apply (unfold continuous_def)
     apply (unfold tendsto_def, auto)
     apply (subst eventually_within)
     proof -
-      fix x::real fix S::"real set" assume opnS: "open S"
+      fix x::real fix S::"real set" assume openS: "open S"
       assume ntlim_inS: "(Inf {lim (\<lambda>k. f (?d k) (r n)) |n. netlimit (at_right x) < r n}) \<in> S"
       have "netlimit (at_right x) = x" by (auto intro: netlimit_within)
       hence "?F x \<in> S" using ntlim_inS by simp
-      (* Use S to get epsilon; r from the book is now d. *)*) sorry
+      then obtain e where e_pos: "e > 0" and e: "ball (?F x) e \<subseteq> S" using openE openS by auto
+      have "\<exists>z \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}. z < ?F x + e"
+      proof -
+        from e_pos have "?F x < ?F x + e / 2" by simp
+        from nonempty bdd_below this real_Inf_greatest'[of "{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}" "?F x + e/2"]
+        have z: "\<exists>z\<in>{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}. z \<le> ?F x + e / 2" by auto
+        then guess z .. note 1 = this
+        hence "z < ?F x + e" using e_pos by auto
+        moreover have "z \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}" using 1 by auto
+        ultimately show ?thesis ..
+      qed
+      then guess z .. note z = this
+      then obtain n where n: "z = lim (\<lambda>k. f (?d k) (r n)) \<and> x < r n" by auto
+      let ?\<delta> = "r n - x" have d: "?\<delta> > 0" using n by simp
+      have "\<forall>y\<in>{x<..}. 0 < dist y x \<and> dist y x < ?\<delta> \<longrightarrow> ?F y \<in> S"
+      proof auto
+        fix y assume less: "x < y" and dist: "dist y x < ?\<delta>"
+        hence le: "?F x \<le> ?F y" using mono unfolding mono_def by auto
+        from dist have y: "y < r n" unfolding dist_real_def by auto
+        hence "?F y \<le> z" using bdd_below Inf_lower y n by auto
+        hence "?F y < ?F x + e" using z by auto
+        hence "?F y \<in> ball (?F x) e" unfolding ball_def dist_real_def using le by auto
+        thus "?F y \<in> S" using e by auto
+      qed
+      thus "\<exists>d>0. \<forall>y\<in>{x<..}. 0 < dist y x \<and> dist y x < d \<longrightarrow> ?F y \<in> S" using d by auto
+    qed
   ultimately have rcont_inc: "rcont_inc ?F" unfolding rcont_inc_def by auto
-  moreover have bdd: "\<forall>n x. \<bar>?F x\<bar> \<le> M" sorry
+  moreover have bdd: "\<forall>n x. \<bar>?F x\<bar> \<le> M"
+  proof auto
+    fix x
+    have "?F x \<in> {-M..M}"
+      apply (rule real_atLeastAtMost_subset_contains_Inf)
+      apply (rule nonempty)
+      apply (rule bdd_below)
+      apply (simp add: M_nonneg)
+      apply (rule limset_bdd)
+      done
   moreover have lim: "\<forall>x.  continuous (at x) ?F \<longrightarrow> (\<lambda>n. f (?d n) x) ----> ?F x"
   proof auto
     fix x::real assume cnt: "continuous (at x) ?F"
@@ -281,16 +326,51 @@ proof -
     fix y::real assume less: "y < x" and "norm (y - x) < d"
     then have "norm (?F y - ?F x) < e" using cnt' by auto
     hence 1: "?F x - e < ?F y" using less mono by auto
-    obtain n where n: "y < r n \<and> r n < x"
+    have "\<exists>n. y < r n \<and> r n < x"
     proof -
       obtain q where q: "q \<in> \<rat> \<and> y < q \<and> q < x" using less Rats_dense_in_real by auto
-      then obtain n where "r n = q" using bij sorry
-      thus ?thesis sorry
+      let ?n = "the_inv_into UNIV r q"
+      have "y < r ?n \<and> r ?n < x" using q bij f_the_inv_into_f unfolding bij_betw_def by metis
+      thus ?thesis by auto
     qed
-    obtain m where m: "x < r m \<and> lim (\<lambda>k. f (?d k) (r m)) < ?F x + e" sorry
-    have "?F x - e < lim (\<lambda>k. f (?d k) (r m))" sorry
-  
-  ultimately show ?thesis
+    then guess n.. note n = this
+    hence "?F y \<le> lim (\<lambda>k. f (?d k) (r n))" using bdd_below Inf_lower n by auto
+    hence 2: "?F x - e < ?F y" using 1 by simp
+    have 3: "\<exists>m. x < r m \<and> lim (\<lambda>k. f (?d k) (r m)) < ?F x + e"
+    proof - (* Contains duplication from proof of right-continuity--fix. *)
+      have "\<exists>z \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}. z < ?F x + e"
+      proof -
+        from e have "?F x < ?F x + e / 2" by simp
+        from nonempty bdd_below this real_Inf_greatest'[of "{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}" "?F x + e/2"]
+        have z: "\<exists>z\<in>{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}. z \<le> ?F x + e / 2" by auto
+        then guess z .. note 1 = this
+        hence "z < ?F x + e" using e by auto
+        moreover have "z \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}" using 1 by auto
+        ultimately show ?thesis ..
+      qed
+      then guess z .. note z = this
+      then obtain m where m: "z = lim (\<lambda>k. f (?d k) (r m)) \<and> x < r m" by auto
+      thus ?thesis using z by auto
+    qed
+    then guess m .. note m = this
+    from n m have 4: "r n < r m" by auto
+    have 5: "lim (\<lambda>k. f (?d k) (r n)) \<le> lim (\<lambda>k. f (?d k) (r m))"
+    proof -
+      have "\<And>k. f (?d k) (r n) \<le> f (?d k) (r m)" using less assms 4 unfolding rcont_inc_def mono_def by auto
+      have "\<And>k. f (?d k) (r n) \<le> M" using unif_bdd abs_le_interval_iff by auto
+      
+      (* This section probably not useful; want to use fact that bounded monotone sequences converge. *)
+      let ?A1 = "{f (?d k) (r n) |k. k = k}"
+      let ?A2 = "{f (?d k) (r m) |k. k = k}"
+      have nonempty1: "?A1 \<noteq> {}" by auto
+      have bdd1: "?A1 \<subseteq> {-M..M}" using rcont_inc_def unfolding rcont_inc mono_def sorry
+      let ?l1 = "Sup ?A1"
+      let ?l2 = "Sup ?A2"
+      (*********************************************)
+      
+      show ?thesis sorry
+    qed
+  ultimately show ?thesis sorry
     apply (rule_tac x = ?d in exI)
     apply (rule conjI)
     apply (rule nat.subseq_diagseq)
