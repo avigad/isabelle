@@ -3,6 +3,18 @@ imports Diagonal_Subsequence Conditionally_Complete_Lattice Library_Misc
 
 begin
 
+thm convergent_ereal_limsup
+
+(* This should have been in the library, like convergent_ereal_limsup. *)
+lemma convergent_ereal_liminf: "convergent (X::(nat \<Rightarrow> ereal)) \<Longrightarrow> liminf X = lim X"
+proof -
+  assume cnv: "convergent X"
+  find_theorems "liminf _"
+  hence 1: "limsup X = liminf X" using convergent_ereal by simp
+  from cnv have "limsup X = lim X" using convergent_ereal_limsup by simp
+  thus ?thesis using 1 by simp
+qed
+
 primrec halfseq :: "real \<Rightarrow> real \<Rightarrow> nat \<Rightarrow> real" where
   "halfseq l a0 0 = a0"
 | "halfseq l a0 (Suc n) = (halfseq l a0 n + l) / 2"
@@ -317,59 +329,128 @@ proof -
   moreover have lim: "\<forall>x.  continuous (at x) ?F \<longrightarrow> (\<lambda>n. f (?d n) x) ----> ?F x"
   proof auto
     fix x::real assume cnt: "continuous (at x) ?F"
-    fix e::real assume e: "0 < e"
-    have "?F -- x --> ?F x" using cnt continuous_at by auto
-    hence "\<exists>d>0. \<forall>y. y \<noteq> x \<and> norm (y - x) < d \<longrightarrow> norm (?F y - ?F x) < e"
-      by (rule LIM_D) (rule e) (* Why did auto not work here? *)
-    then obtain d where "d > 0" and cnt': "\<forall>y. y \<noteq> x \<and> norm (y - x) < d \<longrightarrow> norm (?F y - ?F x) < e"
-      by auto
-    fix y::real assume less: "y < x" and "norm (y - x) < d"
-    then have "norm (?F y - ?F x) < e" using cnt' by auto
-    hence 1: "?F x - e < ?F y" using less mono by auto
-    have "\<exists>n. y < r n \<and> r n < x"
-    proof -
-      obtain q where q: "q \<in> \<rat> \<and> y < q \<and> q < x" using less Rats_dense_in_real by auto
-      let ?n = "the_inv_into UNIV r q"
-      have "y < r ?n \<and> r ?n < x" using q bij f_the_inv_into_f unfolding bij_betw_def by metis
-      thus ?thesis by auto
-    qed
-    then guess n.. note n = this
-    hence "?F y \<le> lim (\<lambda>k. f (?d k) (r n))" using bdd_below Inf_lower n by auto
-    hence 2: "?F x - e < ?F y" using 1 by simp
-    have 3: "\<exists>m. x < r m \<and> lim (\<lambda>k. f (?d k) (r m)) < ?F x + e"
-    proof - (* Contains duplication from proof of right-continuity--fix. *)
-      have "\<exists>z \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}. z < ?F x + e"
+    { fix e::real assume e: "0 < e"
+      have "?F -- x --> ?F x" using cnt continuous_at by auto
+      hence "\<exists>d>0. \<forall>y. y \<noteq> x \<and> norm (y - x) < d \<longrightarrow> norm (?F y - ?F x) < e"
+        by (rule LIM_D) (rule e) (* Why did auto not work here? *)
+      then obtain d where "d > 0" and cnt': "\<forall>y. y \<noteq> x \<and> norm (y - x) < d \<longrightarrow> norm (?F y - ?F x) < e"
+        by auto
+      fix y::real assume less: "y < x" and "norm (y - x) < d"
+      then have "norm (?F y - ?F x) < e" using cnt' by auto
+      hence 1: "?F x - e < ?F y" using less mono by auto
+      have "\<exists>n. y < r n \<and> r n < x"
       proof -
-        from e have "?F x < ?F x + e / 2" by simp
-        from nonempty bdd_below this real_Inf_greatest'[of "{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}" "?F x + e/2"]
-        have z: "\<exists>z\<in>{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}. z \<le> ?F x + e / 2" by auto
-        then guess z .. note 1 = this
-        hence "z < ?F x + e" using e by auto
-        moreover have "z \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}" using 1 by auto
-        ultimately show ?thesis ..
+        obtain q where q: "q \<in> \<rat> \<and> y < q \<and> q < x" using less Rats_dense_in_real by auto
+        let ?n = "the_inv_into UNIV r q"
+        have "y < r ?n \<and> r ?n < x" using q bij f_the_inv_into_f unfolding bij_betw_def by metis
+        thus ?thesis by auto
       qed
-      then guess z .. note z = this
-      then obtain m where m: "z = lim (\<lambda>k. f (?d k) (r m)) \<and> x < r m" by auto
-      thus ?thesis using z by auto
-    qed
-    then guess m .. note m = this
-    from n m have 4: "r n < r m" by auto
-    have 5: "lim (\<lambda>k. f (?d k) (r n)) \<le> lim (\<lambda>k. f (?d k) (r m))"
-    proof -
-      have "\<And>k. f (?d k) (r n) \<le> f (?d k) (r m)" using less assms 4 unfolding rcont_inc_def mono_def by auto
-      have "\<And>k. f (?d k) (r n) \<le> M" using unif_bdd abs_le_interval_iff by auto
-      
-      (* This section probably not useful; want to use fact that bounded monotone sequences converge. *)
-      let ?A1 = "{f (?d k) (r n) |k. k = k}"
-      let ?A2 = "{f (?d k) (r m) |k. k = k}"
-      have nonempty1: "?A1 \<noteq> {}" by auto
-      have bdd1: "?A1 \<subseteq> {-M..M}" using rcont_inc_def unfolding rcont_inc mono_def sorry
-      let ?l1 = "Sup ?A1"
-      let ?l2 = "Sup ?A2"
-      (*********************************************)
-      
-      show ?thesis sorry
-    qed
+      then guess n.. note n = this
+      hence 2: "?F y \<le> lim (\<lambda>k. f (?d k) (r n))" using bdd_below Inf_lower n by auto
+      have "\<exists>m. x < r m \<and> lim (\<lambda>k. f (?d k) (r m)) < ?F x + e"
+      proof - (* Contains duplication from proof of right-continuity--fix. *)
+        have "\<exists>z \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}. z < ?F x + e"
+        proof -
+          from e have "?F x < ?F x + e / 2" by simp
+          from nonempty bdd_below this real_Inf_greatest'[of "{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}" "?F x + e/2"]
+          have z: "\<exists>z\<in>{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}. z \<le> ?F x + e / 2" by auto
+          then guess z .. note 1 = this
+          hence "z < ?F x + e" using e by auto
+          moreover have "z \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}" using 1 by auto
+          ultimately show ?thesis ..
+        qed
+        then guess z .. note z = this
+        then obtain m where m: "z = lim (\<lambda>k. f (?d k) (r m)) \<and> x < r m" by auto
+        thus ?thesis using z by auto
+      qed
+      then guess m .. note m = this
+      from n m have nm: "r n < r m" by auto
+      have 3: "lim (\<lambda>k. f (?d k) (r n)) \<le> lim (\<lambda>k. f (?d k) (r m))"
+      proof -
+        have le: "\<And>k. f (?d k) (r n) \<le> f (?d k) (r m)" using less assms nm unfolding rcont_inc_def mono_def by auto
+        have "convergent (\<lambda>k. f (?d k) (r n))" using Bseq_mono_convergent rcont_inc rat_cnv
+          unfolding rcont_inc_def mono_def by auto
+        hence L1: "(\<lambda>k. f (?d k) (r n)) ----> lim (\<lambda>k. f(?d k) (r n))" (is "_ ----> ?L1")
+          using convergent_LIMSEQ_iff by auto
+        have "convergent (\<lambda>k. f (?d k) (r m))" using Bseq_mono_convergent rcont_inc rat_cnv
+          unfolding rcont_inc_def mono_def by auto
+        hence L2: "(\<lambda>k. f (?d k) (r m)) ----> lim (\<lambda>k. f (?d k) (r m))" (is "_ ----> ?L2")
+          using convergent_LIMSEQ_iff by auto
+        show "?L1 \<le> ?L2"
+        proof -
+          have "ereal ?L1 \<le> ereal ?L2"
+            apply (rule ereal_lim_mono[of 0 "\<lambda>k. f (?d k) (r n)" "\<lambda>k. f (?d k) (r m)"])
+            apply (force intro: le)
+            by (auto intro: L1 L2)
+          thus ?thesis by auto
+        qed  
+      qed
+      have 4: "lim (\<lambda>k. f (?d k) (r m)) < ?F x + e" using m by simp
+      have 5: "limsup (\<lambda>k. f (?d k) (r n)) \<le> limsup (\<lambda>k. f (?d k) x)" (is "_ \<le> ?lsup")
+      proof -
+        have "limsup (\<lambda>k. ereal (f (?d k) (r n))) \<le> limsup (\<lambda>k. ereal (f (?d k) x))"
+          apply (rule limsup_mono[of 0])
+          using n assms unfolding rcont_inc_def mono_def by auto
+        thus ?thesis sorry
+      qed
+      have lsup_lower: "?F x - e \<le> ?lsup"
+      proof -
+        have "limsup (\<lambda>k. ereal (f (?d k) (r n))) = lim (\<lambda>k. ereal (f (?d k) (r n)))"
+          apply (rule convergent_ereal_limsup)
+          sorry
+        hence "limsup (\<lambda>k. f (?d k) (r n)) = lim (\<lambda>k. f (?d k) (r n))" sorry
+        hence "lim (\<lambda>k. f (?d k) (r n)) \<le> ?lsup" using 5 by simp
+        thus ?thesis using 1 2 by simp
+      qed
+      have 6: "?lsup \<le> limsup (\<lambda>k. f (?d k) (r m))"
+      proof -
+        have "limsup (\<lambda>k. ereal (f (?d k) (r n))) \<le> limsup (\<lambda>k. ereal (f (?d k) x))"
+          apply (rule limsup_mono[of 0])
+          using n assms unfolding rcont_inc_def mono_def by auto
+        thus ?thesis sorry
+      qed
+      hence lsup_upper: "?lsup \<le> ?F x + e"
+      proof -
+        have "limsup (\<lambda>k. ereal (f (?d k) (r m))) = lim (\<lambda>k. ereal (f (?d k) (r m)))"
+          apply (rule convergent_ereal_limsup) sorry
+        hence "limsup (\<lambda>k. f (?d k) (r m)) = lim (\<lambda>k. f (?d k) (r m))" sorry
+        hence "?lsup \<le> lim (\<lambda>k. f (?d k) (r m))" using 6 by simp
+        thus ?thesis using 3 4 by simp
+      qed
+      have 7: "liminf (\<lambda>k. f (?d k) (r n)) \<le> liminf (\<lambda>k. f (?d k) x)" (is "_ \<le> ?linf")
+      proof -
+        have "liminf (\<lambda>k. ereal (f (?d k) (r n))) \<le> liminf (\<lambda>k. ereal (f (?d k) x))"
+          apply (rule liminf_mono[of 0])
+          using n assms unfolding rcont_inc_def mono_def by auto
+        thus ?thesis sorry
+      qed
+      have linf_lower: "?F x - e \<le> ?linf"
+      proof -
+        have "liminf (\<lambda>k. ereal (f (?d k) (r n))) = lim (\<lambda>k. ereal (f (?d k) (r n)))"
+          apply (rule convergent_ereal_liminf)
+          sorry
+        hence "liminf (\<lambda>k. f (?d k) (r n)) = lim (\<lambda>k. f (?d k) (r n))" sorry
+        hence "lim (\<lambda>k. f (?d k) (r n)) \<le> ?linf" using 7 by simp
+        thus ?thesis using 1 2 by simp
+      qed
+      have 8: "?linf \<le> liminf (\<lambda>k. f (?d k) (r m))"
+      proof -
+        have "liminf (\<lambda>k. ereal (f (?d k) (r n))) \<le> liminf (\<lambda>k. ereal (f (?d k) x))"
+          apply (rule liminf_mono[of 0])
+          using n assms unfolding rcont_inc_def mono_def by auto
+        thus ?thesis sorry
+      qed
+      hence linf_upper: "?linf \<le> ?F x + e"
+      proof -
+        have "liminf (\<lambda>k. ereal (f (?d k) (r m))) = lim (\<lambda>k. ereal (f (?d k) (r m)))"
+          apply (rule convergent_ereal_liminf) sorry
+        hence "liminf (\<lambda>k. f (?d k) (r m)) = lim (\<lambda>k. f (?d k) (r m))" sorry
+        hence "?linf \<le> lim (\<lambda>k. f (?d k) (r m))" using 8 by simp
+        thus ?thesis using 3 4 by simp
+      qed
+      } (* Figure out how to eliminate obtained parameter d and how to conclude  f_n_k converges to
+           F from the fact that the limits superior and inferior are each within e of F. *)
+
   ultimately show ?thesis sorry
     apply (rule_tac x = ?d in exI)
     apply (rule conjI)
