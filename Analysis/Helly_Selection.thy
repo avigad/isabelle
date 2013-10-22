@@ -3,17 +3,11 @@ imports Diagonal_Subsequence Conditionally_Complete_Lattice Library_Misc
 
 begin
 
-thm convergent_ereal_limsup
-
-(* This should have been in the library, like convergent_ereal_limsup. *)
-lemma convergent_ereal_liminf: "convergent (X::(nat \<Rightarrow> ereal)) \<Longrightarrow> liminf X = lim X"
-proof -
-  assume cnv: "convergent X"
-  find_theorems "liminf _"
-  hence 1: "limsup X = liminf X" using convergent_ereal by simp
-  from cnv have "limsup X = lim X" using convergent_ereal_limsup by simp
-  thus ?thesis using 1 by simp
-qed
+(* This should have been in the library, like convergent_limsup_cl. *)
+lemma convergent_liminf_cl:
+  fixes X :: "nat \<Rightarrow> 'a::{complete_linorder,linorder_topology}"
+  shows "convergent X \<Longrightarrow> liminf X = lim X"
+  by (auto simp: convergent_def limI lim_imp_Liminf)
 
 primrec halfseq :: "real \<Rightarrow> real \<Rightarrow> nat \<Rightarrow> real" where
   "halfseq l a0 0 = a0"
@@ -283,7 +277,7 @@ proof -
   moreover have "\<And>x. continuous (at_right x) ?F"
     apply (unfold continuous_def)
     apply (unfold tendsto_def, auto)
-    apply (subst eventually_within)
+    apply (subst eventually_at_right)
     proof -
       fix x::real fix S::"real set" assume openS: "open S"
       assume ntlim_inS: "(Inf {lim (\<lambda>k. f (?d k) (r n)) |n. netlimit (at_right x) < r n}) \<in> S"
@@ -379,7 +373,8 @@ proof -
         show "?L1 \<le> ?L2"
         proof -
           have "ereal ?L1 \<le> ereal ?L2"
-            apply (rule ereal_lim_mono[of 0 "\<lambda>k. f (?d k) (r n)" "\<lambda>k. f (?d k) (r m)"])
+            apply (rule ereal_lim_mono[of 0 "\<lambda>k. ereal (f (?d k) (r n))" 
+                "\<lambda>k. ereal (f (?d k) (r m))"])
             apply (force intro: le)
             by (auto intro: L1 L2)
           thus ?thesis by auto
@@ -387,16 +382,12 @@ proof -
       qed
       have 4: "lim (\<lambda>k. f (?d k) (r m)) < ?F x + e" using m by simp
       have 5: "limsup (\<lambda>k. f (?d k) (r n)) \<le> limsup (\<lambda>k. f (?d k) x)" (is "_ \<le> ?lsup")
-      proof -
-        have "limsup (\<lambda>k. ereal (f (?d k) (r n))) \<le> limsup (\<lambda>k. ereal (f (?d k) x))"
-          apply (rule limsup_mono[of 0])
-          using n assms unfolding rcont_inc_def mono_def by auto
-        thus ?thesis sorry
-      qed
+        apply (rule Limsup_mono)
+        using n assms unfolding rcont_inc_def mono_def by auto
       have lsup_lower: "?F x - e \<le> ?lsup"
       proof -
         have "limsup (\<lambda>k. ereal (f (?d k) (r n))) = lim (\<lambda>k. ereal (f (?d k) (r n)))"
-          apply (rule convergent_ereal_limsup)
+          apply (rule convergent_limsup_cl)
           sorry
         hence "limsup (\<lambda>k. f (?d k) (r n)) = lim (\<lambda>k. f (?d k) (r n))" sorry
         hence "lim (\<lambda>k. f (?d k) (r n)) \<le> ?lsup" using 5 by simp
@@ -443,7 +434,7 @@ proof -
       hence linf_upper: "?linf \<le> ?F x + e"
       proof -
         have "liminf (\<lambda>k. ereal (f (?d k) (r m))) = lim (\<lambda>k. ereal (f (?d k) (r m)))"
-          apply (rule convergent_ereal_liminf) sorry
+          apply (rule convergent_liminf_cl) sorry
         hence "liminf (\<lambda>k. f (?d k) (r m)) = lim (\<lambda>k. f (?d k) (r m))" sorry
         hence "?linf \<le> lim (\<lambda>k. f (?d k) (r m))" using 8 by simp
         thus ?thesis using 3 4 by simp
