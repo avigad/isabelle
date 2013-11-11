@@ -177,6 +177,11 @@ by (rule nondecF, auto)
 
 subsection {* Properties of cdf's *}
 
+definition
+  cdf :: "real measure \<Rightarrow> real \<Rightarrow> real"
+where
+  "cdf M x  \<equiv> measure M {..x}"
+
 locale finite_borel_measure = finite_measure M for M :: "real measure" +
   assumes M_super_borel: "sets borel \<subseteq> sets M"
 begin
@@ -184,39 +189,34 @@ begin
 lemma [intro]: "a \<in> sets borel \<Longrightarrow> a \<in> sets M"
   using M_super_borel by auto
 
-definition
-  cdf :: "real \<Rightarrow> real"
-where
-  "cdf x  \<equiv> measure M {..x}"
-
-lemma cdf_nondecreasing [rule_format]: "(\<forall>x y. x \<le> y \<longrightarrow> cdf x \<le> cdf y)"
+lemma cdf_nondecreasing [rule_format]: "(\<forall>x y. x \<le> y \<longrightarrow> cdf M x \<le> cdf M y)"
   unfolding cdf_def by (auto intro!: finite_measure_mono)
 
 lemma borel_UNIV: "space M = UNIV"
  by (metis in_mono sets.sets_into_space space_in_borel top_le M_super_borel)
  
-lemma cdf_nonneg: "cdf x \<ge> 0"
+lemma cdf_nonneg: "cdf M x \<ge> 0"
   unfolding cdf_def by (rule measure_nonneg)
 
-lemma cdf_bounded: "cdf x \<le> measure M (space M)"
+lemma cdf_bounded: "cdf M x \<le> measure M (space M)"
   unfolding cdf_def using assms by (intro bounded_measure)
 
 lemma cdf_lim_infty:
-  "((%i. cdf (real i)) ----> measure M (space M))"
+  "((%i. cdf M (real i)) ----> measure M (space M))"
 proof -
-  have "(%i. cdf (real i)) ----> measure M (\<Union> i::nat. {..real i})"
+  have "(%i. cdf M (real i)) ----> measure M (\<Union> i::nat. {..real i})"
     unfolding cdf_def by (rule finite_Lim_measure_incseq) (auto simp: incseq_def)
   also have "(\<Union> i::nat. {..real i}) = space M"
     by (auto simp: borel_UNIV intro: real_natceiling_ge)
   finally show ?thesis .
 qed
 
-lemma cdf_lim_at_top: "(cdf ---> measure M (space M)) at_top" 
+lemma cdf_lim_at_top: "(cdf M ---> measure M (space M)) at_top" 
   by (rule tendsto_at_topI_sequentially) (simp_all add: mono_def cdf_nondecreasing cdf_lim_infty)
 
-lemma cdf_lim_neg_infty: "((%i. cdf (- real i)) ----> 0)" 
+lemma cdf_lim_neg_infty: "((%i. cdf M (- real i)) ----> 0)" 
 proof -
-  have "(%i. cdf (- real i)) ----> measure M (\<Inter> i::nat. {.. - real i })"
+  have "(%i. cdf M (- real i)) ----> measure M (\<Inter> i::nat. {.. - real i })"
     unfolding cdf_def by (rule finite_Lim_measure_decseq) (auto simp: decseq_def)
   also have "(\<Inter> i::nat. {..- real i}) = {}"
     by auto (metis leD le_minus_iff reals_Archimedean2)
@@ -224,9 +224,9 @@ proof -
     by simp
 qed
 
-lemma cdf_lim_at_bot: "(cdf ---> 0) at_bot"
+lemma cdf_lim_at_bot: "(cdf M ---> 0) at_bot"
 proof - 
-  have 1: "((%x :: real. - cdf (- x)) ---> 0) at_top"
+  have 1: "((%x :: real. - cdf M (- x)) ---> 0) at_top"
     apply (rule tendsto_at_topI_sequentially) 
     apply (auto simp add: mono_def cdf_nondecreasing cdf_lim_neg_infty)
     using cdf_lim_neg_infty by (metis minus_zero tendsto_minus_cancel_left)
@@ -234,25 +234,25 @@ proof -
   show ?thesis by (metis minus_zero tendsto_minus_cancel_left)
 qed
 
-lemma cdf_is_right_cont: "continuous (at_right a) cdf"
+lemma cdf_is_right_cont: "continuous (at_right a) (cdf M)"
   apply (subst continuous_within)
   apply (rule decreasing_tendsto)
   apply (auto simp add: eventually_at_right intro!: cdf_nondecreasing exI[of _ "a + 1"]) []
   apply (rule_tac b="a + 1" in sequentially_imp_eventually_at_right)
   apply simp
 proof -
-  fix f :: "nat \<Rightarrow> real" and x assume f: "decseq f" "f ----> a" and x: "cdf a < x"
-  then have "(\<lambda>n. cdf (f n)) ----> measure M (\<Inter>i. {.. f i})"
+  fix f :: "nat \<Rightarrow> real" and x assume f: "decseq f" "f ----> a" and x: "cdf M a < x"
+  then have "(\<lambda>n. cdf M (f n)) ----> measure M (\<Inter>i. {.. f i})"
     unfolding cdf_def 
     apply (intro finite_Lim_measure_decseq)
     using `decseq f` apply (auto simp: decseq_def)
     done
   also have "(\<Inter>i. {.. f i}) = {.. a}"
     using decseq_le[OF f] by (auto intro: order_trans LIMSEQ_le_const[OF f(2)])
-  finally have "(\<lambda>n. cdf (f n)) ----> cdf a"
+  finally have "(\<lambda>n. cdf M (f n)) ----> cdf M a"
     by (simp add: cdf_def)
   from order_tendstoD(2)[OF this x]
-  show "eventually (\<lambda>n. cdf (f n) < x) sequentially" .
+  show "eventually (\<lambda>n. cdf M (f n) < x) sequentially" .
 qed
 
 end
@@ -264,13 +264,13 @@ begin
 sublocale finite_borel_measure M
   by default (auto simp: events_eq_borel)
 
-lemma cdf_bounded_prob: "\<And>x. cdf x \<le> 1"
+lemma cdf_bounded_prob: "\<And>x. cdf M x \<le> 1"
   by (subst prob_space [symmetric], rule cdf_bounded)
 
-lemma cdf_lim_infty_prob: "(%i. cdf (real i)) ----> 1"
+lemma cdf_lim_infty_prob: "(%i. cdf M (real i)) ----> 1"
   by (subst prob_space [symmetric], rule cdf_lim_infty)
 
-lemma cdf_lim_at_top_prob: "(cdf ---> 1) at_top" 
+lemma cdf_lim_at_top_prob: "(cdf M ---> 1) at_top" 
   by (subst prob_space [symmetric], rule cdf_lim_at_top)
 
 end
@@ -771,7 +771,7 @@ subsection {* uniqueness *}
 lemma cdf_unique:
   fixes M1 M2
   assumes "real_distribution M1" and "real_distribution M2"
-  assumes "finite_borel_measure.cdf M1 = finite_borel_measure.cdf M2"
+  assumes "cdf M1 = cdf M2"
   shows "M1 = M2"
 proof (rule measure_eqI_generator_eq)
   show "Int_stable half_open_intervals" by (rule Int_stableI, force) 
@@ -793,7 +793,7 @@ proof (rule measure_eqI_generator_eq)
       apply (case_tac "a \<le> b", auto)
       apply (auto simp add: abeq)
       apply (subst Measure_Space.finite_measure.finite_measure_Diff, auto)+
-      by (simp add: M1.cdf_def [symmetric] assms M2.cdf_def)
+      by (simp add: cdf_def [symmetric] assms)
   }
   show "sets M1 = sigma_sets UNIV half_open_intervals"
     apply (subst real_distribution.events_eq_borel, rule assms)
@@ -838,7 +838,7 @@ proof
     by (rule tendsto_add, rule h3, auto)
   with h2 have "c + (F 0 - G 0) = c"
     apply (intro tendsto_unique, auto)
-    by (metis (full_types) eq_iff eventually_at_bot_linorder eventually_bot le_inf_iff)
+    by (metis eventually_at_bot_linorder eventually_bot leD le_less)
   hence "F 0 = G 0" by auto
   with 1 show "F x = G x" by auto
 qed
@@ -849,7 +849,7 @@ lemma cdf_to_real_distribution:
     right_cont_F : "\<And>a. continuous (at_right a) F" and 
     lim_F_at_bot : "(F ---> 0) at_bot" and
     lim_F_at_top : "(F ---> 1) at_top"
-  shows "\<exists>M. real_distribution M \<and> finite_borel_measure.cdf M = F"
+  shows "\<exists>M. real_distribution M \<and> cdf M = F"
 proof -
   have "\<exists>\<mu> :: real set \<Rightarrow> ereal. (\<forall>(a::real) b. a < b \<longrightarrow> \<mu> {a<..b} = F b - F a) 
     \<and> measure_space UNIV (sets borel) \<mu>"
@@ -859,7 +859,8 @@ proof -
       1: "\<forall>(a::real) b. a < b \<longrightarrow> \<mu> {a<..b} = F b - F a" and 
       2: "measure_space UNIV (sets borel) \<mu>" by auto
   have UNIVeq: "UNIV = (\<Union>i. {-real (i + 1::nat)<..real (i + 1::nat)})"
-    by (auto, metis euclidean_trans(1) leI less_asym minus_less_iff reals_Archimedean2)
+    apply auto
+    by (metis le_Suc_eq le_less_linear le_natfloor minus_less_iff natceiling_le_eq not_less_eq_eq)
   let ?M = "measure_of UNIV (sets borel) \<mu>"
   have [simp]: "sigma_algebra UNIV borel"
     by (auto simp add: borel_def intro: sigma_algebra_sigma_sets)
@@ -901,11 +902,11 @@ proof -
     apply (subst filterlim_uminus_at_top [symmetric])
     by (rule filterlim_real_sequentially)
   then interpret M: real_distribution ?M .
-  have "finite_borel_measure.cdf ?M = F"
+  have "cdf ?M = F"
     apply (rule distrib_unique)
     prefer 3 apply (rule lim_F_at_bot)
     prefer 2 apply (rule M.cdf_lim_at_bot)
-    apply (auto simp add: M.cdf_def M.finite_measure_Diff [symmetric])
+    apply (auto simp add: cdf_def M.finite_measure_Diff [symmetric])
     apply (subgoal_tac "{..x} - {..y} = {y<..x}")
     prefer 2 apply force
     apply (erule ssubst)
