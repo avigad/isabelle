@@ -231,7 +231,8 @@ proof -
     apply (auto simp add: mono_def cdf_nondecreasing cdf_lim_neg_infty)
     using cdf_lim_neg_infty by (metis minus_zero tendsto_minus_cancel_left)
   from filterlim_compose [OF 1, OF filterlim_uminus_at_top_at_bot]
-  show ?thesis by (metis minus_zero tendsto_minus_cancel_left)
+  show ?thesis
+    by (metis "1" filterlim_at_bot_mirror minus_zero tendsto_minus_cancel_left)
 qed
 
 lemma cdf_is_right_cont: "continuous (at_right a) (cdf M)"
@@ -843,6 +844,13 @@ proof
   with 1 show "F x = G x" by auto
 qed
 
+(* move these somewhere? *)
+lemma sigma_algebra_borel [simp]: "sigma_algebra UNIV borel"
+  by (auto simp add: borel_def intro: sigma_algebra_sigma_sets)
+
+lemma sigma_sets_borel [simp]: "sigma_sets UNIV (sets borel) = sets borel"
+  by (rule sigma_algebra.sigma_sets_eq, simp)
+
 lemma cdf_to_real_distribution:
   fixes F :: "real \<Rightarrow> real"
   assumes nondecF : "\<And> x y. x \<le> y \<Longrightarrow> F x \<le> F y" and
@@ -862,10 +870,6 @@ proof -
     apply auto
     by (metis le_Suc_eq le_less_linear le_natfloor minus_less_iff natceiling_le_eq not_less_eq_eq)
   let ?M = "measure_of UNIV (sets borel) \<mu>"
-  have [simp]: "sigma_algebra UNIV borel"
-    by (auto simp add: borel_def intro: sigma_algebra_sigma_sets)
-  have [simp]: "sigma_sets UNIV (sets borel) = sets borel"
-    by (rule sigma_algebra.sigma_sets_eq, simp)
   have [simp, intro]: "ring_of_sets UNIV (sets borel)"
     by (rule ring_of_setsI, auto)
   have cts_from_below [rule_format]: "(\<forall>A. range A \<subseteq> sets ?M \<longrightarrow>

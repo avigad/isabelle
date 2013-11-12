@@ -33,11 +33,20 @@ theorem Skorohod:
   shows "\<exists> (Omega :: real measure) (Y_seq :: nat \<Rightarrow> (real \<Rightarrow> real)) (Y :: real \<Rightarrow> real). 
     prob_space Omega \<and>
     (\<forall>n. Y_seq n \<in> measurable Omega lborel) \<and>
-    (\<forall>n. distr Omega lborel (Y_seq n) = M_seq n) \<and>
+    (\<forall>n. distr Omega borel (Y_seq n) = M_seq n) \<and>
     Y \<in> measurable Omega lborel \<and>
-    distr Omega lborel Y = M \<and>
-    weak_conv Y_seq Y"
+    distr Omega borel Y = M \<and>
+    (\<forall>x \<in> space Omega. (\<lambda>n. Y_seq n x) ----> Y x)"
 sorry
+
+lemma isCont_borel:
+  fixes f :: "real \<Rightarrow> real"
+  assumes "f \<in> borel_measurable borel"
+  shows "{x. isCont f x} \<in> sets borel"
+proof -
+  show ?thesis
+    sorry
+qed
 
 theorem weak_conv_bdd_ae_cont:
   fixes 
@@ -48,7 +57,7 @@ theorem weak_conv_bdd_ae_cont:
     distr_M_seq: "\<And>n. real_distribution (M_seq n)" and 
     distr_M: "real_distribution M" and 
     wcM: "weak_conv_m M_seq M" and
-    "M ({x. \<not> isCont f x}) = 0" and
+    discont_null: "M ({x. \<not> isCont f x}) = 0" and
     f_bdd: "\<And>x. abs (f x) \<le> B" and
     [simp]: "f \<in> borel_measurable borel"
   shows 
@@ -57,29 +66,46 @@ proof -
   note Skorohod [OF distr_M_seq distr_M wcM]
   then obtain Omega Y_seq Y where
     ps_Omega [simp]: "prob_space Omega" and
-    [simp]: "\<And>n. Y_seq n \<in> borel_measurable Omega" and
-    distr_Y_seq: "\<And>n. distr Omega lborel (Y_seq n) = M_seq n" and
-    [simp]: "Y \<in> borel_measurable Omega" and
-    distr_Y: "distr Omega lborel Y = M" and
-    wcY: "weak_conv Y_seq Y" by auto
+    Y_seq_measurable [simp]: "\<And>n. Y_seq n \<in> borel_measurable Omega" and
+    distr_Y_seq: "\<And>n. distr Omega borel (Y_seq n) = M_seq n" and
+    Y_measurable [simp]: "Y \<in> borel_measurable Omega" and
+    distr_Y: "distr Omega borel Y = M" and
+    YnY: "\<And>x :: real. x \<in> space Omega \<Longrightarrow> (\<lambda>n. Y_seq n x) ----> Y x"  by force
+  have *: "emeasure Omega (Y -` {x. \<not> isCont f x} \<inter> space Omega) = 0"
+    apply (subst emeasure_distr [symmetric])
+    apply (rule Y_measurable)
+    apply (subst double_complement [symmetric])
+    apply (rule borel_comp)
+    apply (subst Compl_eq, simp, rule isCont_borel, simp)
+    by (subst distr_Y, rule discont_null)
+    thm pred_Collect_borel
   show ?thesis
     apply (subst distr_Y_seq [symmetric])
     apply (subst distr_Y [symmetric])
     apply (subst integral_distr, simp_all)+
     apply (rule integral_dominated_convergence)
-    apply (rule finite_measure.integrable_const_bound, auto)
+    apply (rule finite_measure.integrable_const_bound)
+    apply force
     apply (rule always_eventually, rule allI, rule f_bdd)
     apply (rule measurable_compose) back
-
-
+    apply (rule Y_seq_measurable, force)
+    apply (rule always_eventually, rule allI, rule f_bdd)
+    apply (rule finite_measure.lebesgue_integral_const, force)
+    prefer 2    
+    apply (rule measurable_compose) back
+    apply (rule Y_measurable, simp)
+    apply (rule AE_I [where N = "Y -` {x. \<not> isCont f x} \<inter> space Omega"])
+    prefer 2
+    apply (rule *)
+    apply auto
+    apply (erule notE)
+    apply (erule isCont_tendsto_compose)
+    apply (erule YnY)
+    (* need some hypothesis on Omega *)
 
     sorry
 qed
 
-term prob_space
-term measurable
-term distributed
-term distr
 
 end
 
