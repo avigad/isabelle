@@ -21,6 +21,13 @@ definition
 where
   "weak_conv_m M_seq M \<equiv> weak_conv (\<lambda>n. cdf (M_seq n)) (cdf M)"
 
+thm sets.restricted_sigma_algebra
+term sets.restricted_space
+term lborel
+term borel
+term sigma
+thm lebesgue_dominated_convergence
+
 (* state using obtains? *)
 theorem Skorohod:
   fixes 
@@ -32,7 +39,9 @@ theorem Skorohod:
     "weak_conv_m M_seq M"
   shows "\<exists> (Omega :: real measure) (Y_seq :: nat \<Rightarrow> (real \<Rightarrow> real)) (Y :: real \<Rightarrow> real). 
     prob_space Omega \<and>
-    (\<forall>n. Y_seq n \<in> measurable Omega lborel) \<and>
+    space Omega = {0<..<1} \<and>
+    sets Omega = restricted_space borel {0<..<1} \<and>
+    (\<forall>n. Y_seq n \<in> measurable Omega borel) \<and>
     (\<forall>n. distr Omega borel (Y_seq n) = M_seq n) \<and>
     Y \<in> measurable Omega lborel \<and>
     distr Omega borel Y = M \<and>

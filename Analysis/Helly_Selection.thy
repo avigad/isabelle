@@ -125,7 +125,7 @@ proof -
   qed
   from choice[OF this] guess b .. note b = this
   hence "b ----> Inf A" using real_tendsto_sandwich
-    by (smt "1" bdd conditionally_complete_lattice_class.cInf_lower eventually_sequentially halfseq_converges)
+    by (metis (mono_tags) "1" always_eventually bdd cInf_lower halfseq_converges tendsto_sandwich)
   thus ?thesis using closure_sequential b by auto
 qed
 
@@ -358,15 +358,17 @@ proof -
     proof -
       find_theorems "convergent _" "_ ----> lim _"
       thm lim_close_limsup_liminf
-      have "\<forall>e>0. \<bar>limsup (\<lambda>n. ereal (f (?d n) x)) - ereal (?F x)\<bar> < e \<and> \<bar>ereal (?F x) - liminf (\<lambda>n. ereal (f (?d n) x))\<bar> < e"
+      have "\<forall>(e::real)>0. 
+        \<bar>limsup (\<lambda>n. ereal (f (?d n) x)) - ereal (?F x)\<bar> < e \<and> \<bar>ereal (?F x) - liminf (\<lambda>n. ereal (f (?d n) x))\<bar> < e"
       proof auto
-        fix e::ereal assume e: "0 < e"
+        fix e::real assume e: "0 < e"
         show "\<bar>limsup (\<lambda>n. ereal (f (?d n) x)) - ereal (?F x)\<bar> < e"
+        proof -
 
-      (*** Old proof begins here; adapt to new method (ereal sequences). ***)
-      have "?F -- x --> ?F x" using cnt continuous_at by auto
-      hence "\<exists>d>0. \<forall>y. y \<noteq> x \<and> norm (y - x) < d \<longrightarrow> norm (?F y - ?F x) < e"
-        by (rule LIM_D) (rule e) (* Why did auto not work here? *)
+          (*** Old proof begins here; adapt to new method (ereal sequences). ***)
+          have "?F -- x --> ?F x" using cnt continuous_at by auto
+          hence "\<exists>d>0. \<forall>y. y \<noteq> x \<and> norm (y - x) < d \<longrightarrow> norm (?F y - ?F x) < e"
+            by (rule LIM_D) (rule e) (* Why did auto not work here? *)
       then obtain d where "d > 0" and cnt': "\<forall>y. y \<noteq> x \<and> norm (y - x) < d \<longrightarrow> norm (?F y - ?F x) < e"
         by auto
       fix y::real assume less: "y < x" and "norm (y - x) < d"
@@ -428,8 +430,16 @@ proof -
         using n assms unfolding rcont_inc_def mono_def by auto
       have lsup_lower: "?F x - e \<le> ?lsup"
       proof -
+        have "convergent (\<lambda>k. f (?d k) (r n))"
+          sorry
+        then obtain L where *: "(\<lambda>k. f (?d k) (r n)) ----> L"
+          by (auto simp add: convergent_def)
         have eq: "limsup (\<lambda>k. f (?d k) (r n)) = lim (\<lambda>k. ereal (f (?d k) (r n)))"
-          apply (rule convergent_limsup_cl) sorry
+          apply (rule convergent_limsup_cl)
+          apply (subst convergent_def)
+          apply (rule_tac x = "ereal L" in exI)
+          by (simp add: *)
+
         have "ereal (lim (\<lambda>k. (f (?d k) (r n)))) = lim (\<lambda>k. ereal (f (?d k) (r n)))" sorry
         hence "lim (\<lambda>k. f (?d k) (r n)) \<le> ?lsup" using 5 eq by auto
         thus ?thesis using 1 2 
