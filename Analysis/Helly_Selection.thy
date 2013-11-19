@@ -121,6 +121,16 @@ proof -
   thus "lim a = L" using lsup by simp
 qed
 
+lemma convergent_real_imp_convergent_ereal:
+  assumes "convergent a"
+  shows "convergent (\<lambda>n. ereal (a n))" and "lim (\<lambda>n. ereal (a n)) = ereal (lim a)"
+proof -
+  from assms obtain L where L: "a ----> L" unfolding convergent_def ..
+  hence lim: "(\<lambda>n. ereal (a n)) ----> ereal L" using lim_ereal by auto
+  thus "convergent (\<lambda>n. ereal (a n))" unfolding convergent_def ..
+  thus "lim (\<lambda>n. ereal (a n)) = ereal (lim a)" using lim L limI by metis
+qed
+
 theorem Helley_selection:
   fixes f :: "nat \<Rightarrow> real \<Rightarrow> real"
   assumes rcont_inc: "\<And>n. rcont_inc (f n)"
@@ -356,7 +366,39 @@ proof -
         qed
         have 4: "lim (\<lambda>k. f (?d k) (r m)) < ?F x + e" using m by simp
         have 5: "\<And>k. f k (r n) \<le> f k x"  using n rcont_inc unfolding rcont_inc_def mono_def by auto
-        show "\<bar>limsup (\<lambda>n. ereal (f (?d n) x)) - ereal (?F x)\<bar> < e"
+        have 6: "\<And>k. f k x \<le> f k (r m)" using m rcont_inc unfolding rcont_inc_def mono_def by auto
+        have 7: "limsup (\<lambda>n. f (?d n) x) < ?F x + e"
+        proof -
+          from 6 have "limsup (\<lambda>k. f (?d k) x) \<le> limsup (\<lambda>k. f (?d k) (r m))" using Limsup_mono
+            by (smt ereal_less_eq(3) eventually_sequentially)
+          also have "... = lim (\<lambda>k. f (?d k) (r m))"
+            apply (subst convergent_limsup_cl)
+            using rat_cnv convergent_real_imp_convergent_ereal by auto
+          also have "ereal (lim (\<lambda>k. f (?d k) (r m))) < ereal (?F x + e)" using 4 less_ereal.simps(1) by simp
+          finally show ?thesis by simp
+        qed
+        hence "\<bar>limsup (\<lambda>k. f (?d k) x)\<bar> \<noteq> \<infinity>" using unif_bdd sorry
+        then obtain lsup where lsup: "limsup (\<lambda>n. f (?d n) x) = ereal lsup" by auto
+        have lsup_e: "lsup - ?F x < e" using 7
+          by (smt lsup add_commute diff_less_eq less_ereal.simps(1))
+        have 8: "?F x - e < liminf (\<lambda>k. f (?d k) x)"
+        proof -
+          from 5 have ineq: "liminf (\<lambda>k. f (?d k) (r n)) \<le> liminf (\<lambda>k. f (?d k) x)" using Liminf_mono
+            by (smt ereal_less_eq(3) eventually_sequentially)
+          have eq: "liminf (\<lambda>k. f (?d k) (r n)) = lim (\<lambda>k. f (?d k) (r n))"
+            apply (subst convergent_liminf_cl)
+            using rat_cnv convergent_real_imp_convergent_ereal by auto
+          have "ereal (?F x - e) < ereal (lim (\<lambda>k. f (?d k) (r n)))" using 2 less_ereal.simps(1) by simp
+          hence "ereal (?F x - e) < liminf (\<lambda>k. f (?d k) (r n))" using eq by simp
+          thus ?thesis using ineq by simp
+        qed
+        hence "\<bar>liminf (\<lambda>k. f (?d k) x)\<bar> \<noteq> \<infinity>" sorry
+        then obtain linf where linf: "liminf (\<lambda>k. f (?d k) x) = ereal linf" by auto
+        have linf_e: "?F x - linf < e" using 8
+          by (smt linf add_commute diff_less_eq less_ereal.simps(1))
+        hence "lsup - linf < e" using lsup_e linf_e 
+            
+        show "\<bar>limsup (\<lambda>k. (f (?d k) x)) - ?F x\<bar> < e"
         proof -
 
           (*** Old proof begins here; adapt to new method (ereal sequences). ***)
