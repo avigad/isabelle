@@ -58,77 +58,6 @@ proof -
   thus ?thesis unfolding bdd_below_def by auto
 qed
 
-lemma real_closure_contains_Inf:
-  fixes A :: "real set"
-  assumes  nonempty: "A \<noteq> {}" and bdd: "bdd_below A"
-  shows "Inf A \<in> closure A"
-proof -
-  from nonempty obtain a0 where a0: "a0 \<in> A" by auto
-  note 1 = tendsto_const [of "Inf A" sequentially]
-  note 2 = halfseq_converges [of "Inf A" a0]
-  let ?a = "halfseq (Inf A) a0"
-  have a_above_Inf: "\<forall>i. ?a i \<ge> Inf A"
-  proof
-    fix i :: nat show "?a i \<ge> Inf A"
-      by (induct i, auto intro: assms a0 cInf_lower)
-  qed
-  have 3: "\<forall>i. \<exists>b \<le> ?a i. b \<ge> Inf A \<and> b \<in> A"
-  proof
-    fix i :: nat show "\<exists>b \<le> ?a i. b \<ge> Inf A \<and> b \<in> A"
-    proof (cases "Inf A \<in> A")
-      assume "Inf A \<in> A" thus "\<exists>b \<le> ?a i. b \<ge> Inf A \<and> b \<in> A" using a_above_Inf by auto
-      next assume notin: "Inf A \<notin> A"
-      hence neq: "a0 \<noteq> Inf A" using a0 by auto
-      have a_gr_Inf: "\<And>k. ?a k > Inf A"
-      proof -
-        fix k :: nat show "?a k > Inf A"
-          by (induct k, auto intro: a0 bdd Inf_lower) (metis (full_types) a0 bdd cInf_lower le_neq_trans neq)
-      qed
-      thus "\<exists>b \<le> ?a i. b \<ge> Inf A \<and> b \<in> A" using real_Inf_greatest' cInf_lower assms by metis
-    qed
-  qed
-  have dist_a: "\<And>n. dist (?a n) (Inf A) = dist a0 (Inf A) / 2^n"
-  proof -
-    fix n :: nat show "dist (?a n) (Inf A) = dist a0 (Inf A) / 2^n"
-    apply (induct n, auto)
-    apply (subst divide_inverse)
-    apply (subst mult_commute)
-    apply (subst real_scaleR_def[symmetric])
-    apply (subst midpoint_def[symmetric])
-    by (simp add: dist_midpoint)
-  qed
-  have lbd_a: "\<And>n. Inf A \<le> ?a n"
-  proof -
-    fix n show "Inf A \<le> ?a n" by (induct n, auto intro: assms cInf_lower a0)
-  qed
-  have "?a ----> Inf A" using halfseq_converges by auto
-  have "\<forall>n. \<exists>x. x \<le> ?a n \<and> x \<in> A"
-  proof
-    fix n show "\<exists>x. x \<le> ?a n \<and> x \<in> A"
-    proof (cases "?a n = Inf A")
-      assume an: "?a n = Inf A"
-      hence "dist a0 (Inf A) = 0" using dist_a dist_self
-        by (metis divide_le_0_iff less_le not_less power_eq_0_iff zero_le_divide_iff zero_neq_numeral)
-      hence "a0 = Inf A" by auto
-      hence "a0 \<le> ?a n \<and> a0 \<in> A" using a0 an by auto
-      thus ?thesis by auto
-    next
-      assume "?a n \<noteq> Inf A" hence an: "?a n > Inf A" using a_above_Inf le_neq_trans by metis
-      show ?thesis
-      proof (rule ccontr, auto)
-        assume "\<forall>x\<le>?a n. x \<notin> A"
-        hence "\<And>x. x \<in> A \<Longrightarrow> ?a n \<le> x" using 3 by auto
-        then have "?a n \<le> Inf A" using cInf_greatest assms by auto
-        thus False using an by auto
-      qed
-    qed
-  qed
-  from choice[OF this] guess b .. note b = this
-  hence "b ----> Inf A" using real_tendsto_sandwich
-    by (metis (mono_tags) "1" always_eventually bdd cInf_lower halfseq_converges tendsto_sandwich)
-  thus ?thesis using closure_sequential b by auto
-qed
-
 lemma real_closed_subset_contains_Inf:
   fixes A C :: "real set"
   assumes cl: "closed C" and A: "A \<subseteq> C"
@@ -138,7 +67,7 @@ proof -
   have "closure A \<subseteq> C" using closure_minimal assms by auto
   thus ?thesis
     apply (elim subsetD)
-    apply (rule real_closure_contains_Inf)
+    apply (rule closure_contains_Inf)
     using assms by auto
 qed
 
@@ -218,7 +147,6 @@ proof -
   let ?d = "nat.diagseq"
   have rat_cnv: "\<And>n. ?P n ?d"
   proof -
-    term subseqs.diagseq
     fix n::nat show "?P n ?d"
     proof -
       have Pn_seqseq: "?P n (nat.seqseq (Suc n))"
@@ -340,7 +268,7 @@ proof -
       qed
       thus "\<exists>b>x. \<forall>z. x < z \<and> z < b \<longrightarrow> ?F z \<in> S" using n by auto
     qed
-  ultimately have rcont_inc: "rcont_inc ?F" unfolding rcont_inc_def by auto
+  ultimately have rcont_inc_lim: "rcont_inc ?F" unfolding rcont_inc_def by auto
   moreover have bdd: "\<forall>n x. \<bar>?F x\<bar> \<le> M"
   proof auto
     fix x
@@ -353,20 +281,86 @@ proof -
       done
   moreover have lim: "\<forall>x.  continuous (at x) ?F \<longrightarrow> (\<lambda>n. f (?d n) x) ----> ?F x"
   proof auto
-    fix x::real assume cnt: "continuous (at x) ?F"
+    fix x::real assume cts: "continuous (at x) ?F"
     show "(\<lambda>n. f (?d n) x) ----> ?F x"
     proof -
-      find_theorems "convergent _" "_ ----> lim _"
-      thm lim_close_limsup_liminf
       have "\<forall>(e::real)>0. 
         \<bar>limsup (\<lambda>n. ereal (f (?d n) x)) - ereal (?F x)\<bar> < e \<and> \<bar>ereal (?F x) - liminf (\<lambda>n. ereal (f (?d n) x))\<bar> < e"
       proof auto
         fix e::real assume e: "0 < e"
+        have "?F -- x --> ?F x" using cts continuous_at by auto
+          hence "\<exists>d>0. \<forall>y. y \<noteq> x \<and> norm (y - x) < d \<longrightarrow> norm (?F y - ?F x) < e"
+            by (rule LIM_D) (rule e) (* Why did auto not work here? *)
+        then obtain d where d: "d > 0" and cts': "\<forall>y. y \<noteq> x \<and> norm (y - x) < d \<longrightarrow> norm (?F y - ?F x) < e"
+          by auto
+        have "\<exists>y<x. norm (y - x) < d"
+        proof -
+          have "\<bar>(x - d/2) - x\<bar> < d"
+            by (metis abs_divide abs_minus_commute abs_numeral abs_of_pos add_diff_cancel comm_monoid_add_class.add.left_neutral d diff_add_cancel
+                linordered_field_class.sign_simps(16) real_gt_half_sum)
+          moreover have "x - d/2 < x" using d by simp
+          ultimately show ?thesis using exI[of _ "x - d/2"] by auto
+        qed
+        then guess y .. note y = this
+        then have "norm (?F y - ?F x) < e" using cts' by auto
+        hence 1: "?F x - e < ?F y" using y mono by auto
+        have "\<exists>n. y < r n \<and> r n < x"
+        proof -
+          obtain q where q: "q \<in> \<rat> \<and> y < q \<and> q < x" using y Rats_dense_in_real by auto
+          let ?n = "the_inv_into UNIV r q"
+          have "y < r ?n \<and> r ?n < x" using q bij f_the_inv_into_f unfolding bij_betw_def by metis
+          thus ?thesis by auto
+        qed
+        then guess n.. note n = this
+        have "?F y \<le> lim (\<lambda>k. f (?d k) (r n))"
+          apply (rule cInf_lower)
+          using bdd_below n by auto
+        hence 2: "?F x - e < lim (\<lambda>k. f (?d k) (r n))" using 1 by auto
+        have "\<exists>m. x < r m \<and> lim (\<lambda>k. f (?d k) (r m)) < ?F x + e"
+        proof - (* Contains duplication from proof of right-continuity--fix. *)
+          have "\<exists>z \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}. z < ?F x + e"
+          proof -
+            from e have "?F x < ?F x + e / 2" by simp
+            from nonempty bdd_below this real_Inf_greatest'[of "{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}" "?F x + e/2"]
+            have z: "\<exists>z\<in>{lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}. z \<le> ?F x + e / 2" by auto
+            then guess z .. note 1 = this
+            hence "z < ?F x + e" using e by auto
+            moreover have "z \<in> {lim (\<lambda>k. f (?d k) (r n)) |n. x < r n}" using 1 by auto
+            ultimately show ?thesis ..
+          qed
+          then guess z .. note z = this
+          then obtain m where m: "z = lim (\<lambda>k. f (?d k) (r m)) \<and> x < r m" by auto
+          thus ?thesis using z by auto
+        qed
+        then guess m .. note m = this
+        from n m have nm: "r n < r m" by auto
+        have 3: "lim (\<lambda>k. f (?d k) (r n)) \<le> lim (\<lambda>k. f (?d k) (r m))"
+        proof -
+          have le: "\<And>k. f (?d k) (r n) \<le> f (?d k) (r m)" using y assms nm unfolding rcont_inc_def mono_def by auto
+          have "convergent (\<lambda>k. f (?d k) (r n))" using Bseq_mono_convergent rcont_inc rat_cnv
+            unfolding rcont_inc_def mono_def by auto
+          hence L1: "(\<lambda>k. f (?d k) (r n)) ----> lim (\<lambda>k. f(?d k) (r n))" (is "_ ----> ?L1")
+            using convergent_LIMSEQ_iff by auto
+          have "convergent (\<lambda>k. f (?d k) (r m))" using Bseq_mono_convergent rcont_inc rat_cnv
+            unfolding rcont_inc_def mono_def by auto
+          hence L2: "(\<lambda>k. f (?d k) (r m)) ----> lim (\<lambda>k. f (?d k) (r m))" (is "_ ----> ?L2")
+            using convergent_LIMSEQ_iff by auto
+          show "?L1 \<le> ?L2"
+          proof -
+            have "ereal ?L1 \<le> ereal ?L2"
+              apply (rule ereal_lim_mono[of 0 "\<lambda>k. ereal (f (?d k) (r n))" "\<lambda>k. ereal (f (?d k) (r m))"])
+              apply (force intro: le)
+              by (auto intro: L1 L2)
+            thus ?thesis by auto
+          qed  
+        qed
+        have 4: "lim (\<lambda>k. f (?d k) (r m)) < ?F x + e" using m by simp
+        have 5: "\<And>k. f k (r n) \<le> f k x"  using n rcont_inc unfolding rcont_inc_def mono_def by auto
         show "\<bar>limsup (\<lambda>n. ereal (f (?d n) x)) - ereal (?F x)\<bar> < e"
         proof -
 
           (*** Old proof begins here; adapt to new method (ereal sequences). ***)
-          have "?F -- x --> ?F x" using cnt continuous_at by auto
+          have "?F -- x --> ?F x" using cts continuous_at by auto
           hence "\<exists>d>0. \<forall>y. y \<noteq> x \<and> norm (y - x) < d \<longrightarrow> norm (?F y - ?F x) < e"
             by (rule LIM_D) (rule e) (* Why did auto not work here? *)
       then obtain d where "d > 0" and cnt': "\<forall>y. y \<noteq> x \<and> norm (y - x) < d \<longrightarrow> norm (?F y - ?F x) < e"
