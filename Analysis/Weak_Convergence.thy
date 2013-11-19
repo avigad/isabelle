@@ -165,6 +165,34 @@ proof -
     by (rule isCont_borel, simp)
 qed
 
+lemma isCont_indicator: 
+  fixes x :: "'a::{t2_space}"
+  shows "isCont (indicator A :: 'a \<Rightarrow> real) x = (x \<notin> frontier A)"
+proof -
+  have *: "!! A x. (indicator A x > (0 :: real)) = (x \<in> A)"
+    by (case_tac "x : A", auto)
+  have **: "!! A x. (indicator A x < (1 :: real)) = (x \<notin> A)"
+    by (case_tac "x : A", auto)
+  show ?thesis
+    apply (auto simp add: frontier_def)
+    (* calling auto here produces a strange error message *)
+    apply (subst (asm) continuous_at_open)
+    apply (case_tac "x \<in> A", simp_all)
+    apply (drule_tac x = "{0<..}" in spec, clarsimp simp add: *)
+    apply (erule interiorI, assumption, force)
+    apply (drule_tac x = "{..<1}" in spec, clarsimp simp add: **)
+    apply (subst (asm) closure_interior, auto, erule notE)
+    apply (erule interiorI, auto)
+    apply (subst (asm) closure_interior, simp)
+    apply (rule continuous_on_interior)
+    prefer 2 apply assumption
+    apply (rule continuous_on_eq [where f = "\<lambda>x. 0"], auto intro: continuous_on_const)
+    apply (rule continuous_on_interior)
+    prefer 2 apply assumption
+    by (rule continuous_on_eq [where f = "\<lambda>x. 1"], auto intro: continuous_on_const)
+qed
+
+
 end
 
 
