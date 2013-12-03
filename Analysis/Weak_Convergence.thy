@@ -11,6 +11,8 @@ imports Probability Distribution_Functions Distributions
 
 begin
 
+declare [[show_types]]
+
 definition
   weak_conv :: "(nat \<Rightarrow> (real \<Rightarrow> real)) \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> bool"
 where
@@ -31,14 +33,23 @@ theorem Skorohod:
     "\<And>n. real_distribution (M_seq n)" and 
     "real_distribution M" and 
     "weak_conv_m M_seq M"
-  shows "\<exists> (Omega :: real measure) (Y_seq :: nat \<Rightarrow> (real \<Rightarrow> real)) (Y :: real \<Rightarrow> real). 
-    prob_space Omega \<and>
-    (\<forall>n. Y_seq n \<in> measurable Omega borel) \<and>
-    (\<forall>n. distr Omega borel (Y_seq n) = M_seq n) \<and>
-    Y \<in> measurable Omega lborel \<and>
-    distr Omega borel Y = M \<and>
-    (\<forall>x \<in> space Omega. (\<lambda>n. Y_seq n x) ----> Y x)"
-sorry
+  shows "\<exists> (\<Omega> :: real measure) (Y_seq :: nat \<Rightarrow> real \<Rightarrow> real) (Y :: real \<Rightarrow> real). 
+    prob_space \<Omega> \<and>
+    (\<forall>n. Y_seq n \<in> measurable \<Omega> borel) \<and>
+    (\<forall>n. distr \<Omega> borel (Y_seq n) = M_seq n) \<and>
+    Y \<in> measurable \<Omega> lborel \<and>
+    distr \<Omega> borel Y = M \<and>
+    (\<forall>x \<in> space \<Omega>. (\<lambda>n. Y_seq n x) ----> Y x)"
+proof -
+  def f \<equiv> "\<lambda>n. cdf (M_seq n)"
+  def F \<equiv> "cdf M"
+  have fn_weak_conv: "weak_conv f F" using assms(3) unfolding weak_conv_m_def f_def F_def by auto
+  def \<Omega> \<equiv> "measure_space {0<..<1} (algebra.restricted_space {0<..<1} UNIV) lborel"
+  def Y_seq \<equiv> "\<lambda>n \<omega>. Inf {(x \<in> {0<..<1}) |x. \<omega> \<le> f n x}"
+  def Y \<equiv> "\<lambda>\<omega>. Inf {(x \<in> {0<..<1}) |x. \<omega> \<le> F x}"
+  have Y_seq_le_iff: "\<And>n \<omega> x. (\<omega> \<le> f n x) = (Y_seq n \<omega> \<le> x)" (* Why is there a type error here? *)
+  show ?thesis sorry
+qed
 
 lemma isCont_borel:
   fixes f :: "real \<Rightarrow> real"
