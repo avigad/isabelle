@@ -105,7 +105,7 @@ proof -
     by (rule *)
 qed
 
-theorem weak_conv_bdd_ae_cont:
+theorem weak_conv_imp_bdd_ae_continuous_conv:
   fixes 
     M_seq :: "nat \<Rightarrow> real measure" and
     M :: "real measure" and
@@ -165,6 +165,24 @@ proof -
     by (rule isCont_borel, simp)
 qed
 
+theorem weak_conv_imp_bdd_continuous_conv:
+  fixes 
+    M_seq :: "nat \<Rightarrow> real measure" and
+    M :: "real measure" and
+    f :: "real \<Rightarrow> real"
+  assumes 
+    "\<And>n. real_distribution (M_seq n)" and 
+    "real_distribution M" and 
+    "weak_conv_m M_seq M" and
+    "\<And>x. isCont f x" and
+    "\<And>x. abs (f x) \<le> B"
+  shows 
+    "(\<lambda> n. integral\<^sup>L (M_seq n) f) ----> integral\<^sup>L M f"
+
+  using assms apply (intro weak_conv_imp_bdd_ae_continuous_conv, auto)
+  apply (rule borel_measurable_continuous_on1)
+by (rule continuous_at_imp_continuous_on, auto)
+
 lemma isCont_indicator: 
   fixes x :: "'a::{t2_space}"
   shows "isCont (indicator A :: 'a \<Rightarrow> real) x = (x \<notin> frontier A)"
@@ -191,6 +209,141 @@ proof -
     prefer 2 apply assumption
     by (rule continuous_on_eq [where f = "\<lambda>x. 1"], auto intro: continuous_on_const)
 qed
+
+theorem weak_conv_imp_continuity_set_conv:
+  fixes 
+    M_seq :: "nat \<Rightarrow> real measure" and
+    M :: "real measure" and
+    f :: "real \<Rightarrow> real"
+  assumes 
+    real_dist_Mn [simp]: "\<And>n. real_distribution (M_seq n)" and 
+    real_dist_M [simp]: "real_distribution M" and 
+    "weak_conv_m M_seq M" and
+    [simp]: "A \<in> sets borel" and
+    "M (frontier A) = 0"
+  shows 
+    "(\<lambda> n. (measure (M_seq n) A)) ----> measure M A"
+
+  (* this is a pain -- have to instantiate the locale (or fake it) to use facts
+     about real distributions *)
+  apply (subst measure_def)+
+  apply (subst integral_indicator(1) [symmetric]) 
+  apply (auto simp add: real_distribution.events_eq_borel)[1]
+  apply (rule finite_measure.emeasure_finite, rule prob_space_simps)
+  using real_dist_Mn unfolding real_distribution_def apply auto
+  apply (subst integral_indicator(1) [symmetric]) 
+  apply (auto simp add: real_distribution.events_eq_borel)[1]
+  apply (rule finite_measure.emeasure_finite, rule prob_space_simps)
+  using real_dist_M unfolding real_distribution_def apply auto
+  apply (rule weak_conv_imp_bdd_ae_continuous_conv, auto simp add: assms)
+  apply (subst isCont_indicator, simp add: assms)
+by (rule borel_measurable_indicator, simp)
+
+(* the dual version is in Convex_Euclidean_Space.thy *)
+
+lemma interior_real_semiline2:
+  fixes a :: real
+  shows "interior {..a} = {..<a}"
+proof -
+  {
+    fix y
+    assume "a > y"
+    then have "y \<in> interior {..a}"
+      apply (simp add: mem_interior)
+      apply (rule_tac x="(a-y)" in exI)
+      apply (auto simp add: dist_norm)
+      done
+  }
+  moreover
+  {
+    fix y
+    assume "y \<in> interior {..a}"
+    then obtain e where e: "e > 0" "cball y e \<subseteq> {..a}"
+      using mem_interior_cball[of y "{..a}"] by auto
+    moreover from e have "y + e \<in> cball y e"
+      by (auto simp add: cball_def dist_norm)
+    ultimately have "a \<ge> y + e" by auto
+    then have "a > y" using e by auto
+  }
+  ultimately show ?thesis by auto
+qed
+
+lemma frontier_real_atMost:
+  fixes a :: real
+  shows "frontier {..a} = {a}"
+  unfolding frontier_def by (auto simp add: interior_real_semiline2)
+
+(* 
+  relate left and right continuity
+  cdf M {..x} = lim (%n. cdf M {..x - inverse (n + 1)}).
+*)
+
+lemma isCont_cdf:
+  fixes M :: "real measure" and x :: real
+  shows  "isCont (cdf M) x = (emeasure M {x} = 0)"
+
+  unfolding isCont_def apply (subst filterlim_at_split)
+sorry
+
+theorem continuity_set_conv_imp_weak_conv:
+  fixes 
+    M_seq :: "nat \<Rightarrow> real measure" and
+    M :: "real measure" and
+    f :: "real \<Rightarrow> real"
+  assumes 
+    real_dist_Mn [simp]: "\<And>n. real_distribution (M_seq n)" and 
+    real_dist_M [simp]: "real_distribution M" and 
+    *: "\<And>A. A \<in> sets borel \<Longrightarrow> M (frontier A) = 0 \<Longrightarrow>
+        (\<lambda> n. (measure (M_seq n) A)) ----> measure M A"
+  shows 
+    "weak_conv_m M_seq M"
+
+  unfolding weak_conv_m_def weak_conv_def cdf_def2 apply auto
+by (rule *, auto simp add: frontier_real_atMost isCont_cdf)
+
+
+definition
+  cts_step :: "real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real"
+where
+  "cts_step a b x \<equiv> 
+    if x \<le> a then 1
+    else (if x \<ge> b then 0 else (b - x) / (b - a))"
+
+lemma cts_step_uniformly_continuous:
+  fixes a b
+  assumes [arith]: "a < b"
+  shows "uniformly_continuous_on UNIV (cts_step a b)"
+
+  unfolding uniformly_continuous_on_def 
+proof (clarsimp)
+  fix e :: real
+  assume [arith]: "0 < e"
+  let ?d = "min (e * (b - a)) (b - a)"
+  have "?d > 0" by (auto simp add: field_simps)
+  {
+    fix x x'
+    assume 1: "\<bar>x' - x\<bar> < e * (b - a)" and 2: "\<bar>x' - x\<bar> < b - a" and "x \<le> x'"
+    hence "\<bar>cts_step a b x' - cts_step a b x\<bar> < e"
+      unfolding cts_step_def apply auto
+      apply (auto simp add: field_simps)[2]
+      by (subst diff_divide_distrib [symmetric], simp add: field_simps)
+  } note * = this
+  have "\<forall>x x'. dist x' x < ?d \<longrightarrow> dist (cts_step a b x') (cts_step a b x) < e"
+  proof (clarsimp simp add: dist_real_def)
+    fix x x'
+    assume "\<bar>x' - x\<bar> < e * (b - a)" and "\<bar>x' - x\<bar> < b - a" 
+    thus "\<bar>cts_step a b x' - cts_step a b x\<bar> < e"
+      apply (case_tac "x \<le> x'")
+      apply (rule *, auto)
+      apply (subst abs_minus_commute)
+      by (rule *, auto)
+  qed
+  with `?d > 0` show 
+    "\<exists>d > 0. \<forall>x x'. dist x' x < d \<longrightarrow> dist (cts_step a b x') (cts_step a b x) < e"
+    by blast
+qed
+
+      
 
 
 end

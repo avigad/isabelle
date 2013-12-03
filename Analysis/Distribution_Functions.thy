@@ -180,7 +180,9 @@ subsection {* Properties of cdf's *}
 definition
   cdf :: "real measure \<Rightarrow> real \<Rightarrow> real"
 where
-  "cdf M x  \<equiv> measure M {..x}"
+  "cdf M \<equiv> \<lambda>x. measure M {..x}"
+
+lemma cdf_def2: "cdf M x = measure M {..x}" by (simp add: cdf_def)
 
 locale finite_borel_measure = finite_measure M for M :: "real measure" +
   assumes M_super_borel: "sets borel \<subseteq> sets M"
@@ -794,7 +796,7 @@ proof (rule measure_eqI_generator_eq)
       apply (case_tac "a \<le> b", auto)
       apply (auto simp add: abeq)
       apply (subst Measure_Space.finite_measure.finite_measure_Diff, auto)+
-      by (simp add: cdf_def [symmetric] assms)
+      by (simp add: cdf_def2 [symmetric] assms)
   }
   show "sets M1 = sigma_sets UNIV half_open_intervals"
     apply (subst real_distribution.events_eq_borel, rule assms)
