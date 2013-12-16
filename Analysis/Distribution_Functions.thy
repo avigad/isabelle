@@ -77,8 +77,8 @@ proof
   qed
 qed
 
-(* The next two theorems can be generalized by replacing "real" with  theorem could be proved in 
-greater generality: "{no_top, inner_dense_linorder, linorder_topology, first_countable_topology}".
+(* The next two theorems could be proved in greater generality  by replacing "real" with 
+"{no_top, inner_dense_linorder, linorder_topology, first_countable_topology}".
 
 Compare to  sequentially_imp_eventually_nhds_within. But it is not clear whether the greater 
 generality is worth the effort. *)
@@ -86,7 +86,8 @@ generality is worth the effort. *)
 lemma not_eventually_at_right_decseq: 
   fixes a b :: real and P
   assumes [arith]: "a < b" and h: "\<not> eventually P (at_right a)"
-  shows "\<exists>f. decseq f \<and> f ----> a \<and> (\<forall>n. f n < b) \<and> (\<forall>n. \<not> P (f n))" (is "\<exists> f. ?conc f")
+  shows "\<exists>f. decseq f \<and> f ----> a \<and> (\<forall>n. f n > a) \<and> (\<forall>n. f n < b) \<and>  
+      (\<forall>n. \<not> P (f n))" (is "\<exists> f. ?conc f")
 proof -
   from h have 1 [rule_format]: "(\<forall>b>a. \<exists>z. a < z \<and> z < b \<and> \<not> P z)"
     by (simp add: eventually_at_right)
@@ -109,7 +110,8 @@ proof -
     qed
   then obtain f where 3: "\<And>n. ?P (f n)" and 4: "\<And>n. ?Q n (f n) (f (Suc n))" by auto
   hence 5: "\<And>n. f (n + 1) < (a + (b - a) * inverse (real (n+1)))" by auto
-  from 3 have "\<And>n :: nat. f n < b" by auto 
+  from 3 have "\<And>n. f n > a" by auto 
+  moreover from 3 have "\<And>n :: nat. f n < b" by auto
   moreover from 4 have decseqf: "decseq f" by (auto intro!: decseq_SucI less_imp_le)
   moreover have "f ----> a"
     apply (rule decreasing_tendsto)
@@ -141,10 +143,32 @@ proof -
   ultimately show "?thesis" by blast
 qed
 
+(* parallels version for ereal in Extended_Real.thy *)
+lemma
+  fixes f :: "nat \<Rightarrow> real"
+  shows incseq_uminus_real[simp]: "incseq (\<lambda>x. - f x) \<longleftrightarrow> decseq f"
+  and decseq_uminus_real[simp]: "decseq (\<lambda>x. - f x) \<longleftrightarrow> incseq f"
+  unfolding decseq_def incseq_def by auto
+
+lemma not_eventually_at_left_incseq: 
+  fixes a b :: real and P
+  assumes [arith]: "a > b" and h: "\<not> eventually P (at_left a)"
+  shows "\<exists>f. incseq f \<and> f ----> a \<and> (\<forall>n. f n < a) \<and> (\<forall>n. f n > b) \<and> (\<forall>n. \<not> P (f n))"
+proof -
+  have "\<exists>f. decseq f \<and> f ----> -a \<and> (\<forall>n. f n > -a) \<and> (\<forall>n. f n < -b) \<and> (\<forall>n. \<not> P (- f n))"
+    using assms by (intro not_eventually_at_right_decseq, 
+        auto simp add: eventually_at_left_to_right)
+  then guess f ..
+  thus ?thesis
+    apply (intro exI[of _ "\<lambda>x. - f x"], auto)
+    apply (rule tendsto_minus_cancel, auto)
+    by (drule_tac x = n in spec, auto)+
+qed
+
 lemma sequentially_imp_eventually_at_right:
   fixes a b :: real
   assumes "a < b"
-  assumes *: "\<And>f. (!!n. f n < b) \<Longrightarrow> decseq f \<Longrightarrow> f ----> a \<Longrightarrow> 
+  assumes *: "\<And>f. (\<And>n. f n > a) \<Longrightarrow> (\<And>n. f n < b) \<Longrightarrow> decseq f \<Longrightarrow> f ----> a \<Longrightarrow> 
     eventually (\<lambda>n. P (f n)) sequentially"
   shows "eventually P (at_right a)"
 
@@ -154,6 +178,25 @@ lemma sequentially_imp_eventually_at_right:
   apply (subgoal_tac "eventually (\<lambda>n. P (f n)) sequentially")
   prefer 2
 by (rule *, auto)
+
+lemma sequentially_imp_eventually_at_left:
+  fixes a b :: real
+  assumes "a > b"
+  assumes *: "\<And>f. (\<And>n. f n < a) \<Longrightarrow> (\<And>n. f n > b) \<Longrightarrow> incseq f \<Longrightarrow> f ----> a \<Longrightarrow> 
+    eventually (\<lambda>n. P (f n)) sequentially"
+  shows "eventually P (at_left a)"
+
+  apply (rule ccontr)
+  apply (drule not_eventually_at_left_incseq [OF `a > b`])
+  apply auto
+  apply (subgoal_tac "eventually (\<lambda>n. P (f n)) sequentially")
+  prefer 2
+by (rule *, auto)
+
+lemma continuous_at_split: 
+  "continuous (at (x::'a::linorder_topology)) f = 
+    (continuous (at_left x) f \<and> continuous (at_right x) f)"
+by (simp add: continuous_within filterlim_at_split)
 
 lemma continuous_at_right_real_increasing:
   assumes nondecF: "\<And> x y. x \<le> y \<Longrightarrow> f x \<le> ((f y) :: real)"
@@ -257,6 +300,48 @@ proof -
   from order_tendstoD(2)[OF this x]
   show "eventually (\<lambda>n. cdf M (f n) < x) sequentially" .
 qed
+
+lemma cdf_at_left: "(cdf M ---> measure M {..<a}) (at_left a)"
+  apply (rule increasing_tendsto)
+  apply (subst eventually_at_left)
+  apply (rule_tac exI[of _ "a - 1"], auto)
+  apply (simp add: cdf_def)
+  apply (rule finite_measure_mono, auto)
+  apply (rule_tac b="a - 1" in sequentially_imp_eventually_at_left, auto)
+proof -
+  fix f :: "nat \<Rightarrow> real" and x assume f: "incseq f" "f ----> a" "\<And>x. f x < a"
+    and x: "measure M {..<a} > x"
+  then have "(\<lambda>n. cdf M (f n)) ----> measure M (\<Union>i. {.. f i})"
+    unfolding cdf_def 
+    apply (intro finite_Lim_measure_incseq)
+    using `incseq f` apply (auto simp: incseq_def)
+    done
+  also have "(\<Union>i. {.. f i}) = {..<a}"
+    apply auto
+    apply (erule order_le_less_trans, rule f)
+    by (metis Lim_bounded_ereal f(2) linear not_less)
+  finally have "(\<lambda>n. cdf M (f n)) ----> measure M {..<a}"
+    by (simp add: cdf_def)
+  from order_tendstoD(1)[OF this x]
+  show "eventually (\<lambda>n. cdf M (f n) > x) sequentially" .
+qed
+
+lemma isCont_cdf:
+  fixes x :: real
+  shows  "isCont (cdf M) x = (measure M {x} = 0)"
+
+  apply (simp add: continuous_at_split cdf_is_right_cont)
+  apply (subst continuous_within)
+  apply (rule trans [of _ "(cdf M x = measure M {..<x})"])
+  apply auto[1]
+  apply (rule tendsto_unique [OF _ _ cdf_at_left])
+  apply auto[2]
+  apply (rule cdf_at_left)
+  apply (simp add: cdf_def)
+  apply (subgoal_tac "{..x} = {..<x} \<union> {x}")
+  apply (erule ssubst)
+  apply (subst finite_measure_Union)
+by auto
 
 end
 

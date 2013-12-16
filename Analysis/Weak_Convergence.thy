@@ -273,18 +273,6 @@ lemma frontier_real_atMost:
   shows "frontier {..a} = {a}"
   unfolding frontier_def by (auto simp add: interior_real_semiline2)
 
-(* 
-  relate left and right continuity
-  cdf M {..x} = lim (%n. cdf M {..x - inverse (n + 1)}).
-*)
-
-lemma isCont_cdf:
-  fixes M :: "real measure" and x :: real
-  shows  "isCont (cdf M) x = (emeasure M {x} = 0)"
-
-  unfolding isCont_def apply (subst filterlim_at_split)
-sorry
-
 theorem continuity_set_conv_imp_weak_conv:
   fixes 
     M_seq :: "nat \<Rightarrow> real measure" and
@@ -298,9 +286,12 @@ theorem continuity_set_conv_imp_weak_conv:
   shows 
     "weak_conv_m M_seq M"
 
-  unfolding weak_conv_m_def weak_conv_def cdf_def2 apply auto
-by (rule *, auto simp add: frontier_real_atMost isCont_cdf)
-
+proof -
+  interpret real_distribution M by simp
+  show ?thesis
+   unfolding weak_conv_m_def weak_conv_def cdf_def2 apply auto
+   by (rule *, auto simp add: frontier_real_atMost isCont_cdf emeasure_eq_measure)
+qed
 
 definition
   cts_step :: "real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real"
