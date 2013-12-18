@@ -343,10 +343,73 @@ lemma isCont_cdf:
   apply (subst finite_measure_Union)
 by auto
 
+lemma infinite_arbitrarily_large:
+  fixes n :: nat 
+  assumes "infinite A"
+  shows "\<exists>B. finite B \<and> card B = n \<and> B \<subseteq> A"
+
+proof (induction n)
+  case 0 show ?case by auto
+next 
+  case (Suc n)
+  fix n
+  assume "\<exists>B. finite B \<and> card B = n \<and> B \<subseteq> A"
+  then guess B .. note B = this
+  with `infinite A` have "A \<noteq> B" by auto
+  with B have "B \<subset> A" by auto
+  hence "\<exists>x. x \<in> A - B" by (elim psubset_imp_ex_mem)
+  then guess x .. note x = this
+  with B have "finite (insert x B) \<and> card (insert x B) = Suc n \<and> insert x B \<subseteq> A"
+    by auto
+  thus "\<exists>B. finite B \<and> card B = Suc n \<and> B \<subseteq> A" ..
+qed
+
+lemma countable_atoms: "countable {x. measure M {x} > 0}"
+proof -
+  { fix B i
+    assume finB: "finite B" and 
+      subB: "B \<subseteq> {x. inverse (real (Suc i)) < Sigma_Algebra.measure M {x}}"
+    have "measure M B = (\<Sum>x\<in>B. measure M {x})"
+      by (rule measure_eq_setsum_singleton [OF finB], auto)
+    also have "\<dots> \<ge> (\<Sum>x\<in>B. inverse (real (Suc i)))" (is "?lhs \<ge> ?rhs")
+      using subB by (intro setsum_mono, auto)
+    also (xtrans) have "?rhs = card B * inverse (real (Suc i))"
+      (* this should be automatic! *)
+      by (simp add: real_of_nat_def)
+    finally have "measure M B \<ge> card B * inverse (real (Suc i))" .
+  } note * = this
+  have "measure M (space M) < real (Suc(natceiling (measure M (space M))))"
+    apply (auto simp add: real_of_nat_Suc)
+    apply (rule order_le_less_trans)
+    by (rule real_natceiling_ge, auto)
+  then obtain X :: nat where X: "measure M (space M) < X" ..
+  (* it would be nice if this next calculation were automatic, with X replaced the particular
+     value above *)
+  { fix i
+  have "finite {x. inverse (real (Suc i)) < Sigma_Algebra.measure M {x}}"
+    apply (rule ccontr)
+    apply (drule infinite_arbitrarily_large [of _ "X * Suc i"])
+    apply clarify
+    apply (drule *, assumption)
+    apply (drule leD, erule notE, erule ssubst, subst real_of_nat_mult)
+    apply (simp add: field_simps)
+    by (rule order_le_less_trans [OF bounded_measure X])
+  } note ** = this
+  have "{x. measure M {x} > 0} = (\<Union>i :: nat. {x. measure M {x} > inverse (Suc i)})"
+    apply auto
+    apply (erule reals_Archimedean)
+    by (metis inverse_positive_iff_positive less_trans real_of_nat_Suc_gt_zero)
+  thus "countable {x. measure M {x} > 0}"
+    apply (elim ssubst)
+    apply (rule countable_UN, auto)
+    apply (rule countable_finite)
+    by (rule **)
+qed
+    
 end
 
 locale real_distribution = prob_space M for M :: "real measure" +
-  assumes events_eq_borel: "sets M = sets borel"
+  assumes events_eq_borel [simp]: "sets M = sets borel" and space_eq_univ [simp]: "space M = UNIV"
 begin
 
 sublocale finite_borel_measure M
@@ -966,7 +1029,8 @@ proof -
   have 3: "real_distribution ?M" 
     unfolding real_distribution_def real_distribution_axioms_def
     apply (rule conjI)
-    prefer 2 apply (metis sets.sets_measure_of_eq space_borel)
+    prefer 2 apply simp
+(* apply (metis sets.sets_measure_of_eq space_borel) *)
     apply (rule prob_spaceI)
     apply (subst emeasure_measure_of_sigma, auto)
     using 2 apply (auto simp add: measure_space_def)
