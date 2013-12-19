@@ -305,7 +305,7 @@ proof -
     by (rule isCont_borel, simp)
 qed
 
-theorem weak_conv_imp_bdd_continuous_conv:
+theorem weak_conv_imp_integral_bdd_continuous_conv:
   fixes 
     M_seq :: "nat \<Rightarrow> real measure" and
     M :: "real measure" and
@@ -444,8 +444,7 @@ lemma cts_step_uniformly_continuous:
   fixes a b
   assumes [arith]: "a < b"
   shows "uniformly_continuous_on UNIV (cts_step a b)"
-
-  unfolding uniformly_continuous_on_def 
+unfolding uniformly_continuous_on_def 
 proof (clarsimp)
   fix e :: real
   assume [arith]: "0 < e"
@@ -474,11 +473,198 @@ proof (clarsimp)
     by blast
 qed
 
-      
+lemma (in real_distribution) measurable_finite_borel [simp]: "f \<in> borel_measurable borel \<Longrightarrow> 
+  f \<in> borel_measurable M"
+  apply (rule borel_measurable_subalgebra)
+  prefer 3 apply assumption
+  by auto
 
+lemma (in real_distribution) integrable_cts_step: "a < b \<Longrightarrow> integrable M (cts_step a b)"
+  apply (rule integrable_const_bound [of _ 1])
+  apply (force simp add: cts_step_def)
+  apply (rule measurable_finite_borel)
+  apply (rule borel_measurable_continuous_on1)
+  apply (rule uniformly_continuous_imp_continuous)
+by (rule cts_step_uniformly_continuous)
+  
+lemma (in real_distribution) cdf_cts_step:
+  fixes  
+    x y :: real
+  assumes 
+    "x < y"
+  shows 
+    "cdf M x \<le> integral\<^sup>L M (cts_step x y)" and
+    "integral\<^sup>L M (cts_step x y) \<le> cdf M y"
+unfolding cdf_def 
+proof -
+  have "prob {..x} = integral\<^sup>L M (indicator {..x})"
+    apply (subst measure_def)
+    (* interesting -- this doesn't this work:
+      apply (auto simp add: integral_indicator)
+    *)
+    by (subst integral_indicator, auto)
+  thus "prob {..x} \<le> expectation (cts_step x y)"
+    apply (elim ssubst)
+    apply (rule integral_mono)
+    apply (rule integral_indicator, auto)
+    apply (rule integrable_cts_step, rule assms)
+  unfolding cts_step_def indicator_def
+  by (auto simp add: field_simps)
+next
+  have "prob {..y} = integral\<^sup>L M (indicator {..y})"
+    apply (subst measure_def)
+    by (subst integral_indicator, auto)
+  thus "expectation (cts_step x y) \<le> prob {..y}"
+    apply (elim ssubst)
+    apply (rule integral_mono)
+    apply (rule integrable_cts_step, rule assms)
+    apply (rule integral_indicator, auto)
+    unfolding cts_step_def indicator_def using `x < y`
+      by (auto simp add: field_simps)
+qed
+
+(* name clash with the version in Extended_Real_Limits *)
+lemma convergent_ereal': "convergent (X :: nat \<Rightarrow> real) \<Longrightarrow> convergent (\<lambda>n. ereal (X n))"
+  apply (drule convergentD, auto)
+  apply (rule convergentI)
+  by (subst lim_ereal, assumption)
+
+lemma lim_ereal': "convergent X \<Longrightarrow> lim (\<lambda>n. ereal (X n)) = ereal (lim X)"
+    by (rule limI, simp add: convergent_LIMSEQ_iff)
+
+(* complements liminf version in Extended_Real_Limits *)
+lemma convergent_liminf_cl:
+  fixes X :: "nat \<Rightarrow> 'a::{complete_linorder,linorder_topology}"
+  shows "convergent X \<Longrightarrow> liminf X = lim X"
+  by (auto simp: convergent_def limI lim_imp_Liminf)
+
+lemma limsup_le_liminf_real:
+  fixes X :: "nat \<Rightarrow> real" and L :: real
+  assumes 1: "limsup X \<le> L" and 2: "L \<le> liminf X"
+  shows "X ----> L"
+proof -
+  from 1 2 have "limsup X \<le> liminf X" by auto
+  hence 3: "limsup X = liminf X"  
+    apply (subst eq_iff, rule conjI)
+    by (rule Liminf_le_Limsup, auto)
+  hence 4: "convergent (\<lambda>n. ereal (X n))"
+    by (subst convergent_ereal)
+  hence "limsup X = lim (\<lambda>n. ereal(X n))"
+    by (rule convergent_limsup_cl)
+  also from 1 2 3 have "limsup X = L" by auto
+  finally have "lim (\<lambda>n. ereal(X n)) = L" ..
+  hence "(\<lambda>n. ereal (X n)) ----> L"
+    apply (elim subst)
+    by (subst convergent_LIMSEQ_iff [symmetric], rule 4) 
+  thus ?thesis by simp
+qed
+
+theorem integral_cts_step_conv_imp_weak_conv:
+  fixes 
+    M_seq :: "nat \<Rightarrow> real measure" and
+    M :: "real measure"
+  assumes 
+    distr_M_seq: "\<And>n. real_distribution (M_seq n)" and 
+    distr_M: "real_distribution M" and 
+    integral_conv: "\<And>x y. x < y \<Longrightarrow>
+         (\<lambda>n. integral\<^sup>L (M_seq n) (cts_step x y)) ----> integral\<^sup>L M (cts_step x y)"
+  shows 
+    "weak_conv_m M_seq M"
+unfolding weak_conv_m_def weak_conv_def 
+proof (clarsimp)
+  fix x
+  assume "isCont (cdf M) x"
+  hence left_cont: "continuous (at_left x) (cdf M)"
+    by (subst (asm) continuous_at_split, auto)
+  have conv: "\<And>a b. a < b \<Longrightarrow> convergent (\<lambda>n. integral\<^sup>L (M_seq n) (cts_step a b))"
+    by (rule convergentI, rule integral_conv, simp)
+  {
+    fix y :: real
+    assume [arith]: "x < y"
+    have "limsup (\<lambda>n. cdf (M_seq n) x) \<le> 
+        limsup (\<lambda>n. integral\<^sup>L (M_seq n) (cts_step x y))"
+      apply (rule Limsup_mono)
+      apply (rule always_eventually, auto)
+      apply (rule real_distribution.cdf_cts_step)
+      by (rule distr_M_seq, simp)
+    also have "\<dots> = lim (\<lambda>n. ereal (integral\<^sup>L (M_seq n) (cts_step x y)))"
+      apply (rule convergent_limsup_cl)
+      by (rule convergent_ereal', rule conv, simp)
+    also have "\<dots> = integral\<^sup>L M (cts_step x y)"
+      apply (subst lim_ereal', rule conv, auto)
+      by (rule limI, rule integral_conv, simp)
+    also have "\<dots> \<le> cdf M y"
+      by (simp, rule real_distribution.cdf_cts_step, rule assms, simp)
+    finally have "limsup (\<lambda>n. cdf (M_seq n) x) \<le> cdf M y" .
+  } note * = this
+  {
+    fix y :: real
+    assume [arith]: "x > y"
+    have "liminf (\<lambda>n. cdf (M_seq n) x) \<ge> 
+        liminf (\<lambda>n. integral\<^sup>L (M_seq n) (cts_step y x))" (is "_ \<ge> ?rhs")
+      apply (rule Liminf_mono)
+      apply (rule always_eventually, auto)
+      apply (rule real_distribution.cdf_cts_step)
+      by (rule distr_M_seq, simp)
+    also have "?rhs = lim (\<lambda>n. ereal (integral\<^sup>L (M_seq n) (cts_step y x)))"
+      apply (rule convergent_liminf_cl)
+      by (rule convergent_ereal', rule conv, simp)
+    also have "\<dots> = integral\<^sup>L M (cts_step y x)"
+      apply (subst lim_ereal', rule conv, auto)
+      by (rule limI, rule integral_conv, simp)
+    also have "\<dots> \<ge> cdf M y"
+      by (simp, rule real_distribution.cdf_cts_step, rule assms, simp)
+    finally (xtrans) have "liminf (\<lambda>n. cdf (M_seq n) x) \<ge> cdf M y" .
+  } note ** = this
+  have le: "limsup (\<lambda>n. cdf (M_seq n) x) \<le> cdf M x"
+  proof -
+    interpret real_distribution M by (rule assms) 
+    have 1: "((\<lambda>x. ereal (cdf M x)) ---> cdf M x) (at_right x)"
+      by (simp add: continuous_within [symmetric], rule cdf_is_right_cont)
+    have 2: "((\<lambda>t. limsup (\<lambda>n. cdf (M_seq n) x)) ---> 
+        limsup (\<lambda>n. cdf (M_seq n) x)) (at_right x)" by (rule tendsto_const)
+    show ?thesis
+      apply (rule tendsto_le [OF _ 1 2], auto, subst eventually_at_right)
+      apply (rule exI [of _ "x+1"], auto)
+      by (rule *)
+  qed
+  moreover have ge: "cdf M x \<le> liminf (\<lambda>n. cdf (M_seq n) x)"
+  proof -
+    interpret real_distribution M by (rule assms) 
+    have 1: "((\<lambda>x. ereal (cdf M x)) ---> cdf M x) (at_left x)"
+      by (simp add: continuous_within [symmetric] left_cont) 
+    have 2: "((\<lambda>t. liminf (\<lambda>n. cdf (M_seq n) x)) ---> 
+        liminf (\<lambda>n. cdf (M_seq n) x)) (at_left x)" by (rule tendsto_const)
+    show ?thesis
+      apply (rule tendsto_le [OF _ 2 1], auto, subst eventually_at_left)
+      apply (rule exI [of _ "x - 1"], auto)
+      by (rule **)
+  qed
+  ultimately show "(\<lambda>n. cdf (M_seq n) x) ----> cdf M x"
+    by (elim limsup_le_liminf_real) 
+qed
+
+theorem integral_bdd_continuous_conv_imp_weak_conv:
+  fixes 
+    M_seq :: "nat \<Rightarrow> real measure" and
+    M :: "real measure"
+  assumes 
+    "\<And>n. real_distribution (M_seq n)" and 
+    "real_distribution M" and 
+    "\<And>f B. (\<And>x. isCont f x) \<Longrightarrow> (\<And>x. abs (f x) \<le> B) \<Longrightarrow>
+         (\<lambda>n. integral\<^sup>L (M_seq n) f) ----> integral\<^sup>L M f"
+  shows 
+    "weak_conv_m M_seq M"
+
+  apply (rule integral_cts_step_conv_imp_weak_conv [OF assms])
+  apply (rule continuous_on_interior)
+  apply (rule uniformly_continuous_imp_continuous)
+  apply (rule cts_step_uniformly_continuous, auto)
+  apply (subgoal_tac "abs(cts_step x y xa) \<le> 1")
+  apply assumption
+unfolding cts_step_def by auto
 
 end
-
 
 
 
