@@ -7,7 +7,7 @@ Properties of weak convergence of functions and measures, including the portmant
 
 theory Weak_Convergence
 
-imports Probability Distribution_Functions Distributions
+imports Probability Distribution_Functions Distributions Helly_Selection
 
 begin
 
@@ -174,9 +174,8 @@ proof -
   find_theorems "limsup _" "liminf _"
   {
     fix \<omega>::real assume \<omega>: "continuous (at \<omega>) Y"
-    have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>"
-    proof -
-    
+    have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" sorry
+  }
   show ?thesis sorry
 qed
 

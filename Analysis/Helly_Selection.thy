@@ -88,22 +88,45 @@ lemma f_inv_f_surj_on: "f ` A = B \<Longrightarrow> x \<in> B \<Longrightarrow> 
   apply auto
   unfolding inv_def by (rule someI_ex, auto)
 
+lemma dist_epsilon: "\<forall>\<epsilon>>0. dist x y < \<epsilon> \<Longrightarrow> x = y" using dist_pos_lt eucl_less_not_refl by auto
+
+lemma ereal_dist_epsilon:
+  assumes "\<forall>(\<epsilon>::real)>0. \<bar>x - ereal r\<bar> < \<epsilon>"
+  shows "x = ereal r"
+proof (rule ereal_cases[of x])
+  fix t assume x: "x = ereal t"
+  { fix \<epsilon>::real assume \<epsilon>: "\<epsilon> > 0"
+    hence "\<bar>ereal t - ereal r\<bar> < \<epsilon>" using assms x \<epsilon> by auto
+    hence "dist t r < \<epsilon>" unfolding dist_real_def by auto
+  }
+  hence "ereal t = ereal r" using dist_epsilon by auto
+  thus ?thesis using x by simp
+next
+  assume "x = \<infinity>"
+  hence "\<bar>x - ereal r\<bar> = \<infinity>" by auto
+  hence "\<not> \<bar>x - ereal r\<bar> < ereal 1" by auto
+  hence False using assms by auto
+  thus ?thesis ..
+next (* Duplication; how to avoid? *)
+  assume "x = -\<infinity>"
+  hence "\<bar>x - ereal r\<bar> = \<infinity>" by auto
+  hence "\<not> \<bar>x - ereal r\<bar> < ereal 1" by auto
+  hence False using assms by auto
+  thus ?thesis ..
+qed
+
 lemma lim_close_limsup_liminf:
   fixes a :: "nat \<Rightarrow> ereal" and L :: real
   assumes "\<forall>(e::real)>0. \<bar>limsup a - L\<bar> < e \<and> \<bar>L - liminf a\<bar> < e"
   shows "convergent a" and "lim a = L"
 proof -
-  have lsup: "limsup a = L" using assms
-    by (metis abs_ereal.simps(1) dual_order.irrefl ereal.distinct(1) ereal_less(2) ereal_less(3) ereal_less_minus
-        ereal_minus_less ereal_real' infinity_ereal_def linorder_cases monoid_add_class.add.left_neutral zero_ereal_def
-        zero_less_abs_iff)
+  have lsup: "limsup a = L" using ereal_dist_epsilon assms by auto
   also have "L = liminf a"
   proof -
     have "\<And>n::nat. n > 0 \<Longrightarrow> \<bar>L - liminf a\<bar> < inverse n" using assms
       by (metis inverse_positive_iff_positive real_of_nat_gt_zero_cancel_iff)
     hence 1: "\<bar>L - liminf a\<bar> = 0"
-      by (metis abs_ereal.simps(1) abs_real_of_ereal abs_zero assms ereal_real' less_ereal.simps(4) less_irrefl zero_ereal_def
-          zero_less_abs_iff zero_less_real_of_ereal)
+      using ereal_dist_epsilon by (metis abs_ereal_zero assms ereal_minus(7) zero_ereal_def)
     show ?thesis
     proof -
       have "\<bar>liminf a\<bar> < \<infinity>" using 1
