@@ -7,11 +7,11 @@ Properties of weak convergence of functions and measures, including the portmant
 
 theory Weak_Convergence
 
-imports Probability Distribution_Functions Distributions Helly_Selection
+imports Probability Distribution_Functions Distributions
 
 begin
 
-(* declare [[show_types]] *)
+declare [[show_types]]
 
 definition
   weak_conv :: "(nat \<Rightarrow> (real \<Rightarrow> real)) \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> bool"
@@ -50,7 +50,7 @@ proof -
   have F_inc: "mono F" unfolding F_def using finite_borel_measure.cdf_nondecreasing sorry
   have F_right_cts: "\<And>a. continuous (at_right a) F"
     unfolding F_def using assms(2) finite_borel_measure.cdf_is_right_cont sorry
-  def \<Omega> \<equiv> "measure_space {0<..<1} (algebra.restricted_space {0<..<1} UNIV) lborel"
+  def \<Omega> \<equiv> "measure_of {0::real<..<1} (algebra.restricted_space {0<..<1} UNIV) lborel"
   def Y_seq \<equiv> "\<lambda>n \<omega>. Inf ({x. \<omega> \<le> f n x} \<inter> {0<..<1})"
   def Y \<equiv> "\<lambda>\<omega>. Inf ({x. \<omega> \<le> F x} \<inter> {0<..<1})"
   have Y_seq_le_iff: "\<And>n. \<forall>\<omega>\<in>{0<..<1}. \<forall>x\<in>{0<..<1}. (\<omega> \<le> f n x) = (Y_seq n \<omega> \<le> x)"
@@ -74,7 +74,7 @@ proof -
         proof (rule ccontr)
           assume "\<not> \<omega> \<le> f n y"
           hence "f n y < \<omega>" by simp
-          hence le: "\<And>z. z \<le> y \<Longrightarrow> f n z < \<omega>" using f_inc euclidean_trans(2) unfolding mono_def by metis
+          hence le: "\<And>z. z \<le> y \<Longrightarrow> f n z < \<omega>" using f_inc le_less_trans unfolding mono_def by metis
           have "y \<le> Inf ({x. \<omega> \<le> f n x} \<inter> {0<..<1})"
             apply (rule cInf_greatest)
             prefer 2 using le
@@ -109,8 +109,7 @@ proof -
       qed
     }
   qed
-  find_theorems "distributed _ _ _ _"
-  hence "\<And>n. distributed lborel lborel (Y_seq n) (f n)"
+  hence "\<And>n. distributed \<Omega> borel (Y_seq n) (f n)"
     unfolding distributed_def sorry
   (* Duplication; break out a general lemma based on remark following (14.5) *)
   have Y_le_iff: "\<And>n. \<forall>\<omega>\<in>{0<..<1}. \<forall>x\<in>{0<..<1}. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
@@ -134,7 +133,7 @@ proof -
         proof (rule ccontr)
           assume "\<not> \<omega> \<le> F y"
           hence "F y < \<omega>" by simp
-          hence le: "\<And>z. z \<le> y \<Longrightarrow> F z < \<omega>" using F_inc euclidean_trans(2) unfolding mono_def by metis
+          hence le: "\<And>z. z \<le> y \<Longrightarrow> F z < \<omega>" using F_inc le_less_trans unfolding mono_def by metis
           have "y \<le> Inf ({x. \<omega> \<le> F x} \<inter> {0<..<1})"
             apply (rule cInf_greatest)
             prefer 2 using le
@@ -169,7 +168,7 @@ proof -
       qed
     }
   qed
-  hence "distributed lborel lborel Y F"
+  hence "distributed \<Omega> borel Y F"
     unfolding distributed_def sorry
   find_theorems "limsup _" "liminf _"
   {

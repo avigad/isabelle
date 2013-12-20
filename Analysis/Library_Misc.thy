@@ -5,9 +5,6 @@ begin
 
 (** General miscellaneous. **)
 
-lemma rat_type_infinite: "infinite (UNIV :: rat set)"
-  by (rule Finite_Set.infinite_UNIV_char_0)
-
 lemma inj_on_infinite: "infinite A \<Longrightarrow> inj_on f A \<Longrightarrow> infinite (range f)"
   apply (simp add: infinite_iff_countable_subset)
   apply auto
@@ -190,18 +187,240 @@ by (simp add:atMost_Suc mult_ac)
 lemma setprod_lessThan_Suc[simp]: "(\<Prod>i < Suc n. f i) = (\<Prod>i < n. f i) * f n"
 by (simp add:lessThan_Suc mult_ac)
 
-lemma norm_triangle_ineq_setsum: "norm (\<Sum> i \<in> A. f i) \<le> (\<Sum> i \<in> A. norm (f i))"
-apply (case_tac "finite A", auto)
-apply (erule finite_induct, auto)
-apply (rule order_trans)
-apply (rule norm_triangle_ineq)
-apply auto
-done
-
 lemma norm_setprod: "norm (\<Prod>i \<in> A. f i) = 
   (\<Prod> i \<in> A. norm ((f i) :: 'a :: {real_normed_div_algebra,comm_monoid_mult}))"
 apply (case_tac "finite A", auto)
 apply (erule finite_induct, auto simp add: norm_mult)
 done
+
+(** Miscellany from Helly. **)
+
+(* This should have been in the library, like convergent_limsup_cl. *)
+lemma convergent_liminf_cl:
+  fixes X :: "nat \<Rightarrow> 'a::{complete_linorder,linorder_topology}"
+  shows "convergent X \<Longrightarrow> liminf X = lim X"
+  by (auto simp: convergent_def limI lim_imp_Liminf)
+
+primrec halfseq :: "real \<Rightarrow> real \<Rightarrow> nat \<Rightarrow> real" where
+  "halfseq l a0 0 = a0"
+| "halfseq l a0 (Suc n) = (halfseq l a0 n + l) / 2"
+
+lemma halfseq_converges: "halfseq l a0 ----> l"
+proof -
+  let ?a = "halfseq l a0"
+  {
+    fix n
+    have "dist (?a n) l = dist a0 l / 2^n"
+      by (induct n, auto simp add: dist_real_def field_simps)
+  } note dist_a = this
+  show ?thesis
+  proof (rule metric_LIMSEQ_I)
+    fix r :: real
+    assume [simp]: "r > 0"
+    from reals_Archimedean2 [of "dist a0 l / r"] guess n .. 
+    with `r > 0` have 2: "dist a0 l < r * n" by (simp add: field_simps)
+    have "(dist a0 l) / 2^n < r"
+      apply (auto simp add: field_simps)
+      apply (rule order_less_trans, rule 2)
+      by (rule mult_strict_left_mono, simp_all)
+    hence "\<forall>m\<ge>n. dist (halfseq l a0 m) l < r"
+      apply (auto simp add: dist_a)
+      apply (rule order_le_less_trans)
+      prefer 2 apply assumption
+      by (auto simp add: field_simps intro!: mult_left_mono)
+    thus "\<exists>n. \<forall>m\<ge>n. dist (halfseq l a0 m) l < r" ..
+  qed
+qed
+
+lemma real_Inf_greatest': 
+  fixes A and x :: real 
+  assumes "A \<noteq> {}" "bdd_below A" and 1: "x > Inf A" 
+  shows "\<exists>y \<in> A. y \<le> x"
+apply (rule contrapos_pp [OF 1], simp add: not_less not_le)
+using assms cInf_greatest le_less by metis
+
+lemma bdd_below_closure:
+  fixes A :: "real set"
+  assumes "bdd_below A"
+  shows "bdd_below (closure A)"
+proof -
+  from assms obtain m where "\<And>x. x \<in> A \<Longrightarrow> m \<le> x" unfolding bdd_below_def by auto
+  hence "A \<subseteq> {m..}" by auto
+  hence "closure A \<subseteq> {m..}" using closed_real_atLeast closure_minimal by auto
+  thus ?thesis unfolding bdd_below_def by auto
+qed
+
+lemma real_closed_subset_contains_Inf:
+  fixes A C :: "real set"
+  assumes cl: "closed C" and A: "A \<subseteq> C"
+  and nonempty: "A \<noteq> {}" and bdd_below: "bdd_below A"
+  shows "Inf A \<in> C"
+proof -
+  have "closure A \<subseteq> C" using closure_minimal assms by auto
+  thus ?thesis
+    apply (elim subsetD)
+    apply (rule closure_contains_Inf)
+    using assms by auto
+qed
+
+(* Should this definition be eliminated? **)
+definition rcont_inc :: "(real \<Rightarrow> real) \<Rightarrow> bool"
+  where "rcont_inc f \<equiv> (\<forall>x. continuous (at_right x) f) \<and> mono f"
+
+lemma real_atLeastAtMost_subset_contains_Inf:
+  fixes A :: "real set" and a b :: real assumes "A \<noteq> {}" and "bdd_below A"
+  and "a \<le> b" and "A \<subseteq> {a..b}"
+  shows "Inf A \<in> {a..b}"
+by (rule real_closed_subset_contains_Inf, rule closed_real_atLeastAtMost) (simp_all add: assms)
+
+lemma rat_unbounded: "\<exists> q \<in> \<rat>. (x :: real) \<le> q"
+  apply (rule_tac x = "of_nat (natceiling x)" in bexI, auto)
+by (metis real_natceiling_ge real_of_nat_def)
+
+lemma f_inv_f_surj_on: "f ` A = B \<Longrightarrow> x \<in> B \<Longrightarrow> f (inv f x) = x"
+  apply auto
+  unfolding inv_def by (rule someI_ex, auto)
+
+lemma dist_epsilon: "\<forall>\<epsilon>>0. dist x y < \<epsilon> \<Longrightarrow> x = y" using dist_pos_lt less_irrefl by auto
+
+lemma ereal_dist_epsilon:
+  assumes "\<forall>(\<epsilon>::real)>0. \<bar>x - ereal r\<bar> < \<epsilon>"
+  shows "x = ereal r"
+proof (rule ereal_cases[of x])
+  fix t assume x: "x = ereal t"
+  { fix \<epsilon>::real assume \<epsilon>: "\<epsilon> > 0"
+    hence "\<bar>ereal t - ereal r\<bar> < \<epsilon>" using assms x \<epsilon> by auto
+    hence "dist t r < \<epsilon>" unfolding dist_real_def by auto
+  }
+  hence "ereal t = ereal r" using dist_epsilon by auto
+  thus ?thesis using x by simp
+next
+  assume "x = \<infinity>"
+  hence "\<bar>x - ereal r\<bar> = \<infinity>" by auto
+  hence "\<not> \<bar>x - ereal r\<bar> < ereal 1" by auto
+  hence False using assms by auto
+  thus ?thesis ..
+next (* Duplication; how to avoid? *)
+  assume "x = -\<infinity>"
+  hence "\<bar>x - ereal r\<bar> = \<infinity>" by auto
+  hence "\<not> \<bar>x - ereal r\<bar> < ereal 1" by auto
+  hence False using assms by auto
+  thus ?thesis ..
+qed
+
+lemma lim_close_limsup_liminf:
+  fixes a :: "nat \<Rightarrow> ereal" and L :: real
+  assumes "\<forall>(e::real)>0. \<bar>limsup a - L\<bar> < e \<and> \<bar>L - liminf a\<bar> < e"
+  shows "convergent a" and "lim a = L"
+proof -
+  have lsup: "limsup a = L" using ereal_dist_epsilon assms by auto
+  also have "L = liminf a"
+  proof -
+    have "\<And>n::nat. n > 0 \<Longrightarrow> \<bar>L - liminf a\<bar> < inverse n" using assms
+      by (metis inverse_positive_iff_positive real_of_nat_gt_zero_cancel_iff)
+    hence 1: "\<bar>L - liminf a\<bar> = 0"
+      using ereal_dist_epsilon by (metis abs_ereal_zero assms ereal_minus(7) zero_ereal_def)
+    show ?thesis
+    proof -
+      have "\<bar>liminf a\<bar> < \<infinity>" using 1
+        by (metis PInfty_neq_ereal(1) abs_eq_infinity_cases abs_ereal_uminus add_commute ereal_less_PInfty ereal_minus(3)
+            minus_ereal_def plus_ereal.simps(2) zero_ereal_def)  
+      then obtain linf where linf: "ereal linf = liminf a" by auto
+      hence "\<bar>L - linf\<bar> = 0" using 1 by (metis abs_ereal.simps(1) ereal_eq_0(2) ereal_minus(1))
+      hence "linf = L" by auto
+      thus ?thesis using linf by auto
+    qed
+  qed
+  finally have "limsup a = liminf a" by simp
+  thus "convergent a" using convergent_ereal by auto
+  hence "limsup a = lim a" using convergent_limsup_cl by auto
+  thus "lim a = L" using lsup by simp
+qed
+
+lemma convergent_real_imp_convergent_ereal:
+  assumes "convergent a"
+  shows "convergent (\<lambda>n. ereal (a n))" and "lim (\<lambda>n. ereal (a n)) = ereal (lim a)"
+proof -
+  from assms obtain L where L: "a ----> L" unfolding convergent_def ..
+  hence lim: "(\<lambda>n. ereal (a n)) ----> ereal L" using lim_ereal by auto
+  thus "convergent (\<lambda>n. ereal (a n))" unfolding convergent_def ..
+  thus "lim (\<lambda>n. ereal (a n)) = ereal (lim a)" using lim L limI by metis
+qed
+
+lemma ereal_not_infty:
+  fixes x :: ereal and B :: real
+  assumes "x \<le> ereal B"
+  shows "x \<noteq> \<infinity>"
+by (metis PInfty_neq_ereal(1) assms ereal_infty_less_eq(1))
+
+lemma abs_bounds: "x \<le> y \<Longrightarrow> -x \<le> y \<Longrightarrow> abs (x :: ereal) \<le> y"
+by (metis abs_ereal_ge0 abs_ereal_uminus ereal_0_le_uminus_iff linear)
+
+(** From Weak_Convergence **)
+
+(***
+(* Want to port this from proof of Skorohod, but not clear what the right generalization is. *)
+lemma bdd_rcont_inc_almost_inverse:
+  fixes F :: "real \<Rightarrow> real"
+  fixes M :: real
+  assumes "rcont_inc F" and "\<And>x. \<bar>F x\<bar> \<le> M"
+  defines "Y \<equiv> \<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
+  shows "\<And>\<omega> x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
+  proof safe
+    fix n::nat fix \<omega> x :: real
+    {
+      assume "\<omega> \<le> F x"
+      hence "x \<in> {x. \<omega> \<le> F x}" by auto
+      hence "Inf {x. \<omega> \<le> F x} \<le> x"
+        using cInf_lower assms(2) 
+      thus "Y_seq n \<omega> \<le> x" unfolding Y_seq_def by simp
+    }
+    {
+      assume "Y_seq n \<omega> \<le> x"
+      hence x_less: "\<forall>y \<in> {0<..<1}. x < y \<longrightarrow> \<omega> \<le> f n y"
+        apply (unfold Y_seq_def)
+        apply safe
+      proof -
+        fix y assume x: "Inf ({x. \<omega> \<le> f n x} \<inter> {0<..<1}) \<le> x" and y: "y \<in> {0<..<1}" "x < y"
+        show "\<omega> \<le> f n y"
+        proof (rule ccontr)
+          assume "\<not> \<omega> \<le> f n y"
+          hence "f n y < \<omega>" by simp
+          hence le: "\<And>z. z \<le> y \<Longrightarrow> f n z < \<omega>" using f_inc le_less_trans unfolding mono_def by metis
+          have "y \<le> Inf ({x. \<omega> \<le> f n x} \<inter> {0<..<1})"
+            apply (rule cInf_greatest)
+            prefer 2 using le
+            apply (metis (lifting) Int_Collect inf_sup_aci(1) le_cases max.semilattice_strict_iff_order not_less_iff_gr_or_eq)
+            using interval(1) real_distribution.cdf_lim_at_top_prob sorry
+          hence "y \<le> x" using x by simp
+          thus False using y by simp
+        qed
+      qed
+      show "\<omega> \<le> f n x"
+      proof (rule field_le_epsilon)
+        fix e::real assume e: "0 < e"
+        hence "\<exists>d>0. f n (x + d) - f n x < e"
+          using continuous_at_right_real_increasing f_inc f_right_cts unfolding mono_def by auto
+        then guess d .. note d = this
+        have "\<exists>w. 0 < w \<and> w < 1 - x" using interval(2)
+          (*by (metis diff_0 diff_less_iff(2) greaterThanLessThan_iff minus_diff_eq real_lbound_gt_zero)*)
+        then guess w .. note w = this
+        def \<delta> \<equiv> "min d w"
+        have \<delta>: "\<delta> > 0" "f n (x + \<delta>) - f n x < e" "x + \<delta> \<in> {0<..<1}"
+        proof -
+          from d w show "\<delta> > 0" unfolding \<delta>_def by auto
+          have "x + \<delta> \<le> x + d" unfolding \<delta>_def by auto
+          hence "f n (x + \<delta>) \<le> f n (x + d)" using f_inc unfolding mono_def by auto
+          thus "f n (x + \<delta>) - f n x < e" using d by simp
+          from w have "x < x + w \<and> x + w < 1" by simp
+          hence "x < x + \<delta> \<and> x + \<delta> < 1" using d w unfolding \<delta>_def by auto
+          thus "x + \<delta> \<in> {0<..<1}" using interval(2) by auto
+        qed
+        hence "\<omega> \<le> f n (x + \<delta>)" using x_less \<delta> by auto
+        thus "\<omega> \<le> f n x + e" using \<delta>(2) by simp
+      qed
+    }
+  qed
+***)
 
 end
