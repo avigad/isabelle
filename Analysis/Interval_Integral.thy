@@ -159,7 +159,7 @@ lemma ereal_tendsto_simps1:
   by (auto simp: filtermap_filtermap filtermap_ident)
 
 lemma filterlim_at_bot_dense:
-  fixes f :: "'a \<Rightarrow> ('b::dense_linorder)"
+  fixes f :: "'a \<Rightarrow> ('b::{dense_linorder, no_bot})"
   shows "(LIM x F. f x :> at_bot) \<longleftrightarrow> (\<forall>Z. eventually (\<lambda>x. f x < Z) F)"
 
 proof (auto simp add: filterlim_at_bot[of f F])
@@ -570,8 +570,7 @@ lemma interval_integral_Icc_approx_nonneg:
   assumes lbint_lim: "(\<lambda>i. LBINT x=l i.. u i. f x) ----> C"
   shows "(LBINT x=a..b. f x) = C"
 proof -
-  have "(LBINT x=a..b. f x) = 
-    integral\<^isup>L lborel (\<lambda>x. f x * indicator (einterval a b) x)"
+  have "(LBINT x=a..b. f x) = lebesgue_integral lborel (\<lambda>x. f x * indicator (einterval a b) x)"
     using assms by (simp add: interval_lebesgue_integral_def less_imp_le)
   also have "... = C"
   proof (rule integral_monotone_convergence)
@@ -788,7 +787,7 @@ lemma integral_FTC_atLeastAtMost':
   assumes "a \<le> b"
     and F: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> DERIV F x : {a..b} :> f x"
     and f: "continuous_on {a..b} f"
-  shows "integral\<^isup>L lborel (\<lambda>x. f x * indicator {a .. b} x) = F b - F a"
+  shows "set_lebesgue_integral lborel {a..b} f = F b - F a"
 proof -
   let ?f = "\<lambda>x. f x * indicator {a .. b} x"
   have "(?f has_integral (\<integral>x. ?f x \<partial>lborel)) UNIV"
@@ -803,7 +802,7 @@ proof -
     by (rule has_integral_eq [OF _ 1], auto)
   then have "(?f has_integral F b - F a) UNIV"
     by (intro has_integral_on_superset[where t=UNIV and s="{a..b}"]) auto
-  ultimately show "integral\<^isup>L lborel ?f = F b - F a"
+  ultimately show "lebesgue_integral lborel ?f = F b - F a"
     by (rule has_integral_unique)
 qed
 

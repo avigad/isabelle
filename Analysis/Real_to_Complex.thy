@@ -29,74 +29,9 @@ lemma Im_part_setsum:
   shows "Im (\<Sum>x\<in>S. f x) = (\<Sum>x\<in>S. IM f x)"
   apply (rule finite_induct) using assms by auto
 
-(** Inequality for difference of complex products. **)
-
-(* Is this a good idea? *)
+(* Is this a good idea?
 declare complex_diff_def [symmetric, simp]
-
-(*lemma prod_complex_leq_unit_cmod:
-  fixes z :: "nat \<Rightarrow> complex" m :: nat
-  assumes "\<forall>i < m. cmod (z i) \<le> 1"
-  shows "\<Prod> i < m. cmod (z i) \<le> 1" *)
-  
-
-(* probably generalizes to real_normed_algebra_1,(comm_)monoid_mult *)
-lemma complex_prod_diff [rule_format]:
-  fixes 
-    z :: "nat \<Rightarrow> complex" and
-    w :: "nat \<Rightarrow> complex" and
-    m :: nat
-  shows "(\<forall> i < m. cmod (z i) \<le> 1) & (\<forall> i < m. cmod (w i) \<le> 1) \<longrightarrow> 
-    norm ((\<Prod> i < m. z i) - (\<Prod> i < m. w i)) \<le> (\<Sum> i < m. cmod (z i - w i))" 
-      (is "?H1 m & ?H2 m \<longrightarrow> ?P m") 
-proof (induct m)
-  let "?Q m" = "?H1 m & ?H2 m \<longrightarrow> ?P m"
-  show "?Q 0" by auto
-  next
-    let "?Q m" = "?H1 m & ?H2 m \<longrightarrow> ?P m"
-    fix m
-    assume ih: "?Q m"
-    show "?Q (Suc m)"
-    proof (clarify)
-      assume zbnd: "?H1 (Suc m)"
-         and wbnd : "?H2 (Suc m)"
-      with ih have ih1: "?P m" by auto
-      show "?P (Suc m)"
-
-      proof -
-        have "cmod ((\<Prod> i < Suc m. z i) - (\<Prod> i < Suc m. w i)) = 
-          cmod ((\<Prod> i < Suc m. z i) - w m * (\<Prod> i < m. z i) + w m *
-          (\<Prod> i < m. z i) - (\<Prod> i < Suc m. w i))"
-          by auto
-        also have "... = cmod ((\<Prod> i < m. z i) * (z m - w m) + 
-          ((\<Prod> i < m. z i) - (\<Prod> i < m. w i)) * w m)"
-          (is "?lhs = cmod (?t1 + ?t2)")
-          by (auto simp add: field_simps)
-        also have "... \<le> cmod(?t1) + cmod(?t2)"
-          by (rule norm_triangle_ineq)
-        also have "cmod(?t1) \<le> cmod(z m - w m)"
-          apply (subst norm_mult)
-          apply (rule mult_left_le_one_le, auto)
-          apply (subst norm_setprod)
-          apply (subst setprod_1 [symmetric])
-          apply simp
-          apply (rule order_trans)
-          apply (rule setprod_mono[of "{..<m}" "\<lambda>i. cmod (z i)" "\<lambda>i. 1"])
-          apply (auto intro: zbnd [rule_format])
-          done
-        also have "cmod(?t2) \<le> cmod((\<Prod> i < m. z i) - (\<Prod> i < m. w i))"
-          apply (subst norm_mult)
-          apply (rule mult_right_le_one_le)
-          apply (auto simp add: wbnd)
-          done
-        also have "... \<le> (\<Sum> i < m. cmod (z i - w i))"
-          by (rule ih1)
-        finally show ?thesis
-          by (auto simp add: add_ac)
-        
-      qed
-    qed
-  qed
+*)
 
 (** Function e^(ix). **)
 
@@ -500,19 +435,6 @@ lemma cl_interval_complex_integral_cong:
 unfolding cmp_conn_complex_lebesgue_integral_def
 by (auto intro: complex_integral_cong)
 
-(*
-  Finally, getting to Equation 26.1.
-*)
-
-lemma fact1: "CDERIV (%s. complex_of_real(-((x - s) ^ (Suc n) / (Suc n))) * e\<^bsup>\<i>s\<^esup>)
- s :> complex_of_real((x - s)^n) * e\<^bsup>\<i>s\<^esup> + (ii * e\<^bsup>\<i>s\<^esup>) * 
-      complex_of_real(-((x - s) ^ (Suc n) / (Suc n)))"
-apply (rule CDERIV_mult)
-apply (rule CDERIV_of_real)
-apply (auto intro!: DERIV_intros simp del: power_Suc)
-apply (subst i_complex_of_real[symmetric])+
-apply (rule CDERIV_expi)
-done
 
 lemma cmp_conn_complex_integrable_isCont: 
   "(\<And>x. x \<in> irange (a::real) b \<Longrightarrow> isCont f x) \<Longrightarrow>

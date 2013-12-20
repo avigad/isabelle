@@ -1,6 +1,6 @@
 (*
 Theory: Weak_Convergence.thy
-Authors: Jeremy Avigad 
+Authors: Jeremy Avigad, Luke Serafin
 
 Properties of weak convergence of functions and measures, including the portmanteau theorem.
 *)
@@ -42,14 +42,17 @@ theorem Skorohod:
 proof -
   def f \<equiv> "\<lambda>n. cdf (M_seq n)"
   def F \<equiv> "cdf M"
+  interpret M: real_distribution M by (rule assms)
   have fn_weak_conv: "weak_conv f F" using assms(3) unfolding weak_conv_m_def f_def F_def by auto
-  (* real_distribution is a sublocale of finite_borel_measure; why is cdf_is_right_cont not available? *)
-  have f_inc: "\<And>n. mono (f n)" unfolding f_def using finite_borel_measure.cdf_nondecreasing sorry
-  have f_right_cts: "\<And>n a. continuous (at_right a) (f n)"
-    unfolding f_def using assms(1) finite_borel_measure.cdf_is_right_cont sorry
-  have F_inc: "mono F" unfolding F_def using finite_borel_measure.cdf_nondecreasing sorry
+  {  fix n
+     interpret Mseq: real_distribution "(M_seq n)" by (rule assms)
+     have "mono (f n)" "\<And>a. continuous (at_right a) (f n)"
+       by (auto simp add: f_def mono_def Mseq.cdf_nondecreasing Mseq.cdf_is_right_cont)
+  } 
+  note f_inc = this(1) and f_right_cts = this(2)
+  have F_inc: "mono F" unfolding F_def mono_def using M.cdf_nondecreasing by auto
   have F_right_cts: "\<And>a. continuous (at_right a) F"
-    unfolding F_def using assms(2) finite_borel_measure.cdf_is_right_cont sorry
+    unfolding F_def using assms(2) M.cdf_is_right_cont by auto
   def \<Omega> \<equiv> "measure_of {0::real<..<1} (algebra.restricted_space {0<..<1} UNIV) lborel"
   def Y_seq \<equiv> "\<lambda>n \<omega>. Inf ({x. \<omega> \<le> f n x} \<inter> {0<..<1})"
   def Y \<equiv> "\<lambda>\<omega>. Inf ({x. \<omega> \<le> F x} \<inter> {0<..<1})"
@@ -426,6 +429,7 @@ theorem continuity_set_conv_imp_weak_conv:
 
 proof -
   interpret real_distribution M by simp
+thm emeasure_eq_measure
   show ?thesis
    unfolding weak_conv_m_def weak_conv_def cdf_def2 apply auto
    by (rule *, auto simp add: frontier_real_atMost isCont_cdf emeasure_eq_measure)
