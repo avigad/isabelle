@@ -1,9 +1,15 @@
+(*  
+Theory: Real_to_Complex.thy
+Authors: Jeremy Avigad, Luke Serafin 
+
+Differentiation and integration for functions from the reals to the complex numbers.
+*)
+
 theory Real_to_Complex
-imports Library_Misc "~~/src/HOL/Multivariate_Analysis/Derivative"
-"~~/src/HOL/Probability/Lebesgue_Integration"
+
+imports Library_Misc
 
 begin
-
 
 (** Real and complex parts of a function. **)
 
@@ -29,17 +35,24 @@ lemma Im_part_setsum:
   shows "Im (\<Sum>x\<in>S. f x) = (\<Sum>x\<in>S. IM f x)"
   apply (rule finite_induct) using assms by auto
 
-(* Is this a good idea?
-declare complex_diff_def [symmetric, simp]
-*)
 
 (** Function e^(ix). **)
 
 abbreviation iexp :: "real \<Rightarrow> complex" where
   "iexp \<equiv> (\<lambda>x. expi (\<i> * of_real x))"
 
-  (** Differentiation of functions of type real \<Rightarrow> complex. **)
+declare [[coercion "complex_of_real :: real \<Rightarrow> complex"]]
 
+lemma isCont_new_expir [simp]: "isCont (\<lambda>x. exp (Complex 0 x)) x"
+apply (rule isCont_exp')
+apply (subgoal_tac "Complex 0 = (\<lambda>x. ii * x)")
+apply (erule ssubst)
+apply (rule isCont_mult)
+apply auto
+done
+
+
+(** Differentiation of functions of type real \<Rightarrow> complex. **)
 
 definition complex_deriv :: "[real \<Rightarrow> complex, real, complex] \<Rightarrow> bool"
 ("(CDERIV (_)/ (_)/ :> (_))" [1000, 1000, 60] 60) where
@@ -152,23 +165,11 @@ lemma CDERIV_setsum:
   shows "CDERIV (\<lambda>x. setsum (f x) S) x :> setsum (f' x) S"
   using assms CDERIV_const by induct (auto intro!: CDERIV_add)
 
-declare [[coercion "complex_of_real :: real \<Rightarrow> complex"]]
-
 lemma CDERIV_of_real [simp]: "DERIV f x :> u \<Longrightarrow>
    (CDERIV (%x. complex_of_real (f x)) x :> complex_of_real u)"
   unfolding complex_deriv_def by auto
 
-lemma isCont_new_expir [simp]: "isCont (\<lambda>x. exp (Complex 0 x)) x"
-apply (rule isCont_exp')
-apply (subgoal_tac "Complex 0 = (\<lambda>x. ii * x)")
-apply (erule ssubst)
-apply (rule isCont_mult)
-apply auto
-done
 
-(****** Since exp_i_times_real is an abbreviation, shouldn't need this? *****
-lemma expir_0 [simp]: "expir 0 = 1"
-unfolding expir_def by simp *)
 
 (*
     It probably makes more sense for us to say that a function
@@ -269,17 +270,76 @@ by (auto simp add: complex_integrable_def integrable_def RE_def IM_def
 *)
 
 (** Need to fix complex integral syntax. **)
- 
+
+definition complex_integrable :: "'a measure \<Rightarrow> ('a \<Rightarrow> complex) \<Rightarrow> bool" where
+  "complex_integrable M f \<equiv> integrable M (RE f) \<and> integrable M (IM f)"
+
+definition complex_lebesgue_integral :: "'a measure \<Rightarrow> ('a \<Rightarrow> complex) \<Rightarrow> complex" ("integral\<^sup>C") where
+  "integral\<^sup>C M f = of_real (\<integral>x. (RE f) x \<partial>M) + ii * of_real (\<integral>x. (IM f) x \<partial>M)"
+
+syntax
+  "_complex_lebesgue_integral" :: "pttrn \<Rightarrow> complex \<Rightarrow> 'a measure \<Rightarrow> complex"
+ ("\<integral>\<^sup>C _. _ \<partial>_" [60,61] 110)
+
+translations
+  "\<integral>\<^sup>Cx. f \<partial>M" == "CONST complex_lebesgue_integral M (\<lambda>x. f)"
+
+lemma Re_integral_push: "Re (integral\<^sup>C M f) = integral\<^sup>L M (RE f)"
+  by (unfold complex_lebesgue_integral_def, auto)
+
+lemma Im_integral_push: "Im (integral\<^sup>C M f) = integral\<^sup>L M (IM f)"
+  by (unfold complex_lebesgue_integral_def, auto)
+
+lemma complex_integral_cong:
+  assumes "\<forall>x. x \<in> space M \<longrightarrow> f x = g x"
+  shows "integral\<^sup>C M f = integral\<^sup>C M g"
+using assms unfolding complex_lebesgue_integral_def by (auto intro: integral_cong)
+
+lemma complex_integral_cong_AE:
+  assumes "AE x in M. f x = g x"
+  shows "integral\<^sup>C M f = integral\<^sup>C M g"
+using assms unfolding complex_lebesgue_integral_def by (auto intro: integral_cong_AE)
+
+lemma RE_complex_indicator [simp]:
+  "(RE (\<lambda>x. f x * complex_of_real (indicator {a..b} x))) =
+    (\<lambda>x. RE f x * (indicator {a..b} x))"
+ by auto
+
+lemma IM_complex_indicator [simp]:
+  "(IM (\<lambda>x. f x * complex_of_real (indicator {a..b} x))) =
+    (\<lambda>x. IM f x * (indicator {a..b} x))"
+by auto
+
+lemma borel_integral_FTC_complex:
+  fixes a b :: real
+  assumes "a \<le> b" 
+    and F: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> CDERIV F x :> f x"
+    and cont: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> isCont f x"
+  shows "(\<integral>\<^sup>C x. f x * of_real(indicator {a .. b} x) \<partial>lborel) = F b - F a"
+apply (unfold complex_lebesgue_integral_def, simp)
+apply (subgoal_tac "F b - F a = Complex (RE F b - RE F a) (IM F b - IM F a)")
+apply (erule ssubst)
+apply (rule arg_cong2) back back
+apply (rule integral_FTC_atLeastAtMost, rule assms)
+apply (frule F, assumption)
+apply (simp add: complex_deriv_def)
+using cont apply (subst (asm) isCont_RE_IM_iff, auto)
+apply (rule integral_FTC_atLeastAtMost, rule assms)
+apply (frule F, assumption)
+apply (simp add: complex_deriv_def)
+using cont apply (subst (asm) isCont_RE_IM_iff, auto)
+by (simp add: complex_diff [symmetric])
+
 lemma complex_integral_add [simp]: 
   assumes "complex_integrable M f" "complex_integrable M g"
   shows "complex_integrable M (\<lambda>t. f t + g t)"
-  and "(\<integral>\<^isup>C t. f t + g t \<partial>M) = integral\<^isup>C M f + integral\<^isup>C M g"
+  and "(\<integral>\<^sup>Ct. f t + g t \<partial>M) = integral\<^sup>C M f + integral\<^sup>C M g"
 using assms by (auto simp add: complex_integrable_def
   complex_lebesgue_integral_def complex_of_real_def)
 
 lemma complex_integral_zero [simp]:
   shows "complex_integrable M (\<lambda>x. 0)" 
-  and "(\<integral>\<^isup>C x. 0 \<partial>M)  = 0"
+  and "(\<integral>\<^sup>C x. 0 \<partial>M)  = 0"
 by (auto simp add: complex_integrable_def complex_lebesgue_integral_def
   complex_of_real_def)
 
@@ -287,7 +347,7 @@ by (auto simp add: complex_integrable_def complex_lebesgue_integral_def
 lemma complex_integral_cmult [simp]:
   assumes "complex_integrable M f"
   shows "complex_integrable M (\<lambda>t. a * f t)"
-  and "(\<integral>\<^isup>C t. a * f t \<partial>M) = a * complex_lebesgue_integral M f"
+  and "(\<integral>\<^sup>C t. a * f t \<partial>M) = a * complex_lebesgue_integral M f"
 using assms apply (auto simp add: complex_integrable_def
   complex_lebesgue_integral_def complex_of_real_def complex_surj complex_mult)
 by (metis complex_mult complex_surj)
@@ -297,21 +357,21 @@ by (metis complex_mult complex_surj)
 lemma complex_integral_cdiv [simp]:
   assumes "complex_integrable M f"
   shows "complex_integrable M (\<lambda>t. f t / a)"
-  and "(\<integral>\<^isup>C t. f t / a \<partial>M) = complex_lebesgue_integral M f / a"
+  and "(\<integral>\<^sup>C t. f t / a \<partial>M) = complex_lebesgue_integral M f / a"
 using assms
 apply (simp_all only: complex_divide_def)
 apply (subst mult_commute, force)
 by (subst mult_commute, simp)
 
 lemma complex_integral_uminus [simp, intro]:
-  "(\<integral>\<^isup>Cx. - f x \<partial>M) = - complex_lebesgue_integral M f"
+  "(\<integral>\<^sup>Cx. - f x \<partial>M) = - complex_lebesgue_integral M f"
 unfolding complex_lebesgue_integral_def
 by (auto simp add: lebesgue_integral_uminus complex_of_real_def)
 
 lemma complex_integral_minus[intro, simp]:
   assumes "complex_integrable M f"
   shows "complex_integrable M (\<lambda>x. - f x)" 
-(*  and "(\<integral>\<^isup>Cx. - f x \<partial>M) = - complex_lebesgue_integral M f" *)
+(*  and "(\<integral>\<^sup>Cx. - f x \<partial>M) = - complex_lebesgue_integral M f" *)
 using assms
 by (auto simp add: complex_integrable_def complex_lebesgue_integral_def
   complex_of_real_def)
@@ -319,10 +379,10 @@ by (auto simp add: complex_integrable_def complex_lebesgue_integral_def
 lemma complex_integral_diff[simp, intro]:
   assumes f: "complex_integrable M f" and g: "complex_integrable M g"
   shows "complex_integrable M (\<lambda>t. f t - g t)"
-  and "(\<integral>\<^isup>C t. f t - g t \<partial>M) = complex_lebesgue_integral M f - 
+  and "(\<integral>\<^sup>C t. f t - g t \<partial>M) = complex_lebesgue_integral M f - 
     complex_lebesgue_integral M g"
 using complex_integral_add[OF f complex_integral_minus(1) [OF g]]
-unfolding diff_minus complex_integral_minus[OF g]
+unfolding diff_conv_add_uminus complex_integral_minus[OF g]
 by auto
 
 abbreviation
@@ -443,9 +503,7 @@ lemma cmp_conn_complex_integrable_isCont:
   by (auto intro!: integrable_atLeastAtMost_isCont 
     simp add: complex_integrable_def irange_def)
 
-(* need CDERIV_intros *)
-lemma CDERIV_cong: "\<lbrakk>CDERIV f x :> X; X = Y\<rbrakk> \<Longrightarrow> CDERIV f x :> Y"
-  by simp
+
 
 lemma integral_expir:
   fixes x y :: real
@@ -523,10 +581,10 @@ lemma complex_integral_cong_AE:
   shows "CLINT x|M. f x = CLINT x|M. g x"
 proof-
   have "AE x in M. RE f x = RE g x" using assms by auto
-  hence Re_eq: "integral\<^isup>L M (RE f) = integral\<^isup>L M (RE g)"
+  hence Re_eq: "integral\<^sup>L M (RE f) = integral\<^sup>L M (RE g)"
     using integral_cong_AE[of "RE f" "RE g"] by auto
   have "AE x in M. IM f x = IM g x" using assms by auto
-  hence Im_eq: "integral\<^isup>L M (IM f) = integral\<^isup>L M (IM g)"
+  hence Im_eq: "integral\<^sup>L M (IM f) = integral\<^sup>L M (IM g)"
     using integral_cong_AE[of "IM f" "IM g"] by auto
   with Re_eq Im_eq show ?thesis unfolding complex_lebesgue_integral_def by auto
 qed
