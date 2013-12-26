@@ -1,5 +1,5 @@
 theory Library_Misc
-imports Complex_Main Distributions
+imports Distribution_Functions
 
 begin
 
@@ -356,71 +356,80 @@ by (metis PInfty_neq_ereal(1) assms ereal_infty_less_eq(1))
 lemma abs_bounds: "x \<le> y \<Longrightarrow> -x \<le> y \<Longrightarrow> abs (x :: ereal) \<le> y"
 by (metis abs_ereal_ge0 abs_ereal_uminus ereal_0_le_uminus_iff linear)
 
-(** From Weak_Convergence **)
+(** For Weak_Convergence **)
 
-(***
-(* Want to port this from proof of Skorohod, but not clear what the right generalization is. *)
 lemma bdd_rcont_inc_almost_inverse:
   fixes F :: "real \<Rightarrow> real"
-  fixes M :: real
-  assumes "rcont_inc F" and "\<And>x. \<bar>F x\<bar> \<le> M"
+  fixes M a b :: real
+  assumes "a < b" and rcont_inc: "rcont_inc F" and "\<And>x. F x \<in> {a<..<b}"
+    and F_at_bot: "(F ---> a) at_bot" and F_at_top: "(F ---> b) at_top"
   defines "Y \<equiv> \<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
-  shows "\<And>\<omega> x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
-  proof safe
-    fix n::nat fix \<omega> x :: real
-    {
-      assume "\<omega> \<le> F x"
-      hence "x \<in> {x. \<omega> \<le> F x}" by auto
-      hence "Inf {x. \<omega> \<le> F x} \<le> x"
-        using cInf_lower assms(2) 
-      thus "Y_seq n \<omega> \<le> x" unfolding Y_seq_def by simp
-    }
-    {
-      assume "Y_seq n \<omega> \<le> x"
-      hence x_less: "\<forall>y \<in> {0<..<1}. x < y \<longrightarrow> \<omega> \<le> f n y"
-        apply (unfold Y_seq_def)
-        apply safe
+  shows "\<forall>\<omega>\<in>{a<..<b}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
+proof safe
+  fix \<omega> x :: real assume interval: "\<omega> \<in> {a<..<b}"
+  {
+    assume "\<omega> \<le> F x"
+    hence "x \<in> {x. \<omega> \<le> F x}" using interval by auto
+    thus "Y \<omega> \<le> x" unfolding Y_def
+      apply (rule cInf_lower)
+      proof (unfold bdd_below_def Ball_def, auto)
+      have "\<exists>y. F y < \<omega>" (*using F_at_bot interval*)
       proof -
-        fix y assume x: "Inf ({x. \<omega> \<le> f n x} \<inter> {0<..<1}) \<le> x" and y: "y \<in> {0<..<1}" "x < y"
-        show "\<omega> \<le> f n y"
-        proof (rule ccontr)
-          assume "\<not> \<omega> \<le> f n y"
-          hence "f n y < \<omega>" by simp
-          hence le: "\<And>z. z \<le> y \<Longrightarrow> f n z < \<omega>" using f_inc le_less_trans unfolding mono_def by metis
-          have "y \<le> Inf ({x. \<omega> \<le> f n x} \<inter> {0<..<1})"
-            apply (rule cInf_greatest)
-            prefer 2 using le
-            apply (metis (lifting) Int_Collect inf_sup_aci(1) le_cases max.semilattice_strict_iff_order not_less_iff_gr_or_eq)
-            using interval(1) real_distribution.cdf_lim_at_top_prob sorry
-          hence "y \<le> x" using x by simp
-          thus False using y by simp
-        qed
+        (*from F_at_bot have "(F ---> a) (filtermap uminus at_top)" using at_bot_mirror by simp*)
+        have "((F \<circ> uminus) ---> a) at_top" using F_at_bot sorry
+        (*apply (insert F_at_bot)
+        apply (subst (asm) at_bot_mirror)
+        apply (subgoal_tac "((F \<circ> uminus) ---> a) at_top")*)
+        thus ?thesis sorry
       qed
-      show "\<omega> \<le> f n x"
-      proof (rule field_le_epsilon)
-        fix e::real assume e: "0 < e"
-        hence "\<exists>d>0. f n (x + d) - f n x < e"
-          using continuous_at_right_real_increasing f_inc f_right_cts unfolding mono_def by auto
-        then guess d .. note d = this
-        have "\<exists>w. 0 < w \<and> w < 1 - x" using interval(2)
-          (*by (metis diff_0 diff_less_iff(2) greaterThanLessThan_iff minus_diff_eq real_lbound_gt_zero)*)
-        then guess w .. note w = this
-        def \<delta> \<equiv> "min d w"
-        have \<delta>: "\<delta> > 0" "f n (x + \<delta>) - f n x < e" "x + \<delta> \<in> {0<..<1}"
-        proof -
-          from d w show "\<delta> > 0" unfolding \<delta>_def by auto
-          have "x + \<delta> \<le> x + d" unfolding \<delta>_def by auto
-          hence "f n (x + \<delta>) \<le> f n (x + d)" using f_inc unfolding mono_def by auto
-          thus "f n (x + \<delta>) - f n x < e" using d by simp
-          from w have "x < x + w \<and> x + w < 1" by simp
-          hence "x < x + \<delta> \<and> x + \<delta> < 1" using d w unfolding \<delta>_def by auto
-          thus "x + \<delta> \<in> {0<..<1}" using interval(2) by auto
-        qed
-        hence "\<omega> \<le> f n (x + \<delta>)" using x_less \<delta> by auto
-        thus "\<omega> \<le> f n x + e" using \<delta>(2) by simp
+      then guess y .. note y = this
+      hence "\<forall>x. \<omega> \<le> F x \<longrightarrow> y \<le> x" using rcont_inc unfolding rcont_inc_def mono_def
+        by (metis dual_order.irrefl le_cases le_less_trans)
+      thus "\<exists>m. \<forall>x. \<omega> \<le> F x \<longrightarrow> m \<le> x" by auto
+    qed
+  }
+  {
+    assume "Y \<omega> \<le> x"
+    hence x_less: "\<And>y. x < y \<Longrightarrow> \<omega> \<le> F y"
+    proof (unfold Y_def)
+      fix y assume x: "Inf {x. \<omega> \<le> F x} \<le> x" and y: "x < y"
+      show "\<omega> \<le> F y"
+      proof (rule ccontr)
+        assume "\<not> \<omega> \<le> F y"
+        hence "F y < \<omega>" by simp
+        hence le: "\<And>z. z \<le> y \<Longrightarrow> F z < \<omega>" using rcont_inc le_less_trans unfolding rcont_inc_def mono_def by metis
+        have "y \<le> Inf {x. \<omega> \<le> F x}"
+          apply (rule cInf_greatest)
+          prefer 2 using le
+          apply (metis (lifting) Int_Collect inf_sup_aci(1) le_cases max.semilattice_strict_iff_order not_less_iff_gr_or_eq)
+          apply (subgoal_tac "(\<lambda>k::nat. F (real k)) ----> b")
+          apply (drule LIMSEQ_D[of _ _ "b - \<omega>"])
+          using interval(1) apply (metis diff_less_iff(1) greaterThanLessThan_iff)
+          prefer 2
+          using F_at_top rcont_inc tendsto_at_topI_sequentially assms unfolding rcont_inc_def mono_def
+            apply (metis filterlim_compose filterlim_real_sequentially)      
+          proof -
+            assume 1: "\<exists>no::nat. \<forall>k\<ge>no. norm (F (real k) - b) < b - \<omega>"
+            then guess no .. note no = this
+            hence "norm (F (real no) - b) < b - \<omega>" by simp
+            hence "\<omega> \<le> F (real no)" by auto
+            thus "{x. \<omega> \<le> F x} \<noteq> {}" by auto
+          qed
+        hence "y \<le> x" using x by simp
+        thus False using y by simp
       qed
-    }
-  qed
-***)
+    qed
+    show "\<omega> \<le> F x"
+    proof (rule field_le_epsilon)
+      fix e::real assume e: "0 < e"
+      hence "\<exists>\<delta>>0. F (x + \<delta>) - F x < e"
+        using continuous_at_right_real_increasing rcont_inc unfolding rcont_inc_def mono_def by auto
+      then guess \<delta> .. note \<delta> = this
+      have \<delta>: "\<delta> > 0" "F (x + \<delta>) - F x < e" using \<delta> by simp_all
+      hence "\<omega> \<le> F (x + \<delta>)" using x_less \<delta> by auto
+      thus "\<omega> \<le> F x + e" using \<delta>(2) by simp
+    qed
+  }
+qed
 
 end
