@@ -7,7 +7,7 @@ Properties of weak convergence of functions and measures, including the portmant
 
 theory Weak_Convergence
 
-imports Probability Distribution_Functions Distributions
+imports Distribution_Functions Library_Misc
 
 begin
 
@@ -42,7 +42,6 @@ theorem Skorohod:
 proof -
   def f \<equiv> "\<lambda>n. cdf (\<mu> n)"
   def F \<equiv> "cdf M"
-  interpret M: real_distribution M by (rule assms)
   have fn_weak_conv: "weak_conv f F" using assms(3) unfolding weak_conv_m_def f_def F_def by auto
   {  fix n
      interpret \<mu>: real_distribution "(\<mu> n)" by (rule assms)
@@ -50,139 +49,32 @@ proof -
        by (auto simp add: f_def mono_def \<mu>.cdf_nondecreasing \<mu>.cdf_is_right_cont \<mu>.cdf_lim_at_top_prob \<mu>.cdf_lim_at_bot)
   } 
   note f_inc = this(1) and f_right_cts = this(2) and f_at_top = this(3) and f_at_bot = this(4)
+  interpret M: real_distribution M by (rule assms)
   have F_inc: "mono F" unfolding F_def mono_def using M.cdf_nondecreasing by auto
   have F_right_cts: "\<And>a. continuous (at_right a) F"
     unfolding F_def using assms(2) M.cdf_is_right_cont by auto
+  have F_at_top: "(F ---> 1) at_top" unfolding F_def using M.cdf_lim_at_top_prob by auto
+  have F_at_bot: "(F ---> 0) at_bot" unfolding F_def using M.cdf_lim_at_bot by auto
   def \<Omega> \<equiv> "measure_of {0::real<..<1} (algebra.restricted_space {0<..<1} UNIV) lborel"
   def Y_seq \<equiv> "\<lambda>n \<omega>. Inf {x. \<omega> \<le> f n x}"
   def Y \<equiv> "\<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
   have Y_seq_le_iff: "\<And>n. \<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> f n x) = (Y_seq n \<omega> \<le> x)"
-  proof safe
-    fix n::nat fix \<omega> x :: real assume interval: "\<omega> \<in> {0<..<1}"
-    {
-      assume "\<omega> \<le> f n x"
-      hence "x \<in> {x. \<omega> \<le> f n x}" using interval by auto
-      hence "Inf {x. \<omega> \<le> f n x} \<le> x"
-        apply (rule cInf_lower)
-        proof (unfold bdd_below_def Ball_def, auto)
-        have "\<exists>y. f n y < \<omega>"
-          apply (insert f_at_bot[of n])
-          sorry
-        then guess y .. note y = this
-        hence "\<forall>x. \<omega> \<le> f n x \<longrightarrow> y \<le> x" by (metis f_inc less_le_trans mono_invE)
-        thus "\<exists>m. \<forall>x. \<omega> \<le> f n x \<longrightarrow> m \<le> x" by auto
-      qed
-      thus "Y_seq n \<omega> \<le> x" unfolding Y_seq_def by simp
-    }
-    {
-      assume "Y_seq n \<omega> \<le> x"
-      hence x_less: "\<And>y. x < y \<Longrightarrow> \<omega> \<le> f n y"
-      proof (unfold Y_seq_def)
-        fix y assume x: "Inf {x. \<omega> \<le> f n x} \<le> x" and y: "x < y"
-        show "\<omega> \<le> f n y"
-        proof (rule ccontr)
-          assume "\<not> \<omega> \<le> f n y"
-          hence "f n y < \<omega>" by simp
-          hence le: "\<And>z. z \<le> y \<Longrightarrow> f n z < \<omega>" using f_inc le_less_trans unfolding mono_def by metis
-          have "y \<le> Inf {x. \<omega> \<le> f n x}"
-            apply (rule cInf_greatest)
-            prefer 2 using le
-            apply (metis (lifting) Int_Collect inf_sup_aci(1) le_cases max.semilattice_strict_iff_order not_less_iff_gr_or_eq)
-            apply (subgoal_tac "(\<lambda>k::nat. (f n) (real k)) ----> 1")
-            apply (drule LIMSEQ_D[of _ _ "1 - \<omega>"])
-            using interval(1) apply (metis diff_less_iff(1) greaterThanLessThan_iff)
-            prefer 2
-            using f_at_top f_inc tendsto_at_topI_sequentially assms(1) f_def real_distribution.cdf_lim_infty_prob
-            apply force
-            proof -
-              assume 1: "\<exists>no::nat. \<forall>k\<ge>no. norm (f n (real k) - 1) < 1 - \<omega>"
-              then guess no .. note no = this
-              hence "norm (f n (real no) - 1) < 1 - \<omega>" by simp
-              hence "\<omega> \<le> f n (real no)" by auto
-              thus "{x. \<omega> \<le> f n x} \<noteq> {}" sorry
-            qed
-          hence "y \<le> x" using x by simp
-          thus False using y by simp
-        qed
-      qed
-      show "\<omega> \<le> f n x"
-      proof (rule field_le_epsilon)
-        fix e::real assume e: "0 < e"
-        hence "\<exists>\<delta>>0. f n (x + \<delta>) - f n x < e"
-          using continuous_at_right_real_increasing f_inc f_right_cts unfolding mono_def by auto
-        then guess \<delta> .. note \<delta> = this
-        have \<delta>: "\<delta> > 0" "f n (x + \<delta>) - f n x < e" using \<delta> by simp_all
-        hence "\<omega> \<le> f n (x + \<delta>)" using x_less \<delta> by auto
-        thus "\<omega> \<le> f n x + e" using \<delta>(2) by simp
-      qed
-    }
+  proof -
+    fix n :: nat
+    show "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> f n x) = (Y_seq n \<omega> \<le> x)"
+      unfolding Y_seq_def apply (rule bdd_rcont_inc_almost_inverse[of 0 1 "f n"])
+      unfolding rcont_inc_def using f_inc f_right_cts f_at_top f_at_bot by auto
   qed
-  hence "\<And>n. distributed \<Omega> borel (Y_seq n) (f n)"
-    unfolding distributed_def sorry
-  (* Duplication; break out a general lemma based on remark following (14.5) *)
-  have Y_le_iff: "\<And>n. \<forall>\<omega>\<in>{0<..<1}. \<forall>x\<in>{0<..<1}. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
-  proof safe
-    fix n::nat fix \<omega> x :: real assume interval: "\<omega> \<in> {0<..<1}" "x \<in> {0<..<1}"
-    {
-      assume "\<omega> \<le> F x"
-      hence "x \<in> {x. \<omega> \<le> F x} \<inter> {0<..<1}" using interval by auto
-      hence "Inf ({x. \<omega> \<le> F x} \<inter> {0<..<1}) \<le> x"
-        by (metis cInf_lower bdd_below_Int1 bdd_below_Ioo inf_sup_aci(1))
-      thus "Y \<omega> \<le> x" unfolding Y_def by simp
-    }
-    {
-      assume "Y \<omega> \<le> x"
-      hence x_less: "\<forall>y \<in> {0<..<1}. x < y \<longrightarrow> \<omega> \<le> F y"
-        apply (unfold Y_def)
-        apply safe
-      proof -
-        fix y assume x: "Inf ({x. \<omega> \<le> F x} \<inter> {0<..<1}) \<le> x" and y: "y \<in> {0<..<1}" "x < y"
-        show "\<omega> \<le> F y"
-        proof (rule ccontr)
-          assume "\<not> \<omega> \<le> F y"
-          hence "F y < \<omega>" by simp
-          hence le: "\<And>z. z \<le> y \<Longrightarrow> F z < \<omega>" using F_inc le_less_trans unfolding mono_def by metis
-          have "y \<le> Inf ({x. \<omega> \<le> F x} \<inter> {0<..<1})"
-            apply (rule cInf_greatest)
-            prefer 2 using le
-            apply (metis (lifting) Int_Collect inf_sup_aci(1) le_cases max.semilattice_strict_iff_order not_less_iff_gr_or_eq)
-            using interval(1) real_distribution.cdf_lim_at_top_prob sorry
-          hence "y \<le> x" using x by simp
-          thus False using y by simp
-        qed
-      qed
-      show "\<omega> \<le> F x"
-      proof (rule field_le_epsilon)
-        fix e::real assume e: "0 < e"
-        hence "\<exists>d>0. F (x + d) - F x < e"
-          using continuous_at_right_real_increasing F_inc F_right_cts unfolding mono_def by auto
-        then guess d .. note d = this
-        have "\<exists>w. 0 < w \<and> w < 1 - x" using interval(2)
-          by (metis diff_0 diff_less_iff(2) greaterThanLessThan_iff minus_diff_eq real_lbound_gt_zero)
-        then guess w .. note w = this
-        def \<delta> \<equiv> "min d w"
-        have \<delta>: "\<delta> > 0" "F (x + \<delta>) - F x < e" "x + \<delta> \<in> {0<..<1}"
-        proof -
-          from d w show "\<delta> > 0" unfolding \<delta>_def by auto
-          have "x + \<delta> \<le> x + d" unfolding \<delta>_def by auto
-          hence "F (x + \<delta>) \<le> F (x + d)" using F_inc unfolding mono_def by auto
-          thus "F (x + \<delta>) - F x < e" using d by simp
-          from w have "x < x + w \<and> x + w < 1" by simp
-          hence "x < x + \<delta> \<and> x + \<delta> < 1" using d w unfolding \<delta>_def by auto
-          thus "x + \<delta> \<in> {0<..<1}" using interval(2) by auto
-        qed
-        hence "\<omega> \<le> F (x + \<delta>)" using x_less \<delta> by auto
-        thus "\<omega> \<le> F x + e" using \<delta>(2) by simp
-      qed
-    }
-  qed
-  hence "distributed \<Omega> borel Y F"
-    unfolding distributed_def sorry
-  find_theorems "limsup _" "liminf _"
+  have Y_le_iff: "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
+  unfolding Y_def apply (rule bdd_rcont_inc_almost_inverse[of 0 1 F])
+      unfolding rcont_inc_def using F_inc F_right_cts F_at_top F_at_bot by auto
   {
-    fix \<omega>::real assume \<omega>: "continuous (at \<omega>) Y"
-    have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" sorry
-  }
+    fix \<omega>::real assume \<omega>: "\<omega> \<in> {0<..<1}" "continuous (at \<omega>) Y"
+    have "liminf (\<lambda>n. Y_seq n \<omega>) \<ge> Y \<omega>" sorry
+    moreover have "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>" sorry
+    ultimately have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" using Liminf_le_Limsup
+      by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially) 
+  } note Y_cts_cnv = this
   show ?thesis sorry
 qed
 

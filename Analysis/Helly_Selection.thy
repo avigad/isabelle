@@ -1,5 +1,5 @@
 theory Helly_Selection
-imports Diagonal_Subsequence Conditionally_Complete_Lattices Library_Misc
+imports Diagonal_Subsequence Weak_Convergence Library_Misc
 
 begin
 
@@ -92,7 +92,7 @@ proof -
       unfolding bij_betw_def by (erule conjE, assumption, auto)
     hence "\<exists>n. x < r n" ..
   } note r_unbdd = this
-  def F == "\<lambda>x. Inf {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}"
+  def F \<equiv> "\<lambda>x. Inf {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}"
   have "\<And>x. F x \<in> {-M..M}"
     unfolding F_def apply (rule real_closed_subset_contains_Inf)
     using limset_bdd apply auto
@@ -316,18 +316,25 @@ proof -
           by (auto intro: linf_e)
         thus "\<bar>F x - liminf (\<lambda>k. (f (d k) x))\<bar> < e"
           by (auto simp add: linf)
-   qed
-  hence *: "lim (\<lambda>k. ereal (f (d k) x)) = F x" "convergent (\<lambda>k. ereal (f (d k) x))"
-    by (intro lim_close_limsup_liminf, auto)+
-  have "(\<lambda>k. ereal (f (d k) x)) ----> F x"
-    apply (subst *(1) [symmetric])
-    apply (subst convergent_LIMSEQ_iff [symmetric])
-    by (rule *)
-  thus ?thesis
-    by (subst lim_ereal [symmetric])
-  qed
+     qed
+    hence *: "lim (\<lambda>k. ereal (f (d k) x)) = F x" "convergent (\<lambda>k. ereal (f (d k) x))"
+      by (intro lim_close_limsup_liminf, auto)+
+    have "(\<lambda>k. ereal (f (d k) x)) ----> F x"
+      apply (subst *(1) [symmetric])
+      apply (subst convergent_LIMSEQ_iff [symmetric])
+      by (rule *)
+    thus ?thesis by (subst lim_ereal [symmetric])
+    qed
   qed
   ultimately show ?thesis using subseq by auto
 qed
+
+(** Weak convergence corollaries to Helly's theorem. **)
+
+definition tight :: "(nat \<Rightarrow> real measure) \<Rightarrow> bool"
+where "tight \<mu> \<equiv> \<forall>\<epsilon>>0. \<exists>a b. a < b \<and> (\<forall>n. (\<mu> n) {a<..b} > 1 - \<epsilon>)"
+
+theorem tight_iff_convergent_subsubsequence:
+  "\<And>\<mu>. tight \<mu> = (\<forall>s. subseq s \<longrightarrow> (\<exists>r. \<exists>M.  subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M))"
 
 end

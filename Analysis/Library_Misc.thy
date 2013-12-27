@@ -361,27 +361,23 @@ by (metis abs_ereal_ge0 abs_ereal_uminus ereal_0_le_uminus_iff linear)
 lemma bdd_rcont_inc_almost_inverse:
   fixes F :: "real \<Rightarrow> real"
   fixes M a b :: real
-  assumes "a < b" and rcont_inc: "rcont_inc F" and "\<And>x. F x \<in> {a<..<b}"
+  assumes "a < b" and rcont_inc: "rcont_inc F"
     and F_at_bot: "(F ---> a) at_bot" and F_at_top: "(F ---> b) at_top"
-  defines "Y \<equiv> \<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
-  shows "\<forall>\<omega>\<in>{a<..<b}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
+  shows "\<forall>\<omega>\<in>{a<..<b}. \<forall>x. (\<omega> \<le> F x) = (Inf {x. \<omega> \<le> F x} \<le> x)"
 proof safe
   fix \<omega> x :: real assume interval: "\<omega> \<in> {a<..<b}"
+  def Y \<equiv> "\<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
   {
     assume "\<omega> \<le> F x"
     hence "x \<in> {x. \<omega> \<le> F x}" using interval by auto
     thus "Y \<omega> \<le> x" unfolding Y_def
       apply (rule cInf_lower)
       proof (unfold bdd_below_def Ball_def, auto)
-      have "\<exists>y. F y < \<omega>" (*using F_at_bot interval*)
-      proof -
-        (*from F_at_bot have "(F ---> a) (filtermap uminus at_top)" using at_bot_mirror by simp*)
-        have "((F \<circ> uminus) ---> a) at_top" using F_at_bot sorry
-        (*apply (insert F_at_bot)
-        apply (subst (asm) at_bot_mirror)
-        apply (subgoal_tac "((F \<circ> uminus) ---> a) at_top")*)
-        thus ?thesis sorry
-      qed
+        from F_at_bot have "\<exists>y. F y < \<omega>" unfolding filterlim_def le_filter_def
+          apply (subst (asm) eventually_filtermap)
+          apply (subst (asm) eventually_at_bot_linorder)
+          apply (drule_tac x = "\<lambda>z. z < \<omega>" in allE[where R = "\<exists>y. F y < \<omega>"], auto)
+          using interval by (metis F_at_bot eventually_at_bot_linorder greaterThanLessThan_iff order_refl order_tendsto_iff) 
       then guess y .. note y = this
       hence "\<forall>x. \<omega> \<le> F x \<longrightarrow> y \<le> x" using rcont_inc unfolding rcont_inc_def mono_def
         by (metis dual_order.irrefl le_cases le_less_trans)
