@@ -7,7 +7,7 @@ Properties of weak convergence of functions and measures, including the portmant
 
 theory Weak_Convergence
 
-imports Distribution_Functions Library_Misc
+imports Distribution_Functions Library_Misc Uncountable
 
 begin
 
@@ -55,9 +55,13 @@ proof -
     unfolding F_def using assms(2) M.cdf_is_right_cont by auto
   have F_at_top: "(F ---> 1) at_top" unfolding F_def using M.cdf_lim_at_top_prob by auto
   have F_at_bot: "(F ---> 0) at_bot" unfolding F_def using M.cdf_lim_at_bot by auto
-  def \<Omega> \<equiv> "measure_of {0::real<..<1} (algebra.restricted_space {0<..<1} UNIV) lborel"
+  def \<Omega> \<equiv> "measure_of {0::real<..<1} (algebra.restricted_space {0<..<1} UNIV) borel"
   def Y_seq \<equiv> "\<lambda>n \<omega>. Inf {x. \<omega> \<le> f n x}"
   def Y \<equiv> "\<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
+  have f_meas: "\<And>n. f n \<in> borel_measurable borel" using f_inc borel_measurable_mono_fnc by auto
+  hence Y_seq_meas: "\<And>n. Y_seq n \<in> measurable \<Omega> borel" unfolding Y_seq_def using borel_measurable_INF sorry
+  have F_meas: "F \<in> borel_measurable borel" using F_inc borel_measurable_mono_fnc by auto
+  hence Y_meas: "Y \<in> measurable \<Omega> borel" sorry
   have Y_seq_le_iff: "\<And>n. \<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> f n x) = (Y_seq n \<omega> \<le> x)"
   proof -
     fix n :: nat
@@ -65,17 +69,37 @@ proof -
       unfolding Y_seq_def apply (rule bdd_rcont_inc_almost_inverse[of 0 1 "f n"])
       unfolding rcont_inc_def using f_inc f_right_cts f_at_top f_at_bot by auto
   qed
+  hence Y_seq_distr: "\<And>n. distr \<Omega> borel (Y_seq n) = \<mu> n" sorry
   have Y_le_iff: "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
-  unfolding Y_def apply (rule bdd_rcont_inc_almost_inverse[of 0 1 F])
-      unfolding rcont_inc_def using F_inc F_right_cts F_at_top F_at_bot by auto
+    unfolding Y_def apply (rule bdd_rcont_inc_almost_inverse[of 0 1 F])
+    unfolding rcont_inc_def using F_inc F_right_cts F_at_top F_at_bot by auto
+  hence Y_distr: "distr \<Omega> borel Y = M" sorry
   {
     fix \<omega>::real assume \<omega>: "\<omega> \<in> {0<..<1}" "continuous (at \<omega>) Y"
-    have "liminf (\<lambda>n. Y_seq n \<omega>) \<ge> Y \<omega>" sorry
+    have "liminf (\<lambda>n. Y_seq n \<omega>) \<ge> Y \<omega>"
+    proof (subst liminf_bounded_iff, auto)
+      fix B :: ereal assume B: "B < ereal (Y \<omega>)"
+      show "\<exists>N. \<forall>n\<ge>N. B < ereal (Y_seq n \<omega>)"
+        apply (rule ereal_cases[of B])
+        prefer 2 using B less_ereal.simps(4) apply auto
+        proof -
+          fix r :: real assume r: "r < Y \<omega>"
+          hence "uncountable {r<..<Y \<omega>}" using open_interval_uncountable by simp
+          with M.countable_atoms uncountable_minus_countable
+          have "uncountable ({r<..<Y \<omega>} - {x. measure M {x} > 0})" by auto
+          then obtain x where *: "x \<in> {r<..<Y \<omega>} - {x. measure M {x} > 0}"
+            unfolding uncountable_def by blast
+          hence x: "r < x" "x < Y \<omega>" "measure M {x} = 0"
+            using DiffD1 greaterThanLessThan_iff measure_nonneg[of M "{x}"] by (simp_all add: linorder_not_less)
+          with Y_le_iff \<omega> have "F x < \<omega>" using not_less by blast
+          show "\<exists>N. \<forall>n\<ge>N. r < Y_seq n \<omega>" sorry
+        qed
+    qed
     moreover have "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>" sorry
     ultimately have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" using Liminf_le_Limsup
       by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially) 
   } note Y_cts_cnv = this
-  show ?thesis sorry
+  show ?thesis sorry (* Need to modify proof of Measure_Space.distr_cong to obtain a distr_cong_AE lemma. *)
 qed
 
 lemma isCont_borel:
@@ -422,6 +446,8 @@ next
       by (auto simp add: field_simps)
 qed
 
+(*** NOTE: The following three lemmata are solved directly by theorems in Library_Misc. ***)
+
 (* name clash with the version in Extended_Real_Limits *)
 lemma convergent_ereal': "convergent (X :: nat \<Rightarrow> real) \<Longrightarrow> convergent (\<lambda>n. ereal (X n))"
   apply (drule convergentD, auto)
@@ -436,6 +462,8 @@ lemma convergent_liminf_cl:
   fixes X :: "nat \<Rightarrow> 'a::{complete_linorder,linorder_topology}"
   shows "convergent X \<Longrightarrow> liminf X = lim X"
   by (auto simp: convergent_def limI lim_imp_Liminf)
+
+(**************************************************)
 
 lemma limsup_le_liminf_real:
   fixes X :: "nat \<Rightarrow> real" and L :: real

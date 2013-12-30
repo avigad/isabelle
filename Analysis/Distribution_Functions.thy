@@ -673,8 +673,11 @@ proof (rule countably_additiveI)
               using hyp UNiS apply auto
               apply (frule_tac x = "ia" in bspec)
               apply auto
-              by (metis euclidean_trans(2) euclidean_trans(3)
-                hyp le_less less_imp_triv mem_delete not_le)
+              by (smt DiffI Set.set_insert hyp singleton_insert_inj_eq')
+              (* The fact euclidean_trans seems to have been renamed; above are the results of
+                 running sledgehammer. *)
+              (*by (metis euclidean_trans(2) euclidean_trans(3)
+                hyp le_less less_imp_triv mem_delete not_le)*)
             also have "(\<Sum>i\<in>S - {j}. F (r i) - F (l i)) \<le>
               (\<Sum>i\<in>S. F (r i) - F (l i))"
               apply (subgoal_tac "S = (S - {j}) Un {j}") 
