@@ -31,7 +31,8 @@ lemma positive_integral_eq_erealD:
   assumes "AE x in M. 0 \<le> f x"
   shows "integrable M f" "lebesgue_integral M f = x"
   apply (metis PInfty_neq_ereal(1) integrable_nonneg assms)
-  by (metis PInfty_neq_ereal(1) assms(1) assms(2) assms(3) integrable_nonneg positive_integral_eq_integral real_of_ereal(2))
+  by (metis PInfty_neq_ereal(1) assms(1) assms(2) assms(3) integrable_nonneg 
+    positive_integral_eq_integral real_of_ereal(2))
 
 (* Should be easier to conclude integrability from calculation of an integral. *)
 (* Adapted from proof in Distributions.thy. *)
@@ -62,7 +63,8 @@ proof -
     apply (rule filterlim_ident)
     apply auto
     done
-  finally have *: "positive_integral lborel (%x. ereal (exp (- (x * u)) * indicator {0..} x)) = ereal (1 / u)"
+  finally have *: "positive_integral lborel (\<lambda>x. ereal (exp (- (x * u)) * indicator {0..} x)) = 
+      ereal (1 / u)"
     by simp
   show ?eq
     by (rule positive_integral_eq_erealD[OF *]) (simp_all add: mult_nonneg_nonneg)
@@ -74,50 +76,86 @@ lemma Collect_eq_Icc: "{r. t \<le> r \<and> r \<le> b} = {t .. b}"
   by auto
 
 (* From Billingsley section 18. *)
-lemma ex_18_4_1_deriv: "DERIV (\<lambda>x. (1/(1+u^2)) * (1 - exp (-u * x) *
-    (u * sin x + cos x))) x :> exp (-u * x) * sin x"
-  apply (auto intro!: DERIV_intros)
-by (simp_all add: power2_eq_square field_simps)
-
 lemma ex_18_4_1:
   assumes "t \<ge> 0"
   shows "LBINT x=0..t. exp (-u * x) * sin x = (1/(1+u^2)) *
   (1 - exp (-u * t) * (u * sin t + cos t))"
-  unfolding interval_lebesgue_integral_def
-  using integral_FTC_atLeastAtMost[of 0 t "\<lambda>x. (1/(1+u^2)) *
-    (1 - exp (-u * x) * (u * sin x + cos x))" "\<lambda>x. exp (-u * x) * sin x"]
-    ex_18_4_1_deriv assms apply (simp add:  Collect_eq_Icc)
-  sorry
+
+  apply (subst zero_ereal_def)
+  apply (subst interval_integral_FTC_finite 
+      [where F = "(\<lambda>x. (1/(1+u^2)) * (1 - exp (-u * x) * (u * sin x + cos x)))"])
+  apply (auto intro: continuous_at_imp_continuous_on)
+  apply (rule DERIV_imp_DERIV_within, auto)
+  apply (auto intro!: DERIV_intros)
+by (simp_all add: power2_eq_square field_simps)
 
 lemma ex_18_4_2_deriv:
   "DERIV (\<lambda>u. 1/x * (1 - exp (-u * x)) * \<bar>sin x\<bar>) u :> \<bar>exp (-u * x) * sin x\<bar>"
   apply (auto simp only: intro!: DERIV_intros)
   by (simp add: abs_mult)
 
+(* not needed *)
 lemma ex_18_4_2_bdd_integral:
   assumes "s \<ge> 0"
   shows "LBINT u=0..s. \<bar>exp (-u * x) * sin x\<bar> =
   1/x * (1 - exp (-s * x)) * \<bar>sin x\<bar>"
-using integral_FTC_atLeastAtMost[of 0 s "\<lambda>u. 1/x * (1 - exp (-u * x)) * \<bar>sin x\<bar>" "\<lambda>u. \<bar>exp (-u * x) * sin x\<bar>"] assms
-ex_18_4_2_deriv 
-apply  simp
-  sorry
 
+  apply (subst zero_ereal_def)
+  apply (subst interval_integral_FTC_finite 
+      [where F = "\<lambda>u. 1/x * (1 - exp (-u * x)) * \<bar>sin x\<bar>"])
+  apply (auto intro: continuous_at_imp_continuous_on) [1]
+  apply (rule DERIV_imp_DERIV_within, force)
+  (* curiously, just copying the proof of ex_18_4_2_deriv doesn't work *)
+  apply (rule ex_18_4_2_deriv)
+  apply auto
+done
+
+(* clean this up! it should be shorter *)
 lemma ex_18_4_2_ubdd_integral:
   fixes x
   assumes pos: "0 < x"
-  shows "LBINT u:{0..}. \<bar>exp (-(u * x)) * sin x\<bar> = \<bar>sin x\<bar> / x" (is "LBINT u:{0..}. ?f u = ?sx")
-  apply (subst abs_mult)
-  apply (subst mult_commute) back
-  (* Would be nice not to need to do this explicitly. *)
-  apply (subst divide_inverse)
-  apply (subst inverse_eq_divide)
-  apply (subst integral_expneg_alpha_atMost0 [symmetric], rule pos)
-  (* Automated tools should get this. *)
-  apply (subst mult_assoc)
-  apply (subst integral_cmult(2), simp_all)
-  (* Want a theorem which says that if we can calculate the integral of something, it is integrable. *)
-sorry
+  shows "LBINT u=0..\<infinity>. \<bar>exp (-u * x) * sin x\<bar> = \<bar>sin x\<bar> / x" 
+
+  apply (subst interval_integral_FTC_nonneg [where F = "\<lambda>u. 1/x * (1 - exp (-u * x)) * \<bar>sin x\<bar>"
+    and A = 0 and B = "abs (sin x) / x"])
+  apply force
+  apply (rule ex_18_4_2_deriv)
+  apply auto
+  (* this is a little annoying -- having to replace 0 by "ereal 0" *)
+  apply (subst zero_ereal_def)+
+  apply (simp_all add: ereal_tendsto_simps)
+  (* What follows are two simple limit calculations. Clean these up -- they should be
+  shorter. *)
+  apply (rule filterlim_mono [of _ "nhds 0" "at 0"], auto)
+  prefer 2
+  apply (rule at_le, simp)
+  apply (subst divide_real_def)
+  apply (rule tendsto_mult_left_zero)+
+  apply (subgoal_tac "0 = 1 - 1")
+  apply (erule ssubst)
+  apply (rule tendsto_diff, auto)
+  apply (subgoal_tac "1 = exp 0")
+  apply (erule ssubst)
+  apply (rule tendsto_compose) back
+  apply (subst isCont_def [symmetric], auto)
+  apply (rule tendsto_minus_cancel, auto)
+  apply (rule tendsto_mult_left_zero, rule tendsto_ident_at)
+  (* this is the second *)
+  apply (subst divide_real_def)+
+  apply (subgoal_tac "abs (sin x) * inverse x = 1 * abs (sin x) * inverse x")
+  apply (erule ssubst)
+  apply (rule tendsto_mult)+
+  apply auto
+  apply (subgoal_tac "1 = 1 - 0")
+  apply (erule ssubst) back
+  apply (rule tendsto_diff, auto)
+  apply (rule filterlim_compose) back
+  apply (rule exp_at_bot)
+  apply (subst filterlim_uminus_at_top [symmetric])
+  apply (subst mult_commute)
+  apply (rule filterlim_tendsto_pos_mult_at_top [OF _ pos])
+  apply auto
+by (rule filterlim_ident)
 
 definition sinc :: "real \<Rightarrow> real" where "sinc t \<equiv> LBINT x=0..t. sin x / x"
 

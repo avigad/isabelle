@@ -413,7 +413,7 @@ locale real_distribution = prob_space M for M :: "real measure" +
 begin
 
 sublocale finite_borel_measure M
-  by default (auto simp: events_eq_borel)
+  by default auto
 
 lemma cdf_bounded_prob: "\<And>x. cdf M x \<le> 1"
   by (subst prob_space [symmetric], rule cdf_bounded)
