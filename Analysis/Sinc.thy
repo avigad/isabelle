@@ -5,8 +5,8 @@ Authors: Jeremy Avigad, Luke Serafin
 Some routine calculations from undergraduate calculus.
 *)
 
-theory Some_Calculus
-imports Interval_Integral (* Distributions *)
+theory Sinc
+imports Interval_Integral
 
 begin
 
