@@ -22,6 +22,13 @@ definition
   weak_conv_m :: "(nat \<Rightarrow> real measure) \<Rightarrow> real measure \<Rightarrow> bool"
 where
   "weak_conv_m M_seq M \<equiv> weak_conv (\<lambda>n. cdf (M_seq n)) (cdf M)"
+(*  
+lemma real_rcont_inc_iff: "(rcont_inc f) = (\<forall>\<epsilon>>0. \<forall>x. \<exists>\<delta>>0. \<forall>y>x. y - x < \<delta> \<longrightarrow> f y - f x < \<epsilon>)"
+proof
+  assume f: "rcont_inc f"
+  { fix \<epsilon> x y :: real assume \<epsilon>: "\<epsilon> > 0" and y: "x < y"
+    from f unfolding rcont_inc_def
+    *)
 
 (* state using obtains? *)
 theorem Skorohod:
@@ -70,10 +77,81 @@ proof -
       unfolding rcont_inc_def using f_inc f_right_cts f_at_top f_at_bot by auto
   qed
   hence Y_seq_distr: "\<And>n. distr \<Omega> borel (Y_seq n) = \<mu> n" sorry
+  from F_at_bot F_inc have Y_lower: "\<And>\<omega>. \<omega> \<le> 0 \<Longrightarrow> Y \<omega> = 0" unfolding Y_def mono_def sorry
+  have Y_upper: "\<And>\<omega>. 1 \<le> \<omega> \<Longrightarrow> Y \<omega> = 1" sorry
   have Y_le_iff: "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
     unfolding Y_def apply (rule bdd_rcont_inc_almost_inverse[of 0 1 F])
     unfolding rcont_inc_def using F_inc F_right_cts F_at_top F_at_bot by auto
   hence Y_distr: "distr \<Omega> borel Y = M" sorry
+  have *: "\<forall>x\<in>{0<..<1}. \<forall>y\<in>{0<..<1}. x \<le> y \<longrightarrow> Y x \<le> Y y"
+    using F_inc unfolding mono_def by (metis Y_le_iff dual_order.trans eq_iff)
+  (** Consider incorporating this into the theorem bdd_rcont_inc_almost_inverse. **)
+  have Y_inc: "\<And>x y. x \<le> y \<Longrightarrow> Y x \<le> Y y"
+  proof -
+    fix x y :: real assume xy: "x \<le> y"
+    show "Y x \<le> Y y"
+    proof (cases "x \<le> 0", cases "x \<ge> 1", cases "y \<le> 0", cases "y \<ge> 1", force, force, force)
+      assume x: "x \<le> 0"
+      show ?thesis
+      proof (cases "y \<le> 0", cases "y \<ge> 1",force, simp add: x Y_lower)
+        assume "\<not> y \<le> 0"
+        hence y: "0 < y" by simp
+        show ?thesis
+        proof (cases "y \<ge> 1", simp add: x Y_lower Y_upper)
+          assume "\<not> 1 \<le> y"
+          hence "y < 1" by simp
+          hence "y \<in> {0<..<1}" using y by auto
+          thus ?thesis sorry
+        qed
+      qed
+    next
+      assume "\<not> x \<le> 0"
+      hence x: "0 < x" by simp
+      show ?thesis
+      proof (cases "x \<ge> 1", cases "y \<le> 0", cases "y \<ge> 1",force)
+        assume "x \<ge> 1" "y \<le> 0" thus ?thesis using Y_lower Y_upper xy by simp
+      next
+        assume x1: "x \<ge> 1" and "\<not> y \<le> 0"
+        hence y: "0 < y" by simp
+        show ?thesis
+        proof (cases "y \<ge> 1", simp add: x1 Y_lower Y_upper)
+          assume "\<not> 1 \<le> y"
+          hence "y < 1" by simp
+          hence "y \<in> {0<..<1}" using y by auto
+          thus ?thesis sorry
+        qed
+      next
+        assume "\<not> 1 \<le> x"
+        hence "x < 1" by simp
+        hence x: "x \<in> {0<..<1}" using x by auto
+        show ?thesis
+        proof (cases "y \<ge> 0", cases "y \<ge> 1",simp)
+          assume "1 \<le> y"
+          thus ?thesis using x xy Y_upper sorry
+        next
+          assume "0 \<le> y" "\<not> 1 \<le> y"
+          hence "y < 1" by simp
+          hence "y \<in> {0<..<1}" using x xy by auto
+          thus ?thesis using * x xy by auto
+        next
+          assume "\<not> 0 \<le> y"
+          hence "y \<le> 0" by simp
+          thus ?thesis using Y_lower xy by auto
+        qed
+      qed
+    qed
+  qed
+  have Y_right_cts: "\<forall>\<omega>\<in>{0<..<1}. continuous (at_right \<omega>) Y"
+    apply (subst continuous_at_right_real_increasing)
+    using Y_inc apply force
+    apply auto
+  proof -
+    fix \<epsilon> :: real assume \<epsilon>: "\<epsilon> > 0"
+    fix \<omega> :: real assume \<omega>: "0 < \<omega>" "\<omega> < 1"
+    show "\<exists>\<delta>>0. Y (\<omega> + \<delta>) - Y \<omega> < \<epsilon>"
+      (*apply (subst add_less_cancel_right[of "Y (\<omega> + \<delta>) - Y \<omega>" "Y \<omega>" _,symmetric])*)
+      sorry
+  qed
   {
     fix \<omega>::real assume \<omega>: "\<omega> \<in> {0<..<1}" "continuous (at \<omega>) Y"
     have "liminf (\<lambda>n. Y_seq n \<omega>) \<ge> Y \<omega>"
@@ -91,13 +169,52 @@ proof -
             unfolding uncountable_def by blast
           hence x: "r < x" "x < Y \<omega>" "measure M {x} = 0"
             using DiffD1 greaterThanLessThan_iff measure_nonneg[of M "{x}"] by (simp_all add: linorder_not_less)
-          with Y_le_iff \<omega> have "F x < \<omega>" using not_less by blast
-          show "\<exists>N. \<forall>n\<ge>N. r < Y_seq n \<omega>" sorry
+          with Y_le_iff \<omega> have Fx_less: "F x < \<omega>" using not_less by blast
+          from fn_weak_conv M.isCont_cdf x(3) have 1: "(\<lambda>n. f n x) ----> F x"
+            unfolding F_def weak_conv_def by auto
+          have "\<exists>N. \<forall>n\<ge>N. f n x < \<omega>"
+            apply (insert 1)
+            apply (drule LIMSEQ_D[of _ _ "\<omega> - F x"])
+            using Fx_less apply auto by smt
+          hence "\<exists>N. \<forall>n\<ge>N. x < Y_seq n \<omega>" using Y_seq_le_iff \<omega>(1) not_less by metis
+          thus "\<exists>N. \<forall>n\<ge>N. r < Y_seq n \<omega>" using x(1) by (metis less_trans) 
         qed
     qed
-    moreover have "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>" sorry
+    moreover have "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>"
+    proof -
+      { fix \<omega>' :: real assume \<omega>': "0 < \<omega>'" "\<omega>' < 1" "\<omega> < \<omega>'"
+        { fix \<epsilon> :: real assume \<epsilon>: "\<epsilon> > 0"
+          hence "uncountable {Y \<omega>'<..<Y \<omega>' + \<epsilon>}" using open_interval_uncountable by simp
+          with M.countable_atoms uncountable_minus_countable
+          have "uncountable ({Y \<omega>'<..<Y \<omega>' + \<epsilon>} - {x. measure M {x} > 0})" by auto
+          then obtain y where *: "y \<in> {Y \<omega>'<..<Y \<omega>' + \<epsilon>} - {x. measure M {x} > 0}"
+            unfolding uncountable_def by blast
+          hence y: "Y \<omega>' < y" "y < Y \<omega>' + \<epsilon>" "measure M {y} = 0"
+            using DiffD1 greaterThanLessThan_iff measure_nonneg[of M "{y}"] by (simp_all add: linorder_not_less)
+          with Y_le_iff \<omega>' have "\<omega>' \<le> F (Y \<omega>')" by (metis greaterThanLessThan_iff order_refl)
+          also from y have "... \<le> F y" using F_inc unfolding mono_def by auto
+          finally have Fy_gt: "\<omega> < F y" using \<omega>'(3) by simp
+          from fn_weak_conv M.isCont_cdf y(3) have 1: "(\<lambda>n. f n y) ----> F y"
+            unfolding F_def weak_conv_def by auto
+          have "\<exists>N. \<forall>n\<ge>N. \<omega> \<le> f n y"
+            apply (insert 1)
+            apply (drule LIMSEQ_D[of _ _ "F y - \<omega>"])
+            using Fy_gt apply auto by smt
+          hence 2: "\<exists>N. \<forall>n\<ge>N. Y_seq n \<omega> \<le> y" using Y_seq_le_iff \<omega>(1) by metis
+          hence "limsup (\<lambda>n. Y_seq n \<omega>) \<le> y"
+            apply (subst (asm) eventually_sequentially[of "\<lambda>n. Y_seq n \<omega> \<le> y",symmetric])
+            using Limsup_mono[of "\<lambda>n. Y_seq n \<omega>" "\<lambda>n. y" sequentially] apply auto
+            by (metis Limsup_bounded eq_iff eventually_sequentiallyI order.trans trivial_limit_sequentially)
+          hence "limsup (\<lambda>n. Y_seq n \<omega>) < Y \<omega>' + \<epsilon>" using y(2)
+            by (smt dual_order.antisym dual_order.trans le_cases less_eq_ereal_def less_ereal.simps(1))
+        }
+        hence "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>'"
+          by (metis ereal_le_epsilon2 order.strict_implies_order plus_ereal.simps(1))
+      }
+      thus "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>" using \<omega> Y_right_cts Y_inc bdd_rcont_inc_almost_inverse sorry
+    qed
     ultimately have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" using Liminf_le_Limsup
-      by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially) 
+      by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially)
   } note Y_cts_cnv = this
   show ?thesis sorry (* Need to modify proof of Measure_Space.distr_cong to obtain a distr_cong_AE lemma. *)
 qed
