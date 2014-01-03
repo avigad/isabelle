@@ -342,41 +342,47 @@ proof auto
   def f \<equiv> "\<lambda>k. cdf (\<mu> (s k))"
   {  fix k
      interpret \<mu>: real_distribution "(\<mu> (s k))" using \<mu> unfolding tight_def by auto
-     have "rcont_inc (f k)" "((f k) ---> 1) at_top" "((f k) ---> 0) at_bot" "\<forall>x. \<bar>f k x\<bar> \<le> 1" unfolding rcont_inc_def
-     using f_def mono_def \<mu>.cdf_nondecreasing \<mu>.cdf_is_right_cont \<mu>.cdf_lim_at_top_prob \<mu>.cdf_lim_at_bot apply auto
-     sorry
+     have "rcont_inc (f k)" "((f k) ---> 1) at_top" "((f k) ---> 0) at_bot" "\<forall>x. \<bar>f k x\<bar> \<le> 1"
+      unfolding rcont_inc_def f_def mono_def
+      using \<mu>.cdf_nondecreasing \<mu>.cdf_is_right_cont \<mu>.cdf_lim_at_top_prob \<mu>.cdf_lim_at_bot
+      apply auto
+      apply (subst abs_le_interval_iff)
+      using \<mu>.cdf_nonneg by (metis \<mu>.cdf_bounded_prob dual_order.trans le_minus_one_simps(1))
   } note f_rcont_inc = this(1) and f_at_top = this(2) and f_at_bot = this(3) and f_bdd = this(4)
   from f_rcont_inc f_bdd Helly_selection obtain r
   where "subseq r \<and> (\<exists>F. rcont_inc F \<and> (\<forall>x. \<bar>F x\<bar> \<le> 1) \<and>
     (\<forall>x.  continuous (at x) F \<longrightarrow> (\<lambda>n. f (r n) x) ----> F x))" by blast
   then guess F by auto note F = this
-  (** Need more general version of cdf_to_real_distribution. **)
-  then obtain M where M: "finite_measure M \<and> (\<forall>a b. measure M {a<..b} = F b - F a)" sorry
-  (** M is not yet known to be a real distribution (only a finite measure), but need to generalize some theorems
-      to context of finite measures. **)
-  then interpret M: real_distribution sorry
+  hence "\<exists>\<nu>. (\<forall>a b. a < b \<longrightarrow> \<nu> {a<..b} = ereal (F b - F a)) \<and> measure_space UNIV (sets borel) \<nu>"
+    using cdf_to_measure unfolding rcont_inc_def mono_def by auto
+  then guess \<nu> .. note \<nu> = this
+  def M \<equiv> "measure_of UNIV (sets borel) \<nu>"
+  then interpret M: finite_borel_measure M sorry (* Is this needed? *)
   { fix \<epsilon> :: real assume \<epsilon>: "\<epsilon> > 0"
-    with \<mu> obtain a' b' where a'b': "a' < b'" "\<And>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>" unfolding tight_def sorry
+    with \<mu> have "\<exists>a' b'. a' < b' \<and> (\<forall>k. (\<mu> k) {a'<..b'} > 1 - \<epsilon>)" unfolding tight_def
+      by (metis ereal_less(2) ereal_minus(1) one_ereal_def)
+    then obtain a' b' where a'b': "a' < b'" "\<And>k. (\<mu> k) {a'<..b'} > 1 - \<epsilon>" by auto
     have "uncountable {a' - 1<..<a'}" using open_interval_uncountable by simp
     hence "uncountable ({a' - 1<..<a'} - {x. measure M {x} > 0})"
-      using uncountable_minus_countable M.countable_atoms (* by auto *) (* Why does this fail here, but not in Skorohod? *)
-      sorry
+      using uncountable_minus_countable M.countable_atoms by auto
     then obtain a where "a \<in> {a' - 1<..<a'} - {x. measure M {x} > 0}" unfolding uncountable_def by blast
     hence a: "a < a'" "measure M {a} = 0"
       using DiffD1 greaterThanLessThan_iff measure_nonneg[of M "{a}"] by (simp_all add: linorder_not_less)
     have "uncountable {b'<..<b' + 1}" using open_interval_uncountable by simp
     hence "uncountable ({b'<..<b' + 1} - {x. measure M {x} > 0})"
-      using uncountable_minus_countable M.countable_atoms sorry
+      using uncountable_minus_countable M.countable_atoms by auto
     then obtain b where "b \<in> ({b'<..<b' + 1} - {x. measure M {x} > 0})" unfolding uncountable_def by blast
     hence b: "b' < b" "measure M {b} = 0"
       using DiffD1 greaterThanLessThan_iff measure_nonneg[of M "{b}"] by (simp_all add: linorder_not_less)
     from a b F M.isCont_cdf have "measure M {a<..b} \<ge> 1 - \<epsilon>" sorry
     hence "\<exists>a b. measure M {a<..b} \<ge> 1 - \<epsilon>" by auto
   }
-  hence "measure M UNIV = 1" sorry
+  hence "measure M UNIV \<ge> 1" using M.finite_measure_mono sorry
+  moreover have "measure M UNIV \<le> 1" using F sorry
+  ultimately have "measure M UNIV = 1" by simp
   hence probM: "real_distribution M" sorry
   with F have "weak_conv f F" unfolding weak_conv_def using lim_subseq sorry
-  hence "weak_conv_m (\<mu> \<circ> s \<circ> r) M" unfolding weak_conv_m_def f_def using M sorry
+  hence "weak_conv_m (\<mu> \<circ> s \<circ> r) M" unfolding weak_conv_m_def f_def unfolding M_def sorry
   hence "\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M" using probM by auto
   thus "\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" using F by auto
 next (* This half of the theorem is not needed for later developments. *)

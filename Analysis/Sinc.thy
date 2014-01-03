@@ -34,43 +34,34 @@ lemma positive_integral_eq_erealD:
   by (metis PInfty_neq_ereal(1) assms(1) assms(2) assms(3) integrable_nonneg 
     positive_integral_eq_integral real_of_ereal(2))
 
-(* Should be easier to conclude integrability from calculation of an integral. *)
-(* Adapted from proof in Distributions.thy. *)
 lemma integral_expneg_alpha_atLeast0:
-  fixes x::real
+  fixes u :: real
   assumes pos: "0 < u"
-  shows "LBINT x:{0..}. exp (- (x * u)) = 1/u" (is "?eq")
-  and "set_integrable lborel {0..} (\<lambda>x. exp (- (x * u)))" (is ?int)
-
-proof -
-  have "positive_integral lborel (\<lambda>x. ereal (exp (- (x * u)) * indicator {0..} x)) =
-  positive_integral lborel (\<lambda> x. ereal (exp (- (x * u))) * indicator {0..} x)"
-    by (intro positive_integral_cong) (auto split: split_indicator)
-  also have "\<dots> = ereal (0 - (- 1 / u * exp (- u * 0)))"
-    apply (rule positive_integral_FTC_atLeast[where F="\<lambda>x. - 1 / u * exp (- u * x)"])
-    apply measurable
-    using `0 < u`
-    apply (auto intro!: DERIV_intros)
-    apply (rule tendsto_eq_intros)
-    apply (subst filterlim_at_top_mirror)
-    apply (rule tendsto_eq_intros)
-    apply (rule filterlim_compose[of exp])
-    apply (rule exp_at_bot)
-    apply simp_all
-    apply (rule filterlim_tendsto_pos_mult_at_bot)
-    apply (rule tendsto_const)
-    apply (rule `0 < u`)
-    apply (rule filterlim_ident)
-    apply auto
-    done
-  finally have *: "positive_integral lborel (\<lambda>x. ereal (exp (- (x * u)) * indicator {0..} x)) = 
-      ereal (1 / u)"
-    by simp
-  show ?eq
-    by (rule positive_integral_eq_erealD[OF *]) (simp_all add: mult_nonneg_nonneg)
-  show ?int
-    by (rule positive_integral_eq_erealD[OF *]) (simp_all add: mult_nonneg_nonneg)
-qed
+  shows "LBINT x=0..\<infinity>. exp (-x * u) = 1/u"
+apply (subst interval_integral_FTC_nonneg[of _ _ "\<lambda>x. -(1/u) * exp (-x * u)" _ "-(1/u)" 0])
+using pos apply (auto intro!: DERIV_intros)
+apply (subgoal_tac "(((\<lambda>x. - (exp (- (x * u)) / u)) \<circ> real) ---> - (1 / u)) (at 0)")
+apply (subst (asm) filterlim_at_split, force)
+apply (subst zero_ereal_def)
+apply (subst filterlim_at_split)
+apply (simp_all add: ereal_tendsto_simps)
+apply (subst filterlim_at_split[symmetric])
+apply (auto intro!: tendsto_intros)
+apply (subst exp_zero[symmetric])
+apply (rule tendsto_compose[of exp])
+using isCont_exp unfolding isCont_def apply metis
+apply (subst tendsto_minus_cancel_left[symmetric], simp)
+apply (rule tendsto_mult_left_zero, rule tendsto_ident_at)
+apply (subst divide_inverse, subst minus_mult_left)
+apply (rule tendsto_mult_left_zero)
+apply (subst tendsto_minus_cancel_left[symmetric], simp)
+apply (rule filterlim_compose[of exp _ at_bot])
+apply (rule exp_at_bot)
+apply (subst filterlim_uminus_at_top [symmetric])
+apply (subst mult_commute)
+apply (rule filterlim_tendsto_pos_mult_at_top [OF _ pos])
+apply auto
+by (rule filterlim_ident)
 
 lemma Collect_eq_Icc: "{r. t \<le> r \<and> r \<le> b} = {t .. b}"
   by auto
@@ -157,7 +148,34 @@ lemma ex_18_4_2_ubdd_integral:
   apply auto
 by (rule filterlim_ident)
 
+lemma Billingsley_ex_17_5: "LBINT x=-\<infinity>..\<infinity>. inverse (1 + x^2) = pi"
+  apply (subst interval_integral_substitution_nonneg[of "-pi/2" "pi/2" tan "\<lambda>x. 1 + (tan x)^2"])
+  apply (auto intro: DERIV_intros)
+  apply (subst tan_sec)
+  using pi_half cos_is_zero
+  apply (metis cos_gt_zero_pi less_divide_eq_numeral1(1) less_numeral_extra(3))
+  using DERIV_tan
+  apply (metis cos_gt_zero_pi less_divide_eq_numeral1(1) power2_less_0 power_inverse power_zero_numeral)
+  apply (rule isCont_add, force)
+  apply (subst power2_eq_square)
+  apply (subst isCont_mult)
+  apply (rule isCont_tan)
+  (* Following line duplicated from above. *)
+  using pi_half cos_is_zero
+  apply (metis cos_gt_zero_pi less_divide_eq_numeral1(1) less_numeral_extra(3))
+  apply (simp_all add: ereal_tendsto_simps filterlim_tan_at_left)
+  apply (subst minus_divide_left)+
+  by (rule filterlim_tan_at_right)
+
 definition sinc :: "real \<Rightarrow> real" where "sinc t \<equiv> LBINT x=0..t. sin x / x"
+
+lemma sinc_lim_lemma:
+  "sinc t = pi / 2 - (LBINT u=0..\<infinity>. ((exp (- u * t)) / (1 + u^2)) * (u * sin t + cos t))"
+unfolding sinc_def apply (subst divide_inverse)
+  apply (subst inverse_eq_divide)
+  (* Need to restrict this next application to only apply when x > 0. *)
+  apply (subst integral_expneg_alpha_atLeast0[symmetric])
+  sorry
 
 lemma sinc_at_top: "(sinc ---> \<pi>/2) at_top"
   sorry
