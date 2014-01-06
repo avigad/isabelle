@@ -399,6 +399,35 @@ lemma interval_integral_Icc:
   apply (auto simp add: indicator_def)
 by (metis lmeasure_eq_0 negligible_insert negligible_sing)
 
+lemma interval_integral_Icc':
+  fixes a b :: ereal
+  assumes "a \<le> b"
+  shows "(LBINT x=a..b. f x) = (LBINT x : {x. a \<le> ereal x \<and> ereal x \<le> b}. f x)"
+using assms unfolding interval_lebesgue_integral_def einterval_def apply simp
+apply (rule integral_cong_AE)
+apply (cases a rule: ereal_cases, cases b rule: ereal_cases, auto)
+proof -
+  fix r s :: real assume rs: "r \<le> s"
+  show "AE x in lborel. f x = 0 \<or> indicator {x. r < x \<and> x < s} x = indicator {x. r \<le> x \<and> x \<le> s} x"
+    apply (rule AE_I[where N = "{r} \<union> {s}"])
+    apply (auto simp add: indicator_def)
+    by (metis lmeasure_eq_0 negligible_insert negligible_sing)
+next
+  fix r
+  show "AE x in lborel. f x = 0 \<or> indicator (Collect (op < r)) x = indicator (Collect (op \<le> r)) x"
+    apply (rule AE_I[where N = "{r}"])
+    by (auto simp add: indicator_def)
+next
+  show "AE x in lborel. f x = 0 \<or> indicator {x. ereal x < b} x = indicator {x. ereal x \<le> b} x"
+    apply (cases b rule: ereal_cases, auto)
+    proof -
+      fix r
+      show "AE x in lborel. f x = 0 \<or> indicator {x. x < r} x = indicator {x. x \<le> r} x"
+        apply (rule AE_I[where N = "{r}"])
+        by (auto simp add: indicator_def)
+    qed
+qed
+
 lemma interval_integral_Iic:
   fixes a b :: real
   assumes "a \<le> b" 
@@ -409,7 +438,7 @@ lemma interval_integral_Iic:
   apply (rule AE_I [where N = "{b}"])
 by (auto simp add: indicator_def)
 
-(* TODO: other versions as well? *)
+(* TODO: other versions as well? *) (* Yes: I need the Icc' version. *)
 lemma interval_integral_Iic':
   fixes a b :: ereal
   assumes "a \<le> b" 
