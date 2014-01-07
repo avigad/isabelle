@@ -142,10 +142,10 @@ lemma at_right_ereal: "at_right (ereal r) = filtermap ereal (at_right r)"
 lemma
   shows at_left_PInf: "at_left \<infinity> = filtermap ereal at_top"
     and at_right_MInf: "at_right (-\<infinity>) = filtermap ereal at_bot"
-  unfolding filter_eq_iff eventually_filtermap
-    eventually_at_left'[OF ereal_less(3)] eventually_at_top_dense
-    eventually_at_right'[OF ereal_less(4)] eventually_at_bot_dense sorry
-    (* The following failed: by (auto simp add: ereal_all_split ereal_ex_split) *)
+  unfolding filter_eq_iff eventually_filtermap eventually_at_top_dense eventually_at_bot_dense
+    eventually_at_left'[OF ereal_less(5)] eventually_at_top_dense
+    eventually_at_right'[OF ereal_less(6)] eventually_at_bot_dense
+  by (auto simp add: ereal_all_split ereal_ex_split)
 
 lemma tendsto_compose_filtermap: "((g \<circ> f) ---> T) F \<longleftrightarrow> (g ---> T) (filtermap f F)"
   by (simp add: filterlim_def filtermap_filtermap comp_def)
@@ -388,6 +388,11 @@ lemma interval_integral_endpoints_reverse: "(LBINT x=a..b. f x) = -(LBINT x=b..a
   apply (case_tac "a = b", auto)
 by (case_tac "a \<le> b", auto simp add: interval_lebesgue_integral_def)
 
+lemma interval_integrable_endpoints_reverse: "interval_lebesgue_integrable lborel a b f = 
+  interval_lebesgue_integrable lborel b a f"
+  apply (case_tac "a = b", auto)
+by (case_tac "a \<le> b", auto simp add: interval_lebesgue_integrable_def)
+
 lemma interval_integral_Icc:
   fixes a b :: real
   assumes "a \<le> b" 
@@ -541,10 +546,11 @@ qed
 
 lemma interval_integrable_isCont:
   fixes a b :: real and f
-  assumes "a \<le> b" and "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> isCont f x"
+  assumes "\<And>x. min a b \<le> x \<Longrightarrow> x \<le> max a b \<Longrightarrow> isCont f x"
   shows "interval_lebesgue_integrable lborel a b f"
-using assms unfolding interval_lebesgue_integrable_def apply simp
-  by (rule set_integrable_subset, rule borel_integrable_atLeastAtMost [of a b], auto)
+using assms unfolding interval_lebesgue_integrable_def apply auto
+  apply (rule set_integrable_subset, rule borel_integrable_atLeastAtMost [of a b], auto)
+  by (rule set_integrable_subset, rule borel_integrable_atLeastAtMost [of b a], auto)
 
 lemma set_borel_integral_eq_integral:
   fixes M S

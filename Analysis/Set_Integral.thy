@@ -52,7 +52,13 @@ translations
 lemma indicator_abs_eq: "\<And>A x. abs (indicator A x) = ((indicator A x) :: real)"
   by (auto simp add: indicator_def)
 
-lemma set_AE_func_int_eq:
+lemma set_lebesgue_integral_cong:
+  assumes "A \<in> sets M" and "\<forall>x. x \<in> A \<longrightarrow> f x = g x"
+  shows "(LINT x:A|M. f x) = (LINT x:A|M. g x)"
+  apply (rule integral_cong)
+  using assms by (auto split: split_indicator simp add: sets.sets_into_space)
+
+lemma set_lebesgue_integral_cong_AE:
   assumes "AE x \<in> A in M. f x = g x"
   shows "LINT x:A|M. f x = LINT x:A|M. g x"
 proof-

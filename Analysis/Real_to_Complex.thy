@@ -64,8 +64,9 @@ by (auto intro: tendsto_intros)
 
 declare [[coercion "complex_of_real :: real \<Rightarrow> complex"]]
 
-lemma real_to_complex_expand: "f = (\<lambda>x. (RE f) x + ii * (IM f) x)"
-  by auto 
+lemma real_to_complex_expand: "f = (\<lambda>x. (RE f) x + ii * (IM f) x)" by auto 
+
+lemma complex_expand: "a = Re a + ii * Im a" by simp
 
 lemma Re_setsum:
   assumes "finite S"
@@ -86,6 +87,13 @@ lemma Im_setsum:
 
 abbreviation iexp :: "real \<Rightarrow> complex" where
   "iexp \<equiv> (\<lambda>x. expi (\<i> * of_real x))"
+
+(* A difficulty: "i * of_real x" simplifies to "Complex 0 x" (because of i_complex_of_real) 
+   but for some purposes (like calculating derivatives, etc. the first is better).  *)
+(*
+abbreviation iexp :: "real \<Rightarrow> complex" where
+  "iexp \<equiv> (\<lambda>x. expi (Complex 0 x))"
+*)
 
 lemma isCont_iexp [simp]: "isCont iexp x"
   by (rule isCont_exp', rule isCont_mult, auto)
@@ -226,8 +234,8 @@ lemma CDERIV_setsum:
   shows "CDERIV (\<lambda>x. setsum (f x) S) x :> setsum (f' x) S"
   using assms CDERIV_const by induct (auto intro!: CDERIV_add)
 
-lemma CDERIV_of_real [simp]: "DERIV f x :> u \<Longrightarrow>
-   (CDERIV (%x. complex_of_real (f x)) x :> complex_of_real u)"
+lemma CDERIV_of_real [simp]: "DERIV f x : s :> u \<Longrightarrow>
+   (CDERIV (%x. complex_of_real (f x)) x : s :> complex_of_real u)"
   unfolding CDERIV_def by auto
 
 (* measurability of functions from real to complex *)
@@ -328,6 +336,13 @@ lemma complex_integral_zero [simp]:
   and "(\<integral>\<^sup>C x. 0 \<partial>M)  = 0"
 by (auto simp add: complex_integrable_def complex_lebesgue_integral_def
   complex_of_real_def)
+
+lemma (in finite_measure) complex_lebesgue_integral_const [simp]:
+    shows "complex_integrable M (\<lambda>x. a)"
+    and "complex_lebesgue_integral M (\<lambda>x. a) = a * measure M (space M)"
+using assms unfolding complex_lebesgue_integral_def complex_integrable_def
+  apply auto
+  by (subst (3) complex_expand [of a], simp del: i_complex_of_real add: field_simps)
 
 (* is integrability really needed for the second fact? *)
 lemma complex_integral_cmult [simp]:
@@ -437,6 +452,17 @@ unfolding complex_integrable_def by auto
 lemma complex_set_lebesgue_integral_eq: 
   "(CLINT x:A|M. f x) = (LINT x:A|M. (RE f) x) + ii * (LINT x:A|M. (IM f) x)"
 unfolding complex_lebesgue_integral_def by auto
+
+lemma complex_set_lebesgue_integral_cong:
+  assumes "A \<in> sets M" and "\<forall>x. x \<in> A \<longrightarrow> f x = g x"
+  shows "(CLINT x:A|M. f x) = (CLINT x:A|M. g x)"
+using assms unfolding complex_lebesgue_integral_def by (auto intro: set_lebesgue_integral_cong)
+
+lemma complex_set_lebesgue_integral_cong_AE:
+  assumes "A \<in> sets M" and "AE x \<in> A in M. x \<in> A \<longrightarrow> f x = g x"
+  shows "(CLINT x:A|M. f x) = (CLINT x:A|M. g x)"
+using assms unfolding complex_lebesgue_integral_def 
+  by (auto intro: set_lebesgue_integral_cong_AE)
 
 lemma complex_set_integrable_Cnj: "complex_set_integrable M A (Cnj f) =
     complex_set_integrable M A f"
@@ -577,12 +603,23 @@ lemma complex_interval_lebesgue_integrable_iff:
 unfolding complex_interval_lebesgue_integrable_def interval_lebesgue_integrable_def
   by (auto simp add: complex_set_integrable_iff)
 
-lemma complex_interval_integral_eq:
+lemma complex_interval_lebesgue_integral_eq:
   "complex_interval_lebesgue_integral M a b f = interval_lebesgue_integral M a b (RE f) + 
     ii * (interval_lebesgue_integral M a b (IM f))"
 unfolding complex_interval_lebesgue_integral_def interval_lebesgue_integral_def 
   by (auto simp add: complex_set_lebesgue_integral_eq field_simps)
 
+lemma complex_interval_lebesgue_integral_cong:
+  assumes "a \<le> b" and "\<forall>x. x \<in> einterval a b \<longrightarrow> f x = g x" and "einterval a b \<in> sets M"
+  shows "complex_interval_lebesgue_integral M a b f = complex_interval_lebesgue_integral M a b g"
+using assms unfolding complex_interval_lebesgue_integral_def
+  by (auto intro: complex_set_lebesgue_integral_cong)
+
+lemma complex_interval_lebesgue_integral_cong_AE:
+  assumes "a \<le> b" and "AE x \<in> einterval a b in M. f x = g x" and "einterval a b \<in> sets M"
+  shows "complex_interval_lebesgue_integral M a b f = complex_interval_lebesgue_integral M a b g"
+using assms unfolding complex_interval_lebesgue_integral_def
+  by (auto intro: complex_set_lebesgue_integral_cong_AE)
 lemma complex_interval_lebesgue_integral_add [intro, simp]: 
   fixes M a b f g 
   assumes "complex_interval_lebesgue_integrable M a b f"
@@ -590,7 +627,7 @@ lemma complex_interval_lebesgue_integral_add [intro, simp]:
   shows "complex_interval_lebesgue_integrable M a b (\<lambda>x. f x + g x)" and 
     "complex_interval_lebesgue_integral M a b (\<lambda>x. f x + g x) = 
    complex_interval_lebesgue_integral M a b f + complex_interval_lebesgue_integral M a b g"
-using assms unfolding complex_interval_lebesgue_integrable_iff complex_interval_integral_eq
+using assms unfolding complex_interval_lebesgue_integrable_iff complex_interval_lebesgue_integral_eq
   by (auto simp add: complex_of_real_def)
 
 lemma complex_interval_lebesgue_integral_diff [intro, simp]: 
@@ -600,7 +637,7 @@ lemma complex_interval_lebesgue_integral_diff [intro, simp]:
   shows "complex_interval_lebesgue_integrable M a b (\<lambda>x. f x - g x)" and 
     "complex_interval_lebesgue_integral M a b (\<lambda>x. f x - g x) = 
    complex_interval_lebesgue_integral M a b f - complex_interval_lebesgue_integral M a b g"
-using assms unfolding complex_interval_lebesgue_integrable_iff complex_interval_integral_eq
+using assms unfolding complex_interval_lebesgue_integrable_iff complex_interval_lebesgue_integral_eq
   by (auto simp add: complex_of_real_def)
 
 lemma complex_interval_lebesgue_integral_cmult [intro, simp]:
@@ -616,41 +653,59 @@ lemma complex_interval_integral_const [intro, simp]:
   fixes a b c :: real
   shows "complex_interval_lebesgue_integrable lborel a b (\<lambda>x. c)" and 
     "CLBINT x=a..b. c = c * (b - a)" 
-unfolding complex_interval_lebesgue_integrable_iff complex_interval_integral_eq
+unfolding complex_interval_lebesgue_integrable_iff complex_interval_lebesgue_integral_eq
   by (auto simp add: complex_of_real_def)
 
 lemma complex_interval_integral_endpoints_same [simp]: "(CLBINT x=a..a. f x) = 0"
-unfolding complex_interval_integral_eq by auto
+unfolding complex_interval_lebesgue_integral_eq by auto
 
 lemma complex_interval_integral_endpoints_reverse: "(CLBINT x=a..b. f x) = -(CLBINT x=b..a. f x)"
-unfolding complex_interval_integral_eq by (auto intro: interval_integral_endpoints_reverse)
+unfolding complex_interval_lebesgue_integral_eq by (auto intro: interval_integral_endpoints_reverse)
+
+lemma complex_interval_integrable_endpoints_reverse: 
+  "complex_interval_lebesgue_integrable lborel a b f = 
+    complex_interval_lebesgue_integrable lborel b a f"
+unfolding complex_interval_lebesgue_integrable_iff 
+  by (subst (1 2) interval_integrable_endpoints_reverse, rule refl)
+
+lemma complex_interval_integral_cong:
+  assumes "a \<le> b" and "\<forall>x. x \<in> einterval a b \<longrightarrow> f x = g x"
+  shows "(CLBINT x=a..b. f x) = (CLBINT x=a..b. g x)"
+using assms
+  by (rule complex_interval_lebesgue_integral_cong, auto)
+
+lemma complex_interval_integral_cong_AI:
+  assumes "a \<le> b" and "AE x \<in> einterval a b in lborel. f x = g x"
+  shows "(CLBINT x=a..b. f x) = (CLBINT x=a..b. g x)"
+using assms
+  by (rule complex_interval_lebesgue_integral_cong_AE, auto)
 
 lemma complex_interval_integral_Icc:
   fixes a b :: real
   assumes "a \<le> b" 
   shows "(CLBINT x=a..b. f x) = (CLBINT x : {a..b}. f x)"
-unfolding complex_interval_integral_eq complex_set_lebesgue_integral_eq 
+unfolding complex_interval_lebesgue_integral_eq complex_set_lebesgue_integral_eq 
   using assms by (auto simp add: interval_integral_Icc)
 
 lemma complex_interval_integral_Iic:
   fixes a b :: real
   assumes "a \<le> b" 
   shows "(CLBINT x=a..b. f x) = (CLBINT x : {a<..b}. f x)"
-unfolding complex_interval_integral_eq complex_set_lebesgue_integral_eq 
+unfolding complex_interval_lebesgue_integral_eq complex_set_lebesgue_integral_eq 
   using assms by (auto simp add: interval_integral_Iic)
 
 lemma complex_interval_integral_Iic':
   fixes a b :: ereal
   assumes "a \<le> b" 
   shows "(CLBINT x=a..b. f x) = (CLBINT x : {x. a < ereal x \<and> ereal x \<le> b}. f x)"
-unfolding complex_interval_integral_eq complex_set_lebesgue_integral_eq 
+unfolding complex_interval_lebesgue_integral_eq complex_set_lebesgue_integral_eq 
   using assms by (auto simp add: interval_integral_Iic')
 
 lemma complex_interval_integral_Ici:
   fixes a b :: real
   assumes "a \<le> b" 
   shows "(CLBINT x=a..b. f x) = (CLBINT x : {a..<b}. f x)"
-unfolding complex_interval_integral_eq complex_set_lebesgue_integral_eq 
+unfolding complex_interval_lebesgue_integral_eq complex_set_lebesgue_integral_eq 
   using assms by (auto simp add: interval_integral_Ici)
 
 lemma complex_interval_integral_sum: 
@@ -658,14 +713,14 @@ lemma complex_interval_integral_sum:
   assumes integrable: "complex_interval_lebesgue_integrable lborel (min a (min b c)) (max a (max b c)) f" 
 
   shows "(CLBINT x=a..b. f x) + (CLBINT x=b..c. f x) = (CLBINT x=a..c. f x)"
-using assms unfolding complex_interval_integral_eq complex_interval_lebesgue_integrable_iff
+using assms unfolding complex_interval_lebesgue_integral_eq complex_interval_lebesgue_integrable_iff
 by (auto intro: interval_integral_sum)
 
 lemma complex_interval_integrable_isCont:
   fixes a b :: real and f
-  assumes "a \<le> b" and "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> isCont f x"
+  assumes "\<And>x. min a b \<le> x \<Longrightarrow> x \<le> max a b \<Longrightarrow> isCont f x"
   shows "complex_interval_lebesgue_integrable lborel a b f"
-using assms unfolding complex_interval_integral_eq complex_interval_lebesgue_integrable_iff
+using assms unfolding complex_interval_lebesgue_integral_eq complex_interval_lebesgue_integrable_iff
 by (auto intro: interval_integrable_isCont)
 
 lemma complex_interval_integral_FTC_finite:
@@ -673,7 +728,7 @@ lemma complex_interval_integral_FTC_finite:
   assumes f: "continuous_on {min a b..max a b} f"
   assumes F: "\<And>x. min a b \<le> x \<Longrightarrow> x \<le> max a b \<Longrightarrow> CDERIV F x : {min a b..max a b} :> f x" 
   shows "(CLBINT x=a..b. f x) = F b - F a"
-using assms unfolding complex_interval_integral_eq CDERIV_def 
+using assms unfolding complex_interval_lebesgue_integral_eq CDERIV_def 
   apply (subst real_to_complex_expand [of F])
   apply (subst real_to_complex_expand [of F]) back back
   apply auto
@@ -694,7 +749,8 @@ lemma complex_interval_integral_FTC_integrable:
   assumes A: "((F \<circ> real) ---> A) (at_right a)"
   assumes B: "((F \<circ> real) ---> B) (at_left b)"
   shows "(CLBINT x=a..b. f x) = B - A"
-using assms unfolding complex_interval_integral_eq complex_interval_lebesgue_integrable_iff CDERIV_def 
+using assms unfolding complex_interval_lebesgue_integral_eq complex_interval_lebesgue_integrable_iff
+    CDERIV_def 
   apply auto
   apply (subst interval_integral_FTC_integrable [of _ _ "RE F" "RE f" "Re A" "Re B"])
   apply (auto simp add: complex_set_integrable_iff)
@@ -722,7 +778,7 @@ lemma complex_interval_integral_FTC2:
   fixes x :: real
   assumes "a \<le> x" and "x \<le> b"
   shows "CDERIV (\<lambda>u. CLBINT y=c..u. f y) x : {a..b} :> f x"
-using assms unfolding complex_interval_integral_eq
+using assms unfolding complex_interval_lebesgue_integral_eq
   apply (subst real_to_complex_expand [of f]) back back
   apply (rule CDERIV_add)
   apply (subst CDERIV_def)
@@ -770,12 +826,11 @@ lemma complex_interval_integral_substitution_finite:
   and contf : "continuous_on (g ` {a..b}) f"
   and contg': "continuous_on {a..b} g'"
   shows "CLBINT x=a..b. f (g x) * g' x = CLBINT y=(g a)..(g b). f y"
-using assms apply (auto simp add: complex_interval_integral_eq)
+using assms apply (auto simp add: complex_interval_lebesgue_integral_eq)
   apply (rule interval_integral_substitution_finite, auto)
   apply (simp add: continuous_on_eq_continuous_within continuous_RE_IM_iff)
   apply (rule interval_integral_substitution_finite, auto)
 by (simp add: continuous_on_eq_continuous_within continuous_RE_IM_iff)
-
 
 lemma complex_interval_integral_substitution_integrable:
   fixes f :: "real \<Rightarrow> complex" and g g':: "real \<Rightarrow> real" and a b u v :: ereal
@@ -790,7 +845,7 @@ lemma complex_interval_integral_substitution_integrable:
   and integrable2: "complex_set_integrable lborel (einterval A B) (\<lambda>x. f x)"
   shows "(CLBINT x=A..B. f x) = (CLBINT x=a..b. (f (g x) * g' x))"
 
-using assms unfolding complex_interval_integral_eq complex_set_lebesgue_integral_eq
+using assms unfolding complex_interval_lebesgue_integral_eq complex_set_lebesgue_integral_eq
     complex_set_integrable_iff
   apply auto 
 by (rule interval_integral_substitution_integrable, auto)+
