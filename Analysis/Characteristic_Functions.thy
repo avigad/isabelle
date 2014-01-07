@@ -190,27 +190,6 @@ using assms unfolding complex_lebesgue_integral_def complex_integrable_def
 by (auto intro: Fubini_integral)
 (* How delightful that this is so easy! *)
 
-(*
-  Not needed?
-
-locale pair_finite = M1: finite_measure M1 + M2: finite_measure M2
-  for M1 :: "'a measure" and M2 :: "'b measure"
-
-sublocale pair_finite < pair_sigma_finite ..
-sublocale pair_finite < finite_measure where M = "M1 \<Otimes>\<^sub>M M2"
-proof
-  show "emeasure (M1 \<Otimes>\<^sub>M M2) (space (M1 \<Otimes>\<^sub>M M2)) \<noteq> \<infinity>"
-    by (auto simp add: space_pair_measure M2.emeasure_pair_measure_Times)
-qed
-
-*)
-
-(*
-
-  Complex.abs_Im_le_cmod: \<bar>Im ?x\<bar> \<le> cmod ?x
-  Complex.abs_Re_le_cmod: \<bar>Re ?x\<bar> \<le> cmod ?x
-*)
-
 (* 
   The Levy inversion theorem.
 *)
