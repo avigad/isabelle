@@ -374,6 +374,12 @@ using assms by (auto simp add: interval_lebesgue_integral_def less_imp_le einter
     Basic properties of integration over an interval wrt lebesgue measure.
 *)
 
+lemma interval_integral_zero [simp]:
+  fixes a b :: ereal
+  shows"LBINT x=a..b. 0 = 0" 
+using assms unfolding interval_lebesgue_integral_def einterval_eq 
+by simp
+
 lemma interval_integral_const [intro, simp]:
   fixes a b c :: real
   shows "interval_lebesgue_integrable lborel a b (\<lambda>x. c)" and "LBINT x=a..b. c = c * (b - a)" 

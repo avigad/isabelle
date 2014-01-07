@@ -240,40 +240,43 @@ lemma CDERIV_of_real [simp]: "DERIV f x : s :> u \<Longrightarrow>
 
 (* measurability of functions from real to complex *)
 
-lemma borel_measurable_Re [simp]: "Re \<in> borel_measurable borel"
-apply (rule borel_measurable_continuous_on1)
+lemma borel_measurable_Re [measurable (raw)]: 
+  "f \<in> borel_measurable M \<Longrightarrow> (\<lambda>x. Re (f x)) \<in> 
+  borel_measurable M"
+apply (rule borel_measurable_continuous_on [of _ f])
 apply (simp add: continuous_on_def)
 apply (rule allI)
 apply (rule tendsto_Re)
 apply (rule tendsto_ident_at)
-done
+by assumption
 
-lemma borel_measurable_Im [simp]: "Im \<in> borel_measurable borel"
-apply (rule borel_measurable_continuous_on1)
+lemma borel_measurable_Im [measurable (raw)]: 
+  "f \<in> borel_measurable M \<Longrightarrow> (\<lambda>x. Im (f x)) \<in> 
+  borel_measurable M"
+apply (rule borel_measurable_continuous_on [of _ f])
 apply (simp add: continuous_on_def)
 apply (rule allI)
 apply (rule tendsto_Im)
 apply (rule tendsto_ident_at)
-done
+by assumption
 
-lemma borel_measurable_complex_of_real [simp]: "complex_of_real \<in> 
-  borel_measurable borel"
-apply (rule borel_measurable_continuous_on1)
-apply (rule continuous_at_imp_continuous_on)
+lemma borel_measurable_complex_of_real [measurable (raw)]: 
+  "f \<in> borel_measurable M \<Longrightarrow> (\<lambda>x. complex_of_real (f x)) \<in> 
+  borel_measurable M"
+
+  apply (rule borel_measurable_continuous_on) back
+  apply (rule continuous_at_imp_continuous_on)
 by auto
 
 lemma complex_borel_measurable_eq: "f \<in> borel_measurable M = 
   (RE f \<in> borel_measurable M \<and> IM f \<in> borel_measurable M)"
   apply auto
-  apply (erule measurable_compose, rule borel_measurable_Re)
-  apply (erule measurable_compose, rule borel_measurable_Im)
   apply (subst real_to_complex_expand)
   apply (rule borel_measurable_add)
-  apply (erule measurable_compose, rule borel_measurable_complex_of_real)
+  apply (erule borel_measurable_complex_of_real)
   apply (rule borel_measurable_times)
   apply (rule borel_measurable_const)
-by (erule measurable_compose, rule borel_measurable_complex_of_real)
-
+by (erule borel_measurable_complex_of_real)
 
 (* 
   Integration of functions from real to complex
@@ -648,6 +651,11 @@ lemma complex_interval_lebesgue_integral_cmult [intro, simp]:
    c * complex_interval_lebesgue_integral M a b f"
 using assms by (auto simp add: complex_interval_lebesgue_integral_def complex_interval_lebesgue_integrable_def 
     field_simps)
+
+lemma complex_interval_integral_zero [simp]:
+  fixes a b :: ereal
+  shows "CLBINT x=a..b. 0 = 0" 
+unfolding complex_interval_lebesgue_integral_def by simp
 
 lemma complex_interval_integral_const [intro, simp]:
   fixes a b c :: real
