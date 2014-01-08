@@ -8,16 +8,12 @@ begin
 (** General miscellaneous. **)
 
 lemma inj_on_infinite: "infinite A \<Longrightarrow> inj_on f A \<Longrightarrow> infinite (range f)"
-  apply (simp add: infinite_iff_countable_subset)
-  apply auto
-  apply (rule_tac x = "f o fa" in exI)
-  apply auto
-  by (metis comp_inj_on_iff subset_inj_on)
+  by (metis finite_imageD image_mono rev_finite_subset top_greatest)
 
 lemma real_rats_infinite: "infinite \<rat>"
   apply (subst Rats_def)
   apply (rule inj_on_infinite)
-  apply (rule Finite_Set.infinite_UNIV_char_0)
+  apply (rule infinite_UNIV_char_0)
   unfolding inj_on_def by auto
 
 lemma indicator_abs_eq[simp]:
@@ -43,6 +39,11 @@ lemma mult_indicator_subset:
   apply auto
   by (metis in_mono sub)
 
+lemma setseq_inc:
+  "(\<And>i::nat. A i \<subseteq> A (i+1)) \<Longrightarrow> i \<le> j \<Longrightarrow> A i \<subseteq> A j"
+  by (rule lift_Suc_mono_le) simp_all
+
+(*
 lemma setseq_inc:
   assumes inc: "\<And>i::nat. A i \<subseteq> A (i+1)"
   shows "\<And>i j::nat. i \<le> j \<Longrightarrow> A i \<subseteq> A j"
@@ -71,10 +72,17 @@ proof-
     qed
   qed
 qed
+*)
 
 lemma setseq_dec:
+  assumes dec: "\<And>i::nat. A (i+1) \<subseteq> A i" "i \<le> j"
+  shows "A j \<subseteq> A i"
+  using assms(2,1)
+  by (induct rule: dec_induct) auto
+(*
+lemma setseq_dec:
   assumes dec: "\<And>i::nat. A (i+1) \<subseteq> A i"
-  shows "\<And>i j::nat. i \<le> j \<Longrightarrow> A j \<subseteq> A i"
+  shows "i \<le> j \<Longrightarrow> A j \<subseteq> A i"
 proof-
   fix j::nat
   show "\<And>i. i \<le> j \<Longrightarrow> A j \<subseteq> A i"
@@ -100,10 +108,22 @@ proof-
     qed
   qed
 qed
+*)
 
 lemma indicator_cont_up:
   assumes inc: "\<And>i::nat. A i \<subseteq> A (i+1)"
-  shows "\<And>x. (\<lambda>i::nat. (indicator (A i) x)::real) ----> indicator (\<Union>i. A i) x"
+  shows "(\<lambda>i::nat. (indicator (A i) x)::real) ----> indicator (\<Union>i. A i) x"
+  using LIMSEQ_indicator_UN
+proof -
+  have "\<And>i j. i \<le> j \<Longrightarrow> A i \<subseteq> A j"
+    using inc setseq_inc[of A] by auto  
+  then have "\<And>k. (\<Union> i<Suc k. A i) = A k"
+    by (force simp: less_Suc_eq_le)
+  with LIMSEQ_indicator_UN[of A x, THEN LIMSEQ_Suc]
+  show ?thesis
+    by simp
+qed
+(*
 proof -
   fix x
   show "(\<lambda>i::nat. (indicator (A i) x)::real) ----> indicator (\<Union>i. A i) x"
@@ -134,20 +154,19 @@ proof -
       using pos by (metis dist_self indicator_simps(2) nelem notin)
   qed
 qed
+*)
 
 (** Also prove indicator_cont_down. **)
               
 lemma tendsto_const_add:
   fixes a b :: "'a::real_normed_vector"
-  assumes lim: "((\<lambda>x. a + f x) ---> a + b) F"
+  assumes "((\<lambda>x. a + f x) ---> a + b) F"
   shows "(f ---> b) F"
-proof (rule tendstoI)
-  fix e::real assume pos: "0 < e"
-  have "eventually (\<lambda>x. dist (a + f x) (a + b) < e) F"
-    by (auto intro: lim pos tendstoD)
-  thus "eventually (\<lambda>x. dist (f x) b < e) F"
-    by (metis (lifting, mono_tags) ab_group_add_class.add_diff_cancel_left
-      dist_norm eventually_rev_mono)
+proof -
+  have "((\<lambda>x. (a + f x) - a) ---> (a + b) - a) F"
+    by (intro tendsto_diff tendsto_const assms)
+  then show ?thesis
+    by simp
 qed
 
 lemma tendsto_const_mult:
@@ -155,6 +174,13 @@ lemma tendsto_const_mult:
   assumes nonzero: "a \<noteq> 0"
   and lim: "((\<lambda>x. a * f x) ---> a * b) F"
   shows "(f ---> b) F"
+proof -
+  have "((\<lambda>x. (a * f x) / a) ---> (a * b) / a) F"
+    by (intro tendsto_divide tendsto_const assms)
+  with nonzero show ?thesis
+    by simp
+qed
+(*
 proof (rule tendstoI)
   fix e::real assume pos: "0 < e"
   have ev: "eventually (\<lambda>x. dist (a * f x) (a * b) < e * \<bar>a\<bar>) F"
@@ -175,6 +201,7 @@ proof (rule tendstoI)
       by (rule ev)
   qed
 qed
+*)
 
 lemma real_of_ereal_neq_0:
 fixes x::ereal
@@ -430,6 +457,68 @@ proof safe
   }
 qed
 
+lemma interval_cases:
+  fixes S :: "'a :: conditionally_complete_linorder set"
+  assumes ivl: "\<And>a b x. a \<in> S \<Longrightarrow> b \<in> S \<Longrightarrow> a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> x \<in> S"
+  shows "\<exists>a b. S = {} \<or> S = UNIV \<or> S = {..<b} \<or> S = {..b} \<or> S = {a<..} \<or> S = {a..} \<or>
+    S = {a<..<b} \<or> S = {a<..b} \<or> S = {a..<b} \<or> S = {a..b}"
+proof -
+  def lower \<equiv> "{x. \<exists>s\<in>S. s \<le> x}" and upper \<equiv> "{x. \<exists>s\<in>S. x \<le> s}"
+  with ivl have "S = lower \<inter> upper"
+    by auto
+  moreover 
+  have "\<exists>a. upper = UNIV \<or> upper = {} \<or> upper = {.. a} \<or> upper = {..< a}"
+  proof cases
+    assume *: "bdd_above S \<and> S \<noteq> {}"
+    from * have "upper \<subseteq> {.. Sup S}"
+      by (auto simp: upper_def intro: cSup_upper2)
+    moreover from * have "{..< Sup S} \<subseteq> upper"
+      by (force simp add: less_cSup_iff upper_def subset_eq Ball_def)
+    ultimately have "upper = {.. Sup S} \<or> upper = {..< Sup S}"
+      unfolding ivl_disj_un(2)[symmetric] by auto
+    then show ?thesis by auto
+  next
+    assume "\<not> (bdd_above S \<and> S \<noteq> {})"
+    then have "upper = UNIV \<or> upper = {}"
+      by (auto simp: upper_def bdd_above_def not_le dest: less_imp_le)
+    then show ?thesis
+      by auto
+  qed
+  moreover
+  have "\<exists>b. lower = UNIV \<or> lower = {} \<or> lower = {b ..} \<or> lower = {b <..}"
+  proof cases
+    assume *: "bdd_below S \<and> S \<noteq> {}"
+    from * have "lower \<subseteq> {Inf S ..}"
+      by (auto simp: lower_def intro: cInf_lower2)
+    moreover from * have "{Inf S <..} \<subseteq> lower"
+      by (force simp add: cInf_less_iff lower_def subset_eq Ball_def)
+    ultimately have "lower = {Inf S ..} \<or> lower = {Inf S <..}"
+      unfolding ivl_disj_un(1)[symmetric] by auto
+    then show ?thesis by auto
+  next
+    assume "\<not> (bdd_below S \<and> S \<noteq> {})"
+    then have "lower = UNIV \<or> lower = {}"
+      by (auto simp: lower_def bdd_below_def not_le dest: less_imp_le)
+    then show ?thesis
+      by auto
+  qed
+  ultimately show ?thesis
+    unfolding greaterThanAtMost_def greaterThanLessThan_def atLeastAtMost_def atLeastLessThan_def
+    by (elim exE disjE) auto
+qed
+
+lemma is_real_interval:
+  assumes S: "is_interval S"
+  shows "\<exists>a b::real. S = {} \<or> S = UNIV \<or> S = {..<b} \<or> S = {..b} \<or> S = {a<..} \<or> S = {a..} \<or>
+    S = {a<..<b} \<or> S = {a<..b} \<or> S = {a..<b} \<or> S = {a..b}"
+  using S unfolding is_interval_1 by (blast intro: interval_cases)
+
+(*
+
+(* Should have theorem that connected sets are Borel measurable. *)
+
+(* JOHANNES: Actually connected => Borel only for reals / ereals. *)
+
 (*declare [[show_types]]*)
 
 lemma Sup_real_set_eq_PInfty:
@@ -460,8 +549,6 @@ proof
       by (metis MInfty_neq_ereal(1) dual_order.antisym ereal_less_eq(2) ereal_less_eq(3) image_iff)
   qed
 qed 
-
-(* Should have theorem that connected sets are Borel measurable. *)
 
 lemma is_real_interval:
   assumes "is_interval S"
@@ -673,7 +760,7 @@ proof -
             qed
           qed
         qed
-
+*)
 lemma real_interval_borel_measurable:
   assumes "is_interval (S::real set)"
   shows "S \<in> sets borel"
