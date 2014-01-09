@@ -313,6 +313,13 @@ definition interval_lebesgue_integral :: "real measure \<Rightarrow> ereal \<Rig
     then (\<integral>x. f x * indicator (einterval a b) x \<partial>M)
     else - (\<integral>x. f x * indicator (einterval b a) x \<partial>M))"
 
+syntax
+  "_ascii_interval_lebesgue_integral" :: "pttrn \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real measure \<Rightarrow> real \<Rightarrow> real"
+  ("(5LINT _=_.._|_. _)" [0,60,60,61,100] 60)
+
+translations
+  "LINT x=a..b|M. f" == "CONST interval_lebesgue_integral M a b (\<lambda>x. f)"
+
 definition interval_lebesgue_integrable :: "real measure \<Rightarrow> ereal \<Rightarrow> ereal \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> bool" where
   "interval_lebesgue_integrable M a b f = (if a \<le> b
     then integrable M (\<lambda>x. f x * indicator (einterval a b) x)

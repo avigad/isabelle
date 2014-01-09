@@ -85,65 +85,10 @@ proof -
   hence Y_distr: "distr \<Omega> borel Y = M" sorry
   have *: "\<forall>x\<in>{0<..<1}. \<forall>y\<in>{0<..<1}. x \<le> y \<longrightarrow> Y x \<le> Y y"
     using F_inc unfolding mono_def by (metis Y_le_iff dual_order.trans eq_iff)
-  (** Consider incorporating this into the theorem bdd_rcont_inc_almost_inverse. **)
-  have Y_inc: "\<And>x y. x \<le> y \<Longrightarrow> Y x \<le> Y y"
-  proof -
-    fix x y :: real assume xy: "x \<le> y"
-    show "Y x \<le> Y y"
-    proof (cases "x \<le> 0", cases "x \<ge> 1", cases "y \<le> 0", cases "y \<ge> 1", force, force, force)
-      assume x: "x \<le> 0"
-      show ?thesis
-      proof (cases "y \<le> 0", cases "y \<ge> 1",force, simp add: x Y_lower)
-        assume "\<not> y \<le> 0"
-        hence y: "0 < y" by simp
-        show ?thesis
-        proof (cases "y \<ge> 1", simp add: x Y_lower Y_upper)
-          assume "\<not> 1 \<le> y"
-          hence "y < 1" by simp
-          hence "y \<in> {0<..<1}" using y by auto
-          thus ?thesis sorry
-        qed
-      qed
-    next
-      assume "\<not> x \<le> 0"
-      hence x: "0 < x" by simp
-      show ?thesis
-      proof (cases "x \<ge> 1", cases "y \<le> 0", cases "y \<ge> 1",force)
-        assume "x \<ge> 1" "y \<le> 0" thus ?thesis using Y_lower Y_upper xy by simp
-      next
-        assume x1: "x \<ge> 1" and "\<not> y \<le> 0"
-        hence y: "0 < y" by simp
-        show ?thesis
-        proof (cases "y \<ge> 1", simp add: x1 Y_lower Y_upper)
-          assume "\<not> 1 \<le> y"
-          hence "y < 1" by simp
-          hence "y \<in> {0<..<1}" using y by auto
-          thus ?thesis sorry
-        qed
-      next
-        assume "\<not> 1 \<le> x"
-        hence "x < 1" by simp
-        hence x: "x \<in> {0<..<1}" using x by auto
-        show ?thesis
-        proof (cases "y \<ge> 0", cases "y \<ge> 1",simp)
-          assume "1 \<le> y"
-          thus ?thesis using x xy Y_upper sorry
-        next
-          assume "0 \<le> y" "\<not> 1 \<le> y"
-          hence "y < 1" by simp
-          hence "y \<in> {0<..<1}" using x xy by auto
-          thus ?thesis using * x xy by auto
-        next
-          assume "\<not> 0 \<le> y"
-          hence "y \<le> 0" by simp
-          thus ?thesis using Y_lower xy by auto
-        qed
-      qed
-    qed
-  qed
-  have Y_right_cts: "\<forall>\<omega>\<in>{0<..<1}. continuous (at_right \<omega>) Y"
-    apply (subst continuous_at_right_real_increasing)
-    using Y_inc apply force
+  have Y_inc: "\<forall>x\<in>{0<..<1}. \<forall>y\<in>{0<..<1}. x \<le> y \<longrightarrow> Y x \<le> Y y" sorry
+  have Y_right_cts: "\<forall>\<omega>\<in>{0<..<1}. continuous (at_right \<omega>) Y" (* Need to adapt to restricted Y_inc. *)
+    apply (subst continuous_at_right_real_increasing) sorry
+(**    using Y_inc apply force
     apply auto
   proof -
     fix \<epsilon> :: real assume \<epsilon>: "\<epsilon> > 0"
@@ -151,7 +96,7 @@ proof -
     show "\<exists>\<delta>>0. Y (\<omega> + \<delta>) - Y \<omega> < \<epsilon>"
       (*apply (subst add_less_cancel_right[of "Y (\<omega> + \<delta>) - Y \<omega>" "Y \<omega>" _,symmetric])*)
       sorry
-  qed
+  qed **)
   {
     fix \<omega>::real assume \<omega>: "\<omega> \<in> {0<..<1}" "continuous (at \<omega>) Y"
     have "liminf (\<lambda>n. Y_seq n \<omega>) \<ge> Y \<omega>"
