@@ -30,6 +30,17 @@ proof
     from f unfolding rcont_inc_def
     *)
 
+
+(*
+lemma borel_measurable_ereal_iff_less:
+  "(f::'a \<Rightarrow> ereal) \<in> borel_measurable M \<longleftrightarrow> (\<forall>a. f -` {..a} \<inter> space M \<in> sets M)"
+  unfolding borel_measurable_eq_atMost_ereal greater_eq_le_measurable
+
+lemma borel_measurable_ereal_iff_less2:
+  "(f::'a \<Rightarrow> ereal) \<in> borel_measurable M \<longleftrightarrow> (\<forall>a. f -` {..< a} \<inter> space M \<in> sets M)"
+  unfolding borel_measurable_eq_atLeast_ereal greater_eq_le_measurable ..
+*)
+
 (* state using obtains? *)
 theorem Skorohod:
   fixes 
@@ -62,13 +73,12 @@ proof -
     unfolding F_def using assms(2) M.cdf_is_right_cont by auto
   have F_at_top: "(F ---> 1) at_top" unfolding F_def using M.cdf_lim_at_top_prob by auto
   have F_at_bot: "(F ---> 0) at_bot" unfolding F_def using M.cdf_lim_at_bot by auto
-  def \<Omega> \<equiv> "measure_of {0::real<..<1} (algebra.restricted_space {0<..<1} UNIV) borel"
+(*
+  def \<Omega> \<equiv> "measure_of {0::real<..<1} (algebra.restricted_space (sets borel) {0<..<1}) borel"
+*)
+  def \<Omega> \<equiv> "density borel (indicator {0::real<..<1})"
   def Y_seq \<equiv> "\<lambda>n \<omega>. Inf {x. \<omega> \<le> f n x}"
   def Y \<equiv> "\<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
-  have f_meas: "\<And>n. f n \<in> borel_measurable borel" using f_inc borel_measurable_mono_fnc by auto
-  hence Y_seq_meas: "\<And>n. Y_seq n \<in> measurable \<Omega> borel" unfolding Y_seq_def using borel_measurable_INF sorry
-  have F_meas: "F \<in> borel_measurable borel" using F_inc borel_measurable_mono_fnc by auto
-  hence Y_meas: "Y \<in> measurable \<Omega> borel" sorry
   have Y_seq_le_iff: "\<And>n. \<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> f n x) = (Y_seq n \<omega> \<le> x)"
   proof -
     fix n :: nat
@@ -76,6 +86,25 @@ proof -
       unfolding Y_seq_def apply (rule bdd_rcont_inc_almost_inverse[of 0 1 "f n"])
       unfolding rcont_inc_def using f_inc f_right_cts f_at_top f_at_bot by auto
   qed
+  have f_meas: "\<And>n. f n \<in> borel_measurable borel" using f_inc borel_measurable_mono_fnc by auto
+  have 1: "\<And>n a. {w \<in> space \<Omega>. Y_seq n w \<le> a} = {0<..f n a} \<inter> space \<Omega>"
+    unfolding \<Omega>_def
+
+apply (auto simp add: space_measure_of_conv Y_seq_le_iff)
+  have Y_seq_meas: "\<And>n. Y_seq n \<in> measurable \<Omega> borel"
+    apply (subst borel_measurable_iff_le)
+    apply (subst 1)
+    apply (auto simp add: \<Omega>_def sets_measure_of_conv space_measure_of_conv)
+apply (rule sigma_sets.Basic)
+apply (subst Int_commute)
+apply (rule imageI)
+apply auto
+done
+
+ using borel_measurable_INF sorry
+  have F_meas: "F \<in> borel_measurable borel" using F_inc borel_measurable_mono_fnc by auto
+  hence Y_meas: "Y \<in> measurable \<Omega> borel" sorry
+
   hence Y_seq_distr: "\<And>n. distr \<Omega> borel (Y_seq n) = \<mu> n" sorry
   from F_at_bot F_inc have Y_lower: "\<And>\<omega>. \<omega> \<le> 0 \<Longrightarrow> Y \<omega> = 0" unfolding Y_def mono_def sorry
   have Y_upper: "\<And>\<omega>. 1 \<le> \<omega> \<Longrightarrow> Y \<omega> = 1" sorry
