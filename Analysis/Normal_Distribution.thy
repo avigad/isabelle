@@ -283,7 +283,7 @@ proof -
 qed
 
 lemma (in prob_space) sum_indep_normal:
-  assumes indep: "indep_var lborel X lborel Y"
+  assumes indep: "indep_var borel X borel Y"
   assumes pos_var[arith]: "0 < \<sigma>" "0 < \<tau>"
   assumes normalX[simp]: "distributed M lborel X (normal_density \<mu> \<sigma>)"
   assumes normalY[simp]: "distributed M lborel Y (normal_density \<nu> \<tau>)"
@@ -316,7 +316,7 @@ proof -
 qed
 
 lemma (in prob_space) diff_indep_normal:
-  assumes indep[simp]: "indep_var lborel X lborel Y"
+  assumes indep[simp]: "indep_var borel X borel Y"
   assumes [simp, arith]: "0 < \<sigma>" "0 < \<tau>"
   assumes normalX[simp]: "distributed M lborel X (normal_density \<mu> \<sigma>)"
   assumes normalY[simp]: "distributed M lborel Y (normal_density \<nu> \<tau>)"
@@ -327,8 +327,7 @@ proof -
   then have [simp]:"distributed M lborel (\<lambda>x. - Y x) (\<lambda>x. ereal (normal_density (- \<nu>) \<tau> x))" by simp
 
   have "distributed M lborel (\<lambda>x. X x + (- Y x)) (normal_density (\<mu> + - \<nu>) (sqrt (\<sigma>\<^sup>2 + \<tau>\<^sup>2)))"
-    apply(intro sum_indep_normal indep_var_neg)
-    by(auto intro!: sum_indep_normal indep_var_neg)
+    by (intro sum_indep_normal indep_var_neg) simp_all
   then show ?thesis by simp
 qed
 

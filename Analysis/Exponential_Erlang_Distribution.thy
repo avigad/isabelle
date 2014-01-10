@@ -470,7 +470,7 @@ proof -
 qed
 
 lemma (in prob_space) sum_indep_exponential_erlang:
-  assumes indep: "indep_var lborel X lborel Y"
+  assumes indep: "indep_var borel X borel Y"
   assumes expX: "distributed M lborel X (exponential_density l)"
   assumes "distributed M lborel Y (erlang_density k l)"
   shows "distributed M lborel (\<lambda>x. X x + Y x) (erlang_density (1 + k) l)"
@@ -496,7 +496,7 @@ proof (induct rule: finite_ne_induct)
 next
   case (insert i I)
     then have "distributed M lborel (\<lambda>x. (X i x) + (\<Sum>i\<in> I. X i x)) (erlang_density ( 1 + ((card  I) - 1)) l )"
-      by (intro sum_indep_exponential_erlang indep_vars_setsum) (auto intro!:indep_vars_subset)
+      by (intro sum_indep_exponential_erlang indep_vars_setsum) (auto intro!: indep_vars_subset)
     also have "(\<lambda>x. (X i x) + (\<Sum>i\<in> I. X i x)) = (\<lambda>x. \<Sum>i\<in> insert i I. X i x)" using insert by auto
     also have " 1 + ((card  I) - 1) = card (insert i I) - 1"
       apply (subst card_insert_disjoint)
@@ -572,7 +572,7 @@ next
 qed
 
 lemma (in prob_space) sum_indep_erlang:
-  assumes indep: "indep_var lborel X lborel Y"
+  assumes indep: "indep_var borel X borel Y"
   assumes [simp, arith]: "0 < l"
   assumes erlX: "distributed M lborel X (erlang_density k\<^sub>1 l)"
   assumes erlY: "distributed M lborel Y (erlang_density k\<^sub>2 l)"

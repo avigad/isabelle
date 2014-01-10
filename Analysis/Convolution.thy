@@ -108,12 +108,12 @@ lemma (in prob_space) sum_indep_random_variable:
   by (auto simp: distr_distr intro!:arg_cong[where f = "distr M borel"])
 
 lemma (in prob_space) sum_indep_random_variable_lborel:
-  assumes ind: "indep_var lborel X lborel Y"
+  assumes ind: "indep_var borel X borel Y"
   assumes [simp, measurable]: "random_variable lborel X"
   assumes [simp, measurable]:"random_variable lborel Y" 
   shows "distr M lborel (\<lambda>x. X x + Y x) = convolution (distr M lborel X)  (distr M lborel Y)"
   using ind unfolding indep_var_distribution_eq convolution_def 
-  by (auto simp: distr_distr o_def intro!: arg_cong[where f = "distr M borel"]) (simp add: distr_def)
+  by (auto simp: distr_distr o_def intro!: arg_cong[where f = "distr M borel"] cong: distr_cong)
 
 lemma convolution_density_ereal:
   fixes f :: "real \<Rightarrow> ereal"
@@ -138,7 +138,7 @@ proof -
   also have "... =  \<integral>\<^sup>+ xa. \<integral>\<^sup>+ x. f x * g xa * indicator A (x + xa) \<partial>lborel \<partial>lborel"
     apply (rule positive_integral_cong)
     apply (subst(2) positive_integral_real_affine[where t = "- x" and c = 1])
-    by (auto intro!: positive_integral_cong simp: add_commute diff_def)
+    by (auto intro!: positive_integral_cong simp: add_commute)
       
   also have "... = \<integral>\<^sup>+ xa. \<integral>\<^sup>+ x. (\<lambda>(xa, x). f x * g xa * indicator A (x + xa)) (xa, x) \<partial>lborel \<partial>lborel"
     by (auto intro!: positive_integral_cong)
@@ -166,7 +166,7 @@ lemma convolution_density:
 lemma (in prob_space) convolution_distributed_indep_random_variable_sum:
   fixes f :: "real \<Rightarrow> real"
   fixes g :: "real \<Rightarrow> real"
-  assumes ind[simp]: "indep_var lborel X lborel Y"
+  assumes ind[simp]: "indep_var borel X borel Y"
   assumes [simp, measurable]: "distributed M lborel X f"
   assumes [simp, measurable]: "distributed M lborel Y g"
   (* wanted to use AE but have to use for all as convolution_density uses forall *)

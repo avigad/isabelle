@@ -271,19 +271,34 @@ proof -
     unfolding indep_var_def .
 qed
 
-(* had to use lborel as borel was not working. I don't know why *)
 lemma (in prob_space) indep_vars_setsum:
   fixes X :: "'i \<Rightarrow> 'a \<Rightarrow> real"
   assumes I: "finite I" "i \<notin> I" and indep: "indep_vars (\<lambda>_. borel) X (insert i I)"
-  shows "indep_var lborel (X i) lborel (\<lambda>\<omega>. \<Sum>i\<in>I. X i \<omega>)"
+  shows "indep_var borel (X i) borel (\<lambda>\<omega>. \<Sum>i\<in>I. X i \<omega>)"
 proof -
   have "indep_var 
-    lborel ((\<lambda>f. f i) \<circ> (\<lambda>\<omega>. restrict (\<lambda>i. X i \<omega>) {i}))
-    lborel ((\<lambda>f. \<Sum>i\<in>I. f i) \<circ> (\<lambda>\<omega>. restrict (\<lambda>i. X i \<omega>) I))"
+    borel ((\<lambda>f. f i) \<circ> (\<lambda>\<omega>. restrict (\<lambda>i. X i \<omega>) {i}))
+    borel ((\<lambda>f. \<Sum>i\<in>I. f i) \<circ> (\<lambda>\<omega>. restrict (\<lambda>i. X i \<omega>) I))"
     using I by (intro indep_var_compose[OF indep_var_restrict[OF indep]] ) auto
   also have "((\<lambda>f. f i) \<circ> (\<lambda>\<omega>. restrict (\<lambda>i. X i \<omega>) {i})) = X i"
     by auto
   also have "((\<lambda>f. \<Sum>i\<in>I. f i) \<circ> (\<lambda>\<omega>. restrict (\<lambda>i. X i \<omega>) I)) = (\<lambda>\<omega>. \<Sum>i\<in>I. X i \<omega>)"
+    by (auto cong: rev_conj_cong)
+  finally show ?thesis .
+qed
+
+lemma (in prob_space) indep_vars_setprod:
+  fixes X :: "'i \<Rightarrow> 'a \<Rightarrow> real"
+  assumes I: "finite I" "i \<notin> I" and indep: "indep_vars (\<lambda>_. borel) X (insert i I)"
+  shows "indep_var borel (X i) borel (\<lambda>\<omega>. \<Prod>i\<in>I. X i \<omega>)"
+proof -
+  have "indep_var 
+    borel ((\<lambda>f. f i) \<circ> (\<lambda>\<omega>. restrict (\<lambda>i. X i \<omega>) {i}))
+    borel ((\<lambda>f. \<Prod>i\<in>I. f i) \<circ> (\<lambda>\<omega>. restrict (\<lambda>i. X i \<omega>) I))"
+    using I by (intro indep_var_compose[OF indep_var_restrict[OF indep]] ) auto
+  also have "((\<lambda>f. f i) \<circ> (\<lambda>\<omega>. restrict (\<lambda>i. X i \<omega>) {i})) = X i"
+    by auto
+  also have "((\<lambda>f. \<Prod>i\<in>I. f i) \<circ> (\<lambda>\<omega>. restrict (\<lambda>i. X i \<omega>) I)) = (\<lambda>\<omega>. \<Prod>i\<in>I. X i \<omega>)"
     by (auto cong: rev_conj_cong)
   finally show ?thesis .
 qed
@@ -293,6 +308,94 @@ lemma (in prob_space) indep_vars_subset:
   shows "indep_vars M' X J"
   using assms unfolding indep_vars_def indep_sets_def
   by auto
+
+lemma (in prob_space) indep_vars_cong:
+  "I = J \<Longrightarrow> (\<And>i. i \<in> I \<Longrightarrow> X i = Y i) \<Longrightarrow> (\<And>i. i \<in> I \<Longrightarrow> M' i = N' i) \<Longrightarrow> indep_vars M' X I \<longleftrightarrow> indep_vars N' Y J"
+  unfolding indep_vars_def2 by (intro conj_cong indep_sets_cong) auto
+
+lemma (in prob_space) indep_vars_positive_integral:
+  assumes I: "finite I" "indep_vars (\<lambda>_. borel) X I" "\<And>i \<omega>. i \<in> I \<Longrightarrow> 0 \<le> X i \<omega>"
+  shows "(\<integral>\<^sup>+\<omega>. (\<Prod>i\<in>I. X i \<omega>) \<partial>M) = (\<Prod>i\<in>I. \<integral>\<^sup>+\<omega>. X i \<omega> \<partial>M)"
+proof cases
+  assume "I \<noteq> {}"
+  def Y \<equiv> "\<lambda>i \<omega>. if i \<in> I then X i \<omega> else 0"
+  { fix i have "i \<in> I \<Longrightarrow> random_variable borel (X i)"
+    using I(2) by (cases "i\<in>I") (auto simp: indep_vars_def) }
+  note rv_X = this
+
+  { fix i have "random_variable borel (Y i)"
+    using I(2) by (cases "i\<in>I") (auto simp: Y_def rv_X) }
+  note rv_Y = this[measurable]
+    
+  interpret Y: prob_space "distr M borel (Y i)" for i
+    using I(2) by (cases "i \<in> I") (auto intro!: prob_space_distr simp: Y_def indep_vars_def)
+  interpret product_sigma_finite "\<lambda>i. distr M borel (Y i)"
+    ..
+  
+  have indep_Y: "indep_vars (\<lambda>i. borel) Y I"
+    by (rule indep_vars_cong[THEN iffD1, OF _ _ _ I(2)]) (auto simp: Y_def)
+
+  have "(\<integral>\<^sup>+\<omega>. (\<Prod>i\<in>I. X i \<omega>) \<partial>M) = (\<integral>\<^sup>+\<omega>. (\<Prod>i\<in>I. max 0 (Y i \<omega>)) \<partial>M)"
+    using I(3) by (auto intro!: positive_integral_cong setprod_cong simp add: Y_def max_def)
+  also have "\<dots> = (\<integral>\<^sup>+\<omega>. (\<Prod>i\<in>I. max 0 (\<omega> i)) \<partial>distr M (Pi\<^sub>M I (\<lambda>i. borel)) (\<lambda>x. \<lambda>i\<in>I. Y i x))"
+    by (subst positive_integral_distr) auto
+  also have "\<dots> = (\<integral>\<^sup>+\<omega>. (\<Prod>i\<in>I. max 0 (\<omega> i)) \<partial>Pi\<^sub>M I (\<lambda>i. distr M borel (Y i)))"
+    unfolding indep_vars_iff_distr_eq_PiM[THEN iffD1, OF `I \<noteq> {}` rv_Y indep_Y] ..
+  also have "\<dots> = (\<Prod>i\<in>I. (\<integral>\<^sup>+\<omega>. max 0 \<omega> \<partial>distr M borel (Y i)))"
+    by (rule product_positive_integral_setprod) (auto intro: `finite I`)
+  also have "\<dots> = (\<Prod>i\<in>I. \<integral>\<^sup>+\<omega>. X i \<omega> \<partial>M)"
+    by (intro setprod_cong positive_integral_cong)
+       (auto simp: positive_integral_distr positive_integral_max_0 Y_def rv_X)
+  finally show ?thesis .
+qed (simp add: emeasure_space_1)
+
+lemma (in prob_space)
+  assumes I: "finite I" "indep_vars (\<lambda>_. borel) X I" "\<And>i. i \<in> I \<Longrightarrow> integrable M (X i)"
+  shows indep_vars_lebesgue_integral: "(\<integral>\<omega>. (\<Prod>i\<in>I. X i \<omega>) \<partial>M) = (\<Prod>i\<in>I. \<integral>\<omega>. X i \<omega> \<partial>M)" (is ?eq)
+    and indep_vars_integrable: "integrable M (\<lambda>\<omega>. (\<Prod>i\<in>I. X i \<omega>))" (is ?int)
+proof (induct rule: case_split)
+  assume "I \<noteq> {}"
+  def Y \<equiv> "\<lambda>i \<omega>. if i \<in> I then X i \<omega> else 0"
+  { fix i have "i \<in> I \<Longrightarrow> random_variable borel (X i)"
+    using I(2) by (cases "i\<in>I") (auto simp: indep_vars_def) }
+  note rv_X = this[measurable]
+
+  { fix i have "random_variable borel (Y i)"
+    using I(2) by (cases "i\<in>I") (auto simp: Y_def rv_X) }
+  note rv_Y = this[measurable]
+
+  { fix i have "integrable M (Y i)"
+    using I(3) by (cases "i\<in>I") (auto simp: Y_def) }
+  note int_Y = this
+    
+  interpret Y: prob_space "distr M borel (Y i)" for i
+    using I(2) by (cases "i \<in> I") (auto intro!: prob_space_distr simp: Y_def indep_vars_def)
+  interpret product_sigma_finite "\<lambda>i. distr M borel (Y i)"
+    ..
+  
+  have indep_Y: "indep_vars (\<lambda>i. borel) Y I"
+    by (rule indep_vars_cong[THEN iffD1, OF _ _ _ I(2)]) (auto simp: Y_def)
+
+  have "(\<integral>\<omega>. (\<Prod>i\<in>I. X i \<omega>) \<partial>M) = (\<integral>\<omega>. (\<Prod>i\<in>I. Y i \<omega>) \<partial>M)"
+    using I(3) by (simp add: Y_def)
+  also have "\<dots> = (\<integral>\<omega>. (\<Prod>i\<in>I. \<omega> i) \<partial>distr M (Pi\<^sub>M I (\<lambda>i. borel)) (\<lambda>x. \<lambda>i\<in>I. Y i x))"
+    by (subst integral_distr) auto
+  also have "\<dots> = (\<integral>\<omega>. (\<Prod>i\<in>I. \<omega> i) \<partial>Pi\<^sub>M I (\<lambda>i. distr M borel (Y i)))"
+    unfolding indep_vars_iff_distr_eq_PiM[THEN iffD1, OF `I \<noteq> {}` rv_Y indep_Y] ..
+  also have "\<dots> = (\<Prod>i\<in>I. (\<integral>\<omega>. \<omega> \<partial>distr M borel (Y i)))"
+    by (rule product_integral_setprod) (auto intro: `finite I` simp: integrable_distr_eq int_Y)
+  also have "\<dots> = (\<Prod>i\<in>I. \<integral>\<omega>. X i \<omega> \<partial>M)"
+    by (intro setprod_cong integral_cong)
+       (auto simp: integral_distr Y_def rv_X)
+  finally show ?eq .
+
+  have "integrable (distr M (Pi\<^sub>M I (\<lambda>i. borel)) (\<lambda>x. \<lambda>i\<in>I. Y i x)) (\<lambda>\<omega>. (\<Prod>i\<in>I. \<omega> i))"
+    unfolding indep_vars_iff_distr_eq_PiM[THEN iffD1, OF `I \<noteq> {}` rv_Y indep_Y]
+    by (intro product_integrable_setprod[OF `finite I`])
+       (simp add: integrable_distr_eq int_Y)
+  then show ?int
+    by (simp add: integrable_distr_eq Y_def)
+qed (simp_all add: prob_space)
 
 lemma setsum_pos_pos:
   fixes f::"_ \<Rightarrow> real"
@@ -317,11 +420,11 @@ proof-
 qed
 
 lemma (in prob_space) indep_var_neg:
-  assumes [simp]:"indep_var lborel X lborel Y"
-  shows "indep_var lborel X lborel (\<lambda>x. - Y x)"
+  assumes [simp]:"indep_var borel X borel Y"
+  shows "indep_var borel X borel (\<lambda>x. - Y x :: 'b :: {real_normed_vector,second_countable_topology})"
 proof -
-  have "indep_var lborel ( (\<lambda>x. x) o X) lborel ((\<lambda>x. - x) o Y)"
-    by (auto intro!: indep_var_compose assms) 
+  have "indep_var borel ( (\<lambda>x. x) o X) borel ((\<lambda>x. - x) o Y)"
+    by (auto intro!: indep_var_compose assms)
   then show ?thesis by (simp add: o_def)
 qed
 
