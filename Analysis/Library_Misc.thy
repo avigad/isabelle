@@ -774,15 +774,35 @@ proof -
     space_in_borel)
 qed
 
-(* Should be able to make this more general, but encounter difficulty with types. *)
+(* Current version does not use the measure M; at least reach this level of generality (further
+   generality, beyond the type of reals, should be possible but I shall not deal with it at present. *)
 lemma borel_measurable_mono_fnc:
-  fixes M :: "real measure" fixes f :: "real \<Rightarrow> real"
+  fixes M :: "real measure" and f :: "real \<Rightarrow> real"
   assumes "mono f"
-  shows "f \<in> borel_measurable borel"
+  shows "f \<in> borel_measurable borel" (* Change to "f \<in> borel_meaurable M" *)
 proof (subst borel_measurable_iff_ge, auto simp add:)
   fix a :: real
   have "is_interval {w. a \<le> f w}" using is_interval_1 assms(1) order.trans unfolding mono_def by (smt mem_Collect_eq)
   thus "{w. a \<le> f w} \<in> sets borel" using real_interval_borel_measurable by auto  
 qed
+
+definition mono_on :: "('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "mono_on f A = (\<forall>x\<in>A. \<forall>y\<in>A. x \<le> y \<longrightarrow> f x \<le> f y)"
+
+lemma borel_measurable_mono_on_fnc:
+  fixes M :: "real measure" and f :: "real \<Rightarrow> real" and  A :: "real set"
+  assumes "mono_on f A"
+  shows "f \<in> borel_measurable (restrict_space M A)"
+sorry
+
+(***
+(* Proof of Skorohod in Billingsley uses only borel subsets of {0<..<1}, so this is probably not
+   wanted there. *)
+lemma borel_measurable_mono_AE_fnc:
+  fixes M :: "real measure" fixes f g :: "real \<Rightarrow> real"
+  assumes "mono g" "AE x in M. f x = g x"
+  shows "f \<in> borel_measurable (completion M)"
+sorry
+***)
 
 end
