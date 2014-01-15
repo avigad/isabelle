@@ -5,7 +5,7 @@ Authors: Jeremy Avigad, Luke Serafin
 
 theory Characteristic_Functions
 
-imports Weak_Convergence Real_to_Complex Independent_Family
+imports Weak_Convergence Real_to_Complex Independent_Family Sinc
 
 begin
 
@@ -333,6 +333,29 @@ lemma complex_interval_integral_of_real:
 unfolding complex_interval_lebesgue_integral_eq
   by (simp only: Re_complex_of_real Im_complex_of_real, simp)
 
+lemma isinc_integrable: "interval_lebesgue_integrable lborel (ereal 0)
+     (ereal T) (\<lambda>t. sin (t * theta) / t)"
+  sorry
+
+lemma isinc_bounded: "\<exists>B. \<forall>T. abs (sinc T) \<le> B"
+  sorry
+
+lemma borel_measurable_isinc: "f \<in> borel_measurable M \<Longrightarrow> 
+  (\<lambda>x. sinc (f x)) \<in> borel_measurable M"
+  sorry
+
+lemma borel_measurable_sgn [measurable (raw)]:
+  fixes f :: "real \<Rightarrow> real"
+  assumes "f \<in> borel_measurable M"
+  shows "(\<lambda>x. sgn (f x)) \<in> borel_measurable M"
+proof -
+  have "(\<lambda>x. sgn (f x)) = (\<lambda>x. indicator {0<..} (f x) - indicator {..<0} (f x))"
+    unfolding indicator_def by auto
+  thus ?thesis
+    apply (elim ssubst) 
+    using assms by measurable
+qed
+
 theorem Levy_Inversion:
   fixes M :: "real measure"
   and a b :: real
@@ -341,13 +364,15 @@ theorem Levy_Inversion:
   assumes "real_distribution M"
   and "\<mu> {a} = 0" and "\<mu> {b} = 0"
   shows
-  "((\<lambda>T :: real. 1 / (2 * pi) * (CLBINT t=-T..T. (iexp (-(t * a)) -
+  "((\<lambda>T :: nat. 1 / (2 * pi) * (CLBINT t=-T..T. (iexp (-(t * a)) -
   iexp (-(t * b))) / (ii * t) * \<phi> t)) ---> \<mu> {a<..b}) at_top"
-  (is "((\<lambda>T :: real. 1 / (2 * pi) * (CLBINT t=-T..T. ?F t * \<phi> t)) ---> 
+  (is "((\<lambda>T :: nat. 1 / (2 * pi) * (CLBINT t=-T..T. ?F t * \<phi> t)) ---> 
       of_real (\<mu> {a<..b})) at_top")
   proof -
     interpret M: real_distribution M by (rule assms)
     interpret P: pair_sigma_finite lborel M ..
+    from isinc_bounded obtain B where Bprop: "\<And>T. abs (sinc T) \<le> B" by auto
+    from Bprop [of 0] have [simp]: "B \<ge> 0" by auto
     let ?f = "\<lambda>t x :: real. (iexp (t * (x - a)) - iexp(t * (x - b))) / (ii * t)"
     {
       fix T :: real
@@ -388,7 +413,7 @@ theorem Levy_Inversion:
           apply (rule complex_interval_integral_cong)
           using `T \<ge> 0` by (auto simp add: field_simps)
         also have "\<dots> = (CLBINT t=(0::real)..T. complex_of_real(
-            2 * sin (t * (x - a)) / t - 2 * sin (t * (x - b)) / t))"
+            2 * (sin (t * (x - a)) / t) - 2 * (sin (t * (x - b)) / t)))"
           apply (rule complex_interval_integral_cong)
           using `T \<ge> 0` apply (auto simp add: field_simps of_real_mult expi_def cis_def
              i_complex_of_real)
@@ -396,10 +421,17 @@ theorem Levy_Inversion:
           apply (simp only: sin_minus cos_minus)
           by (simp add: complex_of_real_def field_simps)
         also have "\<dots> = complex_of_real (LBINT t=(0::real)..T. 
-            2 * sin (t * (x - a)) / t - 2 * sin (t * (x - b)) / t)"
+            2 * (sin (t * (x - a)) / t) - 2 * (sin (t * (x - b)) / t))" 
           by (rule complex_interval_integral_of_real)
-        finally have "(CLBINT t. ?f' (t, x)) = complex_of_real (LBINT t=(0::real)..T. 
-            2 * sin (t * (x - a)) / t - 2 * sin (t * (x - b)) / t)" .
+        also have "\<dots> = complex_of_real (2 * (sgn (x - a) * sinc (T * abs (x - a)) -
+            sgn (x - b) * sinc (T * abs (x - b))))"
+          apply (rule arg_cong) back
+          apply (subst interval_lebesgue_integral_diff)
+          apply (rule interval_lebesgue_integral_cmult, rule isinc_integrable)+
+          apply (subst interval_lebesgue_integral_cmult, rule isinc_integrable)+
+          by (subst Billingsley_26_15, rule `T \<ge> 0`)+ (simp) 
+        finally have "(CLBINT t. ?f' (t, x)) = complex_of_real (
+            2 * (sgn (x - a) * sinc (T * abs (x - a)) - sgn (x - b) * sinc (T * abs (x - b))))" .
       } note main_eq = this
       have "(CLBINT t=-T..T. ?F t * \<phi> t) = 
         (CLBINT t. (CLINT x | M. ?F t * iexp (t * x) * indicator {-T<..<T} t))"
@@ -439,7 +471,6 @@ theorem Levy_Inversion:
         apply (rule order_trans, rule Levy_Inversion_aux2)
         using `a \<le> b` apply auto
         apply (subst M.emeasure_pair_measure_Times, auto)
-        (* TODO: factor to eliminate duplication *)
         apply (rule integrable_bound) 
         apply (rule integral_cmult [of "lborel \<Otimes>\<^sub>M M" 
               "indicator ({-T<..<T} \<times> UNIV)" "b - a"])
@@ -452,40 +483,195 @@ theorem Levy_Inversion:
         apply (rule order_trans, rule Levy_Inversion_aux2)
         using `a \<le> b` apply auto
         by (subst M.emeasure_pair_measure_Times, auto)
-      also have "\<dots> = (CLINT x | M. (complex_of_real (LBINT t=(0::real)..T. 
-            2 * sin (t * (x - a)) / t - 2 * sin (t * (x - b)) / t)))"
+      also have "\<dots> = (CLINT x | M. (complex_of_real (2 * (sgn (x - a) * 
+           sinc (T * abs (x - a)) - sgn (x - b) * sinc (T * abs (x - b))))))"
          using main_eq by (intro complex_integral_cong, auto)
-      also have "\<dots> = complex_of_real (LINT x | M. (LBINT t=(0::real)..T. 
-            2 * sin (t * (x - a)) / t - 2 * sin (t * (x - b)) / t))"
+      also have "\<dots> = complex_of_real (LINT x | M. (2 * (sgn (x - a) * 
+           sinc (T * abs (x - a)) - sgn (x - b) * sinc (T * abs (x - b)))))"
          by (rule complex_integral_of_real)
-      finally have "(CLBINT t=-T..T. ?F t * \<phi> t) = 
-          complex_of_real (LINT x | M. (LBINT t=(0::real)..T. 
-            2 * sin (t * (x - a)) / t - 2 * sin (t * (x - b)) / t))" .
-    } note main_eq2 = this
-
-
 (*
-    have "?I = (\<lambda>T. (1/(2 * \<pi>) * Re (CLINT x|M. (CLBINT t=-T..T.
-      (iexp (-of_real (t * (x - a))) - iexp (-of_real (t * (x - b))))/
-      (ii * of_real t)))))"
-      apply (unfold \<phi>_def)
-      apply (unfold char_def)
-      apply (rule pair_sigma_finite.Fubini_integral)
-      sorry
-    let ?S = "\<lambda>T. (sgn(x - a)/\<pi>) * sinc (T * \<bar>x - a\<bar>) - (sgn(x - b)/\<pi>) *
-      sinc (T * \<bar>x - b\<bar>)"
-    have real_I: "?I = (\<lambda>T. LINT x|M. ?S T)"
-      sorry
-    let ?\<psi> = "\<lambda>a. \<lambda>b. \<lambda>x. if x < a then 0::real else (if x = a then 1/2 else
-      (if x \<in> {a<..<b} then 1 else (if x = b then 1/2 else (if b < x then 0
-      else 0))))"
-    have "(?S ---> ?\<psi> a b x) at_top"
-      sorry
-    have "(?I ---> LINT x|M. ?\<psi> a b x) at_top"
-      sorry
-    thus ?thesis sorry
-  qed
+      also have "\<dots> = complex_of_real (LINT x : UNIV - {a,b} | M. (2 * (sgn (x - a) * 
+           sinc (T * abs (x - a)) - sgn (x - b) * sinc (T * abs (x - b)))))"
+        apply (rule arg_cong) back
+        apply (rule integral_cong_AE)
+        using assms apply (intro AE_I [of _ _ "{a,b}"], auto split: split_indicator
+          simp add: emeasure_insert M.emeasure_eq_measure)
+        apply (case_tac "a = b", auto) 
+        by (subst M.finite_measure_eq_setsum_singleton, auto)
 *)
+      finally have "(CLBINT t=-T..T. ?F t * \<phi> t) = 
+          complex_of_real (LINT x | M. (2 * (sgn (x - a) * 
+           sinc (T * abs (x - a)) - sgn (x - b) * sinc (T * abs (x - b)))))" .
+    } note main_eq2 = this
+(*
+    {
+      fix x :: real
+      assume "x > a"
+      have "((\<lambda>T. 2 * (sgn (x - a) * sinc (T * abs (x - a)))) ---> 2 * (pi / 2)) (at_top)"
+        apply (rule tendsto_intros, rule tendsto_const)
+        using `x > a` apply simp
+        apply (rule filterlim_compose [OF sinc_at_top])
+        apply (subst mult_commute)
+        apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const, auto)
+        by (rule filterlim_ident)
+      hence "((\<lambda>T. 2 * (sgn (x - a) * sinc (T * abs (x - a)))) ---> pi) (at_top)" by simp
+    } note 1 = this
+    {
+      fix x :: real
+      assume "x < a"
+      have "((\<lambda>T. 2 * (sgn (x - a) * sinc (T * abs (x - a)))) ---> 2 * -(pi / 2)) (at_top)"
+        apply (rule tendsto_intros, rule tendsto_const)
+        using `x < a` apply simp
+        apply (rule tendsto_minus)
+        apply (rule filterlim_compose [OF sinc_at_top])
+        apply (subst mult_commute)
+        apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const, auto)
+        by (rule filterlim_ident)
+      hence "((\<lambda>T. 2 * (sgn (x - a) * sinc (T * abs (x - a)))) ---> - pi) (at_top)" by simp
+    } note 2 = this
+    {
+      fix x :: real
+      assume "x > b"
+      have "((\<lambda>T. 2 * (sgn (x - b) * sinc (T * abs (x - b)))) ---> 2 * (pi / 2)) (at_top)"
+        apply (rule tendsto_intros, rule tendsto_const)
+        using `x > b` apply simp
+        apply (rule filterlim_compose [OF sinc_at_top])
+        apply (subst mult_commute)
+        apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const, auto)
+        by (rule filterlim_ident)
+      hence "((\<lambda>T. 2 * (sgn (x - b) * sinc (T * abs (x - b)))) ---> pi) (at_top)" by simp
+    } note 3 = this
+    {
+      fix x :: real
+      assume "x < b"
+      have "((\<lambda>T. 2 * (sgn (x - b) * sinc (T * abs (x - b)))) ---> 2 * -(pi / 2)) (at_top)"
+        apply (rule tendsto_intros, rule tendsto_const)
+        using `x < b` apply simp
+        apply (rule tendsto_minus)
+        apply (rule filterlim_compose [OF sinc_at_top])
+        apply (subst mult_commute)
+        apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const, auto)
+        by (rule filterlim_ident)
+      hence "((\<lambda>T. 2 * (sgn (x - b) * sinc (T * abs (x - b)))) ---> - pi) (at_top)" by simp
+    } note 4 = this
+*)
+    have "(\<lambda>T :: nat. LINT x | M. (2 * (sgn (x - a) * 
+           sinc (T * abs (x - a)) - sgn (x - b) * sinc (T * abs (x - b))))) ----> 
+         (LINT x | M. 2 * pi * indicator {a<..b} x)"
+      apply (rule integral_dominated_convergence [of _ _ "\<lambda>x. 4 * B"])
+      apply (rule integral_cmult)
+      apply (rule integral_diff)
+      apply (rule M.integrable_const_bound [of _ B])
+      apply (rule AE_I2)
+      apply (case_tac "x = xa")
+      apply (auto simp add: abs_mult abs_sgn_eq) [1]
+      apply (rule Bprop)
+      apply (auto simp add: abs_mult abs_sgn_eq) [1]
+      apply (rule Bprop)
+      apply measurable
+      apply (rule borel_measurable_isinc)
+      apply measurable
+      apply (rule M.integrable_const_bound [of _ B])
+      apply (rule AE_I2)
+      apply (case_tac "x = xa")
+      apply (auto simp add: abs_mult abs_sgn_eq) [1]
+      apply (rule Bprop)
+      apply (auto simp add: abs_mult abs_sgn_eq) [1]
+      apply (rule Bprop)
+      apply measurable
+      apply (rule borel_measurable_isinc)
+      apply measurable
+      apply (rule AE_I2)
+      apply (subst abs_mult, simp)
+      apply (rule order_trans [OF abs_triangle_ineq4])
+      apply (case_tac "x = a")
+      apply (auto simp add: abs_mult abs_sgn_eq) [1]
+      apply (rule order_trans)
+      apply (rule Bprop)
+      using `B \<ge> 0` apply arith
+      apply (auto simp add: abs_mult abs_sgn_eq) [1]
+      apply (rule order_trans)
+      apply (rule Bprop)
+      using `B \<ge> 0` apply arith
+      apply (rule order_trans)
+      apply (rule add_mono)
+      apply (rule Bprop)+
+      apply arith
+      apply (rule M.lebesgue_integral_const)
+      apply (rule AE_I [of _ _ "{a, b}"], auto)
+      prefer 2
+      using assms apply (simp add: emeasure_insert M.emeasure_eq_measure)
+      apply (case_tac "a = b", auto) 
+      apply (subst M.finite_measure_eq_setsum_singleton, auto)
+      apply (rule ccontr)
+      apply (erule notE) back
+      apply (auto split: split_indicator)
+      apply (subgoal_tac "2 * pi = 2 * (pi / 2) + 2 * (pi / 2)")
+      apply (erule ssubst)
+      apply (rule tendsto_add)
+      apply (rule tendsto_mult, rule tendsto_const)
+      apply (rule filterlim_compose [OF sinc_at_top])
+      apply (subst mult_commute)
+      apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const)
+      apply force
+      apply (rule filterlim_real_sequentially)
+      apply (rule tendsto_mult, rule tendsto_const)
+      apply (rule filterlim_compose [OF sinc_at_top])
+      apply (subst mult_commute)
+      apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const)
+      apply force
+      apply (rule filterlim_real_sequentially)
+      apply force
+      using `a \<le> b` apply auto
+      apply (subgoal_tac "0 = 2 * (pi / 2) - 2 * (pi / 2)")
+      apply (erule ssubst)
+      apply (rule tendsto_diff)
+      apply (rule tendsto_mult, rule tendsto_const)
+      apply (rule filterlim_compose [OF sinc_at_top])
+      apply (subst mult_commute)
+      apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const)
+      apply force
+      apply (rule filterlim_real_sequentially)
+      apply (rule tendsto_mult, rule tendsto_const)
+      apply (rule filterlim_compose [OF sinc_at_top])
+      apply (subst mult_commute)
+      apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const)
+      apply force
+      apply (rule filterlim_real_sequentially)
+      apply force
+      (* this duplicates the last 16 lines! *)
+      apply (subgoal_tac "0 = 2 * (pi / 2) - 2 * (pi / 2)")
+      apply (erule ssubst)
+      apply (rule tendsto_diff)
+      apply (rule tendsto_mult, rule tendsto_const)
+      apply (rule filterlim_compose [OF sinc_at_top])
+      apply (subst mult_commute)
+      apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const)
+      apply force
+      apply (rule filterlim_real_sequentially)
+      apply (rule tendsto_mult, rule tendsto_const)
+      apply (rule filterlim_compose [OF sinc_at_top])
+      apply (subst mult_commute)
+      apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const)
+      apply force
+      apply (rule filterlim_real_sequentially)
+      by force
+    also have "(LINT x | M. 2 * pi * indicator {a<..b} x) = 2 * pi * \<mu> {a<..b}"
+      by (subst set_integral_cmult, auto simp add: M.emeasure_eq_measure \<mu>_def)
+    finally have main3: "(\<lambda>T. LINT x | M. (2 * (sgn (x - a) * 
+           sinc (T * abs (x - a)) - sgn (x - b) * sinc (T * abs (x - b))))) ----> 
+         2 * pi * \<mu> {a<..b}" .
+  show ?thesis
+    apply (subst real_of_int_minus)
+    apply (subst real_of_int_of_nat_eq)
+    apply (subst main_eq2, force)
+    apply (subst of_real_mult [symmetric])
+    apply (rule tendsto_of_real)
+    apply (rule tendsto_const_mult [of "2 * pi"])
+    apply auto
+    apply (subst right_diff_distrib [symmetric])
+    by (rule main3)
+qed
 
 end
 
