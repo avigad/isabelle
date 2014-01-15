@@ -56,6 +56,7 @@ proof -
   def \<Omega> \<equiv> "restrict_space borel {0::real<..<1}"
   def Y_seq \<equiv> "\<lambda>n \<omega>. Inf {x. \<omega> \<le> f n x}"
   def Y \<equiv> "\<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
+  have f_meas: "\<And>n. f n \<in> borel_measurable borel" using f_inc borel_measurable_mono_fnc by auto
   have Y_seq_le_iff: "\<And>n. \<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> f n x) = (Y_seq n \<omega> \<le> x)"
   proof -
     fix n :: nat
@@ -63,48 +64,57 @@ proof -
       unfolding Y_seq_def apply (rule bdd_rcont_inc_almost_inverse[of 0 1 "f n"])
       unfolding rcont_inc_def using f_inc f_right_cts f_at_top f_at_bot by auto
   qed
-  have f_meas: "\<And>n. f n \<in> borel_measurable borel" using f_inc borel_measurable_mono_fnc by auto
-  hence Y_seq_meas: "\<And>n. Y_seq n \<in> borel_measurable \<Omega>"
-    
-(**  have 1: "\<And>n a. {w \<in> space \<Omega>. Y_seq n w \<le> a} = {0<..f n a} \<inter> space \<Omega>"
-    unfolding \<Omega>_def
-
-apply (auto simp add: space_measure_of_conv Y_seq_le_iff)
-  have Y_seq_meas: "\<And>n. Y_seq n \<in> measurable \<Omega> borel"
-    apply (subst borel_measurable_iff_le)
-    apply (subst 1)
-    apply (auto simp add: \<Omega>_def sets_measure_of_conv space_measure_of_conv)
-apply (rule sigma_sets.Basic)
-apply (subst Int_commute)
-apply (rule imageI)
-apply auto
-done
-
- using borel_measurable_INF sorry **)
+  hence Y_seq_distr: "\<And>n. distr \<Omega> borel (Y_seq n) = \<mu> n" unfolding distr_def
+  proof -
+    fix n :: nat
+    have space: "space (\<mu> n) = space borel"
+      using real_distribution.space_eq_univ space_borel assms(1) by auto
+    have sets: "sets (\<mu> n) = sets borel" using real_distribution.events_eq_borel assms(1) by auto
+    (* Default value should allow not assuming A\<in>(sets (\<mu> n))? *)
+    have emeasure: "\<forall>A. emeasure \<Omega> (Y_seq n -` A \<inter> space \<Omega>) = (\<mu> n) A" sorry
+    show "measure_of (space borel) (sets borel) (\<lambda>A. emeasure \<Omega> (Y_seq n -` A \<inter> space \<Omega>)) = \<mu> n"
+      apply (subst sets[symmetric])
+      apply (subst space[symmetric])
+      apply (subst emeasure)
+      using measure_of_of_measure by auto
+  qed
+  have Y_seq_mono_on: "\<And>n. mono_on (Y_seq n) {0<..<1}" unfolding mono_on_def
+    using Y_seq_le_iff by (metis order.trans order_refl)
+  hence Y_seq_meas: "\<And>n. (Y_seq n) \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc unfolding \<Omega>_def
+    by simp
   have F_meas: "F \<in> borel_measurable borel" using F_inc borel_measurable_mono_fnc by auto
-  hence Y_meas: "Y \<in> measurable \<Omega> borel" sorry
-
-  hence Y_seq_distr: "\<And>n. distr \<Omega> borel (Y_seq n) = \<mu> n" sorry
-  from F_at_bot F_inc have Y_lower: "\<And>\<omega>. \<omega> \<le> 0 \<Longrightarrow> Y \<omega> = 0" unfolding Y_def mono_def sorry
-  have Y_upper: "\<And>\<omega>. 1 \<le> \<omega> \<Longrightarrow> Y \<omega> = 1" sorry
   have Y_le_iff: "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
     unfolding Y_def apply (rule bdd_rcont_inc_almost_inverse[of 0 1 F])
     unfolding rcont_inc_def using F_inc F_right_cts F_at_top F_at_bot by auto
-  hence Y_distr: "distr \<Omega> borel Y = M" sorry
-  have *: "\<forall>x\<in>{0<..<1}. \<forall>y\<in>{0<..<1}. x \<le> y \<longrightarrow> Y x \<le> Y y"
-    using F_inc unfolding mono_def by (metis Y_le_iff dual_order.trans eq_iff)
-  have Y_inc: "\<forall>x\<in>{0<..<1}. \<forall>y\<in>{0<..<1}. x \<le> y \<longrightarrow> Y x \<le> Y y" sorry
-  have Y_right_cts: "\<forall>\<omega>\<in>{0<..<1}. continuous (at_right \<omega>) Y" (* Need to adapt to restricted Y_inc. *)
-    apply (subst continuous_at_right_real_increasing) sorry
-(**    using Y_inc apply force
-    apply auto
+  hence Y_distr: "distr \<Omega> borel Y = M" unfolding distr_def
   proof -
+    fix n :: nat
+    have space: "space M = space borel"
+      using real_distribution.space_eq_univ space_borel assms(2) by auto
+    have sets: "sets M = sets borel" using real_distribution.events_eq_borel assms(2) by auto
+    (* Default value should allow not assuming A\<in>(sets (\<mu> n))? *)
+    have emeasure: "\<forall>A. emeasure \<Omega> (Y -` A \<inter> space \<Omega>) = M A" sorry
+    show "measure_of (space borel) (sets borel) (\<lambda>A. emeasure \<Omega> (Y -` A \<inter> space \<Omega>)) = M"
+      apply (subst sets[symmetric])
+      apply (subst space[symmetric])
+      apply (subst emeasure)
+      using measure_of_of_measure sorry (*by auto*) (* Why did this work for Y_seq but not Y? *)
+  qed
+  have Y_mono_on: "mono_on Y {0<..<1}" unfolding mono_on_def
+    using Y_le_iff by (metis order.trans order_refl)
+  hence Y_meas: "Y \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc unfolding \<Omega>_def
+    by simp
+  have Y_right_cts: "\<forall>\<omega>\<in>{0<..<1}. continuous (at_right \<omega>) Y" (* Is this true? *)
+    apply auto
+    apply (subst continuous_at_right_real_mono_on_open_interval[of _ 0 1])
+    apply (rule Y_mono_on)
+    apply force
+  proof auto
     fix \<epsilon> :: real assume \<epsilon>: "\<epsilon> > 0"
     fix \<omega> :: real assume \<omega>: "0 < \<omega>" "\<omega> < 1"
     show "\<exists>\<delta>>0. Y (\<omega> + \<delta>) - Y \<omega> < \<epsilon>"
-      (*apply (subst add_less_cancel_right[of "Y (\<omega> + \<delta>) - Y \<omega>" "Y \<omega>" _,symmetric])*)
       sorry
-  qed **)
+  qed
   {
     fix \<omega>::real assume \<omega>: "\<omega> \<in> {0<..<1}" "continuous (at \<omega>) Y"
     have "liminf (\<lambda>n. Y_seq n \<omega>) \<ge> Y \<omega>"
@@ -164,7 +174,7 @@ done
         hence "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>'"
           by (metis ereal_le_epsilon2 order.strict_implies_order plus_ereal.simps(1))
       }
-      thus "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>" using \<omega> Y_right_cts Y_inc bdd_rcont_inc_almost_inverse sorry
+      thus "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>" using \<omega> Y_right_cts Y_mono_on bdd_rcont_inc_almost_inverse sorry
     qed
     ultimately have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" using Liminf_le_Limsup
       by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially)
