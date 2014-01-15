@@ -795,6 +795,27 @@ lemma borel_measurable_mono_on_fnc:
   shows "f \<in> borel_measurable (restrict_space M A)"
 sorry
 
+lemma continuous_at_right_real_mono_on_open_interval: 
+  fixes f a b c
+  assumes nondecF: "mono_on f {a<..<b}" and c: "c \<in> {a<..<b}"
+  shows "(continuous (at_right (c :: real)) f) = (\<forall>\<epsilon> > 0. \<exists>\<delta> > 0. f (c + \<delta>) - f c < \<epsilon>)"
+sorry
+(**
+  apply (auto simp add: continuous_within_eps_delta dist_real_def greaterThan_def)
+  apply (drule_tac x = \<epsilon> in spec, auto)
+  apply (drule_tac x = "a + d / 2" in spec)
+  apply (subst (asm) abs_of_nonneg)
+  apply (auto intro: nondecF simp add: field_simps)
+  apply (rule_tac x = "d / 2" in exI)
+  apply (auto simp add: field_simps)
+  apply (drule_tac x = e in spec, auto)
+  apply (rule_tac x = delta in exI, auto)
+  apply (subst abs_of_nonneg)
+  apply (auto intro: nondecF simp add: field_simps)
+  apply (rule le_less_trans)
+  prefer 2 apply assumption
+by (rule nondecF, auto) **)
+
 (***
 (* Proof of Skorohod in Billingsley uses only borel subsets of {0<..<1}, so this is probably not
    wanted there. *)
