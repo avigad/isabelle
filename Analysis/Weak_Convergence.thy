@@ -64,24 +64,32 @@ proof -
       unfolding Y_seq_def apply (rule bdd_rcont_inc_almost_inverse[of 0 1 "f n"])
       unfolding rcont_inc_def using f_inc f_right_cts f_at_top f_at_bot by auto
   qed
-  hence Y_seq_distr: "\<And>n. distr \<Omega> borel (Y_seq n) = \<mu> n" unfolding distr_def
+  have Y_seq_mono_on: "\<And>n. mono_on (Y_seq n) {0<..<1}" unfolding mono_on_def
+    using Y_seq_le_iff by (metis order.trans order_refl)
+  hence Y_seq_meas: "\<And>n. (Y_seq n) \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc unfolding \<Omega>_def
+    by simp
+  have Y_seq_distr: "\<And>n. distr \<Omega> borel (Y_seq n) = \<mu> n" unfolding distr_def
   proof -
     fix n :: nat
     have space: "space (\<mu> n) = space borel"
       using real_distribution.space_eq_univ space_borel assms(1) by auto
     have sets: "sets (\<mu> n) = sets borel" using real_distribution.events_eq_borel assms(1) by auto
+    have "\<And>a. emeasure \<Omega> (Y_seq n -` {..a} \<inter> space \<Omega>) = emeasure (\<mu> n) {..a}"
+      apply (unfold vimage_def)
+      unfolding \<Omega>_def apply (auto simp add: space_restrict_space)
+      apply (subgoal_tac "{x. Y_seq n x \<le> a} \<inter> {0<..<1} = {x. x \<in> {0<..<1} \<and> Y_seq n x \<le> a}")
+      apply (erule ssubst)
+      apply (subst emeasure_restrict_space, auto) (*thm Y_seq_le_iff[rule_format,symmetric]
+      apply (subst Y_seq_le_iff[rule_format,symmetric])*)
+      using Y_seq_le_iff f_def cdf_def sorry
     (* Default value should allow not assuming A\<in>(sets (\<mu> n))? *)
-    have emeasure: "\<forall>A. emeasure \<Omega> (Y_seq n -` A \<inter> space \<Omega>) = (\<mu> n) A" sorry
+    hence emeasure: "\<forall>A. emeasure \<Omega> (Y_seq n -` A \<inter> space \<Omega>) = emeasure (\<mu> n) A" sorry
     show "measure_of (space borel) (sets borel) (\<lambda>A. emeasure \<Omega> (Y_seq n -` A \<inter> space \<Omega>)) = \<mu> n"
       apply (subst sets[symmetric])
       apply (subst space[symmetric])
       apply (subst emeasure)
       using measure_of_of_measure by auto
   qed
-  have Y_seq_mono_on: "\<And>n. mono_on (Y_seq n) {0<..<1}" unfolding mono_on_def
-    using Y_seq_le_iff by (metis order.trans order_refl)
-  hence Y_seq_meas: "\<And>n. (Y_seq n) \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc unfolding \<Omega>_def
-    by simp
   have F_meas: "F \<in> borel_measurable borel" using F_inc borel_measurable_mono_fnc by auto
   have Y_le_iff: "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
     unfolding Y_def apply (rule bdd_rcont_inc_almost_inverse[of 0 1 F])
@@ -112,6 +120,7 @@ proof -
   proof auto
     fix \<epsilon> :: real assume \<epsilon>: "\<epsilon> > 0"
     fix \<omega> :: real assume \<omega>: "0 < \<omega>" "\<omega> < 1"
+    
     show "\<exists>\<delta>>0. Y (\<omega> + \<delta>) - Y \<omega> < \<epsilon>"
       sorry
   qed
