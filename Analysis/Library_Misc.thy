@@ -3,9 +3,12 @@ imports Distribution_Functions
 
 begin
 
-(*declare [[show_sorts]]*)
-
 (** General miscellaneous. **)
+
+(* This should be easy. *)
+lemma ereal_le_epsilon_iff2: "(\<forall>\<epsilon>>0. x \<le> y + ereal \<epsilon>) = (x \<le> y)" using ereal_le_epsilon2
+by (metis add_commute add_right_mono dual_order.trans ereal_less(2) less_eq_ereal_def
+    monoid_add_class.add.left_neutral)
 
 lemma inj_on_infinite: "infinite A \<Longrightarrow> inj_on f A \<Longrightarrow> infinite (range f)"
   by (metis finite_imageD image_mono rev_finite_subset top_greatest)
@@ -43,72 +46,11 @@ lemma setseq_inc:
   "(\<And>i::nat. A i \<subseteq> A (i+1)) \<Longrightarrow> i \<le> j \<Longrightarrow> A i \<subseteq> A j"
   by (rule lift_Suc_mono_le) simp_all
 
-(*
-lemma setseq_inc:
-  assumes inc: "\<And>i::nat. A i \<subseteq> A (i+1)"
-  shows "\<And>i j::nat. i \<le> j \<Longrightarrow> A i \<subseteq> A j"
-proof-
-  fix j::nat
-  show "\<And>i. i \<le> j \<Longrightarrow> A i \<subseteq> A j"
-  proof (induct j)
-    fix i::nat
-    assume "i \<le> 0"
-    hence "i = 0" by simp
-    thus "A i \<subseteq> A 0" by simp
-  next
-    fix i j::nat
-    assume mono: "\<And>i. i \<le> j \<Longrightarrow> A i \<subseteq> A j"
-    assume i_le_sj: "i \<le> Suc j"
-    show "A i \<subseteq> A (Suc j)"
-    proof (cases "i = Suc j")
-      assume "i = Suc j"
-      thus "A i \<subseteq> A (Suc j)" by simp
-    next
-      assume "i \<noteq> Suc j"
-      hence "i \<le> j" using i_le_sj by simp
-      hence "A i \<subseteq> A j" using mono by simp
-      moreover have "A j \<subseteq> A (j+1)" using inc by simp
-      ultimately show "A i \<subseteq> A (Suc j)" by simp
-    qed
-  qed
-qed
-*)
-
 lemma setseq_dec:
   assumes dec: "\<And>i::nat. A (i+1) \<subseteq> A i" "i \<le> j"
   shows "A j \<subseteq> A i"
   using assms(2,1)
   by (induct rule: dec_induct) auto
-(*
-lemma setseq_dec:
-  assumes dec: "\<And>i::nat. A (i+1) \<subseteq> A i"
-  shows "i \<le> j \<Longrightarrow> A j \<subseteq> A i"
-proof-
-  fix j::nat
-  show "\<And>i. i \<le> j \<Longrightarrow> A j \<subseteq> A i"
-  proof (induct j)
-    fix i::nat
-    assume "i \<le> 0"
-    hence "i = 0" by simp
-    thus "A 0 \<subseteq> A i" by simp
-  next
-    fix i j::nat
-    assume mono: "\<And>i. i \<le> j \<Longrightarrow> A j \<subseteq> A i"
-    assume i_le_sj: "i \<le> Suc j"
-    show "A (Suc j) \<subseteq> A i"
-    proof (cases "i = Suc j")
-      assume "i = Suc j"
-      thus "A (Suc j) \<subseteq> A i" by simp
-    next
-      assume "i \<noteq> Suc j"
-      hence "i \<le> j" using i_le_sj by simp
-      hence "A j \<subseteq> A i" using mono by simp
-      moreover have "A (j+1) \<subseteq> A j" using dec by simp
-      ultimately show "A (Suc j) \<subseteq> A i" by simp
-    qed
-  qed
-qed
-*)
 
 lemma indicator_cont_up:
   assumes inc: "\<And>i::nat. A i \<subseteq> A (i+1)"
@@ -123,38 +65,6 @@ proof -
   show ?thesis
     by simp
 qed
-(*
-proof -
-  fix x
-  show "(\<lambda>i::nat. (indicator (A i) x)::real) ----> indicator (\<Union>i. A i) x"
-    apply (rule metric_LIMSEQ_I)
-  proof (cases "x \<in> (\<Union>i. A i)")
-    fix r::real assume pos: "0 < r"
-    assume elem: "x \<in> (\<Union>i. A i)"
-    obtain i where inAi: "x \<in> A i" using UN_E elem by auto
-    hence inAj: "\<And>j. i \<le> j \<Longrightarrow> x \<in> A j" using setseq_inc inc by auto
-    have "\<forall>j \<ge> i. dist (indicator (A j) x) (indicator (\<Union>i. A i) x) < r"
-    proof -
-      { fix j::nat assume ge: "j \<ge> i"
-        hence "indicator (A j) x = (1::real)" using inAi inAj by simp
-        moreover have "indicator (\<Union>i. A i) x = (1::real)" using elem by simp
-        ultimately have "((indicator (A j) x)::real) = indicator (\<Union>i. A i) x" by simp
-      }
-      thus "\<forall>j \<ge> i. dist (indicator (A j) x) (indicator (\<Union>i. A i) x) < r"
-        using pos by (metis (full_types) dist_self elem inAj indicator_simps(1))
-    qed
-    thus "\<exists>no. \<forall>n\<ge>no. dist (indicator (A n) x) (indicator (\<Union>i. A i) x) < r" by auto
-  next
-    fix r::real assume pos: "0 < r"
-    assume nelem: "x \<notin> (\<Union>i. A i)"
-    hence notin: "\<And>i::nat. x \<notin> A i" by auto
-    have "indicator (\<Union>i. A i) x = (0::real)" using nelem by simp
-    moreover have "\<And>i::nat. indicator (A i) x = (0::real)" using notin by simp
-    ultimately show "\<exists>no. \<forall>n \<ge> no. dist (indicator (A n) x) (indicator (\<Union>i. A i) x) < r"
-      using pos by (metis dist_self indicator_simps(2) nelem notin)
-  qed
-qed
-*)
 
 (** Also prove indicator_cont_down. **)
               
@@ -180,28 +90,6 @@ proof -
   with nonzero show ?thesis
     by simp
 qed
-(*
-proof (rule tendstoI)
-  fix e::real assume pos: "0 < e"
-  have ev: "eventually (\<lambda>x. dist (a * f x) (a * b) < e * \<bar>a\<bar>) F"
-    apply (rule tendstoD[where e = "e * \<bar>a\<bar>"])
-    apply (rule lim)
-    by (metis mult_pos_pos nonzero pos zero_less_abs_iff)
-  thus "eventually (\<lambda>x. dist (f x) b < e) F"
-  proof-
-    have eq: "(\<lambda>x. dist (a * f x) (a * b) < e * \<bar>a\<bar>) = (\<lambda>x. dist (f x) b < e)"
-      apply (rule ext)
-      apply (unfold dist_real_def)
-      apply (subst linordered_field_class.sign_simps(6)[symmetric])
-      apply (subst abs_mult)
-      apply (subst mult_commute)
-      by (simp add: nonzero)
-    thus ?thesis
-      apply (subst eq[symmetric])
-      by (rule ev)
-  qed
-qed
-*)
 
 lemma real_of_ereal_neq_0:
 fixes x::ereal
@@ -387,7 +275,7 @@ by (metis abs_ereal_ge0 abs_ereal_uminus ereal_0_le_uminus_iff linear)
 
 (** For Weak_Convergence **)
 
-lemma bdd_rcont_inc_almost_inverse:
+lemma bdd_rcont_inc_pseudoinverse:
   fixes F :: "real \<Rightarrow> real"
   fixes M a b :: real
   assumes "a < b" and rcont_inc: "rcont_inc F"
@@ -518,8 +406,6 @@ lemma is_real_interval:
 (* Should have theorem that connected sets are Borel measurable. *)
 
 (* JOHANNES: Actually connected => Borel only for reals / ereals. *)
-
-(*declare [[show_types]]*)
 
 lemma Sup_real_set_eq_PInfty:
   fixes S :: "real set"

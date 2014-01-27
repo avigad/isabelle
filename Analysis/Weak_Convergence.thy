@@ -61,7 +61,7 @@ proof -
   proof -
     fix n :: nat
     show "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> f n x) = (Y_seq n \<omega> \<le> x)"
-      unfolding Y_seq_def apply (rule bdd_rcont_inc_almost_inverse[of 0 1 "f n"])
+      unfolding Y_seq_def apply (rule bdd_rcont_inc_pseudoinverse[of 0 1 "f n"])
       unfolding rcont_inc_def using f_inc f_right_cts f_at_top f_at_bot by auto
   qed
   have Y_seq_mono_on: "\<And>n. mono_on (Y_seq n) {0<..<1}" unfolding mono_on_def
@@ -92,7 +92,7 @@ proof -
   qed
   have F_meas: "F \<in> borel_measurable borel" using F_inc borel_measurable_mono_fnc by auto
   have Y_le_iff: "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
-    unfolding Y_def apply (rule bdd_rcont_inc_almost_inverse[of 0 1 F])
+    unfolding Y_def apply (rule bdd_rcont_inc_pseudoinverse[of 0 1 F])
     unfolding rcont_inc_def using F_inc F_right_cts F_at_top F_at_bot by auto
   hence Y_distr: "distr \<Omega> borel Y = M" unfolding distr_def
   proof -
@@ -112,18 +112,6 @@ proof -
     using Y_le_iff by (metis order.trans order_refl)
   hence Y_meas: "Y \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc unfolding \<Omega>_def
     by simp
-  have Y_right_cts: "\<forall>\<omega>\<in>{0<..<1}. continuous (at_right \<omega>) Y" (* Is this true? *)
-    apply auto
-    apply (subst continuous_at_right_real_mono_on_open_interval[of _ 0 1])
-    apply (rule Y_mono_on)
-    apply force
-  proof auto
-    fix \<epsilon> :: real assume \<epsilon>: "\<epsilon> > 0"
-    fix \<omega> :: real assume \<omega>: "0 < \<omega>" "\<omega> < 1"
-    
-    show "\<exists>\<delta>>0. Y (\<omega> + \<delta>) - Y \<omega> < \<epsilon>"
-      sorry
-  qed
   {
     fix \<omega>::real assume \<omega>: "\<omega> \<in> {0<..<1}" "continuous (at \<omega>) Y"
     have "liminf (\<lambda>n. Y_seq n \<omega>) \<ge> Y \<omega>"
@@ -182,8 +170,21 @@ proof -
         }
         hence "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>'"
           by (metis ereal_le_epsilon2 order.strict_implies_order plus_ereal.simps(1))
-      }
-      thus "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>" using \<omega> Y_right_cts Y_mono_on bdd_rcont_inc_almost_inverse sorry
+      } note * = this
+      show "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>" (*using \<omega> Y_mono_on bdd_rcont_inc_pseudoinverse unfolding Y_def
+        using F_inc F_right_cts F_at_top F_at_bot *) (* These are probably not all neede. *)
+        thm Limsup_mono[of _ "\<lambda>x. Y \<omega>" sequentially]
+        apply (subgoal_tac "Y \<omega> = lim (\<lambda>x. Y \<omega>)")
+        apply (erule ssubst)
+        apply (subst convergent_real_imp_convergent_ereal(2)[symmetric])
+        apply (rule convergent_const)
+        apply (subst convergent_limsup_cl[symmetric])
+        (* Duplication; how to avoid? *)
+        apply (subst convergent_real_imp_convergent_ereal(1), auto simp add: convergent_const)
+        apply (rule Limsup_mono[of _ "\<lambda>x. Y \<omega>" sequentially])
+        apply (subst ereal_le_epsilon_iff2[symmetric])
+        apply (subst eventually_sequentially) sorry
+        (** Need to use continuity and *. **)
     qed
     ultimately have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" using Liminf_le_Limsup
       by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially)
