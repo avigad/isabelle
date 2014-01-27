@@ -5,7 +5,7 @@ Authors: Jeremy Avigad, Luke Serafin
 
 theory Characteristic_Functions
 
-imports Weak_Convergence Real_to_Complex Independent_Family Sinc
+imports Weak_Convergence Real_to_Complex Independent_Family Si
 
 begin
 

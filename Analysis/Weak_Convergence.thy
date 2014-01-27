@@ -83,12 +83,24 @@ proof -
       apply (subst Y_seq_le_iff[rule_format,symmetric])*)
       using Y_seq_le_iff f_def cdf_def sorry
     (* Default value should allow not assuming A\<in>(sets (\<mu> n))? *)
-    hence emeasure: "\<forall>A. emeasure \<Omega> (Y_seq n -` A \<inter> space \<Omega>) = emeasure (\<mu> n) A" sorry
+    hence emeasure [rule_format]: "\<forall>A \<in> sets borel. emeasure \<Omega> (Y_seq n -` A \<inter> space \<Omega>) = 
+        emeasure (\<mu> n) A"
+      apply auto
+      sorry
+    let ?E = "(\<lambda>a. {..a}) ` UNIV"
     show "measure_of (space borel) (sets borel) (\<lambda>A. emeasure \<Omega> (Y_seq n -` A \<inter> space \<Omega>)) = \<mu> n"
+      apply (rule sym)
+      apply (rule measure_eqI_generator_eq [of ?E UNIV])
+      unfolding Int_stable_def apply auto [2]
+(*
       apply (subst sets[symmetric])
       apply (subst space[symmetric])
-      apply (subst emeasure)
-      using measure_of_of_measure by auto
+      apply (subst (3) measure_of_of_measure[of "\<mu> n", symmetric])
+      apply (rule measure_of_eq)
+      apply (auto simp add: sets space)
+      by (rule emeasure)
+*)
+      sorry
   qed
   have F_meas: "F \<in> borel_measurable borel" using F_inc borel_measurable_mono_fnc by auto
   have Y_le_iff: "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
