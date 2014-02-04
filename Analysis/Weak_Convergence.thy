@@ -42,7 +42,7 @@ proof -
   def F \<equiv> "cdf M"
   have fn_weak_conv: "weak_conv f F" using assms(3) unfolding weak_conv_m_def f_def F_def by auto
   {  fix n
-     interpret \<mu>: real_distribution "(\<mu> n)" by (rule assms)
+     interpret \<mu>: real_distribution "\<mu> n" by (rule assms)
      have "mono (f n)" "\<And>a. continuous (at_right a) (f n)" "((f n) ---> 1) at_top" "((f n) ---> 0) at_bot"
        by (auto simp add: f_def mono_def \<mu>.cdf_nondecreasing \<mu>.cdf_is_right_cont \<mu>.cdf_lim_at_top_prob \<mu>.cdf_lim_at_bot)
   } 
@@ -68,8 +68,25 @@ proof -
     using Y_seq_le_iff by (metis order.trans order_refl)
   hence Y_seq_meas: "\<And>n. (Y_seq n) \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc unfolding \<Omega>_def
     by simp
-  have Y_seq_distr: "\<And>n. distr \<Omega> borel (Y_seq n) = \<mu> n" unfolding distr_def
+  have "\<And>n. cdf (distr \<Omega> borel (Y_seq n)) = cdf (\<mu> n)"
   proof -
+    fix n
+    interpret \<mu>: real_distribution "\<mu> n" by (rule assms)
+    show "cdf (distr \<Omega> borel (Y_seq n)) = cdf (\<mu> n)"
+      apply (unfold cdf_def, rule ext)
+      apply (subst measure_distr)
+      apply (rule Y_seq_meas, auto)
+      unfolding \<Omega>_def vimage_def apply auto
+      apply (subst space_restrict_space)
+      apply (subst Int_commute)
+      thm Y_seq_le_iff[rule_format]
+      apply (subst Int_def, simp)
+      apply (subgoal_tac "{xa. 0 < xa \<and> xa < 1 \<and> Y_seq n xa \<le> x} = {xa. 0 < xa \<and> xa < 1 \<and> xa \<le> f n x}")
+      apply (erule ssubst)
+      using f_def cdf_def \<mu>.cdf_nonneg \<mu>.cdf_bounded_prob sorry
+    (*apply (auto simp add: Y_seq_le_iff)*)
+  have Y_seq_distr: "\<And>n. distr \<Omega> borel (Y_seq n) = \<mu> n" unfolding distr_def
+  (*proof -
     fix n :: nat
     have space: "space (\<mu> n) = space borel"
       using real_distribution.space_eq_univ space_borel assms(1) by auto
@@ -101,7 +118,7 @@ proof -
       by (rule emeasure)
 *)
       sorry
-  qed
+  qed *) sorry
   have F_meas: "F \<in> borel_measurable borel" using F_inc borel_measurable_mono_fnc by auto
   have Y_le_iff: "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
     unfolding Y_def apply (rule bdd_rcont_inc_pseudoinverse[of 0 1 F])
@@ -184,7 +201,7 @@ proof -
           by (metis ereal_le_epsilon2 order.strict_implies_order plus_ereal.simps(1))
       } note * = this
       show "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>" (*using \<omega> Y_mono_on bdd_rcont_inc_pseudoinverse unfolding Y_def
-        using F_inc F_right_cts F_at_top F_at_bot *) (* These are probably not all neede. *)
+        using F_inc F_right_cts F_at_top F_at_bot *) (* These are probably not all needed. *)
         thm Limsup_mono[of _ "\<lambda>x. Y \<omega>" sequentially]
         apply (subgoal_tac "Y \<omega> = lim (\<lambda>x. Y \<omega>)")
         apply (erule ssubst)
