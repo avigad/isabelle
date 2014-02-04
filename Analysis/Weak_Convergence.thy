@@ -218,8 +218,11 @@ proof -
     ultimately have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" using Liminf_le_Limsup
       by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially)
   } note Y_cts_cnv = this
+  oops
+(*
   show ?thesis sorry (* Need to modify proof of Measure_Space.distr_cong to obtain a distr_cong_AE lemma. *)
 qed
+*)
 
 lemma isCont_borel:
   fixes f :: "real \<Rightarrow> real"

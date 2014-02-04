@@ -237,7 +237,7 @@ lemma Si_at_top: "(Si ---> pi / 2) at_top"
 
 lemma Billingsley_26_15:
   assumes "T \<ge> 0"
-  shows "\<And>\<theta>. LBINT t=0..T. sin (t * \<theta>) / t = sgn \<theta> * Si (T * \<bar>\<theta>\<bar>)"
+  shows "\<And>\<theta>. LBINT t=ereal 0..T. sin (t * \<theta>) / t = sgn \<theta> * Si (T * \<bar>\<theta>\<bar>)"
   sorry
 
 end
