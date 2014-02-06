@@ -671,22 +671,13 @@ proof (subst borel_measurable_iff_ge, auto simp add:)
   thus "{w. a \<le> f w} \<in> sets borel" using real_interval_borel_measurable by auto  
 qed
 
-definition mono_on :: "('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "mono_on f A = (\<forall>x\<in>A. \<forall>y\<in>A. x \<le> y \<longrightarrow> f x \<le> f y)"
-
-lemma borel_measurable_mono_on_fnc:
-  fixes f :: "real \<Rightarrow> real" and  A :: "real set"
-  assumes "mono_on f A" "A \<in> sets borel" (* Is the second assumption necessary? *)
-  shows "f \<in> borel_measurable (restrict_space borel A)"
-apply (subst borel_measurable_iff_ge)
-apply (subst sets_restrict_space, auto)
-apply (subst space_restrict_space) sorry
-
+(*
 lemma continuous_at_right_real_mono_on_open_interval: 
   fixes f a b c
   assumes nondecF: "mono_on f {a<..<b}" and c: "c \<in> {a<..<b}"
   shows "(continuous (at_right (c :: real)) f) = (\<forall>\<epsilon> > 0. \<exists>\<delta> > 0. f (c + \<delta>) - f c < \<epsilon>)"
 sorry
+*)
 (**
   apply (auto simp add: continuous_within_eps_delta dist_real_def greaterThan_def)
   apply (drule_tac x = \<epsilon> in spec, auto)

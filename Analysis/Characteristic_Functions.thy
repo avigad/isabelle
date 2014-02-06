@@ -218,22 +218,6 @@ qed
      (?Y2.0 \<circ> ?X2.0)
 *)
 
-  apply (rule measurable_finite_borel)
-  apply (rule borel_measurable_add)
-  apply measurable
-  apply (rule measurable_finite_borel)
-  apply (rule borel_measurable_isCont, auto)
-
-  apply (rule borel_measurable_continuous_on1)
-  
-
-  apply measurable
-thm indep_var_rv1
-
-  apply (auto simp add: integral_distr)
-  
-
-
 (*
   Approximations to e^ix from Billingsley, page 343
 *)

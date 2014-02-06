@@ -21,6 +21,24 @@ definition
 where
   "weak_conv_m M_seq M \<equiv> weak_conv (\<lambda>n. cdf (M_seq n)) (cdf M)"
 
+definition mono_on :: "('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "mono_on f A = (\<forall>x\<in>A. \<forall>y\<in>A. x \<le> y \<longrightarrow> f x \<le> f y)"
+
+lemma borel_measurable_mono_on_fnc:
+  fixes f :: "real \<Rightarrow> real" and  A :: "real set"
+  assumes "mono_on f A" "A \<in> sets borel" (* Is the second assumption necessary? *)
+  shows "f \<in> borel_measurable (restrict_space lborel A)"
+apply (subst borel_measurable_iff_ge)
+apply (subst sets_restrict_space, auto)
+apply (subst space_restrict_space) sorry
+
+lemma measure_restrict_space:
+    "\<Omega> \<in> sets M \<Longrightarrow> A \<subseteq> \<Omega> \<Longrightarrow> measure (restrict_space M \<Omega>) A = measure M A"
+  unfolding measure_def by (subst emeasure_restrict_space, auto)
+
+lemma lebesgue_measure_interval: "a \<le> b \<Longrightarrow> measure lborel {a..b} = b - a"
+ unfolding measure_def by auto
+ 
 (* state using obtains? *)
 theorem Skorohod:
   fixes 
@@ -53,7 +71,7 @@ proof -
     unfolding F_def using assms(2) M.cdf_is_right_cont by auto
   have F_at_top: "(F ---> 1) at_top" unfolding F_def using M.cdf_lim_at_top_prob by auto
   have F_at_bot: "(F ---> 0) at_bot" unfolding F_def using M.cdf_lim_at_bot by auto
-  def \<Omega> \<equiv> "restrict_space borel {0::real<..<1}"
+  def \<Omega> \<equiv> "restrict_space lborel {0::real<..<1}"
   def Y_seq \<equiv> "\<lambda>n \<omega>. Inf {x. \<omega> \<le> f n x}"
   def Y \<equiv> "\<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
   have f_meas: "\<And>n. f n \<in> borel_measurable borel" using f_inc borel_measurable_mono_fnc by auto
@@ -66,8 +84,13 @@ proof -
   qed
   have Y_seq_mono_on: "\<And>n. mono_on (Y_seq n) {0<..<1}" unfolding mono_on_def
     using Y_seq_le_iff by (metis order.trans order_refl)
-  hence Y_seq_meas: "\<And>n. (Y_seq n) \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc unfolding \<Omega>_def
+  hence Y_seq_meas: "\<And>n. (Y_seq n) \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc 
+      unfolding \<Omega>_def
     by simp
+  have emeasure_distr_\<Omega>: "\<And>n. emeasure (distr \<Omega> borel (Y_seq n)) UNIV = 1"
+     apply (subst emeasure_distr)
+     using Y_seq_meas unfolding \<Omega>_def 
+     by (auto simp add: emeasure_restrict_space space_restrict_space)
   have "\<And>n. cdf (distr \<Omega> borel (Y_seq n)) = cdf (\<mu> n)"
   proof -
     fix n
@@ -83,42 +106,30 @@ proof -
       apply (subst Int_def, simp)
       apply (subgoal_tac "{xa. 0 < xa \<and> xa < 1 \<and> Y_seq n xa \<le> x} = {xa. 0 < xa \<and> xa < 1 \<and> xa \<le> f n x}")
       apply (erule ssubst)
-      using f_def cdf_def \<mu>.cdf_nonneg \<mu>.cdf_bounded_prob sorry
-    (*apply (auto simp add: Y_seq_le_iff)*)
-  have Y_seq_distr: "\<And>n. distr \<Omega> borel (Y_seq n) = \<mu> n" unfolding distr_def
-  (*proof -
-    fix n :: nat
-    have space: "space (\<mu> n) = space borel"
-      using real_distribution.space_eq_univ space_borel assms(1) by auto
-    have sets: "sets (\<mu> n) = sets borel" using real_distribution.events_eq_borel assms(1) by auto
-    have "\<And>a. emeasure \<Omega> (Y_seq n -` {..a} \<inter> space \<Omega>) = emeasure (\<mu> n) {..a}"
-      apply (unfold vimage_def)
-      unfolding \<Omega>_def apply (auto simp add: space_restrict_space)
-      apply (subgoal_tac "{x. Y_seq n x \<le> a} \<inter> {0<..<1} = {x. x \<in> {0<..<1} \<and> Y_seq n x \<le> a}")
-      apply (erule ssubst)
-      apply (subst emeasure_restrict_space, auto) (*thm Y_seq_le_iff[rule_format,symmetric]
-      apply (subst Y_seq_le_iff[rule_format,symmetric])*)
-      using Y_seq_le_iff f_def cdf_def sorry
-    (* Default value should allow not assuming A\<in>(sets (\<mu> n))? *)
-    hence emeasure [rule_format]: "\<forall>A \<in> sets borel. emeasure \<Omega> (Y_seq n -` A \<inter> space \<Omega>) = 
-        emeasure (\<mu> n) A"
+      prefer 2
+      using Y_seq_le_iff apply auto [1]
+      apply (subst measure_restrict_space, auto)
+      unfolding f_def cdf_def
+      apply (subgoal_tac "Sigma_Algebra.measure (\<mu> n) {..x} =
+         measure lborel {0..Sigma_Algebra.measure (\<mu> n) {..x}}")
+      prefer 2
+      apply (subst lebesgue_measure_interval, auto simp add: measure_nonneg)
+      apply (erule ssubst) back
+      unfolding measure_def apply (rule arg_cong) back
+      apply (rule emeasure_eq_AE, auto)
+      apply (rule AE_I [of _ _ "{0, 1}"])
       apply auto
-      sorry
-    let ?E = "(\<lambda>a. {..a}) ` UNIV"
-    show "measure_of (space borel) (sets borel) (\<lambda>A. emeasure \<Omega> (Y_seq n -` A \<inter> space \<Omega>)) = \<mu> n"
-      apply (rule sym)
-      apply (rule measure_eqI_generator_eq [of ?E UNIV])
-      unfolding Int_stable_def apply auto [2]
-(*
-      apply (subst sets[symmetric])
-      apply (subst space[symmetric])
-      apply (subst (3) measure_of_of_measure[of "\<mu> n", symmetric])
-      apply (rule measure_of_eq)
-      apply (auto simp add: sets space)
-      by (rule emeasure)
-*)
-      sorry
-  qed *) sorry
+      apply (subst (asm) measure_def [symmetric])
+      apply (subst order_less_le, auto)
+      apply (erule order_trans, auto)
+      by (metis lmeasure_eq_0 negligible_insert negligible_sing)
+    qed
+  hence Y_seq_distr: "\<And>n. distr \<Omega> borel (Y_seq n) = \<mu> n"
+    apply (intro cdf_unique, auto simp add: assms)
+    unfolding real_distribution_def apply auto
+    unfolding prob_space_def apply auto
+    unfolding prob_space_axioms_def real_distribution_axioms_def apply auto
+    by (rule finite_measureI, auto simp add: emeasure_distr_\<Omega>)
   have F_meas: "F \<in> borel_measurable borel" using F_inc borel_measurable_mono_fnc by auto
   have Y_le_iff: "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
     unfolding Y_def apply (rule bdd_rcont_inc_pseudoinverse[of 0 1 F])
@@ -218,11 +229,8 @@ proof -
     ultimately have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" using Liminf_le_Limsup
       by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially)
   } note Y_cts_cnv = this
-  oops
-(*
-  show ?thesis sorry (* Need to modify proof of Measure_Space.distr_cong to obtain a distr_cong_AE lemma. *)
+  show ?thesis sorry
 qed
-*)
 
 lemma isCont_borel:
   fixes f :: "real \<Rightarrow> real"
