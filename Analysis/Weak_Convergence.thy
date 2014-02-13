@@ -38,6 +38,12 @@ lemma measure_restrict_space:
 
 lemma lebesgue_measure_interval: "a \<le> b \<Longrightarrow> measure lborel {a..b} = b - a"
  unfolding measure_def by auto
+
+thm distr_cong
+
+lemma distr_cong_AE:
+  "M = K \<Longrightarrow> sets N = sets L \<Longrightarrow> (AE x in M. f x = g x) \<Longrightarrow> distr M N f = distr K L g"
+  using sets_eq_imp_space_eq[of N L] distr_cong sorry (*by (simp add: distr_def Int_def cong: rev_conj_cong)*)
  
 (* state using obtains? *)
 theorem Skorohod:
@@ -87,7 +93,7 @@ proof -
   hence Y_seq_meas: "\<And>n. (Y_seq n) \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc 
       unfolding \<Omega>_def
     by simp
-  have emeasure_distr_\<Omega>: "\<And>n. emeasure (distr \<Omega> borel (Y_seq n)) UNIV = 1"
+  have Y_seq_emeasure_distr_\<Omega>: "\<And>n. emeasure (distr \<Omega> borel (Y_seq n)) UNIV = 1"
      apply (subst emeasure_distr)
      using Y_seq_meas unfolding \<Omega>_def 
      by (auto simp add: emeasure_restrict_space space_restrict_space)
@@ -129,29 +135,57 @@ proof -
     unfolding real_distribution_def apply auto
     unfolding prob_space_def apply auto
     unfolding prob_space_axioms_def real_distribution_axioms_def apply auto
-    by (rule finite_measureI, auto simp add: emeasure_distr_\<Omega>)
+    by (rule finite_measureI, auto simp add: Y_seq_emeasure_distr_\<Omega>)
   have F_meas: "F \<in> borel_measurable borel" using F_inc borel_measurable_mono_fnc by auto
   have Y_le_iff: "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
     unfolding Y_def apply (rule bdd_rcont_inc_pseudoinverse[of 0 1 F])
     unfolding rcont_inc_def using F_inc F_right_cts F_at_top F_at_bot by auto
-  hence Y_distr: "distr \<Omega> borel Y = M" unfolding distr_def
-  proof -
-    fix n :: nat
-    have space: "space M = space borel"
-      using real_distribution.space_eq_univ space_borel assms(2) by auto
-    have sets: "sets M = sets borel" using real_distribution.events_eq_borel assms(2) by auto
-    (* Default value should allow not assuming A\<in>(sets (\<mu> n))? *)
-    have emeasure: "\<forall>A. emeasure \<Omega> (Y -` A \<inter> space \<Omega>) = M A" sorry
-    show "measure_of (space borel) (sets borel) (\<lambda>A. emeasure \<Omega> (Y -` A \<inter> space \<Omega>)) = M"
-      apply (subst sets[symmetric])
-      apply (subst space[symmetric])
-      apply (subst emeasure)
-      using measure_of_of_measure sorry (*by auto*) (* Why did this work for Y_seq but not Y? *)
-  qed
   have Y_mono_on: "mono_on Y {0<..<1}" unfolding mono_on_def
     using Y_le_iff by (metis order.trans order_refl)
   hence Y_meas: "Y \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc unfolding \<Omega>_def
     by simp
+  have Y_emeasure_distr_\<Omega>: "emeasure (distr \<Omega> borel Y) UNIV = 1"
+     apply (subst emeasure_distr)
+     using Y_meas unfolding \<Omega>_def 
+     by (auto simp add: emeasure_restrict_space space_restrict_space)
+  have "cdf (distr \<Omega> borel Y) = cdf M"
+  proof -
+    interpret M: real_distribution M by (rule assms)
+    show "cdf (distr \<Omega> borel Y) = cdf M"
+      apply (unfold cdf_def, rule ext)
+      apply (subst measure_distr)
+      apply (rule Y_meas, auto)
+      unfolding \<Omega>_def vimage_def apply auto
+      apply (subst space_restrict_space)
+      apply (subst Int_commute)
+      thm Y_seq_le_iff[rule_format]
+      apply (subst Int_def, simp)
+      apply (subgoal_tac "{xa. 0 < xa \<and> xa < 1 \<and> Y xa \<le> x} = {xa. 0 < xa \<and> xa < 1 \<and> xa \<le> F x}")
+      apply (erule ssubst)
+      prefer 2
+      using Y_le_iff apply auto [1]
+      apply (subst measure_restrict_space, auto)
+      unfolding F_def cdf_def
+      apply (subgoal_tac "Sigma_Algebra.measure M {..x} =
+         measure lborel {0..Sigma_Algebra.measure M {..x}}")
+      prefer 2
+      apply (subst lebesgue_measure_interval, auto simp add: measure_nonneg)
+      apply (erule ssubst) back
+      unfolding measure_def apply (rule arg_cong) back
+      apply (rule emeasure_eq_AE, auto)
+      apply (rule AE_I [of _ _ "{0, 1}"])
+      apply auto
+      apply (subst (asm) measure_def [symmetric])
+      apply (subst order_less_le, auto)
+      apply (erule order_trans, auto)
+      by (metis lmeasure_eq_0 negligible_insert negligible_sing)
+    qed
+  hence Y_distr: "distr \<Omega> borel Y = M"
+    apply (intro cdf_unique, auto simp add: assms)
+    unfolding real_distribution_def apply auto
+    unfolding prob_space_def apply auto
+    unfolding prob_space_axioms_def real_distribution_axioms_def apply auto
+    by (rule finite_measureI, auto simp add: Y_emeasure_distr_\<Omega>)
   {
     fix \<omega>::real assume \<omega>: "\<omega> \<in> {0<..<1}" "continuous (at \<omega>) Y"
     have "liminf (\<lambda>n. Y_seq n \<omega>) \<ge> Y \<omega>"
@@ -229,6 +263,30 @@ proof -
     ultimately have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" using Liminf_le_Limsup
       by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially)
   } note Y_cts_cnv = this
+  have Y_cts_iff: "\<forall>\<omega>\<in>{0<..<1}. continuous (at \<omega>) Y = (emeasure M {\<omega>} = 0)" sorry
+  let ?D = "{\<omega>\<in>{0<..<1}. \<not> continuous (at \<omega>) Y}"
+  have D: "emeasure M ?D = 0" sorry
+  def Y' \<equiv> "\<lambda>\<omega>. (case \<omega>\<in>?D of True => 0 | False => Y \<omega>)"
+  have Y'_AE: "AE \<omega> in M. Y' \<omega> = Y \<omega>" sorry
+  def Y_seq' \<equiv> "\<lambda>n \<omega>. (case \<omega>\<in>?D of True => 0 | False => Y_seq n \<omega>)"
+  have Y_seq'_AE: "\<And>n. AE \<omega> in M. Y_seq' n \<omega> = Y_seq n \<omega>" sorry
+  have Y'_cnv: "\<forall>\<omega>\<in>{0<..<1}. (\<lambda>n. Y_seq' n \<omega>) ----> Y' \<omega>"
+  proof
+    fix \<omega>::real assume \<omega>: "\<omega> \<in> {0<..<1}"
+    show "(\<lambda>n. Y_seq' n \<omega>) ----> Y' \<omega>"
+    proof (cases "\<omega> \<in> ?D")
+      assume \<omega>D: "\<omega> \<in> ?D"
+      hence "\<And>n. Y_seq' n \<omega> = 0" unfolding Y_seq'_def by auto
+      moreover have "Y' \<omega> = 0" using \<omega>D unfolding Y'_def by auto
+      ultimately show ?thesis by auto
+    next
+      assume \<omega>D: "\<omega> \<notin> ?D"
+      hence "continuous (at \<omega>) Y" using \<omega> by auto
+      moreover have "\<And>n. Y_seq' n \<omega> = Y_seq n \<omega>" using \<omega>D unfolding Y_seq'_def by auto
+      moreover have "Y' \<omega> = Y \<omega>" using \<omega>D unfolding Y'_def by auto
+      ultimately show ?thesis using Y_cts_cnv sorry
+    qed
+  qed
   show ?thesis sorry
 qed
 
