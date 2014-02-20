@@ -26,11 +26,21 @@ definition mono_on :: "('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a set 
 
 lemma borel_measurable_mono_on_fnc:
   fixes f :: "real \<Rightarrow> real" and  A :: "real set"
-  assumes "mono_on f A" "A \<in> sets borel" (* Is the second assumption necessary? *)
+  assumes "mono_on f A" "A \<in> sets borel" "A \<noteq> {}" "bdd_below A"
   shows "f \<in> borel_measurable (restrict_space lborel A)"
 apply (subst borel_measurable_iff_ge)
 apply (subst sets_restrict_space, auto)
-apply (subst space_restrict_space) sorry
+apply (subst space_restrict_space)
+proof -
+  def F \<equiv> "\<lambda>a. Inf (ereal ` {w \<in> A. a \<le> f w})"
+  fix a :: real
+  have monoF: "mono F" unfolding mono_def F_def
+    by auto (rule Inf_superset_mono, auto simp add: image_mono)
+  hence "{w. a \<le> F w} \<in> sets borel" using borel_measurable_mono_fnc
+    by (smt dual_order.trans is_interval_1 mem_Collect_eq mono_def real_interval_borel_measurable)
+  moreover have "{w \<in> A. a \<le> f w} = {w. a \<le> F w} \<inter> A" using monoF unfolding F_def sorry
+  ultimately show "{w \<in> A. a \<le> f w} \<in> op \<inter> A ` sets borel" by auto
+qed
 
 lemma measure_restrict_space:
     "\<Omega> \<in> sets M \<Longrightarrow> A \<subseteq> \<Omega> \<Longrightarrow> measure (restrict_space M \<Omega>) A = measure M A"
@@ -78,6 +88,7 @@ proof -
   have F_at_top: "(F ---> 1) at_top" unfolding F_def using M.cdf_lim_at_top_prob by auto
   have F_at_bot: "(F ---> 0) at_bot" unfolding F_def using M.cdf_lim_at_bot by auto
   def \<Omega> \<equiv> "restrict_space lborel {0::real<..<1}"
+  have prob_\<Omega>: "prob_space \<Omega>" sorry
   def Y_seq \<equiv> "\<lambda>n \<omega>. Inf {x. \<omega> \<le> f n x}"
   def Y \<equiv> "\<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
   have f_meas: "\<And>n. f n \<in> borel_measurable borel" using f_inc borel_measurable_mono_fnc by auto
@@ -247,25 +258,20 @@ proof -
       } note * = this
       show "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>" (*using \<omega> Y_mono_on bdd_rcont_inc_pseudoinverse unfolding Y_def
         using F_inc F_right_cts F_at_top F_at_bot *) (* These are probably not all needed. *)
-        thm Limsup_mono[of _ "\<lambda>x. Y \<omega>" sequentially]
-        apply (subgoal_tac "Y \<omega> = lim (\<lambda>x. Y \<omega>)")
-        apply (erule ssubst)
-        apply (subst convergent_real_imp_convergent_ereal(2)[symmetric])
-        apply (rule convergent_const)
-        apply (subst convergent_limsup_cl[symmetric])
-        (* Duplication; how to avoid? *)
-        apply (subst convergent_real_imp_convergent_ereal(1), auto simp add: convergent_const)
-        apply (rule Limsup_mono[of _ "\<lambda>x. Y \<omega>" sequentially])
-        apply (subst ereal_le_epsilon_iff2[symmetric])
-        apply (subst eventually_sequentially) sorry
-        (** Need to use continuity and *. **)
+      proof (rule ereal_le_epsilon2, auto)
+        fix \<epsilon>::real assume \<epsilon>: "\<epsilon> > 0"
+        from \<omega>(2) obtain \<omega>' where \<omega>': "\<omega>' \<in> {0<..<1}" "\<omega> < \<omega>'" "Y \<omega>' \<le> Y \<omega> + \<epsilon>" sorry
+        with * have "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>'" by auto
+        with \<omega>'(3) show "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega> + \<epsilon>" by (metis ereal_less_eq(3) order.trans)
+      qed
     qed
     ultimately have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" using Liminf_le_Limsup
       by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially)
   } note Y_cts_cnv = this
   have Y_cts_iff: "\<forall>\<omega>\<in>{0<..<1}. continuous (at \<omega>) Y = (emeasure M {\<omega>} = 0)" sorry
   let ?D = "{\<omega>\<in>{0<..<1}. \<not> continuous (at \<omega>) Y}"
-  have D: "emeasure M ?D = 0" sorry
+  thm M.countable_atoms
+  have D: "emeasure lborel ?D = 0" sorry
   def Y' \<equiv> "\<lambda>\<omega>. (case \<omega>\<in>?D of True => 0 | False => Y \<omega>)"
   have Y'_AE: "AE \<omega> in M. Y' \<omega> = Y \<omega>" sorry
   def Y_seq' \<equiv> "\<lambda>n \<omega>. (case \<omega>\<in>?D of True => 0 | False => Y_seq n \<omega>)"
@@ -287,7 +293,13 @@ proof -
       ultimately show ?thesis using Y_cts_cnv sorry
     qed
   qed
-  show ?thesis sorry
+  have "\<And>n. Y_seq' n \<in> borel_measurable \<Omega>" using Y_seq_meas Y_seq'_AE sorry
+  moreover have "\<And>n. distr \<Omega> borel (Y_seq' n) = \<mu> n"
+    using Y_seq_distr Y_seq'_AE distr_cong_AE[where f = "Y_seq' n" and g = "Y_seq n"] sorry
+  moreover have "Y \<in> borel_measurable \<Omega>" using Y_meas Y'_AE sorry
+  moreover have "distr \<Omega> borel Y = M"
+    using Y_distr Y'_AE distr_cong_AE[where f = Y' and g = Y] by auto
+  ultimately show ?thesis using prob_\<Omega> Y'_cnv unfolding \<Omega>_def using space_restrict_space sorry
 qed
 
 lemma isCont_borel:
