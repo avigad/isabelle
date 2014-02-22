@@ -25,11 +25,6 @@ lemma (in real_distribution) char_zero: "char M 0 = 1"
   Independence
 *)
 
-lemma (in real_distribution) random_variable_borel_eq: 
-  "random_variable borel f = (f \<in> borel_measurable borel)"
-by (metis events_eq_borel measurable_cong_sets)
-
-
 lemma (in prob_space)
   assumes "indep_var borel X1 borel X2" "integrable M X1" "integrable M X2"
   shows indep_var_lebesgue_integral: "(\<integral>\<omega>. X1 \<omega> * X2 \<omega> \<partial>M) = (\<integral>\<omega>. X1 \<omega> \<partial>M) * (\<integral>\<omega>. X2 \<omega> \<partial>M)" (is ?eq)
@@ -51,172 +46,72 @@ proof -
     by (simp split: bool.split add: assms)
 qed
 
-(* needs to be refactored! *)  
-lemma (in real_distribution)
-  fixes X1 X2 :: "real \<Rightarrow> real" and t :: real
-  assumes (*"random_variable borel X1" "random_variable borel X2"*) 
-    "indep_var borel X1 borel X2"
-  shows "char (distr M borel X1) t * char (distr M borel X2) t = 
-    char (distr M borel (\<lambda>\<omega>. X1 \<omega> + X2 \<omega>)) t"
+(* the automation can probably be improved *)  
+lemma (in prob_space) char_distr_sum:
+  fixes X1 X2 :: "'a \<Rightarrow> real" and t :: real
+  assumes "indep_var borel X1 borel X2"
+  shows "char (distr M borel (\<lambda>\<omega>. X1 \<omega> + X2 \<omega>)) t =
+    char (distr M borel X1) t * char (distr M borel X2) t"
 using assms proof -
   note indep_var_compose2 = indep_var_compose [unfolded comp_def]
+  from assms have [simp]: "random_variable borel X1" by (elim indep_var_rv1)
+  from assms have [simp]: "random_variable borel X2" by (elim indep_var_rv2)
+  have [simp]: "random_variable borel (\<lambda>\<omega>. X1 \<omega> + X2 \<omega>)" by (rule borel_measurable_add, auto)
+  have [simp]: "(\<lambda>x. cos (t * x)) \<in> borel_measurable borel" by (rule borel_measurable_isCont, auto)
+  have [simp]: "(\<lambda>x. sin (t * x)) \<in> borel_measurable borel" by (rule borel_measurable_isCont, auto)
+  have [simp]: "random_variable borel (\<lambda>\<omega>. cos (t * X1 \<omega>))"
+    by (rule measurable_compose [of _ _ borel "\<lambda>x. cos(t * x)"], simp_all)
+  have [simp]: "random_variable borel (\<lambda>\<omega>. cos (t * X2 \<omega>))"
+    by (rule measurable_compose [of _ _ borel "\<lambda>x. cos(t * x)"], simp_all)
+  have [simp]: "random_variable borel (\<lambda>\<omega>. sin (t * X1 \<omega>))"
+    by (rule measurable_compose [of _ _ borel "\<lambda>x. sin(t * x)"], simp_all)
+  have [simp]: "random_variable borel (\<lambda>\<omega>. sin (t * X2 \<omega>))"
+    by (rule measurable_compose [of _ _ borel "\<lambda>x. sin(t * x)"], simp_all)
+  have [simp]: "integrable M (\<lambda>\<omega>. cos (t * X1 \<omega>))" by (rule integrable_const_bound [of _ 1], auto)
+  have [simp]: "integrable M (\<lambda>\<omega>. cos (t * X2 \<omega>))" by (rule integrable_const_bound [of _ 1], auto)
+  have [simp]: "integrable M (\<lambda>\<omega>. sin (t * X1 \<omega>))" by (rule integrable_const_bound [of _ 1], auto)
+  have [simp]: "integrable M (\<lambda>\<omega>. sin (t * X2 \<omega>))" by (rule integrable_const_bound [of _ 1], auto)
+  have [simp]: "integrable M (\<lambda>x. cos (t * X1 x) * cos (t * X2 x))" 
+    by (rule indep_var_integrable, rule indep_var_compose2 [OF assms], auto)
+  have [simp]: "indep_var borel (\<lambda>x. cos (t * X1 x)) borel (\<lambda>x. cos (t * X2 x))"
+    by (rule indep_var_compose2 [OF assms], auto) 
+  have [simp]: "integrable M (\<lambda>x. sin (t * X1 x) * sin (t * X2 x))" 
+    by (rule indep_var_integrable, rule indep_var_compose2 [OF assms], auto)
+  have [simp]: "indep_var borel (\<lambda>x. sin (t * X1 x)) borel (\<lambda>x. sin (t * X2 x))"
+    by (rule indep_var_compose2 [OF assms], auto) 
+  have [simp]: "integrable M (\<lambda>x. cos (t * X1 x) * sin (t * X2 x))" 
+    by (rule indep_var_integrable, rule indep_var_compose2 [OF assms], auto)
+  have [simp]: "indep_var borel (\<lambda>x. sin (t * X1 x)) borel (\<lambda>x. cos (t * X2 x))"
+    by (rule indep_var_compose2 [OF assms], auto) 
+  have [simp]: "integrable M (\<lambda>x. sin (t * X1 x) * cos (t * X2 x))" 
+    by (rule indep_var_integrable, rule indep_var_compose2 [OF assms], auto)
+  have [simp]: "indep_var borel (\<lambda>x. cos (t * X1 x)) borel (\<lambda>x. sin (t * X2 x))"
+    by (rule indep_var_compose2 [OF assms], auto) 
   show ?thesis 
     using assms unfolding char_def complex_lebesgue_integral_def expi_def apply auto
-
-    apply (subst integral_distr, erule indep_var_rv1)
-    apply (rule borel_measurable_isCont, auto)
-    apply (subst integral_distr, erule indep_var_rv1)
-    apply (rule borel_measurable_isCont, auto)
-    apply (subst integral_distr, erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto)
-    apply (subst integral_distr, erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto)
-    apply (subst integral_distr)
-    apply (rule measurable_finite_borel)
-    apply (rule borel_measurable_add)
-    apply (subst random_variable_borel_eq [symmetric], erule indep_var_rv1)
-    apply (subst random_variable_borel_eq [symmetric], erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto)
-    apply (simp add: ring_distribs cos_add)
-    apply (subst integral_diff)
-
-    apply (rule indep_var_integrable) 
-    apply (rule indep_var_compose2 [OF assms])
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv1)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto)
-
-    apply (rule indep_var_integrable) 
-    apply (rule indep_var_compose2 [OF assms])
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv1)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto)
-
-    apply (rule arg_cong2) back back
-
-    apply (subst indep_var_lebesgue_integral) 
-    apply (rule indep_var_compose2 [OF assms])
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv1)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto)
-
-    apply (subst indep_var_lebesgue_integral) 
-    apply (rule indep_var_compose2 [OF assms])
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv1)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto)
-
-    (* duplicates the previous block almost exactly! *)
-    apply (subst integral_distr, erule indep_var_rv1)
-    apply (rule borel_measurable_isCont, auto)
-    apply (subst integral_distr, erule indep_var_rv1)
-    apply (rule borel_measurable_isCont, auto)
-    apply (subst integral_distr, erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto)
-    apply (subst integral_distr, erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto)
-    apply (subst integral_distr)
-    apply (rule measurable_finite_borel)
-    apply (rule borel_measurable_add)
-    apply (subst random_variable_borel_eq [symmetric], erule indep_var_rv1)
-    apply (subst random_variable_borel_eq [symmetric], erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto)
-    apply (simp add: ring_distribs sin_add)
-    apply (subst integral_add)
-
-    apply (rule indep_var_integrable) 
-    apply (rule indep_var_compose2 [OF assms])
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv1)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto)
-
-    apply (rule indep_var_integrable) 
-    apply (rule indep_var_compose2 [OF assms])
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv1)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto)
-
-    apply (subst add_commute)
-    apply (rule arg_cong2) back back
-
-    apply (subst indep_var_lebesgue_integral) 
-    apply (rule indep_var_compose2 [OF assms])
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv1)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto simp add: mult_commute)
-
-    apply (subst indep_var_lebesgue_integral) 
-    apply (rule indep_var_compose2 [OF assms])
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv1)
-    apply (rule borel_measurable_isCont, auto)
-    apply (rule integrable_const_bound [of _ 1], auto)
-    apply (rule measurable_compose) back back
-    apply (erule indep_var_rv2)
-    apply (rule borel_measurable_isCont, auto)
-    done
+    by (simp_all add: integral_distr cos_add sin_add ring_distribs indep_var_lebesgue_integral)
 qed
 
-(*
-  local.indep_var_compose:
-    indep_var ?M1.0 ?X1.0 ?M2.0 ?X2.0 \<Longrightarrow>
-    ?Y1.0 \<in> measurable ?M1.0 ?N1.0 \<Longrightarrow>
-    ?Y2.0 \<in> measurable ?M2.0 ?N2.0 \<Longrightarrow>
-    indep_var ?N1.0 (?Y1.0 \<circ> ?X1.0) ?N2.0
-     (?Y2.0 \<circ> ?X2.0)
-*)
+lemma (in prob_space) char_distr_setsum:
+  fixes 
+    X_seq :: "nat \<Rightarrow> 'a \<Rightarrow> real" and
+    t :: real and
+    A :: "nat set"
+  assumes 
+    X_seq_indep: "indep_vars (\<lambda>i. borel) X_seq UNIV" and
+    fin_A: "finite A"
+  shows "char (distr M borel (\<lambda>\<omega>. \<Sum> i \<in> A. X_seq i \<omega>)) t = 
+    (\<Prod> i \<in> A. char (distr M borel (X_seq i)) t)" (is "?P A")
+using fin_A proof(induct A rule: finite_induct)
+  show "?P {}"
+    by (auto simp add: char_def complex_lebesgue_integral_def integral_distr prob_space)
+  next
+    fix x F
+    assume "finite F" and "x \<notin> F" and ih: "?P F"
+    thus "?P (insert x F)"
+      by (auto simp add: setsum_insert setprod_insert char_distr_sum indep_vars_setsum
+        indep_vars_subset [OF X_seq_indep])
+qed
 
 (*
   Approximations to e^ix from Billingsley, page 343
@@ -370,10 +265,6 @@ lemma equation_26p4b: "cmod (iexp x - (\<Sum>k \<le> n. (ii * x)^k / fact k)) \<
 
 (* TODO: finish these off. Need cmod (complex_integral f) <= complex_integral (cmod f). *)
 
-(*
-  Independence. 
-
-  TODO: fill in *)
 
 (* 
   A real / complex version of Fubini's theorem.
@@ -686,72 +577,10 @@ theorem Levy_Inversion:
       also have "\<dots> = complex_of_real (LINT x | M. (2 * (sgn (x - a) * 
            Si (T * abs (x - a)) - sgn (x - b) * Si (T * abs (x - b)))))"
          by (rule complex_integral_of_real)
-(*
-      also have "\<dots> = complex_of_real (LINT x : UNIV - {a,b} | M. (2 * (sgn (x - a) * 
-           Si (T * abs (x - a)) - sgn (x - b) * Si (T * abs (x - b)))))"
-        apply (rule arg_cong) back
-        apply (rule integral_cong_AE)
-        using assms apply (intro AE_I [of _ _ "{a,b}"], auto split: split_indicator
-          simp add: emeasure_insert M.emeasure_eq_measure)
-        apply (case_tac "a = b", auto) 
-        by (subst M.finite_measure_eq_setsum_singleton, auto)
-*)
       finally have "(CLBINT t=-T..T. ?F t * \<phi> t) = 
           complex_of_real (LINT x | M. (2 * (sgn (x - a) * 
            Si (T * abs (x - a)) - sgn (x - b) * Si (T * abs (x - b)))))" .
     } note main_eq2 = this
-(*
-    {
-      fix x :: real
-      assume "x > a"
-      have "((\<lambda>T. 2 * (sgn (x - a) * Si (T * abs (x - a)))) ---> 2 * (pi / 2)) (at_top)"
-        apply (rule tendsto_intros, rule tendsto_const)
-        using `x > a` apply simp
-        apply (rule filterlim_compose [OF Si_at_top])
-        apply (subst mult_commute)
-        apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const, auto)
-        by (rule filterlim_ident)
-      hence "((\<lambda>T. 2 * (sgn (x - a) * Si (T * abs (x - a)))) ---> pi) (at_top)" by simp
-    } note 1 = this
-    {
-      fix x :: real
-      assume "x < a"
-      have "((\<lambda>T. 2 * (sgn (x - a) * Si (T * abs (x - a)))) ---> 2 * -(pi / 2)) (at_top)"
-        apply (rule tendsto_intros, rule tendsto_const)
-        using `x < a` apply simp
-        apply (rule tendsto_minus)
-        apply (rule filterlim_compose [OF Si_at_top])
-        apply (subst mult_commute)
-        apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const, auto)
-        by (rule filterlim_ident)
-      hence "((\<lambda>T. 2 * (sgn (x - a) * Si (T * abs (x - a)))) ---> - pi) (at_top)" by simp
-    } note 2 = this
-    {
-      fix x :: real
-      assume "x > b"
-      have "((\<lambda>T. 2 * (sgn (x - b) * Si (T * abs (x - b)))) ---> 2 * (pi / 2)) (at_top)"
-        apply (rule tendsto_intros, rule tendsto_const)
-        using `x > b` apply simp
-        apply (rule filterlim_compose [OF Si_at_top])
-        apply (subst mult_commute)
-        apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const, auto)
-        by (rule filterlim_ident)
-      hence "((\<lambda>T. 2 * (sgn (x - b) * Si (T * abs (x - b)))) ---> pi) (at_top)" by simp
-    } note 3 = this
-    {
-      fix x :: real
-      assume "x < b"
-      have "((\<lambda>T. 2 * (sgn (x - b) * Si (T * abs (x - b)))) ---> 2 * -(pi / 2)) (at_top)"
-        apply (rule tendsto_intros, rule tendsto_const)
-        using `x < b` apply simp
-        apply (rule tendsto_minus)
-        apply (rule filterlim_compose [OF Si_at_top])
-        apply (subst mult_commute)
-        apply (rule filterlim_tendsto_pos_mult_at_top, rule tendsto_const, auto)
-        by (rule filterlim_ident)
-      hence "((\<lambda>T. 2 * (sgn (x - b) * Si (T * abs (x - b)))) ---> - pi) (at_top)" by simp
-    } note 4 = this
-*)
     have "(\<lambda>T :: nat. LINT x | M. (2 * (sgn (x - a) * 
            Si (T * abs (x - a)) - sgn (x - b) * Si (T * abs (x - b))))) ----> 
          (LINT x | M. 2 * pi * indicator {a<..b} x)"
