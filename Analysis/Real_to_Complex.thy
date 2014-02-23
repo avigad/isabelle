@@ -297,6 +297,13 @@ syntax
 translations
   "\<integral>\<^sup>Cx. f \<partial>M" == "CONST complex_lebesgue_integral M (\<lambda>x. f)"
 
+syntax
+"_ascii_complex_lebesgue_integral" :: "pttrn \<Rightarrow> 'a measure \<Rightarrow> real \<Rightarrow> real"
+("(3CLINT _|_. _)" [0,110,60] 60)
+
+translations
+"CLINT x|M. f" == "CONST complex_lebesgue_integral M (\<lambda>x. f)"
+
 lemma Re_integral_eq: "Re (integral\<^sup>C M f) = integral\<^sup>L M (RE f)"
   by (unfold complex_lebesgue_integral_def, auto)
 
@@ -407,16 +414,107 @@ apply (simp add: CDERIV_def)
 using cont apply (subst (asm) isCont_RE_IM_iff, auto)
 by (simp add: complex_diff [symmetric])
 
+(* move these next two elsewhere *)
+lemma cmod_le: "cmod z \<le> abs (Re z) + abs (Im z)"
+  apply (subst complex_expand)
+  by (rule order_trans, rule norm_triangle_ineq, simp)
+  
+lemma borel_measurable_cmod [measurable (raw)]:
+  assumes "f \<in> borel_measurable M"
+  shows "(\<lambda>x. cmod (f x)) \<in> borel_measurable M"
+using assms unfolding cmod_def by auto
+
+(* move these up *)
+lemma complex_integrable_measurable:
+  assumes f: "complex_integrable M f"
+  shows "f \<in> borel_measurable M"
+using f unfolding complex_integrable_def apply auto
+  apply (subst real_to_complex_expand)
+  apply (rule borel_measurable_add, force)
+  by (rule borel_measurable_times) auto
+
+lemma complex_integrable_cmod [simp,intro]:
+  assumes f: "complex_integrable M f"
+  shows "integrable M (\<lambda>t. cmod (f t))"
+proof -
+  have *: "f \<in> borel_measurable M"
+    by (rule complex_integrable_measurable [OF f])
+  have **: "AE x in M. \<bar>cmod (f x)\<bar> \<le> \<bar>RE f x\<bar> + \<bar>IM f x\<bar>"
+    by (rule AE_I2, simp, rule cmod_le)
+  show ?thesis
+    apply (rule integrable_bound [OF _ **])
+    using f apply (auto simp add: integrable_abs complex_integrable_def)
+    using * by measurable
+qed
+
+lemma complex_of_real_lebesgue_integral:
+  fixes f
+  shows "complex_of_real (LINT x | M. f x) = CLINT x | M. complex_of_real (f x)"
+unfolding complex_lebesgue_integral_def by auto
+
+lemma complex_of_real_integrable [intro, simp]:
+  fixes f
+  assumes "integrable M f"
+  shows "complex_integrable M (\<lambda>x. complex_of_real (f x))"
+using assms unfolding complex_integrable_def by auto
+
+lemma complex_integrable_Re:
+  fixes f 
+  assumes "complex_integrable M f"
+  shows "integrable M (RE f)"
+using assms unfolding complex_integrable_def by auto
+
+lemma complex_integrable_Im:
+  fixes f 
+  assumes "complex_integrable M f"
+  shows "integrable M (IM f)"
+using assms unfolding complex_integrable_def by auto
+
+(* hmm... should we turn off the rule that reduces ii * x to Complex 0 x? *)
+lemma cmod_iexp [simp]: "cmod (expi (Complex 0 x)) = 1"
+  by (simp add: expi_def)
+
+(*
+This slick proof is taken from ProofWiki, which in turn cites Christian Berg, 
+Kompleks functionstheorie.
+*)
+
+lemma complex_lebesgue_integral_cmod:
+  assumes f [simp]: "complex_integrable M f"
+  shows "cmod (CLINT t|M. f t) \<le> LINT t|M. cmod (f t)"
+proof -
+  def z \<equiv> "CLINT t|M. f t"
+  have "cmod z = z * exp (-ii * arg z)"
+    apply (subst (2) rcis_cmod_arg [of z, symmetric])
+    by (simp add: rcis_def cis_conv_exp exp_add [symmetric] complex_zero_def [symmetric])
+  also have "\<dots> = CLINT t | M. exp (-ii * arg z) * f t"
+    by (subst z_def, subst mult_commute, subst complex_integral_cmult, simp_all)
+  finally have 1: "cmod z = CLINT t | M. exp (-ii * arg z) * f t" .
+  also have "\<dots> = LINT t | M. Re (exp (-ii * arg z) * f t)"
+  proof -
+    have "0 = Im (cmod z)" by auto
+    also have "\<dots> = LINT t | M. Im (exp (-ii * arg z) * f t)"
+      apply (subst 1)
+      unfolding complex_lebesgue_integral_def by auto
+    thus ?thesis
+      unfolding complex_lebesgue_integral_def by simp
+  qed
+  finally have "cmod z = LINT t | M. Re (exp (-ii * arg z) * f t)" by simp
+  also have "\<dots> \<le> LINT t | M. abs (Re (exp (-ii * arg z) * f t))"
+    apply (rule integral_mono [OF _ _ abs_ge_self])
+    (* integrable_abs should be a simp, intro rule *)
+    using f by (auto intro!: complex_integrable_Re integrable_abs simp del: complex_Re_mult)
+  also have "\<dots> \<le> LINT t | M. cmod ((exp (-ii * arg z) * f t))"
+    apply (rule integral_mono [OF _ _ abs_Re_le_cmod])
+    using f by (auto intro!: complex_integrable_Re integrable_abs simp del: complex_Re_mult)
+  also have "\<dots> = LINT t | M. cmod (f t)"
+    by (simp add: norm_mult)
+  finally show ?thesis by (simp add: z_def)
+qed
+
 (*
   Integration over a set -- compare to Set_Integral.thy
 *)
-
-syntax
-"_ascii_complex_lebesgue_integral" :: "pttrn \<Rightarrow> 'a measure \<Rightarrow> real \<Rightarrow> real"
-("(3CLINT _|_. _)" [0,110,60] 60)
-
-translations
-"CLINT x|M. f" == "CONST complex_lebesgue_integral M (\<lambda>x. f)"
 
 abbreviation "complex_set_integrable M A f \<equiv> complex_integrable M (\<lambda>x. f x * indicator A x)"
 
