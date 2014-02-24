@@ -5,6 +5,8 @@ Authors: Jeremy Avigad, Luke Serafin
 Differentiation and integration for functions from the reals to the complex numbers. Also transfers
 notation from Interval_Integral.thy.
 
+TODO: make this uniform with library for reals.
+
 *)
 
 theory Real_to_Complex
@@ -598,33 +600,30 @@ lemma complex_set_integral_diff [simp, intro]:
     (CLINT x:A|M. f x) - (CLINT x:A|M. g x)"
 using assms by (auto simp add: field_simps)
 
-lemma complex_set_integrable_cmod: "complex_set_integrable M A f \<Longrightarrow> A \<in> sets M \<Longrightarrow>
-    set_integrable M A (\<lambda>x. cmod (f x))"
-unfolding complex_set_integrable_iff
-proof (auto)
-  fix M and A :: "'a set" and f
-  assume *: "set_integrable M A (RE f)" "set_integrable M A (IM f)" "A \<in> sets M"
-  { 
-    fix x :: 'a
-    have "cmod (f x) \<le> abs (RE f x) + abs (IM f x)"
-      unfolding cmod_def by (rule sqrt_sum_squares_le_sum_abs)
-  }
-  have 1: "set_integrable M A (\<lambda>x. \<bar>RE f x\<bar> + \<bar>IM f x\<bar>)"
-    apply (rule set_integral_add)
-    by (rule set_integrable_abs, rule *)+
-  { fix x 
-    have "\<bar>cmod (f x) * indicator A x\<bar> \<le> (\<bar>RE f x\<bar> + \<bar>IM f x\<bar>) * indicator A x"
-      by (auto simp add: abs_mult cmod_def intro: mult_right_mono sqrt_sum_squares_le_sum_abs)
-  } note 2 = this
-  have "(\<lambda>x. cmod (f x) * indicator A x) = 
-       (\<lambda>x. sqrt ((RE f x * indicator A x)^2 + (IM f x * indicator A x)^2))"
-    by (rule ext, auto simp add: cmod_def split: split_indicator)
-  also have "\<dots> \<in> borel_measurable M"
-    using * by measurable
-  finally have 3: "set_borel_measurable M A (\<lambda>x. cmod (f x))" .
-  show "set_integrable M A (\<lambda>x. cmod (f x))"
-    apply (rule integrable_bound [OF 1 _ 3]) 
-    by (rule AE_I', rule null_sets.empty_sets, clarsimp, rule 2)
+lemma cmod_scaleR: "cmod ((a :: real) * (x :: complex)) = abs a * cmod x"
+  by (subst norm_mult, auto)
+
+lemma cmod_indicator [simp]: "cmod (indicator A x) = indicator A x"
+  by (simp split: split_indicator)
+
+lemma complex_set_integrable_cmod:
+  assumes f: "complex_set_integrable M A f"
+  shows "set_integrable M A (\<lambda>x. cmod (f x))"
+proof -
+  have *: "(\<lambda>x. cmod (f x) * indicator A x) = (\<lambda>x. cmod (f x * indicator A x))"
+    by (auto simp add: norm_mult)
+  show ?thesis
+    by (subst *, rule complex_integrable_cmod, rule f)
+qed
+
+lemma complex_set_lebesgue_integral_cmod:
+  assumes f: "complex_set_integrable M A f"
+  shows "cmod (CLINT t:A|M. f t) \<le> LINT t:A|M. cmod (f t)"
+proof -
+  have *: "(\<lambda>x. cmod (f x) * indicator A x) = (\<lambda>x. cmod (f x * indicator A x))"
+    by (auto simp add: norm_mult)
+  show ?thesis
+    by (subst *, rule complex_lebesgue_integral_cmod, rule f)
 qed
 
 lemma complex_set_integrable_Un:
@@ -721,6 +720,7 @@ lemma complex_interval_lebesgue_integral_cong_AE:
   shows "complex_interval_lebesgue_integral M a b f = complex_interval_lebesgue_integral M a b g"
 using assms unfolding complex_interval_lebesgue_integral_def
   by (auto intro: complex_set_lebesgue_integral_cong_AE)
+
 lemma complex_interval_lebesgue_integral_add [intro, simp]: 
   fixes M a b f g 
   assumes "complex_interval_lebesgue_integrable M a b f"
@@ -785,6 +785,38 @@ lemma complex_interval_integral_cong_AI:
   shows "(CLBINT x=a..b. f x) = (CLBINT x=a..b. g x)"
 using assms
   by (rule complex_interval_lebesgue_integral_cong_AE, auto)
+
+lemma complex_interval_integral_cmod:
+  assumes f: "complex_interval_lebesgue_integrable lborel a b f" and "a \<le> b"
+  shows "cmod (CLBINT t=a..b. f t) \<le> LBINT t=a..b. cmod (f t)"
+using assms unfolding complex_interval_lebesgue_integral_def 
+  complex_interval_lebesgue_integrable_def interval_lebesgue_integral_def 
+  interval_lebesgue_integrable_def apply auto
+  by (erule complex_set_lebesgue_integral_cmod)
+
+lemma complex_interval_integral_cmod2:
+  assumes f: "complex_interval_lebesgue_integrable lborel a b f"
+  shows "cmod (CLBINT t=a..b. f t) \<le> abs (LBINT t=a..b. cmod (f t))"
+proof (cases "a \<le> b")
+  assume "a \<le> b"
+  thus ?thesis
+    apply (subst abs_of_nonneg)
+    prefer 2 apply (erule complex_interval_integral_cmod [OF f])
+    apply (simp add: interval_lebesgue_integral_def)
+    apply (rule lebesgue_integral_nonneg, rule AE_I2)
+    by (metis indicator_pos_le norm_ge_zero zero_le_mult_iff)
+next
+  assume "\<not> a \<le> b"
+  thus ?thesis
+    apply (subst complex_interval_integral_endpoints_reverse)
+    apply (subst interval_integral_endpoints_reverse, simp)
+    apply (subst abs_of_nonneg)
+    prefer 2 apply (rule complex_interval_integral_cmod)
+    apply (subst complex_interval_integrable_endpoints_reverse, rule f, auto)
+    apply (auto simp add: interval_lebesgue_integral_def)
+    apply (rule lebesgue_integral_nonneg, rule AE_I2)
+    by (metis indicator_pos_le norm_ge_zero zero_le_mult_iff)
+qed
 
 lemma complex_interval_integral_Icc:
   fixes a b :: real

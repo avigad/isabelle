@@ -336,6 +336,18 @@ translations
     Basic properties of integration over an interval.
 *)
 
+lemma interval_lebesgue_integral_cong:
+  assumes "a \<le> b" and "\<forall>x. x \<in> einterval a b \<longrightarrow> f x = g x" and "einterval a b \<in> sets M"
+  shows "interval_lebesgue_integral M a b f = interval_lebesgue_integral M a b g"
+using assms unfolding interval_lebesgue_integral_def
+  by (auto intro: set_lebesgue_integral_cong)
+
+lemma interval_lebesgue_integral_cong_AE:
+  assumes "a \<le> b" and "AE x \<in> einterval a b in M. f x = g x" and "einterval a b \<in> sets M"
+  shows "interval_lebesgue_integral M a b f = interval_lebesgue_integral M a b g"
+using assms unfolding interval_lebesgue_integral_def
+  by (auto intro: set_lebesgue_integral_cong_AE)
+
 lemma interval_lebesgue_integral_add [intro, simp]: 
   fixes M a b f 
   assumes "interval_lebesgue_integrable M a b f"
@@ -364,6 +376,11 @@ lemma interval_lebesgue_integral_cmult [intro, simp]:
    c * interval_lebesgue_integral M a b f"
  using assms by (auto simp add: interval_lebesgue_integral_def interval_lebesgue_integrable_def 
     field_simps)
+
+lemma interval_lebesgue_integral_uminus: 
+  "interval_lebesgue_integral M a b (\<lambda>x. - f x) = - interval_lebesgue_integral M a b f"
+unfolding interval_lebesgue_integral_def 
+  by (auto simp add: lebesgue_integral_uminus)
 
 lemma interval_lebesgue_integral_le_eq: 
   fixes a b f
@@ -405,6 +422,22 @@ lemma interval_integrable_endpoints_reverse: "interval_lebesgue_integrable lbore
   interval_lebesgue_integrable lborel b a f"
   apply (case_tac "a = b", auto)
 by (case_tac "a \<le> b", auto simp add: interval_lebesgue_integrable_def)
+
+lemma interval_integral_cong_AE:
+  assumes "AE x \<in> einterval (min a b) (max a b) in lborel. f x = g x" and 
+    "einterval (min a b) (max a b) \<in> sets M"
+  shows "interval_lebesgue_integral lborel a b f = interval_lebesgue_integral lborel a b g"
+using assms 
+  apply (case_tac "a \<le> b")
+  apply (rule interval_lebesgue_integral_cong_AE, auto simp add: min_absorb1 max_absorb2)
+  apply (subst (1 2) interval_integral_endpoints_reverse, simp)
+by (rule interval_lebesgue_integral_cong_AE, auto simp add: min_absorb2 max_absorb1)
+
+lemma interval_integral_cong:
+  assumes "\<forall> x. x \<in> einterval (min a b) (max a b) \<longrightarrow> f x = g x" and 
+    "einterval (min a b) (max a b) \<in> sets M"
+  shows "interval_lebesgue_integral lborel a b f = interval_lebesgue_integral lborel a b g"
+using assms by (intro interval_integral_cong_AE, auto)
 
 lemma interval_integral_Icc:
   fixes a b :: real

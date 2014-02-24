@@ -101,6 +101,11 @@ lemma set_integral_diff [simp, intro]:
     (LINT x:A|M. f x) - (LINT x:A|M. g x)"
 using assms by (auto simp add: field_simps)
 
+(* question: why do we have this for negation, but multiplication by a constant
+   requires an integrability assumption? *)
+lemma set_integral_uminus: "LINT x:A|M. - f x = - (LINT x:A|M. f x)"
+  by (subst lebesgue_integral_uminus [symmetric], simp)
+
 lemma set_integral_mono: 
   assumes "set_integrable M A f" "set_integrable M A g"
     "\<And>x. x \<in> A \<Longrightarrow> f x \<le> g x"

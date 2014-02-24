@@ -167,7 +167,7 @@ thus ?thesis
       (* see comment before isCont_iexp in Real_to_Complex *)
   unfolding f_def
   apply (subst complex_interval_lebesgue_integral_add(2) [symmetric])
-  (* the next 12 lines should be automatic *)
+  (* the nex few lines should be automatic *)
   apply (subst zero_ereal_def)
   apply (rule complex_interval_integrable_isCont)
   apply (simp del: i_complex_of_real) 
@@ -180,7 +180,7 @@ qed
 lemma equation_26p2:
   fixes x :: real
   defines "f s m \<equiv> complex_of_real ((x - s) ^ m)"
-  shows "iexp x= (\<Sum>k \<le> n. (ii * x)^k / (fact k)) + 
+  shows "iexp x = (\<Sum>k \<le> n. (ii * x)^k / (fact k)) + 
     ((ii ^ (Suc n)) / (fact n)) * 
        (CLBINT s=0..x. (f s n) * (iexp s))" (is "?P n")
 proof (induction n)
@@ -253,18 +253,171 @@ proof -
     by auto
 qed
 
+declare i_complex_of_real [simp del]
+
 lemma equation_26p4a: "cmod (iexp x - (\<Sum>k \<le> n. (ii * x)^k / fact k)) \<le>
     (abs x)^(Suc n) / fact (Suc n)"
-  sorry
+proof -
+  have "iexp x - (\<Sum>k \<le> n. (ii * x)^k / fact k) = 
+         ((ii ^ (Suc n)) / (fact n)) * (CLBINT s=0..x. (x - s)^n * (iexp s))" (is "?t1 = ?t2")
+    by (subst equation_26p2 [of _ n], simp add: field_simps)
+  hence "cmod (?t1) = cmod (?t2)" by simp
+  also have "\<dots> =  (1 / (fact n)) * cmod (CLBINT s=0..x. (x - s)^n * (iexp s))"
+    by (simp add: norm_mult norm_divide norm_power)
+  also have "\<dots> \<le> (1 / (fact n)) * abs (LBINT s=0..x. cmod ((x - s)^n * (iexp s)))"
+    apply (rule mult_left_mono, rule complex_interval_integral_cmod2)
+    apply auto
+    apply (subst zero_ereal_def)
+    apply (rule complex_interval_integrable_isCont)
+    by auto
+  also have "\<dots> \<le> (1 / (fact n)) * abs (LBINT s=0..x. abs ((x - s)^n))"
+    by (simp add: norm_mult i_complex_of_real del: of_real_diff of_real_power)
+  also have "abs (LBINT s=0..x. abs ((x - s)^n)) = abs (LBINT s=0..x. (x - s)^n)"
+    proof (cases "0 \<le> x | even n")
+      assume "0 \<le> x \<or> even n"
+      hence "(LBINT s=0..x. abs ((x - s)^n)) = LBINT s=0..x. (x - s)^n"
+        apply (subst zero_ereal_def)+
+        apply (rule interval_integral_cong, auto simp add: power_even_abs power_abs)
+        by (auto simp add: min_absorb1 max_absorb2)
+      thus ?thesis by simp
+    next
+      assume "\<not> (0 \<le> x \<or> even n)" 
+      hence "(LBINT s=0..x. abs ((x - s)^n)) = LBINT s=0..x. -((x - s)^n)"
+        apply (subst zero_ereal_def)+
+        apply (rule interval_integral_cong)
+        apply (auto simp add: min_absorb2 max_absorb1 power_abs)
+        apply (subst power_minus_odd [symmetric], assumption) 
+        by (subst minus_diff_eq, rule refl)
+      also have "\<dots> = - (LBINT s=0..x. (x - s)^n)"
+        by (subst interval_lebesgue_integral_uminus, rule refl)
+      finally show ?thesis by simp 
+    qed
+  also have "LBINT s=0..x. (x - s)^n =  (x ^ (Suc n) / (Suc n))"
+  proof -
+    let ?F = "\<lambda>t. - ((x - t)^(Suc n) / Suc n)"
+    have "LBINT s=0..x. (x - s)^n = ?F x - ?F 0"
+      apply (subst zero_ereal_def, rule interval_integral_FTC_finite)
+      apply (rule continuous_at_imp_continuous_on)
+      apply force
+      apply (rule DERIV_imp_DERIV_within)
+      apply force
+      by (auto simp del: power_Suc intro!: DERIV_intros)
+    also have "\<dots> = x ^ (Suc n) / (Suc n)" by simp
+    finally show ?thesis .
+  qed
+  also have "1 / real (fact n) * \<bar>x ^ Suc n / real (Suc n)\<bar> = 
+      \<bar>x\<bar> ^ Suc n / real (fact (Suc n))"
+    apply (subst abs_divide, subst power_abs, subst (2) abs_of_nonneg, simp)
+    by (simp add: field_simps real_of_nat_Suc)
+  finally show ?thesis .
+qed
 
 lemma equation_26p4b: "cmod (iexp x - (\<Sum>k \<le> n. (ii * x)^k / fact k)) \<le>
-    2 * (abs x)^n / fact n"
-  sorry
+    2 * (abs x)^n / fact n" (is "?P n")
+proof (induction n)  (* really cases *)
+show "?P 0" 
+  apply simp
+  by (rule order_trans [OF norm_triangle_ineq4], simp add: i_complex_of_real)
+next
+  {
+    fix a b f g
+    assume f: "\<And>s. 0 \<le> f s" and g: "(\<And>s. f s \<le> g s)" and
+      iif: "interval_lebesgue_integrable lborel a b f" and 
+      iig: "interval_lebesgue_integrable lborel a b g"
+    have "abs (LBINT s=a..b. f s) \<le> abs (LBINT s=a..b. g s)"
+    using f g iif iig unfolding interval_lebesgue_integral_def interval_lebesgue_integrable_def 
+      apply auto
+      apply (subst abs_of_nonneg, rule lebesgue_integral_nonneg, rule AE_I2)
+      apply (auto intro!: mult_nonneg_nonneg)
+      apply (subst abs_of_nonneg, rule lebesgue_integral_nonneg, rule AE_I2)
+      apply (auto intro!: mult_nonneg_nonneg)
+      apply (rule order_trans, assumption, assumption)
+      apply (rule set_integral_mono, auto)
+      apply (subst abs_of_nonneg, rule lebesgue_integral_nonneg, rule AE_I2)
+      apply (auto intro!: mult_nonneg_nonneg)
+      apply (subst abs_of_nonneg, rule lebesgue_integral_nonneg, rule AE_I2)
+      apply (auto intro!: mult_nonneg_nonneg)
+      apply (rule order_trans, assumption, assumption)
+      by (rule set_integral_mono, auto)
+  } note useful = this
 
-
-
-(* TODO: finish these off. Need cmod (complex_integral f) <= complex_integral (cmod f). *)
-
+fix n
+show "?P (Suc n)"
+proof -
+  have "iexp x - (\<Sum>k \<le> Suc n. (ii * x)^k / fact k) = 
+         ((ii ^ (Suc n)) / (fact n)) * (CLBINT s=0..x. (x - s)^n * (iexp s - 1))" 
+            (is "?t1 = ?t2")
+    by (subst equation_26p3 [of _ n], simp add: field_simps)
+  hence "cmod (?t1) = cmod (?t2)" by simp
+  also have "\<dots> =  (1 / (fact n)) * cmod (CLBINT s=0..x. (x - s)^n * (iexp s - 1))"
+    by (simp add: norm_mult norm_divide norm_power)
+  also have "\<dots> \<le> (1 / (fact n)) * abs (LBINT s=0..x. cmod ((x - s)^n * (iexp s - 1)))"
+    apply (rule mult_left_mono, rule complex_interval_integral_cmod2)
+    apply auto
+    apply (subst zero_ereal_def)
+    apply (rule complex_interval_integrable_isCont)
+    by auto
+  also have "\<dots> = (1 / (fact n)) * abs (LBINT s=0..x. abs ((x - s)^n) * cmod((iexp s - 1)))"
+    by (simp add: norm_mult i_complex_of_real del: of_real_diff of_real_power)
+  also have "\<dots> \<le> (1 / (fact n)) * abs (LBINT s=0..x. abs ((x - s)^n) * 2)"
+    apply (rule mult_left_mono)
+    prefer 2 apply force
+    apply (rule useful)
+    apply (rule mult_nonneg_nonneg, auto)
+    apply (rule mult_left_mono, auto)
+    apply (rule order_trans [OF norm_triangle_ineq4], simp add: i_complex_of_real)
+    apply (subst mult_commute)
+    apply (subst zero_ereal_def)
+    apply (rule interval_integrable_isCont, auto)
+    apply (subst zero_ereal_def)
+    by (rule interval_integrable_isCont, auto)
+  also have "\<dots> = (2 / (fact n)) * abs (LBINT s=0..x. abs ((x - s)^n))"
+    apply simp
+    apply (subst mult_commute)
+    apply (subst interval_lebesgue_integral_cmult)
+    apply (subst zero_ereal_def)
+    by (rule interval_integrable_isCont, auto)
+  (* duplicates lines from previous proof -- refactor *)
+  also have "abs (LBINT s=0..x. abs ((x - s)^n)) = abs (LBINT s=0..x. (x - s)^n)"
+    proof (cases "0 \<le> x | even n")
+      assume "0 \<le> x \<or> even n"
+      hence "(LBINT s=0..x. abs ((x - s)^n)) = LBINT s=0..x. (x - s)^n"
+        apply (subst zero_ereal_def)+
+        apply (rule interval_integral_cong, auto simp add: power_even_abs power_abs)
+        by (auto simp add: min_absorb1 max_absorb2)
+      thus ?thesis by simp
+    next
+      assume "\<not> (0 \<le> x \<or> even n)" 
+      hence "(LBINT s=0..x. abs ((x - s)^n)) = LBINT s=0..x. -((x - s)^n)"
+        apply (subst zero_ereal_def)+
+        apply (rule interval_integral_cong)
+        apply (auto simp add: min_absorb2 max_absorb1 power_abs)
+        apply (subst power_minus_odd [symmetric], assumption) 
+        by (subst minus_diff_eq, rule refl)
+      also have "\<dots> = - (LBINT s=0..x. (x - s)^n)"
+        by (subst interval_lebesgue_integral_uminus, rule refl)
+      finally show ?thesis by simp 
+    qed
+  also have "LBINT s=0..x. (x - s)^n =  (x ^ (Suc n) / (Suc n))"
+  proof -
+    let ?F = "\<lambda>t. - ((x - t)^(Suc n) / Suc n)"
+    have "LBINT s=0..x. (x - s)^n = ?F x - ?F 0"
+      apply (subst zero_ereal_def, rule interval_integral_FTC_finite)
+      apply (rule continuous_at_imp_continuous_on)
+      apply force
+      apply (rule DERIV_imp_DERIV_within)
+      apply force
+      by (auto simp del: power_Suc intro!: DERIV_intros)
+    also have "\<dots> = x ^ (Suc n) / (Suc n)" by simp
+    finally show ?thesis .
+  qed
+  also have "2 / real (fact n) * \<bar>x ^ Suc n / real (Suc n)\<bar> = 
+      2 * \<bar>x\<bar> ^ Suc n / real (fact (Suc n))"
+    apply (subst abs_divide, subst power_abs, subst (2) abs_of_nonneg, simp)
+    by (simp add: field_simps real_of_nat_Suc)
+  finally show ?thesis .
+qed
+qed
 
 (* 
   A real / complex version of Fubini's theorem.
@@ -275,7 +428,7 @@ lemma (in pair_sigma_finite) complex_Fubini_integral:
   assumes "complex_integrable (M1 \<Otimes>\<^sub>M M2) f"
   shows "CLINT y|M2. CLINT x|M1. f (x, y) = CLINT x|M1. CLINT y|M2. f (x, y)"
 using assms unfolding complex_lebesgue_integral_def complex_integrable_def
-by (auto intro: Fubini_integral)
+by (auto intro: Fubini_integral simp add: i_complex_of_real)
 (* How delightful that this is so easy! *)
 
 (* 
@@ -303,9 +456,9 @@ proof -
       also have "\<dots> \<le> cmod (?one / (ii * t)) + cmod (?two / (ii * t))" 
         by (rule norm_triangle_ineq4)
       also have "cmod (?one / (ii * t)) = cmod ?one / abs t"
-        by (simp add: norm_divide)
+        by (simp add: norm_divide norm_mult)
       also have "cmod (?two / (ii * t)) = cmod ?two / abs t"
-        by (simp add: norm_divide)      
+        by (simp add: norm_divide norm_mult)      
       also have "cmod ?one / abs t + cmod ?two / abs t \<le> 
           ((- (a * t))^2 / 2) / abs t + ((- (b * t))^2 / 2) / abs t"
         apply (rule add_mono)
@@ -332,7 +485,7 @@ proof -
 qed
 
 lemma cmod_iexp [simp]: "cmod (iexp x) = 1"
-  by (simp add: cis_conv_exp [symmetric])
+  by (simp add: cis_conv_exp [symmetric] i_complex_of_real)
 
 lemma Levy_Inversion_aux2:
   fixes a b t :: real
@@ -347,7 +500,7 @@ proof -
     apply (subst norm_divide)
     apply (subst norm_mult)
     apply (subst cmod_iexp)
-    using `t \<noteq> 0` by simp
+    using `t \<noteq> 0` by (simp add: i_complex_of_real)
   also have "\<dots> \<le> abs (t * (b - a)) / abs t"
     apply (rule divide_right_mono)
     using equation_26p4a [of "t * (b - a)" 0] apply (simp add: field_simps eval_nat_numeral)
