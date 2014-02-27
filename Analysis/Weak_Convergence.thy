@@ -60,6 +60,14 @@ thm distr_cong
 lemma distr_cong_AE:
   "M = K \<Longrightarrow> sets N = sets L \<Longrightarrow> (AE x in M. f x = g x) \<Longrightarrow> distr M N f = distr K L g"
   using sets_eq_imp_space_eq[of N L] distr_cong sorry (*by (simp add: distr_def Int_def cong: rev_conj_cong)*)
+  
+thm continuous_at_right_real_increasing
+  
+lemma continuous_at_right_real_mono_on_open:
+  fixes f U a
+  assumes "open U" "a \<in> U" "mono_on f U"
+  shows "continuous (at_right a) f = (\<forall>\<epsilon>>0. \<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>)"
+sorry
  
 (* state using obtains? *)
 theorem Skorohod:
@@ -94,7 +102,10 @@ proof -
   have F_at_top: "(F ---> 1) at_top" unfolding F_def using M.cdf_lim_at_top_prob by auto
   have F_at_bot: "(F ---> 0) at_bot" unfolding F_def using M.cdf_lim_at_bot by auto
   def \<Omega> \<equiv> "restrict_space lborel {0::real<..<1}"
-  have prob_\<Omega>: "prob_space \<Omega>" sorry
+  have prob_\<Omega>: "prob_space \<Omega>"
+    apply (rule prob_spaceI)
+    unfolding \<Omega>_def apply (subst space_restrict_space)
+    by (subst emeasure_restrict_space, auto)
   def Y_seq \<equiv> "\<lambda>n \<omega>. Inf {x. \<omega> \<le> f n x}"
   def Y \<equiv> "\<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
   have f_meas: "\<And>n. f n \<in> borel_measurable borel" using f_inc borel_measurable_mono_fnc by auto
@@ -262,11 +273,27 @@ proof -
         hence "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>'"
           by (metis ereal_le_epsilon2 order.strict_implies_order plus_ereal.simps(1))
       } note * = this
-      show "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>" (*using \<omega> Y_mono_on bdd_rcont_inc_pseudoinverse unfolding Y_def
-        using F_inc F_right_cts F_at_top F_at_bot *) (* These are probably not all needed. *)
+      show "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>"
       proof (rule ereal_le_epsilon2, auto)
         fix \<epsilon>::real assume \<epsilon>: "\<epsilon> > 0"
-        from \<omega>(2) obtain \<omega>' where \<omega>': "\<omega>' \<in> {0<..<1}" "\<omega> < \<omega>'" "Y \<omega>' \<le> Y \<omega> + \<epsilon>" sorry
+        thm continuous_at_right_real_increasing
+        have "\<exists>\<delta>>0. \<omega> + \<delta> \<in> {0<..<1} \<and> Y (\<omega> + \<delta>) - Y \<omega> < \<epsilon>"
+          using continuous_at_right_real_mono_on_open \<omega> continuous_at_split Y_mono_on \<epsilon>
+            open_greaterThanLessThan by metis
+        then guess \<delta> .. note \<delta> = this
+        hence "\<exists>\<omega>'\<in>{0<..<1}. \<omega> < \<omega>' \<and> Y \<omega>' \<le> Y \<omega> + \<epsilon>"
+        proof -
+          def d \<equiv> "min \<delta> ((1 - \<omega>)/2)"
+          def \<omega>' \<equiv> "\<omega> + d"
+          have \<omega>': "\<omega>' \<in> {0<..<1}" unfolding \<omega>'_def d_def using \<omega>(1) \<delta>
+            by (smt divide_cancel_left divide_numeral_1 greaterThanLessThan_iff less_divide_eq_1
+              real_average_minus_second zero_less_divide_iff)
+          moreover have "\<omega> < \<omega>'" unfolding \<omega>'_def d_def using \<delta> \<omega>(1) by auto
+          moreover with \<omega>' have "Y \<omega>' \<le> Y \<omega> + \<epsilon>"
+            using Y_mono_on \<omega>(1) \<delta> unfolding mono_on_def \<omega>'_def d_def by smt
+          ultimately show ?thesis by auto
+        qed
+        then obtain \<omega>' where \<omega>': "\<omega>' \<in> {0<..<1}" "\<omega> < \<omega>'" "Y \<omega>' \<le> Y \<omega> + \<epsilon>" by auto
         with * have "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>'" by auto
         with \<omega>'(3) show "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega> + \<epsilon>" by (metis ereal_less_eq(3) order.trans)
       qed

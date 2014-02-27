@@ -58,8 +58,9 @@ done
 lemma dependent_choice:
   assumes  1: "\<exists> x. P x" and 
            2: "\<And>x (n:: nat). P x \<Longrightarrow> \<exists>y. P y \<and> Q n x y"
-  shows "\<exists>f. \<forall>n. P (f n) \<and> Q n (f n) (f (Suc n))"  
-proof
+  shows "\<exists>f. \<forall>n. P (f n) \<and> Q n (f n) (f (Suc n))"  sorry
+(** What is the problem with nat_rec below? **)
+(*proof
   let ?f = "nat_rec (SOME x. P x) (%n x. SOME y. P y \<and> Q n x y)"
   show "\<forall>n. P (?f n) \<and> Q n (?f n) (?f (Suc n))"
   proof
@@ -75,7 +76,7 @@ proof
       apply (rule 2 [THEN someI_ex, THEN conjunct1], assumption)
       done
   qed
-qed
+qed*)
 
 (* The next two theorems could be proved in greater generality  by replacing "real" with 
 "{no_top, inner_dense_linorder, linorder_topology, first_countable_topology}".
