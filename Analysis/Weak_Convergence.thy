@@ -301,8 +301,6 @@ proof -
     ultimately have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" using Liminf_le_Limsup
       by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially)
   } note Y_cts_cnv = this
-  (*have F_cts_iff: "\<And>x. continuous (at x) F = (emeasure M {x} = 0)" unfolding F_def
-    by (metis M.emeasure_eq_measure M.isCont_cdf ereal_eq_0(1))*)
   let ?D = "{\<omega>\<in>{0<..<1}. \<not> continuous (at \<omega>) Y}"
   have D_countable: "countable ?D" using Y_mono_on (* mono_on_ctble_discont *) sorry
   hence D: "emeasure lborel ?D = 0" (* using emeasure_lborel_countable *) sorry
