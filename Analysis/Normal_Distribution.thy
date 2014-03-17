@@ -289,9 +289,9 @@ lemma (in prob_space) sum_indep_normal:
   assumes normalY[simp]: "distributed M lborel Y (normal_density \<nu> \<tau>)"
   shows "distributed M lborel (\<lambda>x. X x + Y x) (normal_density (\<mu> + \<nu>) (sqrt (\<sigma>\<^sup>2 + \<tau>\<^sup>2)))"
 proof -
-  have ind[simp]: "indep_var lborel (\<lambda>x. - \<mu> + X x) lborel (\<lambda>x. - \<nu> + Y x)"
+  have ind[simp]: "indep_var borel (\<lambda>x. - \<mu> + X x) borel (\<lambda>x. - \<nu> + Y x)"
   proof -
-    have "indep_var lborel ( (\<lambda>x. -\<mu> + x) o X) lborel ((\<lambda>x. - \<nu> + x) o Y)"
+    have "indep_var borel ( (\<lambda>x. -\<mu> + x) o X) borel ((\<lambda>x. - \<nu> + x) o Y)"
       by (auto intro!: indep_var_compose assms) 
     then show ?thesis by (simp add: o_def)
   qed
