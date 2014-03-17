@@ -301,12 +301,21 @@ proof -
     ultimately have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" using Liminf_le_Limsup
       by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially)
   } note Y_cts_cnv = this
-  have Y_cts_iff: "\<forall>\<omega>\<in>{0<..<1}. continuous (at \<omega>) Y = (emeasure M {\<omega>} = 0)" sorry
+  (*have F_cts_iff: "\<And>x. continuous (at x) F = (emeasure M {x} = 0)" unfolding F_def
+    by (metis M.emeasure_eq_measure M.isCont_cdf ereal_eq_0(1))*)
   let ?D = "{\<omega>\<in>{0<..<1}. \<not> continuous (at \<omega>) Y}"
-  thm M.countable_atoms
-  have D: "emeasure lborel ?D = 0" sorry
+  have D_countable: "countable ?D" using Y_mono_on (* mono_on_ctble_discont *) sorry
+  hence D: "emeasure lborel ?D = 0" (* using emeasure_lborel_countable *) sorry
   def Y' \<equiv> "\<lambda>\<omega>. (case \<omega>\<in>?D of True => 0 | False => Y \<omega>)"
-  have Y'_AE: "AE \<omega> in M. Y' \<omega> = Y \<omega>" sorry
+  have Y'_AE: "AE \<omega> in \<Omega>. Y' \<omega> = Y \<omega>"
+    apply (rule AE_I [where N = "?D"])
+    unfolding \<Omega>_def apply (auto simp add: space_restrict_space) [1]
+    unfolding Y'_def apply auto [1]
+    apply (subst emeasure_restrict_space, force)
+    apply force
+    using D apply force
+    apply (subst sets_restrict_space, simp)
+    using D_countable lborel_countable sorry
   def Y_seq' \<equiv> "\<lambda>n \<omega>. (case \<omega>\<in>?D of True => 0 | False => Y_seq n \<omega>)"
   have Y_seq'_AE: "\<And>n. AE \<omega> in M. Y_seq' n \<omega> = Y_seq n \<omega>" sorry
   have Y'_cnv: "\<forall>\<omega>\<in>{0<..<1}. (\<lambda>n. Y_seq' n \<omega>) ----> Y' \<omega>"
@@ -323,16 +332,20 @@ proof -
       hence "continuous (at \<omega>) Y" using \<omega> by auto
       moreover have "\<And>n. Y_seq' n \<omega> = Y_seq n \<omega>" using \<omega>D unfolding Y_seq'_def by auto
       moreover have "Y' \<omega> = Y \<omega>" using \<omega>D unfolding Y'_def by auto
-      ultimately show ?thesis using Y_cts_cnv sorry
+      ultimately show ?thesis using Y_cts_cnv \<omega> by auto
     qed
   qed
   have "\<And>n. Y_seq' n \<in> borel_measurable \<Omega>" using Y_seq_meas Y_seq'_AE sorry
   moreover have "\<And>n. distr \<Omega> borel (Y_seq' n) = \<mu> n"
     using Y_seq_distr Y_seq'_AE distr_cong_AE[where f = "Y_seq' n" and g = "Y_seq n"] sorry
-  moreover have "Y \<in> borel_measurable \<Omega>" using Y_meas Y'_AE sorry
-  moreover have "distr \<Omega> borel Y = M"
+  moreover have "Y' \<in> borel_measurable \<Omega>" using Y_meas Y'_AE sorry
+  moreover have "distr \<Omega> borel Y' = M"
     using Y_distr Y'_AE distr_cong_AE[where f = Y' and g = Y] by auto
-  ultimately show ?thesis using prob_\<Omega> Y'_cnv unfolding \<Omega>_def using space_restrict_space sorry
+  ultimately have "prob_space \<Omega> \<and> (\<forall>n. Y_seq' n \<in> borel_measurable \<Omega>) \<and>
+    (\<forall>n. distr \<Omega> borel (Y_seq' n) = \<mu> n) \<and> Y' \<in> measurable \<Omega> lborel \<and> distr \<Omega> borel Y' = M \<and>
+    (\<forall>x\<in>space \<Omega>. (\<lambda>n. Y_seq' n x) ----> Y' x)" using prob_\<Omega> Y'_cnv
+    unfolding \<Omega>_def by (auto simp add: space_restrict_space)
+  thus ?thesis by auto
 qed
 
 lemma isCont_borel:

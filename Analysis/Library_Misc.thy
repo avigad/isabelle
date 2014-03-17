@@ -112,6 +112,17 @@ done
 
 (** Miscellany from Helly. **)
 
+(* Why were these not in the library? *)
+lemma measure_cong_AE: "AE x in M. f x = g x \<Longrightarrow> (f \<in> measurable M N) = (g \<in> measurable M N)"
+  sorry
+  
+(* Perhaps generalize to arbitrary T1 spaces *)
+lemma lborel_countable:
+fixes A M
+assumes "A \<subseteq> space M" "countable A"
+shows "A \<in> sets M"
+sorry
+
 (* This should have been in the library, like convergent_limsup_cl. *)
 lemma convergent_liminf_cl:
   fixes X :: "nat \<Rightarrow> 'a::{complete_linorder,linorder_topology}"
