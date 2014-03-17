@@ -218,6 +218,26 @@ lemma continuous_at_right_real_increasing:
   prefer 2 apply assumption
 by (rule nondecF, auto)
 
+lemma continuous_at_left_real_increasing:
+  assumes nondecF: "\<And> x y. x \<le> y \<Longrightarrow> f x \<le> ((f y) :: real)"
+  shows "(continuous (at_left (a :: real)) f) = (\<forall>e > 0. \<exists>delta > 0. f a - f (a - delta) < e)"
+
+  apply (auto simp add: continuous_within_eps_delta dist_real_def lessThan_def)
+  apply (drule_tac x = e in spec, auto)
+  apply (drule_tac x = "a - d / 2" in spec)
+  apply (subst (asm) abs_of_nonpos)
+  apply (auto intro: nondecF simp add: field_simps)
+  apply (rule_tac x = "d / 2" in exI)
+  apply (auto simp add: field_simps)
+  apply (drule_tac x = e in spec, auto)
+  apply (rule_tac x = delta in exI, auto)
+  apply (subst abs_of_nonpos)
+  apply (auto intro: nondecF simp add: field_simps)
+  apply (rule less_le_trans)
+  apply assumption
+  apply auto
+by (rule nondecF, auto)
+
 
 subsection {* Properties of cdf's *}
 
