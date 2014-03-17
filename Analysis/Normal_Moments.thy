@@ -165,7 +165,7 @@ proof -
     by (rule integral_monotone_convergence_at_top [OF _ 6 _ 7 8], auto)
 qed
     
-lemma aux3:
+lemma aux3_even:
   fixes k :: nat
   shows 
     "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k))" (is "?P k")
@@ -203,5 +203,109 @@ next
   finally show "?Q (Suc k)" by (simp add: field_simps real_of_nat_Suc)
 qed
 
+(* We don't need to calculate the value, but we could if we had to. *)
+lemma aux3_odd:
+  fixes k :: nat
+  shows "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k + 1))" (is "?P k")
+proof (induct k)
+  show "?P 0"
+    apply (simp, subst mult_commute)
+    apply (rule integrable_if_positive_integral)
+    apply (subst times_ereal.simps(1) [symmetric], subst ereal_indicator)
+    apply (rule positive_integral_x_exp_x_square_indicator [simplified])
+    by (rule AE_I2, auto split: split_indicator intro!: mult_nonneg_nonneg)
+next
+  fix k
+  assume ih: "?P k"
+  have *: "2 * Suc k + 1 = (2 * k + 1) + 2" by simp
+  show "?P (Suc k)"
+    by (subst *, rule aux2 [OF ih])
+qed
+
+lemma aux4_even:
+  fixes k :: nat
+  shows 
+    "integrable lborel (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k))"
+  and 
+    "(LBINT x. exp (- x\<^sup>2) * (x ^ (2 * k))) = sqrt pi * (fact (2 * k) / (2^(2 * k) * fact k))"
+proof -
+  note 1 = aux3_even (1) [of k]
+  note 2 = aux3_even (2) [of k]
+  have 3: "(\<lambda>x :: real. exp (- x\<^sup>2) * x ^ (2 * k) * indicator {..0} (- x)) =
+           (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k) * indicator {0..} x)"
+    by (rule ext, auto split: split_indicator)
+  have 4: "set_integrable lborel {..0} (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k))"
+    by (subst integrable_affine [of "-1" _ 0], simp_all add: 1 3)
+  have 5: "(LBINT x:{..0}. exp (- x\<^sup>2) * (x ^ (2 * k))) = (sqrt pi / 2) * 
+        (fact (2 * k) / (2^(2 * k) * fact k))"
+    by (subst lebesgue_integral_real_affine [of "-1" _ 0], auto simp add: 2 3)
+  have 6: "set_integrable lborel {..<0} (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k))"
+    apply (subst integrable_cong_AE)
+    prefer 4 apply (rule 4)
+    by (auto intro!: AE_I [where N="{0}"] split: split_indicator)
+  have 7: "(LBINT x:{..<0}. exp (- x\<^sup>2) * (x ^ (2 * k))) = (sqrt pi / 2) * 
+        (fact (2 * k) / (2^(2 * k) * fact k))"
+    apply (subst 5 [symmetric])
+    apply (rule integral_cong_AE)
+    by (auto intro!: AE_I [where N="{0}"] split: split_indicator)
+  have 8: "(\<lambda>x::real. exp (- x\<^sup>2) * (x ^ (2 * k))) = 
+      (\<lambda>x. exp (- x\<^sup>2) * (x ^ (2 * k)) * indicator {..<0} x + 
+           exp (- x\<^sup>2) * (x ^ (2 * k)) * indicator {0..} x)"
+    by (rule ext, auto split: split_indicator)
+  show "integrable lborel (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k))"
+    by (subst 8, rule integral_add [OF 6 1])
+  have "(LBINT x. exp (- x\<^sup>2) * (x ^ (2 * k))) =
+      (LBINT x:{..<0}. exp (- x\<^sup>2) * (x ^ (2 * k))) + (LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k)))"
+    apply (subst integral_add (2) [symmetric, OF 6 1])
+    by (rule integral_cong, auto split: split_indicator)
+  also have "\<dots> = sqrt pi * (fact (2 * k) / (2^(2 * k) * fact k))"
+    by (simp add: 2 7) 
+  finally show "(LBINT x. exp (- x\<^sup>2) * (x ^ (2 * k))) = sqrt pi * 
+        (fact (2 * k) / (2^(2 * k) * fact k))" .
+qed
+
+lemma aux4_odd:
+  fixes k :: nat
+  shows 
+    "integrable lborel (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k + 1))"
+  and 
+    "(LBINT x. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) = 0"
+proof -
+  note 1 = aux3_odd (1) [of k]
+  have 3: "(\<lambda>x :: real. exp (- x\<^sup>2) * x ^ (2 * k + 1) * indicator {..0} (- x)) =
+           (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k + 1) * indicator {0..} x)"
+    by (rule ext, auto split: split_indicator)
+  have 4: "set_integrable lborel {..0} (\<lambda>x :: real. exp (- x\<^sup>2) * x ^ (2 * k + 1))"
+    apply (subst integrable_affine [of "-1" _ 0], simp_all del: One_nat_def)
+    by (subst 3, rule 1)
+  have 5: "(LBINT x:{..0}. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) = 
+           -(LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 1)))"
+    apply (subst lebesgue_integral_real_affine [of "-1" _ 0], simp_all del: One_nat_def)
+    apply (subst set_integral_uminus [symmetric])
+    by (rule integral_cong, auto split: split_indicator)
+  have 6: "set_integrable lborel {..<0} (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k+ 1))"
+    apply (subst integrable_cong_AE)
+    prefer 4 apply (rule 4)
+    by (auto intro!: AE_I [where N="{0}"] split: split_indicator)
+  have 7: "(LBINT x:{..<0}. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) = 
+           -(LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 1)))"
+    apply (subst 5 [symmetric])
+    apply (rule integral_cong_AE)
+    by (auto intro!: AE_I [where N="{0}"] split: split_indicator)
+  have 8: "(\<lambda>x::real. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) = 
+      (\<lambda>x. exp (- x\<^sup>2) * (x ^ (2 * k + 1)) * indicator {..<0} x + 
+           exp (- x\<^sup>2) * (x ^ (2 * k + 1)) * indicator {0..} x)"
+    by (rule ext, auto split: split_indicator)
+  show "integrable lborel (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k + 1))"
+    by (subst 8, rule integral_add [OF 6 1])
+  have "(LBINT x. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) =
+      (LBINT x:{..<0}. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) + 
+      (LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 1)))"
+    apply (subst integral_add (2) [symmetric, OF 6 1])
+    by (rule integral_cong, auto split: split_indicator)
+  also have "\<dots> = 0"
+    by (simp only: 7) 
+  finally show "(LBINT x. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) = 0" .
+qed
 
 end
