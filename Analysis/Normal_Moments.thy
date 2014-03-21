@@ -308,4 +308,98 @@ proof -
   finally show "(LBINT x. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) = 0" .
 qed
 
+lemma aux5_even:
+  fixes k :: nat
+  shows 
+    "integrable lborel (\<lambda>x. exp (- x\<^sup>2 / 2) * x ^ (2 * k))"
+  and
+    "(LBINT x. exp (- x\<^sup>2 / 2) * (x ^ (2 * k))) = 
+      sqrt (2 * pi) * (fact (2 * k) / (2^k * fact k))"
+proof -
+  have *: "(\<lambda>x. exp (- ((sqrt 2 * x)\<^sup>2 / 2)) * (sqrt 2 * x) ^ (2 * k)) =
+        (\<lambda>x. 2^k * (exp (- x\<^sup>2) * x ^ (2 * k)))"
+    by (rule ext, simp add: power_mult_distrib power_mult)
+  have **: "(2::real)^(2 * k) = 2^k * 2^k"
+    by (simp add: power_add [symmetric])
+  show "integrable lborel (\<lambda>x. exp (- x\<^sup>2 / 2) * x ^ (2 * k))"
+    apply (subst integrable_affine [where t = 0 and c = "sqrt 2"], auto)
+    by (subst *, rule integral_cmult (1), rule aux4_even)
+  show 
+    "(LBINT x. exp (- x\<^sup>2 / 2) * (x ^ (2 * k))) = 
+      sqrt (2 * pi) * (fact (2 * k) / (2^k * fact k))"
+    apply (subst lebesgue_integral_real_affine [where t = 0 and c = "sqrt 2"], auto)
+    apply (subst *, subst integral_cmult, rule aux4_even)
+    by (subst aux4_even, simp add: real_sqrt_mult **)
+qed
+
+lemma aux5_odd:
+  fixes k :: nat
+  shows 
+    "integrable lborel (\<lambda>x. exp (- x\<^sup>2 / 2) * x ^ (2 * k + 1))" 
+  and   
+    "(LBINT x. exp (- x\<^sup>2 / 2) * (x ^ (2 * k + 1))) = 0"
+proof -
+  have *: "(\<lambda>x. exp (- ((sqrt 2 * x)\<^sup>2 / 2)) * (sqrt 2 * x) ^ (2 * k + 1)) =
+        (\<lambda>x. 2^k * sqrt 2 * (exp (- x\<^sup>2) * x ^ (2 * k + 1)))"
+    by (rule ext, simp add: power_mult_distrib power_mult)
+
+  show "integrable lborel (\<lambda>x. exp (- x\<^sup>2 / 2) * x ^ (2 * k + 1))"
+    apply (subst integrable_affine [where t = 0 and c = "sqrt 2"], auto simp del: One_nat_def)
+    by (subst *, rule integral_cmult (1), rule aux4_odd)
+  show 
+    "(LBINT x. exp (- x\<^sup>2 / 2) * (x ^ (2 * k + 1))) = 0"
+    apply (subst lebesgue_integral_real_affine [where t = 0 and c = "sqrt 2"], 
+      auto simp del: One_nat_def)
+    apply (subst *, subst integral_cmult, rule aux4_odd)
+    by (subst aux4_odd, simp add: real_sqrt_mult)
+qed
+
+(* which is more convenient? *)
+abbreviation standard_normal_distribution where
+  "standard_normal_distribution \<equiv> density lborel standard_normal_density"
+
+lemma standard_normal_distributed_even_moments':
+  fixes k :: nat
+  shows "LINT x | standard_normal_distribution. x ^ (2 * k) = (fact (2 * k) / (2^k * fact k))"
+
+  apply (subst integral_density)
+  apply (auto intro!: AE_I2 normal_non_negative)
+  unfolding standard_normal_density_def
+  apply (subst mult_assoc, subst integral_cmult (2))
+  apply (rule aux5_even (1))
+  by (subst aux5_even (2), auto)
+
+lemma (in prob_space) standard_normal_distributed_even_moments:
+  fixes k :: nat
+  assumes D: "distributed M lborel X standard_normal_density"
+  shows "expectation (\<lambda>x. (X x)^(2 * k)) = (fact (2 * k) / (2^k * fact k))"
+
+  apply (subst distributed_integral[OF D, of "\<lambda>x. x^(2 * k)", symmetric], auto)
+(* or:
+  apply (subst integral_density [symmetric])
+  apply (auto intro!: AE_I2 normal_non_negative)
+  apply (subst standard_normal_distributed_even_moments', auto)
+*)
+  unfolding standard_normal_density_def
+  apply (subst mult_assoc, subst integral_cmult (2))
+  apply (rule aux5_even (1))
+by (subst aux5_even (2), auto)
+
+lemma test: "distributed standard_normal_distribution lborel (\<lambda>x. x) standard_normal_density"
+unfolding distributed_def apply auto
+apply (subst density_distr [symmetric], auto)
+by (auto intro!: AE_I2 normal_non_negative)
+
+lemma (in prob_space) standard_normal_distributed_odd_moments:
+  fixes k :: nat
+  assumes D: "distributed M lborel X standard_normal_density"
+  shows "expectation (\<lambda>x. (X x)^(2 * k + 1)) = 0"
+
+  apply (subst distributed_integral[OF D, of "\<lambda>x. x^(2 * k + 1)", symmetric], force)
+  unfolding standard_normal_density_def
+  apply (subst mult_assoc, subst integral_cmult (2))
+  apply (rule aux5_odd (1))
+by (subst aux5_odd (2), auto)
+
+
 end
