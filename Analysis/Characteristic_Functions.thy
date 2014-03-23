@@ -705,7 +705,73 @@ proof
     apply (rule 3)
     apply (subst 2)
     by (rule 3)
-  have 5: "?f ----> char standard_normal_distribution t"
+  from summable_LIMSEQ_zero [OF summable_exp] have **: 
+    "\<And>x :: real. (\<lambda>n. x ^ n / fact n) ----> 0"
+    by (auto simp add: inverse_eq_divide)
+  have "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n) / real (fact (2 * n)) *
+          (LINT x|standard_normal_distribution. \<bar>x\<bar> ^ (2 * n))) =
+          (\<lambda>n. 2 * ((t^2 / 2)^n / fact n))"
+    apply (rule ext)
+    apply (subst standard_normal_distribution_even_moments_abs)
+    by (simp add: power_mult power_divide)
+  hence 5: "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n) / real (fact (2 * n)) *
+          (LINT x|standard_normal_distribution. \<bar>x\<bar> ^ (2 * n)))
+        ----> 0"
+    apply (elim ssubst)
+    by (rule tendsto_mult_right_zero, rule **)
+  {
+    fix n  :: nat
+    have "(fact n) * (fact n) \<le> fact (2 * n)"
+    proof (induct n)
+      show "(fact (0 :: nat)) * (fact 0) \<le> fact (2 * 0)" by simp
+    next
+      fix n :: nat
+      assume ih: "(fact n) * (fact n) \<le> fact (2 * n)"
+      have "(fact (Suc n)) * (fact (Suc n)) = (Suc n) * (Suc n) * (fact n * fact n)"
+        by (simp add: field_simps)
+      also have "\<dots> \<le> (Suc n) * (Suc n) * fact (2 * n)"
+        by (rule mult_left_mono [OF ih], simp)
+      also have "\<dots> \<le> (Suc (Suc (2 * n))) * (Suc (2 * n)) * fact (2 * n)"
+        apply (rule mult_right_mono)+
+        by auto
+      also have "\<dots> = fact (2 * Suc n)" by (simp add: field_simps)
+      finally show "(fact (Suc n)) * (fact (Suc n)) \<le> fact (2 * (Suc n))" .
+    qed
+  } note *** = this
+  have  "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n + 1) / real (fact (2 * n + 1)) *
+          (LINT x|standard_normal_distribution. \<bar>x\<bar> ^ (2 * n + 1)))
+        = (\<lambda>n. (4 * abs t / sqrt (2 * pi)) * 
+          ((2 * t^2)^n * fact n / fact (2 * n + 1)))"
+    apply (rule ext, subst standard_normal_distribution_odd_moments_abs)
+    apply (simp add: power_add power_mult power_mult_distrib)
+    by (auto simp add: field_simps of_real_mult power_add power_mult
+      power_mult_distrib abs_mult power2_eq_square)
+  (* TODO: clean this up! *)
+  hence 6: "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n + 1) / real (fact (2 * n + 1)) *
+          (LINT x|standard_normal_distribution. \<bar>x\<bar> ^ (2 * n + 1)))
+        ----> 0"
+    apply (elim ssubst)
+    apply (rule tendsto_mult_right_zero)
+    apply (rule Lim_null_comparison [OF _ ** [of "2 * t\<^sup>2"]])
+    apply (rule always_eventually, rule allI)
+    apply (subst real_norm_def)
+    apply (subst abs_of_nonneg)
+    apply (simp del: One_nat_def add: field_simps)
+    apply (rule mult_nonneg_nonneg)
+    apply auto [2]
+    apply (rule mult_imp_div_pos_le)
+    apply (simp del: One_nat_def)
+    apply (subst times_divide_eq_left)
+    apply (rule mult_imp_le_div_pos)
+    apply (simp del: One_nat_def)
+    apply (subst mult_assoc)
+    apply (rule mult_left_mono)
+    apply (subst real_of_nat_mult [symmetric])
+    apply (subst real_of_nat_le_iff)
+    apply (rule order_trans)
+    apply (rule ***)
+    by auto
+  have 7: "?f ----> char standard_normal_distribution t"
     apply (subst Lim_null)
     apply (rule tendsto_norm_zero_cancel)
     apply (rule Lim_null_comparison [of _ "\<lambda>n. 2 * (abs t)^n / real(fact n) * 
@@ -723,15 +789,10 @@ proof
     apply (erule ssubst)
     apply (rule standard_normal_distribution_odd_moments)
     apply simp
-    apply (rule limseq_even_odd)
-    sorry
-
+    by (rule limseq_even_odd [OF 5 6])
   show "char standard_normal_distribution t = complex_of_real (exp (-(t^2) / 2))"
-    by (rule LIMSEQ_unique [OF 5 4])
+    by (rule LIMSEQ_unique [OF 7 4])
 qed
-
-
-thm summable_LIMSEQ_zero [OF summable_exp]
 
 (* 
   A real / complex version of Fubini's theorem.
