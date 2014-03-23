@@ -39,6 +39,24 @@ proof -
     by (auto split:split_indicator)
 qed
 
+(* rewrite this *)
+lemma integral_x_exp_neg_x_squared: 
+  shows
+    "set_integrable lborel {0..} (\<lambda>x. x * exp (- x\<^sup>2))" and 
+    "LBINT x:{0..}. x * exp (- x\<^sup>2) = 1 / 2"
+proof -
+  have *: "\<integral>\<^sup>+ x. ereal (x * exp (- x\<^sup>2) * indicator {0..} x) \<partial>lborel =
+      ereal (1 / 2)"
+    apply (subst times_ereal.simps(1) [symmetric], subst ereal_indicator)
+    by (rule positive_integral_x_exp_x_square_indicator [simplified])
+  show "set_integrable lborel {0..} (\<lambda>x. x * exp (- x\<^sup>2))"
+    apply (rule integrable_if_positive_integral, rule *)
+    by (rule AE_I2, auto split: split_indicator intro!: mult_nonneg_nonneg)
+  show "LBINT x:{0..}. x * exp (- x\<^sup>2) = 1 / 2"
+    apply (rule lebesgue_integral_eq_positive_integral, rule *)
+    by (rule AE_I2, auto split: split_indicator intro!: mult_nonneg_nonneg)
+qed
+
 lemma aux1:
   fixes b :: real and k :: nat
   assumes "0 \<le> b"
@@ -203,23 +221,49 @@ next
   finally show "?Q (Suc k)" by (simp add: field_simps real_of_nat_Suc)
 qed
 
-(* We don't need to calculate the value, but we could if we had to. *)
 lemma aux3_odd:
   fixes k :: nat
-  shows "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k + 1))" (is "?P k")
+  shows 
+    "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k + 1))" (is "?P k")
+  and
+    "(LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) =  fact k / 2" (is "?Q k") 
 proof (induct k)
   show "?P 0"
     apply (simp, subst mult_commute)
-    apply (rule integrable_if_positive_integral)
-    apply (subst times_ereal.simps(1) [symmetric], subst ereal_indicator)
-    apply (rule positive_integral_x_exp_x_square_indicator [simplified])
-    by (rule AE_I2, auto split: split_indicator intro!: mult_nonneg_nonneg)
+    by (rule integral_x_exp_neg_x_squared)
+  show "?Q 0"
+    apply (simp, subst mult_commute)
+    by (subst integral_x_exp_neg_x_squared, simp)
 next
   fix k
-  assume ih: "?P k"
+  assume ihP: "?P k" and ihQ: "?Q k"
   have *: "2 * Suc k + 1 = (2 * k + 1) + 2" by simp
   show "?P (Suc k)"
-    by (subst *, rule aux2 [OF ih])
+    by (subst *, rule aux2 [OF ihP])
+  have "(LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 1 + 2)))
+      = (2 * k + 1 + 1) / 2 * (LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 1)))"
+    by (rule aux2 [OF ihP])
+  also have "\<dots> = (2 * k + 1 + 1) / 2 * (fact k / 2)"
+    by (subst ihQ, rule refl)
+  also have "\<dots> = (k + 1) * fact k / 2" by (simp add: real_of_nat_Suc field_simps)
+  also have "\<dots> = fact (k + 1) / 2" by simp
+  finally show "?Q (Suc k)" by simp
+qed
+
+lemma aux3_odd_abs:
+  fixes k :: nat
+  shows 
+    "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2) * (abs x) ^ (2 * k + 1))"
+  and
+    "(LBINT x:{0..}. exp (- x\<^sup>2) * ((abs x) ^ (2 * k + 1))) =  fact k / 2"
+proof -
+  have *: "\<And>(x :: real) k. exp (- x\<^sup>2) * (abs x) ^ (2 * k + 1) * indicator {0..} x = 
+          exp (- x\<^sup>2) * x ^ (2 * k + 1) * indicator {0..} x"
+    by (simp split: split_indicator)
+  show "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2) * (abs x) ^ (2 * k + 1))"
+    by (subst *, rule aux3_odd)
+  show "(LBINT x:{0..}. exp (- x\<^sup>2) * ((abs x) ^ (2 * k + 1))) = fact k / 2"
+    by (subst *, rule aux3_odd)
 qed
 
 lemma aux4_even:
@@ -308,6 +352,49 @@ proof -
   finally show "(LBINT x. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) = 0" .
 qed
 
+lemma aux4_odd_abs:
+  fixes k :: nat
+  shows 
+    "integrable lborel (\<lambda>x. exp (- x\<^sup>2) * abs x ^ (2 * k + 1))"
+  and 
+    "(LBINT x. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) = fact k"
+proof -
+  note 1 = aux3_odd_abs (1) [of k]
+  have 3: "(\<lambda>x :: real. exp (- x\<^sup>2) * abs x ^ (2 * k + 1) * indicator {..0} (- x)) =
+           (\<lambda>x. exp (- x\<^sup>2) * abs x ^ (2 * k + 1) * indicator {0..} x)"
+    by (rule ext, auto split: split_indicator)
+  have 4: "set_integrable lborel {..0} (\<lambda>x :: real. exp (- x\<^sup>2) * (abs x) ^ (2 * k + 1))"
+    apply (subst integrable_affine [of "-1" _ 0], simp_all del: One_nat_def)
+    by (subst 3, rule 1)
+  have 5: "(LBINT x:{..0}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) = 
+           (LBINT x:{0..}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1)))"
+    apply (subst lebesgue_integral_real_affine [of "-1" _ 0], simp_all del: One_nat_def)
+    by (rule integral_cong, auto split: split_indicator)
+  have 6: "set_integrable lborel {..<0} (\<lambda>x. exp (- x\<^sup>2) * abs x ^ (2 * k+ 1))"
+    apply (subst integrable_cong_AE)
+    prefer 4 apply (rule 4)
+    by (auto intro!: AE_I [where N="{0}"] split: split_indicator)
+  have 7: "(LBINT x:{..<0}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) = 
+           (LBINT x:{0..}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1)))"
+    apply (subst 5 [symmetric])
+    apply (rule integral_cong_AE)
+    by (auto intro!: AE_I [where N="{0}"] split: split_indicator)
+  have 8: "(\<lambda>x::real. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) = 
+      (\<lambda>x. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1)) * indicator {..<0} x + 
+           exp (- x\<^sup>2) * (abs x ^ (2 * k + 1)) * indicator {0..} x)"
+    by (rule ext, auto split: split_indicator)
+  show "integrable lborel (\<lambda>x. exp (- x\<^sup>2) * abs x ^ (2 * k + 1))"
+    by (subst 8, rule integral_add [OF 6 1])
+  have "(LBINT x. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) =
+      (LBINT x:{..<0}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) + 
+      (LBINT x:{0..}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1)))"
+    apply (subst integral_add (2) [symmetric, OF 6 1])
+    by (rule integral_cong, auto split: split_indicator)
+  also have "\<dots> = fact k"
+    by (subst 7, subst aux3_odd_abs, subst aux3_odd_abs, simp)
+  finally show "(LBINT x. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) = fact k" .
+qed
+
 lemma aux5_even:
   fixes k :: nat
   shows 
@@ -354,20 +441,114 @@ proof -
     by (subst aux4_odd, simp add: real_sqrt_mult)
 qed
 
+lemma aux5_odd_abs:
+  fixes k :: nat
+  shows 
+    "integrable lborel (\<lambda>x. exp (- x\<^sup>2 / 2) * abs x ^ (2 * k + 1))"
+  and
+    "(LBINT x. exp (- x\<^sup>2 / 2) * (abs x ^ (2 * k + 1))) = fact k * (2 ^ (k + 1))"
+proof -
+  have *: "(\<lambda>x. exp (- ((sqrt 2 * x)\<^sup>2 / 2)) * abs (sqrt 2 * x) ^ (2 * k + 1)) =
+        (\<lambda>x. (sqrt 2)^(2 *k + 1) * (exp (- x\<^sup>2) * abs x ^ (2 * k + 1)))"
+    by (rule ext, simp add: power_mult_distrib abs_mult power_mult)
+  have **: "(2::real)^(2 * k) = 2^k * 2^k"
+    by (simp add: power_add [symmetric])
+  show "integrable lborel (\<lambda>x. exp (- x\<^sup>2 / 2) * abs x ^ (2 * k + 1))"
+    apply (subst integrable_affine [where t = 0 and c = "sqrt 2"])
+    apply (simp_all del: One_nat_def power_Suc)
+    by (subst *, rule integral_cmult (1), rule aux4_odd_abs)
+  show 
+    "(LBINT x. exp (- x\<^sup>2 / 2) * (abs x ^ (2 * k + 1))) = fact k * (2 ^ (k + 1))"
+    apply (subst lebesgue_integral_real_affine [where t = 0 and c = "sqrt 2"])
+    apply (simp_all del: One_nat_def power_Suc)
+    apply (subst *, subst integral_cmult, rule aux4_odd_abs)
+    apply (subst aux4_odd_abs, simp add: power_mult real_sqrt_mult)
+    (* the simplifier should know that sqrt 2 * sqrt 2 = 2 *)
+    by (subst real_sqrt_mult_distrib2 [symmetric], subst real_sqrt_abs2, simp)
+qed
+
 (* which is more convenient? *)
 abbreviation standard_normal_distribution where
   "standard_normal_distribution \<equiv> density lborel standard_normal_density"
 
-lemma standard_normal_distributed_even_moments':
+(* a reality check *)
+lemma distributed_standard_normal_density: 
+  "distributed standard_normal_distribution lborel (\<lambda>x. x) standard_normal_density"
+  unfolding distributed_def apply auto
+  apply (subst density_distr [symmetric], auto)
+by (auto intro!: AE_I2 normal_non_negative)
+
+lemma standard_normal_distribution_even_moments:
   fixes k :: nat
-  shows "LINT x | standard_normal_distribution. x ^ (2 * k) = (fact (2 * k) / (2^k * fact k))"
+  shows "integrable standard_normal_distribution (\<lambda>x. x ^ (2 * k))"
+    "LINT x | standard_normal_distribution. x ^ (2 * k) = (fact (2 * k) / (2^k * fact k))"
 
   apply (subst integral_density)
-  apply (auto intro!: AE_I2 normal_non_negative)
-  unfolding standard_normal_density_def
+  apply (auto intro!: AE_I2 normal_non_negative) [4]
+  apply (subst standard_normal_density_def)
+  apply (subst mult_assoc, rule integral_cmult (1)) 
+  apply (rule aux5_even) 
+
+  apply (subst integral_density)
+  apply (auto intro!: AE_I2 normal_non_negative) [4]
+  apply (subst standard_normal_density_def)
   apply (subst mult_assoc, subst integral_cmult (2))
   apply (rule aux5_even (1))
-  by (subst aux5_even (2), auto)
+by (subst aux5_even (2), auto)
+
+lemma standard_normal_distribution_even_moments_abs:
+  fixes k :: nat
+  shows "integrable standard_normal_distribution (\<lambda>x. abs x ^ (2 * k))"
+    "LINT x | standard_normal_distribution. abs x ^ (2 * k) = (fact (2 * k) / (2^k * fact k))"
+proof -
+  have *: "\<And>(x :: real) k. abs x ^ (2 * k) = x ^ (2 * k)"
+    by (simp add: power_mult)
+  show "integrable standard_normal_distribution (\<lambda>x. abs x ^ (2 * k))"
+    by (subst *, rule standard_normal_distribution_even_moments)
+  show "LINT x | standard_normal_distribution. abs x ^ (2 * k) = 
+      (fact (2 * k) / (2^k * fact k))"
+    by (subst *, rule standard_normal_distribution_even_moments)
+qed
+
+lemma standard_normal_distribution_odd_moments:
+  fixes k :: nat
+  shows "integrable standard_normal_distribution (\<lambda>x. x ^ (2 * k + 1))"
+    "LINT x | standard_normal_distribution. x ^ (2 * k + 1) = 0"
+
+  apply (subst integral_density)
+  apply (auto intro!: AE_I2 normal_non_negative) [3]
+  apply (subst standard_normal_density_def)
+  apply (subst mult_assoc, rule integral_cmult (1)) 
+  apply (rule aux5_odd) 
+
+  apply (subst integral_density)
+  apply (auto intro!: AE_I2 normal_non_negative simp del: One_nat_def)
+  unfolding standard_normal_density_def
+  apply (subst mult_assoc, subst integral_cmult (2))
+  apply (rule aux5_odd (1))
+by (subst aux5_odd (2), auto)
+
+lemma standard_normal_distribution_odd_moments_abs :
+  fixes k :: nat
+  shows "integrable standard_normal_distribution (\<lambda>x. abs x ^ (2 * k + 1))"
+    "LINT x | standard_normal_distribution. abs x ^ (2 * k + 1) = 
+      fact k * (2 ^ (k + 1)) / sqrt (2 * pi)"
+
+  apply (subst integral_density)
+  apply (auto intro!: AE_I2 normal_non_negative) [3]
+  apply (subst standard_normal_density_def)
+  apply (subst mult_assoc, rule integral_cmult (1)) 
+  apply (rule aux5_odd_abs) 
+
+  apply (subst integral_density)
+  apply (auto intro!: AE_I2 normal_non_negative simp del: One_nat_def)
+  unfolding standard_normal_density_def
+  apply (subst mult_assoc, subst integral_cmult (2))
+  apply (rule aux5_odd_abs (1))
+by (subst aux5_odd_abs (2), auto)
+
+
+(* I am uncertain as to which forms are better *)
 
 lemma (in prob_space) standard_normal_distributed_even_moments:
   fixes k :: nat
@@ -384,11 +565,6 @@ lemma (in prob_space) standard_normal_distributed_even_moments:
   apply (subst mult_assoc, subst integral_cmult (2))
   apply (rule aux5_even (1))
 by (subst aux5_even (2), auto)
-
-lemma test: "distributed standard_normal_distribution lborel (\<lambda>x. x) standard_normal_density"
-unfolding distributed_def apply auto
-apply (subst density_distr [symmetric], auto)
-by (auto intro!: AE_I2 normal_non_negative)
 
 lemma (in prob_space) standard_normal_distributed_odd_moments:
   fixes k :: nat

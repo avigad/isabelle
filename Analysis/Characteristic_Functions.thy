@@ -477,7 +477,67 @@ lemma cmod_expi_real_eq: "cmod (expi (ii * (x :: real))) = 1"
 (* these calculations were difficult -- in some ways I felt like I was fighting with the
    simplifier. Could we do better?
 *)
-lemma (in prob_space) equation_26p5b:
+
+lemma (in real_distribution) equation_26p5b:
+  assumes 
+    integrable_moments : "\<And>k. integrable M (\<lambda>x :: real. x ^ k)"
+  shows 
+    "cmod (char M t - (\<Sum>k \<le> n. ((ii * t)^k / fact k) * expectation (\<lambda>x. x^k)))
+      \<le>  (2 * (abs t)^n / fact n) * expectation (\<lambda>x. (abs x)^n)"
+      (is "cmod (char M t - ?t1) \<le> _")
+proof -
+  have [simplified, simp]: "complex_integrable M (\<lambda>x. iexp (t * x))"
+    apply (rule complex_integrable_const_bound, rule AE_I2)
+    by (subst cmod_expi_real_eq, auto)
+  have *: "\<And>k x. (ii * t * x)^k / fact k = (ii * t)^k / fact k * x^k"
+    by (simp add: power_mult_distrib)
+  have ** [simp]: "!!k. complex_integrable M (\<lambda>x. complex_of_real (x ^ k))"
+    by (rule complex_of_real_integrable, rule integrable_moments)
+  have 1: "\<And>k. complex_integrable M (\<lambda>x. (ii * t * x)^k / fact k)"
+     apply (subst *, rule complex_integral_cmult)
+     apply (subst of_real_power [symmetric])
+     apply (rule complex_of_real_integrable)
+     by (rule integrable_moments)
+  have 2: "complex_integrable M (\<lambda>x. (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
+    apply (rule complex_integral_setsum)
+    apply (subst *)
+    apply (subst of_real_power [symmetric])
+    apply (rule complex_integral_cmult)
+    apply (rule complex_of_real_integrable) 
+    by (rule integrable_moments)
+  have 3: "complex_integrable M (\<lambda>x. iexp (t * x) - (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
+    by (rule complex_integral_diff [OF _ 2], auto)
+  have "?t1 = (CLINT x | M. (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
+    apply (subst complex_integral_setsum [OF 1])
+    apply (rule setsum_cong, force)
+    apply (subst *, subst of_real_power [symmetric], subst complex_integral_cmult, rule **)
+    by (simp add: field_simps complex_of_real_lebesgue_integral)
+  hence "char M t - ?t1 = (CLINT x | M. iexp (t * x) - (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
+      (is "_ = (CLINT x | M. ?f x)")
+    apply (elim ssubst)
+    apply (subst complex_integral_diff [OF _ 2], auto)
+    unfolding char_def by auto
+  hence "cmod (char M t - ?t1) \<le> expectation (\<lambda>x. cmod (?f x))"
+    apply (elim ssubst)
+    by (rule complex_lebesgue_integral_cmod, rule 3)  
+  also have "\<dots> \<le> expectation (\<lambda>x. (2 * (abs t)^n / fact n) * (abs x)^n)"
+    apply (rule integral_mono)
+    apply (rule complex_integrable_cmod [OF 3])
+    apply (rule integral_cmult, subst power_abs [symmetric])
+    apply (rule integrable_abs, rule integrable_moments)
+    apply (rule order_trans)
+    apply (subst mult_assoc, subst of_real_mult [symmetric])
+    by (rule equation_26p4b, auto simp add: abs_mult power_mult_distrib field_simps)
+  also have "\<dots> = (2 * (abs t)^n / fact n) * expectation (\<lambda>x. (abs x)^n)"
+    apply (rule integral_cmult, subst power_abs [symmetric])
+    by (rule integrable_abs, rule integrable_moments)
+  finally show ?thesis .
+qed
+
+(* this is the formulation in the book -- in terms of a random variable *with* the distribution,
+   rather the distribution itself. I don't know which is more useful, though in principal we can
+   go back and forth between them. *)
+lemma (in prob_space) equation_26p5b':
   fixes \<mu> :: "real measure" and X
   assumes 
     integrable_moments : "\<And>k. integrable M (\<lambda>x. X x ^ k)" and
@@ -534,104 +594,144 @@ proof -
   finally show ?thesis .
 qed
 
-
-lemma (in real_distribution) equation_26p5b':
-  assumes 
-    integrable_moments : "\<And>k. integrable M (\<lambda>x :: real. x ^ k)"
-  shows 
-    "cmod (char M t - (\<Sum>k \<le> n. ((ii * t)^k / fact k) * expectation (\<lambda>x. x^k)))
-      \<le>  (2 * (abs t)^n / fact n) * expectation (\<lambda>x. (abs x)^n)"
-      (is "cmod (char M t - ?t1) \<le> _")
-proof -
-  have [simplified, simp]: "complex_integrable M (\<lambda>x. iexp (t * x))"
-    apply (rule complex_integrable_const_bound, rule AE_I2)
-    by (subst cmod_expi_real_eq, auto)
-  have *: "\<And>k x. (ii * t * x)^k / fact k = (ii * t)^k / fact k * x^k"
-    by (simp add: power_mult_distrib)
-  have ** [simp]: "!!k. complex_integrable M (\<lambda>x. complex_of_real (x ^ k))"
-    by (rule complex_of_real_integrable, rule integrable_moments)
-  have 1: "\<And>k. complex_integrable M (\<lambda>x. (ii * t * x)^k / fact k)"
-     apply (subst *, rule complex_integral_cmult)
-     apply (subst of_real_power [symmetric])
-     apply (rule complex_of_real_integrable)
-     by (rule integrable_moments)
-  have 2: "complex_integrable M (\<lambda>x. (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
-    apply (rule complex_integral_setsum)
-    apply (subst *)
-    apply (subst of_real_power [symmetric])
-    apply (rule complex_integral_cmult)
-    apply (rule complex_of_real_integrable) 
-    by (rule integrable_moments)
-  have 3: "complex_integrable M (\<lambda>x. iexp (t * x) - (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
-    by (rule complex_integral_diff [OF _ 2], auto)
-  have "?t1 = (CLINT x | M. (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
-    apply (subst complex_integral_setsum [OF 1])
-    apply (rule setsum_cong, force)
-    apply (subst *, subst of_real_power [symmetric], subst complex_integral_cmult, rule **)
-    by (simp add: field_simps complex_of_real_lebesgue_integral)
-  hence "char M t - ?t1 = (CLINT x | M. iexp (t * x) - (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
-      (is "_ = (CLINT x | M. ?f x)")
-    apply (elim ssubst)
-    apply (subst complex_integral_diff [OF _ 2], auto)
-    unfolding char_def by auto
-  hence "cmod (char M t - ?t1) \<le> expectation (\<lambda>x. cmod (?f x))"
-    apply (elim ssubst)
-    by (rule complex_lebesgue_integral_cmod, rule 3)  
-  also have "\<dots> \<le> expectation (\<lambda>x. (2 * (abs t)^n / fact n) * (abs x)^n)"
-    apply (rule integral_mono)
-    apply (rule complex_integrable_cmod [OF 3])
-    apply (rule integral_cmult, subst power_abs [symmetric])
-    apply (rule integrable_abs, rule integrable_moments)
-    apply (rule order_trans)
-    apply (subst mult_assoc, subst of_real_mult [symmetric])
-    by (rule equation_26p4b, auto simp add: abs_mult power_mult_distrib field_simps)
-  also have "\<dots> = (2 * (abs t)^n / fact n) * expectation (\<lambda>x. (abs x)^n)"
-    apply (rule integral_cmult, subst power_abs [symmetric])
-    by (rule integrable_abs, rule integrable_moments)
-  finally show ?thesis .
-qed
+(* Calculation of the characteristic function of the standard distribution *)
 
 lemma real_dist_normal_dist: "real_distribution standard_normal_distribution"
-unfolding real_distribution_def
-apply (rule conjI)
-apply (rule prob_space_normal_density, auto)
-unfolding real_distribution_axioms_def
-by auto
-
-
-  
-
-
-(* Calculation of the characteristic function of the standard distribution *)
+  unfolding real_distribution_def apply (rule conjI)
+  apply (rule prob_space_normal_density, auto)
+unfolding real_distribution_axioms_def by auto
 
 (* o.k., what is the nicer way to do this? *)
 lemma limseq_even_odd: 
-  assumes "(\<lambda>n ::nat. f (2 * n)) ----> (l::real)"
+  assumes "(\<lambda>n ::nat. f (2 * n)) ----> (l :: real)"
       and "(\<lambda>n ::nat. f (2 * n + 1)) ----> l"
   shows "f ----> l"
 
-using assms apply (auto simp add: LIMSEQ_def)
-apply (drule_tac x = r in spec)+
-apply auto
-apply (rule_tac x = "max (2 * no) (2 * noa + 1)" in exI, auto)
-apply (case_tac "even n")
-apply (subst (asm) even_mult_two_ex, auto)
+  using assms apply (auto simp add: LIMSEQ_def)
+  apply (drule_tac x = r in spec)+
+  apply auto
+  apply (rule_tac x = "max (2 * no) (2 * noa + 1)" in exI, auto)
+  apply (case_tac "even n")
+  apply (subst (asm) even_mult_two_ex, auto)
 by (subst (asm) odd_Suc_mult_two_ex, auto)
 
-thm summable_LIMSEQ_zero [OF summable_exp]
 
+(* what is the common space? *)
+lemma limseq_even_odd_complex: 
+  assumes "(\<lambda>n ::nat. f (2 * n)) ----> (l :: complex)"
+      and "(\<lambda>n ::nat. f (2 * n + 1)) ----> l"
+  shows "f ----> l"
 
-
-
-
-
-
-
+  using assms apply (auto simp add: LIMSEQ_def)
+  apply (drule_tac x = r in spec)+
+  apply auto
+  apply (rule_tac x = "max (2 * no) (2 * noa + 1)" in exI, auto)
+  apply (case_tac "even n")
+  apply (subst (asm) even_mult_two_ex, auto)
+by (subst (asm) odd_Suc_mult_two_ex, auto)
 
 theorem "char standard_normal_distribution = (\<lambda>t. complex_of_real (exp (- (t^2) / 2)))"
+proof
+  fix t :: real
+  let ?f' = "\<lambda>k. (ii * t)^k / fact k * (LINT x | standard_normal_distribution. x^k)"
+  let ?f = "\<lambda>n. (\<Sum>k \<le> n. ?f' k)"
+  (* This is an absolutely horrible calculation, with casts from nat to real to complex. *)
+  (* This makes it a good target for automation. *)
+  have 1: "\<And>n :: nat. ?f (2 * n) = complex_of_real (\<Sum>k \<le> n. (1 / fact k) * (- (t^2) / 2)^k)"
+  proof -
+    fix n :: nat
+    let ?g' = "\<lambda>k :: nat. (1 / fact k) * (- (t^2) / 2)^k"
+    let ?g = "\<lambda>n. \<Sum>k \<le> n. ?g' k"  
+    show "?f (2 * n) = complex_of_real (?g n)"
+    proof (induct n)
+      have "?f (2 * 0) = complex_of_real (LINT x | standard_normal_distribution. x^(2 * 0))" by simp
+      also have "\<dots> = complex_of_real 1" 
+        by (subst standard_normal_distribution_even_moments) auto
+      also have "\<dots> = ?g 0" by simp
+      finally show "?f (2 * 0) = ?g 0" .
+    next
+      fix n
+      assume ih: "?f (2 * n) = ?g n"
+      have "?f (2 * (Suc n)) = ?f (2 * n) + ?f' (2 * n + 1) + ?f' (2 * (n + 1))" by simp
+      also have "?f (2 * n) = ?g n" by (rule ih)
+      also have "?f' (2 * n + 1) = 0" by (subst standard_normal_distribution_odd_moments, simp)
+      also have "?f' (2 * (n + 1)) = (ii * t)^(2 * (n + 1)) / fact (2 * (n + 1)) * 
+         fact (2 * (n + 1)) / (2^(n + 1) * fact (n + 1))"
+        by (subst standard_normal_distribution_even_moments, simp)
+      also have "\<dots> = (ii * t)^(2 * (n + 1)) / (2^(n + 1) * fact (n + 1))"
+        apply (subst times_divide_eq_left)
+        apply (subst (3) mult_commute)
+        apply (subst times_divide_eq_left [symmetric])
+        apply (subst divide_self)
+        (* ouch! how to avoid this? *)
+        apply (metis of_nat_fact_not_zero of_real_eq_0_iff real_of_int_zero_cancel)
+        by simp
+      also have "(ii * t)^(2 * (n + 1)) = (- (t^2))^(n + 1)"
+        apply (subst mult_commute)
+        apply (subst power_mult_distrib)
+        apply (subst (2) power_mult)
+        apply (simp add: power_mult_distrib field_simps)
+        apply (subst (4) mult_commute)
+        apply (subst power_mult)
+        by (case_tac "even n", auto simp add: power2_eq_square)
+      finally have "?f (2 * Suc n) = ?g n + (- (t^2))^(n + 1) / (2^(n + 1) * fact (n + 1))"
+        by simp
+      also have "(- (t^2))^(n + 1) / (2^(n + 1) * fact (n + 1)) = 
+          (- (t^2 / 2))^(n + 1) / fact (n + 1)"
+        apply (subst real_of_nat_mult)
+        apply (subst divide_divide_eq_left [symmetric])
+        by (metis (hide_lams, no_types) minus_divide_left power_divide 
+          real_of_nat_numeral real_of_nat_power)
+      also have "\<dots> = ?g' (Suc n)" by simp
+      finally show "?f (2 * Suc n) = ?g (Suc n)" by simp
+    qed
+  qed
+  have 2: "\<And>n. ?f(2 * n + 1) = ?f(2 * n)"
+  proof -
+    fix n :: nat
+    have "?f(2 * n + 1) = ?f(2 * n) + ?f'(2 * n + 1)" by simp
+    also have "?f' (2 * n + 1) = 0"
+      by (subst standard_normal_distribution_odd_moments, simp)
+    finally show "?f(2 * n + 1) = ?f(2 * n)" by simp
+  qed
+  have *: "\<And>x y :: real. 1 / y * x = x /\<^sub>R y" by (simp add: inverse_eq_divide)
+  have 3: "(\<lambda>n. ?f(2 * n)) ----> exp (-(t^2) / 2)"
+    apply (subst 1)
+    apply (rule tendsto_of_real)
+    apply (subst *)
+    by (subst sums_def2 [symmetric], rule exp_converges)
+  have 4: "?f ----> exp (-(t^2) / 2)"
+    apply (rule limseq_even_odd_complex)
+    apply (rule 3)
+    apply (subst 2)
+    by (rule 3)
+  have 5: "?f ----> char standard_normal_distribution t"
+    apply (subst Lim_null)
+    apply (rule tendsto_norm_zero_cancel)
+    apply (rule Lim_null_comparison [of _ "\<lambda>n. 2 * (abs t)^n / real(fact n) * 
+      (LINT x | standard_normal_distribution. abs (x)^n)"])
+    apply (rule eventually_sequentiallyI)
+    apply (subst real_norm_def, subst abs_of_nonneg, force)
+    apply (subst norm_minus_commute, simp)
+    apply (rule real_distribution.equation_26p5b [OF real_dist_normal_dist, 
+      simplified])
+    apply (case_tac "even k")
+    apply (subst (asm) even_mult_two_ex, erule exE, simp)
+    apply (rule standard_normal_distribution_even_moments)
+    apply (subst (asm) odd_Suc_mult_two_ex, erule exE, erule ssubst)
+    apply (subgoal_tac "Suc (2 * m) = 2 * m + 1")
+    apply (erule ssubst)
+    apply (rule standard_normal_distribution_odd_moments)
+    apply simp
+    apply (rule limseq_even_odd)
+    sorry
 
-  unfolding exp_def
-sorry
+  show "char standard_normal_distribution t = complex_of_real (exp (-(t^2) / 2))"
+    by (rule LIMSEQ_unique [OF 5 4])
+qed
+
+
+thm summable_LIMSEQ_zero [OF summable_exp]
 
 (* 
   A real / complex version of Fubini's theorem.
