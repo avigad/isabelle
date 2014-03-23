@@ -630,7 +630,8 @@ lemma limseq_even_odd_complex:
   apply (subst (asm) even_mult_two_ex, auto)
 by (subst (asm) odd_Suc_mult_two_ex, auto)
 
-theorem "char standard_normal_distribution = (\<lambda>t. complex_of_real (exp (- (t^2) / 2)))"
+theorem char_standard_normal_distribution:
+  "char standard_normal_distribution = (\<lambda>t. complex_of_real (exp (- (t^2) / 2)))"
 proof
   fix t :: real
   let ?f' = "\<lambda>k. (ii * t)^k / fact k * (LINT x | standard_normal_distribution. x^k)"
