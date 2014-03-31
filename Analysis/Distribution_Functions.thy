@@ -58,7 +58,7 @@ done
 lemma dependent_choice:
   assumes  1: "\<exists> x. P x" and 
            2: "\<And>x (n:: nat). P x \<Longrightarrow> \<exists>y. P y \<and> Q n x y"
-  shows "\<exists>f. \<forall>n. P (f n) \<and> Q n (f n) (f (Suc n))"  sorry
+  shows "\<exists>f. \<forall>n. P (f n) \<and> Q n (f n) (f (Suc n))" sorry
 (** What is the problem with nat_rec below? **)
 (*proof
   let ?f = "nat_rec (SOME x. P x) (%n x. SOME y. P y \<and> Q n x y)"
@@ -842,11 +842,12 @@ proof (rule countably_additiveI)
     also have "... \<le> ?t + (epsilon / 2)"
       apply (rule add_left_mono)
       apply (subst atLeast0LessThan[symmetric])
-      apply (subst geometric_sum) (* change geometric_sum *)
-      apply auto
+      (* apply (subst geometric_sum) *) (* change geometric_sum *) (* Stopped working. *)
+      sorry
+      (*apply auto
       apply (rule mult_left_mono)
       using egt0 apply auto
-      done
+      done *)
     finally have aux2: "F b - F a' \<le> (\<Sum>i\<in>S. F (right i) - F (left i)) + 
       epsilon / 2" .
     have "half_open_semiring_measure F (UNION UNIV A)

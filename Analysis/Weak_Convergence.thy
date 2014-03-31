@@ -38,13 +38,38 @@ apply (subst borel_measurable_iff_ge)
 apply (subst sets_restrict_space, auto)
 apply (subst space_restrict_space)
 proof -
-  def F \<equiv> "\<lambda>a. Inf (ereal ` {w \<in> A. a \<le> f w})"
+  def F \<equiv> "\<lambda>x. Inf (ereal ` {f y |y. y \<in> A \<and> x \<le> y})"
   fix a :: real
-  have monoF: "mono F" unfolding mono_def F_def
-    by auto (rule Inf_superset_mono, auto simp add: image_mono)
+  have monoF: "mono F" unfolding F_def mono_def
+  apply auto
+  apply (unfold INF_def)
+  apply (rule Inf_superset_mono)
+  apply (unfold image_def)
+  using assms(1) unfolding mono_on_def mono_def apply auto
+  by (metis order.trans)
   hence "{w. a \<le> F w} \<in> sets borel" using borel_measurable_mono_fnc
     by (smt dual_order.trans is_interval_1 mem_Collect_eq mono_def real_interval_borel_measurable)
-  moreover have "{w \<in> A. a \<le> f w} = {w. a \<le> F w} \<inter> A" using monoF unfolding F_def sorry
+  moreover have "{w \<in> A. a \<le> f w} = {w. a \<le> F w} \<inter> A"
+  proof auto
+    have *: "\<And>w. w \<in> A \<Longrightarrow> f w = F w"
+    proof -
+      fix w assume w: "w \<in> A"
+      hence fw: "f w \<in> {f y |y. y \<in> A \<and> w \<le> y}" unfolding F_def by auto
+      hence "F w \<le> f w" unfolding F_def using Inf_lower by (metis (erased, lifting) rev_image_eqI)
+      moreover have "f w \<le> F w" unfolding F_def image_def
+        apply (subst le_Inf_iff, auto)
+        using w assms(1) unfolding mono_on_def mono_def by auto
+      ultimately show "f w = F w" by auto
+    qed
+    fix x assume 1: "x \<in> A"
+    hence eq: "f x = F x" using 1 * by simp
+    { assume "a \<le> f x"
+      thus "ereal a \<le> F x" using eq by (metis ereal_less_eq(3))
+    }
+    { assume "ereal a \<le> F x"
+      thus "a \<le> f x" using eq by (metis ereal_less_eq(3))
+    }
+  qed
   ultimately show "{w \<in> A. a \<le> f w} \<in> op \<inter> A ` sets borel" by auto
 qed
 
@@ -62,13 +87,55 @@ lemma distr_cong_AE:
   using sets_eq_imp_space_eq[of N L] distr_cong sorry (*by (simp add: distr_def Int_def cong: rev_conj_cong)*)
   
 thm continuous_at_right_real_increasing
-  
+
 lemma continuous_at_right_real_mono_on_open:
   fixes f U a
   assumes "open U" "a \<in> U" "mono_on f U"
   shows "continuous (at_right a) f = (\<forall>\<epsilon>>0. \<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>)"
 sorry
- 
+
+lemma mono_ctble_discont:
+  fixes f :: "real \<Rightarrow> real"
+  assumes "mono f"
+  shows "countable {a. \<not> isCont f a}"
+proof -
+  have 1: "\<And>a. \<not> isCont f a \<Longrightarrow> Liminf (at a) f < Limsup (at a) f"
+    using tendsto_iff_Liminf_eq_Limsup Liminf_le_Limsup sorry
+  have 2: "\<And>x y. x \<le> y \<Longrightarrow> f x \<le> Liminf (at y) f" sorry
+  have 3: "\<And>x y. x \<le> y \<Longrightarrow> Limsup (at x) f \<le> f y" sorry
+  def jint \<equiv> "\<lambda>a. {Liminf (at a) f<..<Limsup (at a) f}"
+  def rosc \<equiv> "\<lambda>a. SOME q. q \<in> jint a \<inter> ereal ` \<rat>"
+  def D \<equiv> "{a. \<not> isCont f a}"
+  have "\<And>a. \<not> isCont f a \<Longrightarrow> jint a \<noteq> {}" using 1 sorry
+  moreover have "\<And>a b. \<not> isCont f a \<and> \<not> isCont f b \<Longrightarrow> jint a \<inter> jint b = {}"
+    using 1 2 3 unfolding jint_def sorry
+  ultimately have 4: "\<And>a b. \<not> isCont f a \<and> \<not> isCont f b \<Longrightarrow> rosc a \<noteq> rosc b" sorry
+  have 5: "inj_on rosc D" sorry
+  thus ?thesis sorry
+qed
+
+(* Show such a function is an ereal-valued measurable function times the indicator function of the
+   complement of A. *)
+lemma mono_on_ctble_discont:
+  fixes f :: "real \<Rightarrow> real"
+  fixes A :: "real set"
+  assumes "A \<in> sets borel" "mono_on f A"
+  shows "countable {a\<in>A. \<not>isCont f a}"
+sorry
+
+lemma emeasure_lborel_countable:
+  fixes A :: "real set"
+  assumes "countable A"
+  shows "emeasure lborel A = 0"
+proof -
+  have "A \<subseteq> (\<Union>i. {from_nat_into A i})" using from_nat_into_surj assms by force
+  moreover have "emeasure lborel (\<Union>i. {from_nat_into A i}) = 0"
+    by (rule emeasure_UN_eq_0) auto
+  ultimately have "emeasure lborel A \<le> 0" using emeasure_mono
+    by (metis assms bot.extremum_unique emeasure_empty image_eq_UN range_from_nat_into sets.empty_sets)
+  thus ?thesis by (auto simp add: emeasure_le_0_iff)
+qed
+  
 (* state using obtains? *)
 theorem Skorohod:
   fixes 
@@ -301,21 +368,31 @@ proof -
     ultimately have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" using Liminf_le_Limsup
       by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially)
   } note Y_cts_cnv = this
-  let ?D = "{\<omega>\<in>{0<..<1}. \<not> continuous (at \<omega>) Y}"
-  have D_countable: "countable ?D" using Y_mono_on (* mono_on_ctble_discont *) sorry
-  hence D: "emeasure lborel ?D = 0" (* using emeasure_lborel_countable *) sorry
+  let ?D = "{\<omega>\<in>{0<..<1}. \<not> isCont Y \<omega>}"
+  (* Why did force work and then fail? *)
+  have D_countable: "countable ?D" using Y_mono_on mono_on_ctble_discont
+    by (metis (erased, lifting) Collect_cong greaterThanLessThan_borel)
+  hence D: "emeasure lborel ?D = 0" using emeasure_lborel_countable by (metis (full_types))
   def Y' \<equiv> "\<lambda>\<omega>. (case \<omega>\<in>?D of True => 0 | False => Y \<omega>)"
   have Y'_AE: "AE \<omega> in \<Omega>. Y' \<omega> = Y \<omega>"
     apply (rule AE_I [where N = "?D"])
-    unfolding \<Omega>_def apply (auto simp add: space_restrict_space) [1]
+    apply (auto simp add: \<Omega>_def space_restrict_space) [1]
     unfolding Y'_def apply auto [1]
-    apply (subst emeasure_restrict_space, force)
+    apply (subst \<Omega>_def, subst emeasure_restrict_space, force)
     apply force
     using D apply force
-    apply (subst sets_restrict_space, simp)
-    using D_countable lborel_countable sorry
+    apply (rule lborel_countable)
+    unfolding \<Omega>_def using D_countable by (subst space_restrict_space, auto)
   def Y_seq' \<equiv> "\<lambda>n \<omega>. (case \<omega>\<in>?D of True => 0 | False => Y_seq n \<omega>)"
-  have Y_seq'_AE: "\<And>n. AE \<omega> in M. Y_seq' n \<omega> = Y_seq n \<omega>" sorry
+  have Y_seq'_AE: "\<And>n. AE \<omega> in \<Omega>. Y_seq' n \<omega> = Y_seq n \<omega>"
+    apply (rule AE_I[where N = "?D"])
+    apply (auto simp add: \<Omega>_def space_restrict_space) [1]
+    unfolding Y_seq'_def apply auto [1]
+    apply (subst \<Omega>_def, subst emeasure_restrict_space, force)
+    apply force
+    using D apply force
+    apply (rule lborel_countable)
+    unfolding \<Omega>_def using D_countable by (subst space_restrict_space, auto)
   have Y'_cnv: "\<forall>\<omega>\<in>{0<..<1}. (\<lambda>n. Y_seq' n \<omega>) ----> Y' \<omega>"
   proof
     fix \<omega>::real assume \<omega>: "\<omega> \<in> {0<..<1}"
@@ -333,10 +410,12 @@ proof -
       ultimately show ?thesis using Y_cts_cnv \<omega> by auto
     qed
   qed
-  have "\<And>n. Y_seq' n \<in> borel_measurable \<Omega>" using Y_seq_meas Y_seq'_AE sorry
-  moreover have "\<And>n. distr \<Omega> borel (Y_seq' n) = \<mu> n"
-    using Y_seq_distr Y_seq'_AE distr_cong_AE[where f = "Y_seq' n" and g = "Y_seq n"] sorry
-  moreover have "Y' \<in> borel_measurable \<Omega>" using Y_meas Y'_AE sorry
+  have "\<And>n. Y_seq' n \<in> borel_measurable \<Omega>" using Y_seq_meas Y_seq'_AE
+    by (subst measure_cong_AE[where g = "Y_seq n"], auto)
+  moreover have "\<And>n. distr \<Omega> borel (Y_seq' n) = \<mu> n" using Y_seq_distr Y_seq'_AE
+    by (subst distr_cong_AE[where f = "Y_seq' n" and g = "Y_seq n"], auto)
+  moreover have "Y' \<in> borel_measurable \<Omega>" using Y_meas Y'_AE
+    by (subst measure_cong_AE[where g = Y], auto)
   moreover have "distr \<Omega> borel Y' = M"
     using Y_distr Y'_AE distr_cong_AE[where f = Y' and g = Y] by auto
   ultimately have "prob_space \<Omega> \<and> (\<forall>n. Y_seq' n \<in> borel_measurable \<Omega>) \<and>

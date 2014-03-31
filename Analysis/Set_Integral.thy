@@ -200,6 +200,7 @@ proof (rule AE_I2)
     by (rule borel_measurable_LIMSEQ) (auto intro: borel_measurable_integrable intgbl)
 qed
 
+(** FIXME: Names of facts have changed and caused proof to fail.
 (* Proof from Royden Real Analysis, p. 91. *)
 lemma lebesgue_integral_countable_add:
   assumes meas[intro]: "\<And>i::nat. A i \<in> sets M"
@@ -356,6 +357,7 @@ proof-
   also have "... = f a * real (emeasure M {a})" using assms by auto
   finally show ?thesis using int_at by (simp add: eq)
 qed
+**)
 
 end
 

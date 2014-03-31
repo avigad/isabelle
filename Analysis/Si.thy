@@ -180,7 +180,7 @@ apply (auto intro: assms(1) assms(2) less_imp_le)
 (* Need to determine how to deal with the indicator functions. *)
 using pair_sigma_finite.Fubini_integral[of M1 M2] assms unfolding pair_sigma_finite_def sorry
     
-lemma sinc_at_top_lemma:
+lemma Si_at_top_lemma1:
   fixes t :: real
   assumes "t \<ge> 0"
   shows "Si t = pi / 2 - (LBINT u=0..\<infinity>. inverse (1 + u^2) * exp (-u * t) * (u * sin t + cos t))"
@@ -218,7 +218,10 @@ proof -
     apply (rule AE_I[where N = "{0}"], auto)
     apply (subst (asm) minus_mult_left)
     using integral_expneg_alpha_atLeast0 using less_eq_real_def by metis
-  hence "Si t = LBINT x=0..t. sin x * (LBINT u=0..\<infinity>. exp (-u * x))" sorry
+  hence "Si t = LBINT x=0..t. sin x * (LBINT u=0..\<infinity>. exp (-u * x))" unfolding Si_def
+    apply (subst field_divide_inverse)
+    apply (subst inverse_eq_divide)
+    using integral_cong_AE sorry
   also have  "... = LBINT x=0..t. (LBINT u=0..\<infinity>. sin x * exp (-u * x))"
     apply (subst interval_lebesgue_integral_cmult(2))
     unfolding interval_lebesgue_integrable_def einterval_def integrable_def apply auto
@@ -231,6 +234,12 @@ proof -
   finally show "Si t = pi / 2 - (LBINT u=0..\<infinity>. inverse (1 + u^2) * exp (-u * t) *
     (u * sin t + cos t))" using 179 by simp
 qed
+
+lemma Si_at_top_lemma2:
+  fixes t :: real
+  assumes "t \<ge> 0"
+  shows "((\<lambda>t. LBINT u=0..\<infinity>. inverse (1 + u^2) * exp (-u * t) * (u * sin t + cos t)) ---> 0) (at_top)"
+sorry
 
 lemma Si_at_top: "(Si ---> pi / 2) at_top"
   sorry
