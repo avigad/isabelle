@@ -480,7 +480,7 @@ lemma cmod_expi_real_eq: "cmod (expi (ii * (x :: real))) = 1"
 
 lemma (in real_distribution) equation_26p5b:
   assumes 
-    integrable_moments : "\<And>k. integrable M (\<lambda>x :: real. x ^ k)"
+    integrable_moments : "\<And>k. k \<le> n \<Longrightarrow> integrable M (\<lambda>x :: real. x ^ k)"
   shows 
     "cmod (char M t - (\<Sum>k \<le> n. ((ii * t)^k / fact k) * expectation (\<lambda>x. x^k)))
       \<le>  (2 * (abs t)^n / fact n) * expectation (\<lambda>x. (abs x)^n)"
@@ -491,9 +491,9 @@ proof -
     by (subst cmod_expi_real_eq, auto)
   have *: "\<And>k x. (ii * t * x)^k / fact k = (ii * t)^k / fact k * x^k"
     by (simp add: power_mult_distrib)
-  have ** [simp]: "!!k. complex_integrable M (\<lambda>x. complex_of_real (x ^ k))"
+  have ** [simp]: "!!k. k \<le> n \<Longrightarrow> complex_integrable M (\<lambda>x. complex_of_real (x ^ k))"
     by (rule complex_of_real_integrable, rule integrable_moments)
-  have 1: "\<And>k. complex_integrable M (\<lambda>x. (ii * t * x)^k / fact k)"
+  have 1: "\<And>k. k \<le> n \<Longrightarrow> complex_integrable M (\<lambda>x. (ii * t * x)^k / fact k)"
      apply (subst *, rule complex_integral_cmult)
      apply (subst of_real_power [symmetric])
      apply (rule complex_of_real_integrable)
@@ -504,13 +504,13 @@ proof -
     apply (subst of_real_power [symmetric])
     apply (rule complex_integral_cmult)
     apply (rule complex_of_real_integrable) 
-    by (rule integrable_moments)
+    by (rule integrable_moments, simp)
   have 3: "complex_integrable M (\<lambda>x. iexp (t * x) - (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
     by (rule complex_integral_diff [OF _ 2], auto)
   have "?t1 = (CLINT x | M. (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
-    apply (subst complex_integral_setsum [OF 1])
+    apply (subst complex_integral_setsum [OF 1], simp)
     apply (rule setsum_cong, force)
-    apply (subst *, subst of_real_power [symmetric], subst complex_integral_cmult, rule **)
+    apply (subst *, subst of_real_power [symmetric], subst complex_integral_cmult, rule **, simp)
     by (simp add: field_simps complex_of_real_lebesgue_integral)
   hence "char M t - ?t1 = (CLINT x | M. iexp (t * x) - (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
       (is "_ = (CLINT x | M. ?f x)")
@@ -524,13 +524,13 @@ proof -
     apply (rule integral_mono)
     apply (rule complex_integrable_cmod [OF 3])
     apply (rule integral_cmult, subst power_abs [symmetric])
-    apply (rule integrable_abs, rule integrable_moments)
+    apply (rule integrable_abs, rule integrable_moments, simp)
     apply (rule order_trans)
     apply (subst mult_assoc, subst of_real_mult [symmetric])
     by (rule equation_26p4b, auto simp add: abs_mult power_mult_distrib field_simps)
   also have "\<dots> = (2 * (abs t)^n / fact n) * expectation (\<lambda>x. (abs x)^n)"
     apply (rule integral_cmult, subst power_abs [symmetric])
-    by (rule integrable_abs, rule integrable_moments)
+    by (rule integrable_abs, rule integrable_moments, simp)
   finally show ?thesis .
 qed
 
@@ -540,7 +540,7 @@ qed
 lemma (in prob_space) equation_26p5b':
   fixes \<mu> :: "real measure" and X
   assumes 
-    integrable_moments : "\<And>k. integrable M (\<lambda>x. X x ^ k)" and
+    integrable_moments : "\<And>k. k \<le> n \<Longrightarrow> integrable M (\<lambda>x. X x ^ k)" and
     rv_X : "random_variable lborel X" and
     \<mu>_distr : "distr M borel X = \<mu>"
   shows 
@@ -553,22 +553,22 @@ proof -
     using rv_X by (subst cmod_expi_real_eq, auto)
   have *: "\<And>k x. (ii * t * X x)^k / fact k = (ii * t)^k / fact k * (X x)^k"
     by (simp add: power_mult_distrib)
-  have ** [simp]: "!!k. complex_integrable M (\<lambda>x. complex_of_real (X x ^ k))"
+  have ** [simp]: "\<And>k. k \<le> n \<Longrightarrow> complex_integrable M (\<lambda>x. complex_of_real (X x ^ k))"
     by (rule complex_of_real_integrable, rule integrable_moments)
-  have 1: "\<And>k. complex_integrable M (\<lambda>x. (ii * t * X x)^k / fact k)"
+  have 1: "\<And>k. k \<le> n \<Longrightarrow> complex_integrable M (\<lambda>x. (ii * t * X x)^k / fact k)"
      apply (subst *, rule complex_integral_cmult)
      by (rule complex_of_real_integrable, rule integrable_moments)
   have 2: "complex_integrable M (\<lambda>x. (\<Sum>k \<le> n. (ii * t * X x)^k / fact k))"
     apply (rule complex_integral_setsum)
     apply (subst *)
     apply (rule complex_integral_cmult, rule complex_of_real_integrable) 
-    by (rule integrable_moments)
+    by (rule integrable_moments, simp)
   have 3: "complex_integrable M (\<lambda>x. iexp (t * X x) - (\<Sum>k \<le> n. (ii * t * X x)^k / fact k))"
     by (rule complex_integral_diff [OF _ 2], auto)
   have "?t1 = (CLINT x | M. (\<Sum>k \<le> n. (ii * t * X x)^k / fact k))"
-    apply (subst complex_integral_setsum [OF 1])
+    apply (subst complex_integral_setsum [OF 1], simp)
     apply (rule setsum_cong, force)
-    apply (subst *, subst complex_integral_cmult, rule **)
+    apply (subst *, subst complex_integral_cmult, rule **, simp)
     by (simp add: field_simps complex_of_real_lebesgue_integral)
   hence "char \<mu> t - ?t1 = (CLINT x | M. iexp (t * X x) - (\<Sum>k \<le> n. (ii * t * X x)^k / fact k))"
       (is "_ = (CLINT x | M. ?f x)")
@@ -584,13 +584,13 @@ proof -
     apply (rule integral_mono)
     apply (rule complex_integrable_cmod [OF 3])
     apply (rule integral_cmult, subst power_abs [symmetric])
-    apply (rule integrable_abs, rule integrable_moments)
+    apply (rule integrable_abs, rule integrable_moments, simp)
     apply (rule order_trans)
     apply (subst mult_assoc, subst of_real_mult [symmetric])
     by (rule equation_26p4b, auto simp add: abs_mult power_mult_distrib field_simps)
   also have "\<dots> = (2 * (abs t)^n / fact n) * expectation (\<lambda>x. abs (X x)^n)"
     apply (rule integral_cmult, subst power_abs [symmetric])
-    by (rule integrable_abs, rule integrable_moments)
+    by (rule integrable_abs, rule integrable_moments, simp)
   finally show ?thesis .
 qed
 
