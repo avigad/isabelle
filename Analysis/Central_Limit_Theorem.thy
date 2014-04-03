@@ -66,23 +66,168 @@ next
   qed
 qed
 
+lemma complex_power_diff [rule_format]: 
+  fixes z w :: complex and m :: nat
+  assumes "cmod z \<le> 1" "cmod w \<le> 1"
+  shows "cmod (z^m - w^m) \<le> m * cmod (z - w)"
+proof -
+  have "cmod (z^m - w^m) = cmod ((\<Prod> i < m. z) - (\<Prod> i < m. w))" by (simp add: setprod_constant)
+  also have "\<dots> \<le> (\<Sum> i < m. cmod (z - w))" by (intro complex_prod_diff, simp add: assms)
+  also have "\<dots> = m * cmod (z - w)" by (simp add: real_of_nat_def)
+  finally show ?thesis .
+qed
 
-theorem (in prob_space) central_limit_theorem:
+lemma (in prob_space) indep_vars_compose2:
+  assumes "indep_vars M' X I"
+  assumes rv: "\<And>i. i \<in> I \<Longrightarrow> Y i \<in> measurable (M' i) (N i)"
+  shows "indep_vars N (\<lambda>i x. Y i (X i x)) I"
+using indep_vars_compose [OF assms] by (simp add: comp_def)
+
+lemma (in prob_space) indep_vars_cmult:
+  shows "indep_vars (\<lambda>i. borel) X I \<Longrightarrow> indep_vars (\<lambda>i. borel) (\<lambda>i x. (c :: real) * X i x) I"
+  apply (rule indep_vars_compose2) back
+  apply assumption
+by auto
+
+(* for sanity, this is a special case of equation_26p5b *)
+lemma (in real_distribution) aux:
+  fixes t
+  assumes
+    integrable_1: "integrable M (\<lambda>x. x)" and
+    integral_1: "expectation (\<lambda>x. x) = 0" and
+    integrable_2: "integrable M (\<lambda>x. x^2)" and
+    integral_2: "variance (\<lambda>x. x) = \<sigma>2"
+  shows 
+    "cmod (char M t - (1 - t^2 * \<sigma>2 / 2)) \<le>  t^2 * \<sigma>2"
+proof -
+  note real_distribution.equation_26p5b [of M 2 t]
+  have [simp]: "prob UNIV = 1" by (metis prob_space space_eq_univ)
+  have 0: "ii * t * ii * t = - t * t"
+    by (metis comm_semiring_1_class.normalizing_semiring_rules(7) 
+      complex_i_mult_minus of_real_minus of_real_mult)
+  from integral_2 have [simp]: "expectation (\<lambda>x. x * x) = \<sigma>2" 
+    by (simp add: integral_1 numeral_eq_Suc)
+  {
+    fix k :: nat
+    assume "k \<le> 2"
+    hence "k = 0 \<or> k = 1 \<or> k = 2" by auto
+    with assms have "integrable M (\<lambda>x. x^k)" by auto
+  } note 1 = this 
+  have "cmod (char M t - (\<Sum>k\<le>2. (\<i> * t) ^ k / (int (fact k)) * expectation (\<lambda>x. x ^ k))) \<le> 
+      2 * (abs t)\<^sup>2 / fact (2::nat) * expectation (\<lambda>x. (abs x)^2)"
+    by (rule equation_26p5b [OF 1], simp)
+  also have "(\<Sum>k\<le>2. (\<i> * t) ^ k / (int (fact k)) * expectation (\<lambda>x. x ^ k)) = 1 - t^2 * \<sigma>2 / 2"
+    apply (simp add: numeral_eq_Suc real_of_nat_Suc integral_1 mult_assoc [symmetric])
+    by (subst 0, simp add: of_real_mult)
+  also have "2 * (abs t)\<^sup>2 / fact (2::nat) * expectation (\<lambda>x. (abs x)^2) = t^2 * \<sigma>2"
+    by (simp add: numeral_eq_Suc integral_2)
+  finally show ?thesis .
+qed
+
+lemma (in prob_space) variance_mean_zero: "expectation X = 0 \<Longrightarrow>
+    variance X = expectation (\<lambda>x. (X x)^2)"
+by auto
+
+lemma (in prob_space) aux':
+  fixes \<mu> :: "real measure" and X
+  assumes
+    rv_X [simp]: "random_variable borel X" and
+    [simp]: "integrable M X" and
+    [simp]: "integrable M (\<lambda>x. (X x)^2)" and
+    expect_X [simp]: "expectation X = 0" and
+    var_X: "variance X = \<sigma>2"  and
+    \<mu>_def: "\<mu> = distr M borel X"
+  shows 
+    "cmod (char \<mu> t - (1 - t^2 * \<sigma>2 / 2)) \<le>  t^2 * \<sigma>2"
+
+  apply (subst \<mu>_def)
+  apply (rule real_distribution.aux)
+  unfolding real_distribution_def real_distribution_axioms_def apply auto
+  apply (rule prob_space_distr)
+using var_X by (auto simp add: integrable_distr_eq integral_distr)
+
+
+theorem (in real_distribution) central_limit_theorem:
   fixes 
-    X_seq :: "nat \<Rightarrow> 'a \<Rightarrow> real" and
+    X :: "nat \<Rightarrow> real \<Rightarrow> real" and
     \<mu> :: "real measure" and
     \<sigma>2 :: real and
-    S :: "nat \<Rightarrow> 'a \<Rightarrow> real"
+    S :: "nat \<Rightarrow> real \<Rightarrow> real"
   assumes
-    X_seq_meas: "\<And>n. X_seq n \<in> measurable M borel" (* unnecessary? *) and
-    X_seq_indep: "indep_vars (\<lambda>i. borel) X_seq UNIV" and
+    X_seq_meas [simp]: "\<And>n. X n \<in> measurable M borel" (* implied by indep_vars? *) and
+    X_seq_indep: "indep_vars (\<lambda>i. borel) X UNIV" and
+    X_integrable: "\<And>n. integrable M (X n)" and
     X_seq_mean_0: "\<And>n. expectation (X n) = 0" and
-    sigma_pos: "\<sigma>2 > 0" and
-    X_seq_variance: "\<And>n. variance (X_seq n) = \<sigma>2" and
-    X_seq_distrib: "\<And>n. distr M borel (X_seq n) = \<mu>"
+    sigma_pos: "\<sigma>2 > 0" (* eliminate this *) and 
+    X_square_integrable: "\<And>n. integrable M (\<lambda>x. (X n x)\<^sup>2)" and
+    X_seq_variance: "\<And>n. variance (X n) = \<sigma>2" and
+    X_seq_distrib: "\<And>n. distr M borel (X n) = \<mu>"
   defines
-    "S n x \<equiv> (\<Sum> i < n. X n x) / sqrt (\<sigma>2 * n)"
+    "S n x \<equiv> (\<Sum> i < n. X i x) / sqrt (\<sigma>2 * n)"
   shows
     "weak_conv_m (\<lambda>n. distr M borel (\<lambda>x. S n x / sqrt (\<sigma>2 * n))) 
        (density lborel standard_normal_density)"
+
+proof -
+  def \<phi> \<equiv> "\<lambda>n. char (distr M borel (\<lambda>x. S n x))"
+  def \<psi> \<equiv> "\<lambda>n i. char (distr M borel (\<lambda>x. X i x / sqrt (\<sigma>2 * n)))"
+  def \<psi>' \<equiv> "\<lambda>n t. char \<mu> (t / sqrt (\<sigma>2 * n))"
+  have *: "\<And>n i t. \<psi> n i t = \<psi>' n t"
+    unfolding \<psi>_def \<psi>'_def char_def apply auto
+      apply (subst X_seq_distrib [symmetric])
+      apply (subst complex_integral_distr, auto)
+      apply (rule borel_measurable_divide, auto)
+      by (subst complex_integral_distr, auto)
+  have [simp]: "\<And>i. expectation (\<lambda>x. (X i x)\<^sup>2) = \<sigma>2" 
+    using X_seq_variance by (simp add: X_seq_mean_0)
+  {
+    fix n i :: nat and t :: real
+    have 1: "\<psi> n i t = char (distr M borel (\<lambda>x. X i x)) (t / sqrt (\<sigma>2 * n))"
+      unfolding char_def \<psi>_def apply auto
+      apply (subst complex_integral_distr, auto)
+      apply (rule borel_measurable_divide, auto)
+      by (subst complex_integral_distr, auto)
+    have "cmod (\<psi> n i t - (1 - (t / sqrt (\<sigma>2 * n))^2 * \<sigma>2 / 2)) \<le> (t / sqrt (\<sigma>2 * n))^2 * \<sigma>2"
+      apply (subst 1)
+      by (rule aux' [of "X i"], auto simp add: assms)
+    also have "(t / sqrt (\<sigma>2 * n))^2 * \<sigma>2 = t^2 / n"
+      using sigma_pos apply (simp add: power_divide)
+      by (subst real_sqrt_pow2, rule mult_nonneg_nonneg, auto)
+    also have "(t / sqrt (\<sigma>2 * n))^2 * \<sigma>2 = t^2 / n"  (* factor this! *)
+      using sigma_pos apply (simp add: power_divide)
+      by (subst real_sqrt_pow2, rule mult_nonneg_nonneg, auto)
+    also have "t^2 / n / 2 = t^2 / (2 * n)" by simp
+    also note * [of n i t]
+    finally have "cmod (\<psi>' n t - (1 - t^2 / (2 * n))) \<le> t^2 / n" .
+  } note ** = this
+
+  {
+    fix n :: nat and t :: real
+    have 1: "S n = (\<lambda>x. (\<Sum> i < n. X i x / sqrt (\<sigma>2 * n)))" 
+      by (rule ext, simp add: S_def setsum_divide_distrib)
+    have "\<phi> n t = (\<Prod> i < n. \<psi> n i t)"
+      unfolding \<phi>_def \<psi>_def apply (subst 1)
+      apply (rule char_distr_setsum)
+      by (rule indep_vars_compose2 [OF X_seq_indep], auto)
+    also have "\<dots> = (\<psi>' n t)^n"
+      by (auto simp add: * setprod_constant)
+    finally have 2: "\<phi> n t =(\<psi>' n t)^n" .
+    have "cmod (\<phi> n t - (complex_of_real (1 - t^2 / (2 * n)))^n) \<le> 
+         n * cmod (\<psi>' n t - (complex_of_real (1 - t^2 / (2 * n))))"
+      apply (subst 2)
+      apply (rule complex_power_diff)
+      sorry
+    also have "\<dots> \<le> n * (t^2 / n)"
+      apply (rule mult_left_mono)
+      by (rule **, simp)
+    also have "\<dots> = t^2" 
+      apply (simp add: field_simps)
+      sorry
+    finally have "cmod (\<phi> n t - (1 - t^2 / (2 * n))^n) \<le> t^2" 
+      by simp
+  } note 1 = this
+
+  show ?thesis
+    sorry
+qed
 
