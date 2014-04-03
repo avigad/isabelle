@@ -100,7 +100,16 @@ lemma mono_ctble_discont:
   shows "countable {a. \<not> isCont f a}"
 proof -
   have 1: "\<And>a. \<not> isCont f a \<Longrightarrow> Liminf (at a) f < Limsup (at a) f"
-    using tendsto_iff_Liminf_eq_Limsup Liminf_le_Limsup sorry
+  unfolding isCont_def proof -
+    fix a (*assume a: "\<not> isCont f a"*)
+    have "\<not> isCont f a \<Longrightarrow> Liminf (at a) f \<noteq> Limsup (at a) f"
+      apply (unfold isCont_def)
+      apply (rule contrapos_nn) sorry
+      (*apply (subst tendsto_iff_Liminf_eq_Limsup[symmetric])*)
+    hence "Liminf (at a) f < Limsup (at a) f"
+      using Liminf_le_Limsup sorry (*by (metis less_eq_ereal_def trivial_limit_at)*) (* Why is this failing? *)
+    thm tendsto_iff_Liminf_eq_Limsup
+    thm Liminf_le_Limsup thm at_neq_bot
   have 2: "\<And>x y. x \<le> y \<Longrightarrow> f x \<le> Liminf (at y) f" sorry
   have 3: "\<And>x y. x \<le> y \<Longrightarrow> Limsup (at x) f \<le> f y" sorry
   def jint \<equiv> "\<lambda>a. {Liminf (at a) f<..<Limsup (at a) f}"
