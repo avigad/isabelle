@@ -534,6 +534,112 @@ proof -
   finally show ?thesis .
 qed
 
+(* strange this isn't in the library *)
+lemma mult_min_right: "a \<ge> 0 \<Longrightarrow> (a :: real) * min b c = min (a * b) (a * c)"
+by (metis min.absorb_iff2 min_def mult_left_mono)
+
+lemma (in real_distribution) equation_26p5b_stronger:
+  assumes 
+    integrable_moments : "\<And>k. k \<le> n \<Longrightarrow> integrable M (\<lambda>x :: real. x ^ k)"
+  shows 
+    "cmod (char M t - (\<Sum>k \<le> n. ((ii * t)^k / (real (fact k))) * expectation (\<lambda>x. x^k)))
+      \<le>  ((abs t)^n / fact (Suc n)) * 
+            expectation (\<lambda>x. min (2 * (abs x)^n * (Suc n)) (abs t * (abs x)^(Suc n)))"
+      (is "cmod (char M t - ?t1) \<le> _")
+proof -
+  have [simplified, simp]: "complex_integrable M (\<lambda>x. iexp (t * x))"
+    apply (rule complex_integrable_const_bound, rule AE_I2)
+    by (subst cmod_expi_real_eq, auto)
+  have *: "\<And>k x. (ii * t * x)^k / fact k = (ii * t)^k / fact k * x^k"
+    by (simp add: power_mult_distrib)
+  have ** [simp]: "!!k. k \<le> n \<Longrightarrow> complex_integrable M (\<lambda>x. complex_of_real (x ^ k))"
+    by (rule complex_of_real_integrable, rule integrable_moments)
+  have 1: "\<And>k. k \<le> n \<Longrightarrow> complex_integrable M (\<lambda>x. (ii * t * x)^k / fact k)"
+     apply (subst *, rule complex_integral_cmult)
+     apply (subst of_real_power [symmetric])
+     apply (rule complex_of_real_integrable)
+     by (rule integrable_moments)
+  have 2: "complex_integrable M (\<lambda>x. (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
+    apply (rule complex_integral_setsum)
+    apply (subst *)
+    apply (subst of_real_power [symmetric])
+    apply (rule complex_integral_cmult)
+    apply (rule complex_of_real_integrable) 
+    by (rule integrable_moments, simp)
+  have 3: "complex_integrable M (\<lambda>x. iexp (t * x) - (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
+    by (rule complex_integral_diff [OF _ 2], auto)
+  have 4: "integrable M (\<lambda>x. min (2 * \<bar>t * x\<bar> ^ n / real (fact n))
+            (\<bar>t * x\<bar> ^ Suc n / real (fact (Suc n))))"
+    apply (rule integrable_bound)
+    prefer 2 apply (rule AE_I2)
+    apply (subst abs_of_nonneg)
+    prefer 2
+    apply (rule min.cobounded1, rule min.boundedI)
+    apply (auto simp add: field_simps) [1]    
+    apply (simp add: field_simps del: fact_Suc power_Suc)
+    apply (subst divide_inverse, subst (3) mult_commute)
+    apply (rule integral_cmult)+
+    apply (subst power_abs [symmetric])
+    apply (rule integrable_abs, subst power_mult_distrib)
+    apply (rule integral_cmult)
+    apply (rule integrable_moments)
+    by auto
+  have 5: "integrable M (\<lambda>x. min (2 * \<bar>x\<bar> ^ n * real (Suc n)) (\<bar>t\<bar> * \<bar>x\<bar> ^ Suc n))"
+    apply (rule integrable_bound)
+    prefer 2 apply (rule AE_I2)
+    apply (subst abs_of_nonneg)
+    prefer 2
+    apply (rule min.cobounded1, rule min.boundedI)
+    apply (simp del: power_Suc)
+    apply (rule mult_nonneg_nonneg, force, force)
+    apply (rule mult_nonneg_nonneg, force, simp del: power_Suc)
+    apply (subst mult_assoc)
+    apply (rule integral_cmult)
+    apply (subst mult_commute)
+    apply (rule integral_cmult)
+    apply (subst power_abs [symmetric])
+    apply (rule integrable_abs)
+    apply (rule integrable_moments, simp)
+    by auto
+  have 6: "(\<lambda>x. min (2 * (abs (t * x))^n / fact n) 
+                      ((abs (t * x))^(Suc n) / fact (Suc n))) = 
+    (\<lambda>x. (abs t)^n / fact (Suc n) * min (2 * (abs x)^n * real (Suc n)) (abs t * (abs x)^(Suc n)))"
+    apply (rule ext)
+    apply (subst mult_min_right)
+    apply (simp add: field_simps del: fact_Suc)
+    apply (rule arg_cong2) back back
+    apply (simp add: field_simps abs_mult power_mult_distrib del: fact_Suc)
+    apply (simp add: fact_Suc real_of_nat_Suc field_simps)
+    by (simp add: field_simps abs_mult power_mult_distrib del: fact_Suc)
+  have "?t1 = (CLINT x | M. (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
+    apply (subst complex_integral_setsum [OF 1], simp)
+    apply (rule setsum_cong, force)
+    apply (subst *, subst of_real_power [symmetric], subst complex_integral_cmult, rule **, simp)
+    by (simp add: field_simps complex_of_real_lebesgue_integral)
+  hence "char M t - ?t1 = (CLINT x | M. iexp (t * x) - (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
+      (is "_ = (CLINT x | M. ?f x)")
+    apply (elim ssubst)
+    apply (subst complex_integral_diff [OF _ 2], auto)
+    unfolding char_def by auto
+  hence "cmod (char M t - ?t1) \<le> expectation (\<lambda>x. cmod (?f x))"
+    apply (elim ssubst)
+    by (rule complex_lebesgue_integral_cmod, rule 3)
+  also have "\<dots> \<le> expectation (\<lambda>x. min (2 * (abs (t * x))^n / fact n) 
+                      ((abs (t * x))^(Suc n) / fact (Suc n)))"
+    apply (rule integral_mono)
+    apply (rule complex_integrable_cmod [OF 3])
+    apply (rule 4)
+    apply (rule min.boundedI)
+    apply (rule order_trans [OF _ equation_26p4b], simp add: mult_assoc)
+    by (rule order_trans [OF _ equation_26p4a], simp add: mult_assoc)
+  also have "\<dots> = ((abs t)^n / fact (Suc n)) * 
+            expectation (\<lambda>x. min (2 * (abs x)^n * (Suc n)) (abs t * (abs x)^(Suc n)))"
+    apply (subst 6)
+    apply (rule integral_cmult)
+    by (rule 5)
+  finally show ?thesis by (simp add: real_of_nat_Suc field_simps)
+qed
+
 (* this is the formulation in the book -- in terms of a random variable *with* the distribution,
    rather the distribution itself. I don't know which is more useful, though in principal we can
    go back and forth between them. *)
