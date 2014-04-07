@@ -41,12 +41,12 @@ proof -
   def F \<equiv> "\<lambda>x. Inf (ereal ` {f y |y. y \<in> A \<and> x \<le> y})"
   fix a :: real
   have monoF: "mono F" unfolding F_def mono_def
-  apply auto
-  apply (unfold INF_def)
+  apply auto sorry
+(*  apply (unfold INF_def)
   apply (rule Inf_superset_mono)
   apply (unfold image_def)
   using assms(1) unfolding mono_on_def mono_def apply auto
-  by (metis order.trans)
+  by (metis order.trans) *)
   hence "{w. a \<le> F w} \<in> sets borel" using borel_measurable_mono_fnc
     by (smt dual_order.trans is_interval_1 mem_Collect_eq mono_def real_interval_borel_measurable)
   moreover have "{w \<in> A. a \<le> f w} = {w. a \<le> F w} \<inter> A"
@@ -83,9 +83,19 @@ lemma lebesgue_measure_interval: "a \<le> b \<Longrightarrow> measure lborel {a.
 thm distr_cong
 
 lemma distr_cong_AE:
-  "M = K \<Longrightarrow> sets N = sets L \<Longrightarrow> (AE x in M. f x = g x) \<Longrightarrow> distr M N f = distr K L g"
-  using sets_eq_imp_space_eq[of N L] distr_cong sorry (*by (simp add: distr_def Int_def cong: rev_conj_cong)*)
-  
+  assumes 1: "M = K" and "sets N = sets L" and 
+    2: "(AE x in M. f x = g x)" and "f \<in> measurable M N" and "g \<in> measurable K L"
+  shows "distr M N f = distr K L g"
+using assms sets_eq_imp_space_eq[of N L] apply (simp add: distr_def)
+  apply (rule measure_of_eq)
+  apply (rule sets.space_closed)
+  apply (rule emeasure_eq_AE)
+  apply (simp only: 1 [symmetric])
+  apply (rule AE_mp [OF 2], auto)
+  apply (simp only: 1 [symmetric])
+  apply (erule measurable_sets, simp add: sets.sigma_sets_eq)
+by (erule measurable_sets, simp add: sets.sigma_sets_eq)
+
 thm continuous_at_right_real_increasing
 
 lemma continuous_at_right_real_mono_on_open:
@@ -110,14 +120,16 @@ proof -
       using Liminf_le_Limsup sorry (*by (metis less_eq_ereal_def trivial_limit_at)*) (* Why is this failing? *)
     thm tendsto_iff_Liminf_eq_Limsup
     thm Liminf_le_Limsup thm at_neq_bot
+    thus "Liminf (at a) f < Limsup (at a) f" sorry
+  qed
   have 2: "\<And>x y. x \<le> y \<Longrightarrow> f x \<le> Liminf (at y) f" sorry
   have 3: "\<And>x y. x \<le> y \<Longrightarrow> Limsup (at x) f \<le> f y" sorry
   def jint \<equiv> "\<lambda>a. {Liminf (at a) f<..<Limsup (at a) f}"
   def rosc \<equiv> "\<lambda>a. SOME q. q \<in> jint a \<inter> ereal ` \<rat>"
   def D \<equiv> "{a. \<not> isCont f a}"
-  have "\<And>a. \<not> isCont f a \<Longrightarrow> jint a \<noteq> {}" using 1 sorry
+  have "\<And>a. \<not> isCont f a \<Longrightarrow> jint a \<noteq> {}" (* using 1 *) sorry
   moreover have "\<And>a b. \<not> isCont f a \<and> \<not> isCont f b \<Longrightarrow> jint a \<inter> jint b = {}"
-    using 1 2 3 unfolding jint_def sorry
+    (* using 1 2 3 *) unfolding jint_def sorry
   ultimately have 4: "\<And>a b. \<not> isCont f a \<and> \<not> isCont f b \<Longrightarrow> rosc a \<noteq> rosc b" sorry
   have 5: "inj_on rosc D" sorry
   thus ?thesis sorry

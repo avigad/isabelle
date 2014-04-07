@@ -165,7 +165,7 @@ theorem (in real_distribution) central_limit_theorem:
   defines
     "S n x \<equiv> (\<Sum> i < n. X i x) / sqrt (\<sigma>2 * n)"
   shows
-    "weak_conv_m (\<lambda>n. distr M borel (\<lambda>x. S n x / sqrt (\<sigma>2 * n))) 
+    "weak_conv_m (\<lambda>n. distr M borel (\<lambda>x. S n x)) 
        (density lborel standard_normal_density)"
 
 proof -
