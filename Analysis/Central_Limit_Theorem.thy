@@ -9,6 +9,116 @@ imports Library_Misc Weak_Convergence Characteristic_Functions Normal_Distributi
 
 begin
 
+(* it is funny that this isn't in the library! *)
+lemma exp_limit:
+  fixes x :: real
+  shows "((\<lambda>y.(1 + x * y) powr (1 / y)) ---> exp x) (at_right 0)"
+proof -
+  have *: "(at_right 0) \<le> (at (0::real))"
+    by (subst at_eq_sup_left_right, auto)
+  have **: "eventually (\<lambda>y. 0 < 1 + x * y) (at_right 0)"
+    apply (case_tac "x = 0")
+    apply auto
+    apply (subst eventually_at_right)
+    apply (rule_tac x = "1 / abs x" in exI)
+    apply (auto simp add: field_simps)
+    apply (case_tac "x >= 0")
+    apply (auto simp add: field_simps)
+    apply (rule add_pos_nonneg, auto)
+    by (rule mult_nonneg_nonneg, auto)
+  have ***: "eventually (\<lambda>y. y > (0::real)) (at_right 0)"
+    by (subst eventually_at_right, auto intro: gt_ex)
+  have ****: "eventually (\<lambda>y. exp (ln ((1 + x * y) powr (1 / y))) =
+         (1 + x * y) powr (1 / y)) (at_right 0)"
+    apply (rule eventually_elim1 [OF eventually_conj [OF ** ***]])
+    by (rule exp_ln, auto)
+  have 1: "eventually (\<lambda>y. ln ((1 + x * y) powr (1 / y)) =
+         ln (1 + x * y) / y) (at_right 0)"
+    apply (rule eventually_elim1 [OF eventually_conj [OF ** ***]])
+    apply (subst ln_powr)
+    apply (case_tac "x = 0")
+    by auto
+  have a: " ln -- 1 --> ln 1"
+    by (subst isCont_def [symmetric], auto intro!: isCont_ln)
+  have "((\<lambda>y. ln (1 + x * y)) ---> ln 1) (at_right 0)"
+    apply (rule tendsto_mono [OF *])
+    apply (rule tendsto_compose [OF a])
+    apply (rule tendsto_const_add [of "-1"], simp)
+    by (rule tendsto_mult_right_zero, rule tendsto_ident_at)
+  hence 2: "((\<lambda>y. ln (1 + x * y)) ---> 0) (at_right 0)" by simp
+  have 3: " ((\<lambda>x. x) ---> 0) (at_right 0)" by (rule tendsto_ident_at)
+  have 4: "eventually (\<lambda>y. y \<noteq> 0) (at_right 0)"
+    by (simp add: eventually_at_filter)
+  have 5: "eventually (\<lambda>y. 1 \<noteq> (0 :: real)) (at_right 0)" by (rule always_eventually, auto)
+  have 6: "eventually (\<lambda>z. ((\<lambda>y. ln (1 + x * y)) has_real_derivative
+            inverse (1 + x * z) * x) (at z)) (at_right 0)"
+    apply (rule eventually_elim1 [OF **])
+    apply (rule DERIV_chain') back
+    by (auto intro!: derivative_eq_intros simp add: divide_inverse)
+  have "((\<lambda>y. inverse (1 + x * y) * x) ---> inverse (1 + x * 0) * x) (at_right 0)"
+    apply (rule tendsto_mono [OF *])
+    apply (subst isCont_def [symmetric])
+    by auto
+  hence 7: "((\<lambda>y. inverse (1 + x * y) * x) ---> x) (at_right 0)" by simp
+  have "((\<lambda>y. ln ((1 + x * y) powr (1 / y))) ---> x) (at_right 0)"
+    apply (subst filterlim_cong [OF refl refl 1])
+    apply (rule lhopital_right [OF 2 3 4 5 6])
+    apply auto
+    by (rule 7)
+  hence "((\<lambda>y. exp (ln ((1 + x * y) powr (1 / y)))) ---> exp x) (at_right 0)"
+    by (rule tendsto_exp)
+  thus "((\<lambda>y.(1 + x * y) powr (1 / y)) ---> exp x) (at_right 0)"
+    by (rule Lim_transform_eventually [OF ****])
+qed
+
+lemma exp_limit':
+  fixes x :: real
+  shows "((\<lambda>y. (1 + x / y) powr y) ---> exp x) at_top"
+
+  apply (subst filterlim_at_top_to_right)
+  apply (simp add: inverse_eq_divide)
+by (rule exp_limit)
+
+lemma exp_limit'':
+  fixes x :: real
+  shows "(\<lambda>n. (1 + x / n) ^ n) ----> exp x"
+
+proof -
+  have "eventually (\<lambda>n :: nat. 0 < 1 + x / real n) at_top"
+
+    sorry
+  hence *: "eventually (\<lambda>n. (1 + x / n) powr n = (1 + x / n) ^ n) at_top"
+    apply (rule eventually_elim1)
+    by (erule powr_realpow)
+  thus ?thesis
+    apply (rule Lim_transform_eventually)
+    by (rule filterlim_compose [OF exp_limit' filterlim_real_sequentially])
+qed
+
+
+
+
+
+
+    
+    
+
+
+    
+  have "((\<lambda>y. (1 + x * y) powr (1 / y)) ---> exp x) (at_right 0)"
+    sorry
+
+  show ?thesis
+    sorry
+qed
+
+
+lemma exp_limit:
+  fixes x :: real
+  shows 
+
+
+
 (** Inequality for difference of complex products. **)
 (* probably generalizes to real_normed_algebra_1,(comm_)monoid_mult *)
 lemma complex_prod_diff [rule_format]:
