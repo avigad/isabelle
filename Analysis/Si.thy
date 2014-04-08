@@ -13,12 +13,14 @@ begin
 
 (** Derivatives and integrals for CLT. **)
 
+declare divide_minus_left [simp]
+
 lemma integral_expneg_alpha_atLeast0:
   fixes u :: real
   assumes pos: "0 < u"
   shows "LBINT x=0..\<infinity>. exp (-x * u) = 1/u"
 apply (subst interval_integral_FTC_nonneg[of _ _ "\<lambda>x. -(1/u) * exp (-x * u)" _ "-(1/u)" 0])
-using pos apply (auto intro!: DERIV_intros)
+using pos apply (auto intro!: derivative_eq_intros)
 apply (subgoal_tac "(((\<lambda>x. - (exp (- (x * u)) / u)) \<circ> real) ---> - (1 / u)) (at 0)")
 apply (subst (asm) filterlim_at_split, force)
 apply (subst zero_ereal_def)
@@ -55,16 +57,16 @@ lemma ex_18_4_1:
   apply (subst interval_integral_FTC_finite 
       [where F = "(\<lambda>x. (1/(1+u^2)) * (1 - exp (-u * x) * (u * sin x + cos x)))"])
   apply (auto intro: continuous_at_imp_continuous_on)
-  apply (rule DERIV_imp_DERIV_within, auto)
-  apply (auto intro!: DERIV_intros)
+  apply (rule DERIV_subset, auto)
+  apply (auto intro!: derivative_eq_intros)
 by (simp_all add: power2_eq_square field_simps)
 
 lemma ex_18_4_2_deriv:
   "DERIV (\<lambda>u. 1/x * (1 - exp (-u * x)) * \<bar>sin x\<bar>) u :> \<bar>exp (-u * x) * sin x\<bar>"
-  apply (auto simp only: intro!: DERIV_intros)
+  apply (auto simp only: intro!: derivative_eq_intros)
   by (simp add: abs_mult)
 
-(*** not needed ***)
+(*** not needed **
 lemma ex_18_4_2_bdd_integral:
   assumes "s \<ge> 0"
   shows "LBINT u=0..s. \<bar>exp (-u * x) * sin x\<bar> =
@@ -74,11 +76,12 @@ lemma ex_18_4_2_bdd_integral:
   apply (subst interval_integral_FTC_finite 
       [where F = "\<lambda>u. 1/x * (1 - exp (-u * x)) * \<bar>sin x\<bar>"])
   apply (auto intro: continuous_at_imp_continuous_on) [1]
-  apply (rule DERIV_imp_DERIV_within, force)
+  apply (rule DERIV_subset, auto)
   (* curiously, just copying the proof of ex_18_4_2_deriv doesn't work *)
   apply (rule ex_18_4_2_deriv)
   apply auto
 done
+*)
 
 (* clean this up! it should be shorter *)
 lemma ex_18_4_2_ubdd_integral:
@@ -129,7 +132,7 @@ by (rule filterlim_ident)
 
 lemma Billingsley_ex_17_5: "LBINT x=-\<infinity>..\<infinity>. inverse (1 + x^2) = pi"
   apply (subst interval_integral_substitution_nonneg[of "-pi/2" "pi/2" tan "\<lambda>x. 1 + (tan x)^2"])
-  apply (auto intro: DERIV_intros)
+  apply (auto intro: derivative_eq_intros)
   apply (subst tan_sec)
   using pi_half cos_is_zero
   apply (metis cos_gt_zero_pi less_divide_eq_numeral1(1) less_numeral_extra(3))

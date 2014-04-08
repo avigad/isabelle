@@ -52,14 +52,14 @@ lemma isCont_RE_IM_iff: "isCont f z = (isCont (RE f) z \<and> isCont (IM f) z)"
 lemma continuous_RE_IM: "continuous (at x within s) (RE f) \<Longrightarrow>
     continuous (at x within s) (IM f) \<Longrightarrow>
     continuous (at x within s) f"
-  unfolding continuous_def
+  (* strange that this qualifier is needed *)
+  unfolding Topological_Spaces.continuous_def
 by (frule tendsto_Complex[where f = "RE f" and g = "IM f"], auto)
 
 lemma continuous_RE_IM_iff: "continuous (at x within s) f = 
     (continuous (at x within s) (RE f) \<and> continuous (at x within s) (IM f))"
-  apply (auto intro: continuous_RE_IM)
-  unfolding continuous_def
-by (auto intro: tendsto_intros)
+  by (auto intro: continuous_RE_IM)
+
 
 (* TODO: versions of the above for continuous_on? Below we use continuous_on_eq_continuous_within
    to avoid this, but it is a pain in the neck *)
@@ -120,57 +120,66 @@ abbreviation complex_deriv :: "[real \<Rightarrow> complex, real, complex] \<Rig
   "CDERIV f z :> D \<equiv> (f has_vector_derivative D) (at z)"
 *)
 
-lemma Re_has_derivative: "FDERIV Re x : s :> Re"
-  apply (rule FDERIV_I, auto)
-  by (rule bounded_linearI [of _ 1], auto simp add: abs_Re_le_cmod)
+lemma Re_has_derivative: "(Re has_derivative Re) (at x within s)"
+  apply (rule has_derivativeI, auto)
+by (rule bounded_linearI [of _ 1], auto simp add: abs_Re_le_cmod)
 
-lemma Im_has_derivative: "FDERIV Im x : s :> Im"
-  apply (rule FDERIV_I, auto)
-  by (rule bounded_linearI [of _ 1], auto simp add: abs_Im_le_cmod)
+lemma Im_has_derivative: "(Im has_derivative Im) (at x within s)"
+  apply (rule has_derivativeI, auto)
+by (rule bounded_linearI [of _ 1], auto simp add: abs_Im_le_cmod)
 
 lemma complex_of_real_has_derivative: 
-    "FDERIV complex_of_real x : s :> complex_of_real"
-  apply (rule FDERIV_I, auto)
-  by (rule bounded_linearI [of _ 1], auto simp add: scaleR_conv_of_real)
+    "(complex_of_real has_derivative complex_of_real) (at x within s)"
+  apply (rule has_derivativeI, auto)
+by (rule bounded_linearI [of _ 1], auto simp add: scaleR_conv_of_real)
 
 lemma has_vector_derivative_complex_mul:
   "(f has_vector_derivative f') net \<Longrightarrow> 
     ((\<lambda>x. (c\<Colon>complex) * f x) has_vector_derivative (c * f')) net"
   unfolding has_vector_derivative_def
   apply (subst mult_scaleR_right [symmetric])
-  by (rule FDERIV_mult_right)
+by (rule mult_right_has_derivative)
 
 (* this is an instance of the previous lemma *)
 lemma CDERIV_cmult: "(CDERIV f z : s :> D) \<Longrightarrow> (CDERIV (\<lambda>x. c * f x) z : s :> c * D)"
   by (erule has_vector_derivative_complex_mul)
 
 (* is this a bad name? *)
+(* TODO: eliminate the notation for CDERIV *)
 lemma CDERIV_def: "(CDERIV f z : s :> D) = 
-    (DERIV (RE f) z : s :> Re D \<and> DERIV (IM f) z : s :> Im D)"
+    (((RE f) has_field_derivative (Re D)) (at z within s) \<and> 
+    ((IM f) has_field_derivative (Im D)) (at z within s))"
 proof (auto)
   assume "(CDERIV f z : s :> D)"
-  hence 1: "FDERIV f z : s :> (\<lambda>x. x *\<^sub>R D)" by (simp add: has_vector_derivative_def)
-  from FDERIV_compose [OF 1, OF Re_has_derivative] 
-  show "DERIV (RE f) z : s :> Re D" by (simp add: deriv_fderiv)
-  from FDERIV_compose [OF 1, OF Im_has_derivative] 
-  show "DERIV (IM f) z : s :> Im D" by (simp add: deriv_fderiv)
+  hence 1: "(f has_derivative (\<lambda>x. x *\<^sub>R D)) (at z within s)" 
+    by (simp add: has_vector_derivative_def)
+  from has_derivative_compose [OF 1, OF Re_has_derivative] 
+  show "((RE f) has_field_derivative (Re D)) (at z within s)" 
+    apply (simp add: has_field_derivative_def)
+    by (subst (asm) mult_commute)
+  from has_derivative_compose [OF 1, OF Im_has_derivative] 
+  show "((IM f) has_field_derivative (Im D)) (at z within s)" 
+    apply (simp add: has_field_derivative_def)
+    by (subst (asm) mult_commute)
 next
-  assume "(DERIV (RE f) z : s :> Re D)"
-  hence 1: "FDERIV (RE f) z : s :> (\<lambda>x. x * Re D)" by (simp add: deriv_fderiv)
+  assume "((RE f) has_field_derivative (Re D)) (at z within s)"
+  hence 1: "((RE f) has_derivative (\<lambda>x. x * Re D)) (at z within s)" 
+    apply (simp add: has_field_derivative_def)
+    by (subst mult_commute)
   have 2: "CDERIV (\<lambda>x. complex_of_real (RE f x)) z : s :> complex_of_real (Re D)"
     apply (subst has_vector_derivative_def, subst scaleR_conv_of_real)
     apply (subst of_real_mult [symmetric])
-    apply (rule FDERIV_in_compose [OF 1])
+    apply (rule has_derivative_in_compose [OF 1])
     by (rule complex_of_real_has_derivative)
-  assume "DERIV (IM f) z : s :> Im D"
-  hence 3: "FDERIV (IM f) z : s :> (\<lambda>x. x * Im D)" by (simp add: deriv_fderiv)
+  assume "((IM f) has_field_derivative (Im D)) (at z within s)"
+  hence 3: "((IM f) has_derivative (\<lambda>x. x * Im D)) (at z within s)" 
+    apply (simp add: has_field_derivative_def)
+    by (subst mult_commute)
   have 4: "CDERIV (\<lambda>x. complex_of_real (IM f x)) z : s :> complex_of_real (Im D)"
     apply (subst has_vector_derivative_def, subst scaleR_conv_of_real)
     apply (subst of_real_mult [symmetric])
-    apply (rule FDERIV_in_compose [OF 3])
+    apply (rule has_derivative_in_compose [OF 3])
     by (rule complex_of_real_has_derivative)
-  assume "DERIV (IM f) z : s :> Im D"
-  hence 3: "FDERIV (IM f) z : s :> (\<lambda>x. x * Im D)" by (simp add: deriv_fderiv)
   have feq: "f = (\<lambda>x. complex_of_real (Re (f x)) + ii * complex_of_real (Im (f x)))"
     by simp
   have "D = complex_of_real (Re D) + ii * complex_of_real (Im D)" by simp
@@ -182,7 +191,7 @@ qed
 
 lemma CDERIV_iexp: "CDERIV iexp x : s :> \<i> * iexp x"
   unfolding CDERIV_def
-  by (auto intro!: DERIV_intros simp add: cis_conv_exp[symmetric])
+  by (auto intro!: derivative_eq_intros simp add: cis_conv_exp[symmetric])
 
 (* These are merely instances of the corresponding facts for has_vector_derivative.
    But is it too much to expect the user to know that CDERIV is an abbreviation for 
@@ -209,15 +218,18 @@ lemma CDERIV_sub: "\<lbrakk>CDERIV f x : s :> Da; CDERIV g x : s :> Db\<rbrakk> 
 
 lemma CDERIV_mult: "\<lbrakk>CDERIV f x : s :> Da; CDERIV g x : s :> Db\<rbrakk> \<Longrightarrow>
   CDERIV (\<lambda>x. f x * g x) x : s :> (Da * (g x)) + (Db * (f x))"
-  unfolding CDERIV_def by (auto intro!: DERIV_intros)
+  unfolding CDERIV_def by (auto intro!: derivative_eq_intros)
 
-lemma RE_deriv: "CDERIV f x : s :> f' x \<Longrightarrow> DERIV (RE f) x : s :> (RE f') x"
+lemma RE_deriv: "CDERIV f x : s :> f' x \<Longrightarrow>
+    ((RE f) has_field_derivative ((RE f') x)) (at x within s)"
   unfolding CDERIV_def by (erule conjE)
 
-lemma IM_deriv: "CDERIV f x : s :> f' x \<Longrightarrow> DERIV (IM f) x : s :> (IM f') x"
+lemma IM_deriv: "CDERIV f x : s :> f' x \<Longrightarrow> 
+    ((IM f) has_field_derivative ((IM f') x)) (at x within s)"
   unfolding CDERIV_def by (erule conjE)
 
-lemma CDERIV_rect: "\<lbrakk>DERIV (RE f) x : s :> Da; DERIV (IM f) x : s :> Db\<rbrakk> \<Longrightarrow>
+lemma CDERIV_rect: "(((RE f) has_field_derivative Da) (at x within s)) \<Longrightarrow> 
+    (((IM f) has_field_derivative Db) (at x within s)) \<Longrightarrow>
   CDERIV f x : s :> Complex Da Db"
   unfolding CDERIV_def by auto
 
@@ -236,7 +248,7 @@ lemma CDERIV_setsum:
   shows "CDERIV (\<lambda>x. setsum (f x) S) x :> setsum (f' x) S"
   using assms CDERIV_const by induct (auto intro!: CDERIV_add)
 
-lemma CDERIV_of_real [simp]: "DERIV f x : s :> u \<Longrightarrow>
+lemma CDERIV_of_real [simp]: "(f has_field_derivative u) (at x within s) \<Longrightarrow>
    (CDERIV (%x. complex_of_real (f x)) x : s :> complex_of_real u)"
   unfolding CDERIV_def by auto
 
@@ -871,9 +883,9 @@ using assms unfolding complex_interval_lebesgue_integral_eq CDERIV_def
   apply (subst real_to_complex_expand [of F]) back back
   apply auto
   apply (subst interval_integral_FTC_finite [of _ _ "RE f" "RE F"])
-  apply (auto simp add: continuous_on_eq_continuous_within continuous_RE_IM_iff)
+  apply (auto simp add: continuous_RE_IM_iff intro!: continuous_on_Re) 
   apply (subst interval_integral_FTC_finite [of _ _ "IM f" "IM F"])
-  apply (auto simp add: continuous_on_eq_continuous_within continuous_RE_IM_iff)
+  apply (auto simp add: continuous_RE_IM_iff intro!: continuous_on_Im) 
 (* fighting with the simplifier here *)
 by (auto simp del: complex_Re_diff complex_Im_diff
     simp add: complex_Re_diff [symmetric] complex_Im_diff [symmetric])
@@ -923,13 +935,13 @@ using assms unfolding complex_interval_lebesgue_integral_eq
   apply auto [1]
   apply (rule interval_integral_FTC2)
   apply auto [5]
-  apply (auto simp add: continuous_on_eq_continuous_within continuous_RE_IM_iff) [1]
+  apply (auto simp add: continuous_on_Re continuous_RE_IM_iff) [1]
   apply (rule CDERIV_cmult)
   apply (subst CDERIV_def)
   apply auto [1]
   apply (rule interval_integral_FTC2)
   apply auto [5]
-by (auto simp add: continuous_on_eq_continuous_within continuous_RE_IM_iff) [1]
+by (auto simp add: continuous_on_Im continuous_RE_IM_iff) [1]
 
 lemma complex_einterval_antiderivative: 
   fixes a b :: ereal and f :: "real \<Rightarrow> complex"
@@ -960,15 +972,15 @@ qed
 lemma complex_interval_integral_substitution_finite:
   fixes a b :: real and f :: "real \<Rightarrow> complex"
   assumes "a \<le> b"
-  and derivg: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> DERIV g x : {a..b} :> g' x"
+  and derivg: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> (g has_field_derivative g' x) (at x within {a..b})"
   and contf : "continuous_on (g ` {a..b}) f"
   and contg': "continuous_on {a..b} g'"
   shows "CLBINT x=a..b. f (g x) * g' x = CLBINT y=(g a)..(g b). f y"
 using assms apply (auto simp add: complex_interval_lebesgue_integral_eq)
   apply (rule interval_integral_substitution_finite, auto)
-  apply (simp add: continuous_on_eq_continuous_within continuous_RE_IM_iff)
+  apply (simp add: continuous_on_Re continuous_RE_IM_iff)
   apply (rule interval_integral_substitution_finite, auto)
-by (simp add: continuous_on_eq_continuous_within continuous_RE_IM_iff)
+by (simp add: continuous_on_Im continuous_RE_IM_iff)
 
 lemma complex_interval_integral_substitution_integrable:
   fixes f :: "real \<Rightarrow> complex" and g g':: "real \<Rightarrow> real" and a b u v :: ereal

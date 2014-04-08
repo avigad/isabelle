@@ -112,8 +112,10 @@ lemma positive_integral_power_nat:
 proof-
   let ?F = "\<lambda>x. x^(1 + k) / (1 + k)"
   have "integral\<^sup>P lborel (\<lambda>y. ereal( y^ k) * indicator {0..x} y) = ereal( ?F x) - ereal( ?F 0)"
-  by (rule positive_integral_FTC_atLeastAtMost)   
-    (auto intro!:DERIV_intros positive_integral_FTC_atLeastAtMost simp del: power_Suc) 
+  apply (rule positive_integral_FTC_atLeastAtMost)
+  apply (auto intro!: derivative_intros derivative_eq_intros positive_integral_FTC_atLeastAtMost 
+    simp del: power_Suc)
+  by (simp add: real_of_nat_Suc field_simps real_of_nat_def)
   also have "... = x^ (1 + k) / (1 + k)" by force
   finally show ?thesis by fast
 qed
@@ -153,11 +155,11 @@ lemma (in prob_space) indep_var_compose:
   assumes "indep_var M1 X1 M2 X2" "Y1 \<in> measurable M1 N1" "Y2 \<in> measurable M2 N2"
   shows "indep_var N1 (Y1 \<circ> X1) N2 (Y2 \<circ> X2)"
 proof -
-  have "indep_vars (bool_case N1 N2) (\<lambda>b. bool_case Y1 Y2 b \<circ> bool_case X1 X2 b) UNIV"
+  have "indep_vars (case_bool N1 N2) (\<lambda>b. case_bool Y1 Y2 b \<circ> case_bool X1 X2 b) UNIV"
     using assms
-    by (intro indep_vars_compose[where M'="bool_case M1 M2"])
+    by (intro indep_vars_compose[where M'="case_bool M1 M2"])
        (auto simp: indep_var_def split: bool.split)
-  also have "(\<lambda>b. bool_case Y1 Y2 b \<circ> bool_case X1 X2 b) = bool_case (Y1 \<circ> X1) (Y2 \<circ> X2)"
+  also have "(\<lambda>b. case_bool Y1 Y2 b \<circ> case_bool X1 X2 b) = case_bool (Y1 \<circ> X1) (Y2 \<circ> X2)"
     by (simp add: fun_eq_iff split: bool.split)
   finally show ?thesis
     unfolding indep_var_def .
@@ -246,8 +248,8 @@ lemma (in prob_space) indep_var_restrict:
   shows "indep_var (PiM A M') (\<lambda>\<omega>. restrict (\<lambda>i. X i \<omega>) A) (PiM B M') (\<lambda>\<omega>. restrict (\<lambda>i. X i \<omega>) B)"
 proof -
   have *:
-    "bool_case (Pi\<^sub>M A M') (Pi\<^sub>M B M') = (\<lambda>b. PiM (bool_case A B b) M')"
-    "bool_case (\<lambda>\<omega>. \<lambda>i\<in>A. X i \<omega>) (\<lambda>\<omega>. \<lambda>i\<in>B. X i \<omega>) = (\<lambda>b \<omega>. \<lambda>i\<in>bool_case A B b. X i \<omega>)"
+    "case_bool (Pi\<^sub>M A M') (Pi\<^sub>M B M') = (\<lambda>b. PiM (case_bool A B b) M')"
+    "case_bool (\<lambda>\<omega>. \<lambda>i\<in>A. X i \<omega>) (\<lambda>\<omega>. \<lambda>i\<in>B. X i \<omega>) = (\<lambda>b \<omega>. \<lambda>i\<in>case_bool A B b. X i \<omega>)"
     by (simp_all add: fun_eq_iff split: bool.split)
   show ?thesis
     unfolding indep_var_def * using AB
@@ -546,7 +548,7 @@ lemma integral_by_parts_integrable:
   assumes [intro]: "!!x. DERIV F x :> f x"
   assumes [intro]: "!!x. DERIV G x :> g x"
   shows  "integrable lborel (\<lambda>x.((F x) * (g x) + (f x) * (G x)) * indicator {a .. b} x)"
-  by (auto intro!: borel_integrable_atLeastAtMost isCont_intros) (auto intro!: DERIV_isCont)
+  by (auto intro!: borel_integrable_atLeastAtMost continuous_intros) (auto intro!: DERIV_isCont)
 
 lemma integral_by_parts:
   fixes f g F G::"real \<Rightarrow> real"
@@ -559,12 +561,13 @@ lemma integral_by_parts:
             =  F b * G b - F a * G a - \<integral>x. (f x * G x) * indicator {a .. b} x \<partial>lborel" 
 proof-
   have 0: "(\<integral>x. (F x * g x + f x * G x) * indicator {a .. b} x \<partial>lborel) = F b * G b - F a * G a"
-    by (rule integral_FTC_atLeastAtMost, auto intro!: DERIV_intros isCont_intros) (auto intro!: DERIV_isCont)
+    by (rule integral_FTC_atLeastAtMost, auto intro!: derivative_eq_intros continuous_intros) 
+      (auto intro!: DERIV_isCont)
 
   have "(\<integral>x. (F x * g x + f x * G x) * indicator {a .. b} x \<partial>lborel) =
     (\<integral>x. (F x * g x) * indicator {a .. b} x \<partial>lborel) + \<integral>x. (f x * G x) * indicator {a .. b} x \<partial>lborel"
     apply (subst integral_add(2)[symmetric])
-    apply (auto intro!: borel_integrable_atLeastAtMost isCont_intros)
+    apply (auto intro!: borel_integrable_atLeastAtMost continuous_intros)
     by (auto intro!: DERIV_isCont integral_cong split:split_indicator)
 
   thus ?thesis using 0 by auto
@@ -608,7 +611,7 @@ proof (subst distributed_integral[OF D, of "(\<lambda>x. (x - expectation X)\<^s
   proof (subst integral_FTC_atLeastAtMost)
     fix x
     show "DERIV (\<lambda>x. x^3 / (3 * measure lborel {a..b})) x :> x\<^sup>2 / measure lborel {a..b}"
-      using uniform_distributed_params[OF D] by (auto intro!: DERIV_intros)
+      using uniform_distributed_params[OF D] by (auto intro!: derivative_eq_intros)
 
     show "isCont (\<lambda>x. x\<^sup>2 / Sigma_Algebra.measure lborel {a..b}) x"
       using uniform_distributed_params[OF D] by (auto intro!: isCont_divide)

@@ -200,7 +200,7 @@ proof (rule AE_I2)
     by (rule borel_measurable_LIMSEQ) (auto intro: borel_measurable_integrable intgbl)
 qed
 
-(** FIXME: Names of facts have changed and caused proof to fail.
+(** FIXME: Names of facts have changed and caused proof to fail. *)
 (* Proof from Royden Real Analysis, p. 91. *)
 lemma lebesgue_integral_countable_add:
   assumes meas[intro]: "\<And>i::nat. A i \<in> sets M"
@@ -230,12 +230,12 @@ proof -
     by (simp add: abs_mult summable_mult)
 
   show "summable (\<lambda>i. LINT x|M. \<bar>f x * indicator (A i) x\<bar>)"
-  proof (rule pos_summable)
+  proof (rule summableI_nonneg_bounded)
     fix n
     show "0 \<le> LINT x|M. \<bar>f x * indicator (A n) x\<bar>"
       by (auto intro!: lebesgue_integral_nonneg)
-    have "(\<Sum>i = 0..<n. LINT x|M. \<bar>f x * indicator (A i) x\<bar>) =
-      (\<Sum>i = 0..<n. set_lebesgue_integral M (A i) (\<lambda>x. \<bar>f x\<bar>))"
+    have "(\<Sum>i<n. LINT x|M. \<bar>f x * indicator (A i) x\<bar>) =
+      (\<Sum>i<n. set_lebesgue_integral M (A i) (\<lambda>x. \<bar>f x\<bar>))"
       by (simp add: abs_mult)
     also have "\<dots> = set_lebesgue_integral M (\<Union>i<n. A i) (\<lambda>x. \<bar>f x\<bar>)"
       apply (subst set_integral_finite_Union)
@@ -252,7 +252,7 @@ proof -
       apply (rule set_integrable_subset[OF intgbl])
       apply auto
       done
-    finally show "(\<Sum>i = 0..<n. LINT x|M. \<bar>f x * indicator (A i) x\<bar>) \<le>
+    finally show "(\<Sum>i<n. LINT x|M. \<bar>f x * indicator (A i) x\<bar>) \<le>
       set_lebesgue_integral M (\<Union>i. A i) (\<lambda>x. \<bar>f x \<bar>)"
       by simp
   qed
@@ -357,7 +357,7 @@ proof-
   also have "... = f a * real (emeasure M {a})" using assms by auto
   finally show ?thesis using int_at by (simp add: eq)
 qed
-**)
+
 
 end
 

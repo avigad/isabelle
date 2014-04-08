@@ -73,10 +73,11 @@ proof -
         exp (- b\<^sup>2) * b ^ (k + 1) - exp (- a\<^sup>2) * a ^ (k + 1) -
         (LBINT x:{a..b}. - 2 * x * exp (- x\<^sup>2) * x ^ (k + 1))"
       apply (rule integral_by_parts [of a b ?f ?g ?F ?G])
-      using `a \<le> b` apply (auto intro!: DERIV_intros)
+      using `a \<le> b` apply (auto intro!: derivative_eq_intros)
       apply (case_tac "k = 0", auto)
       apply (subst mult_assoc)
-      by (subst power_Suc2 [symmetric], simp add: real_of_nat_Suc field_simps)
+      by (subst power_Suc2 [symmetric], simp add: real_of_nat_Suc field_simps
+        real_of_nat_def)
   }
   note this [of 0 b k]
   also have "(LBINT x:{0..b}. exp (- x\<^sup>2) * (real (k + 1) * x ^ k)) = 
@@ -409,12 +410,13 @@ proof -
   have **: "(2::real)^(2 * k) = 2^k * 2^k"
     by (simp add: power_add [symmetric])
   show "integrable lborel (\<lambda>x. exp (- x\<^sup>2 / 2) * x ^ (2 * k))"
-    apply (subst integrable_affine [where t = 0 and c = "sqrt 2"], auto)
+    apply (subst integrable_affine [where t = 0 and c = "sqrt 2"], auto simp add: divide_minus_left)
     by (subst *, rule integral_cmult (1), rule aux4_even)
   show 
     "(LBINT x. exp (- x\<^sup>2 / 2) * (x ^ (2 * k))) = 
       sqrt (2 * pi) * (fact (2 * k) / (2^k * fact k))"
-    apply (subst lebesgue_integral_real_affine [where t = 0 and c = "sqrt 2"], auto)
+    apply (subst lebesgue_integral_real_affine [where t = 0 and c = "sqrt 2"], 
+      auto simp add: divide_minus_left)
     apply (subst *, subst integral_cmult, rule aux4_even)
     by (subst aux4_even, simp add: real_sqrt_mult **)
 qed
@@ -431,12 +433,13 @@ proof -
     by (rule ext, simp add: power_mult_distrib power_mult)
 
   show "integrable lborel (\<lambda>x. exp (- x\<^sup>2 / 2) * x ^ (2 * k + 1))"
-    apply (subst integrable_affine [where t = 0 and c = "sqrt 2"], auto simp del: One_nat_def)
+    apply (subst integrable_affine [where t = 0 and c = "sqrt 2"], auto 
+      simp del: One_nat_def simp add: divide_minus_left)
     by (subst *, rule integral_cmult (1), rule aux4_odd)
   show 
     "(LBINT x. exp (- x\<^sup>2 / 2) * (x ^ (2 * k + 1))) = 0"
     apply (subst lebesgue_integral_real_affine [where t = 0 and c = "sqrt 2"], 
-      auto simp del: One_nat_def)
+      auto simp del: One_nat_def simp add: divide_minus_left)
     apply (subst *, subst integral_cmult, rule aux4_odd)
     by (subst aux4_odd, simp add: real_sqrt_mult)
 qed
@@ -455,12 +458,12 @@ proof -
     by (simp add: power_add [symmetric])
   show "integrable lborel (\<lambda>x. exp (- x\<^sup>2 / 2) * abs x ^ (2 * k + 1))"
     apply (subst integrable_affine [where t = 0 and c = "sqrt 2"])
-    apply (simp_all del: One_nat_def power_Suc)
+    apply (simp_all del: One_nat_def power_Suc add: divide_minus_left)
     by (subst *, rule integral_cmult (1), rule aux4_odd_abs)
   show 
     "(LBINT x. exp (- x\<^sup>2 / 2) * (abs x ^ (2 * k + 1))) = fact k * (2 ^ (k + 1))"
     apply (subst lebesgue_integral_real_affine [where t = 0 and c = "sqrt 2"])
-    apply (simp_all del: One_nat_def power_Suc)
+    apply (simp_all del: One_nat_def power_Suc add: divide_minus_left)
     apply (subst *, subst integral_cmult, rule aux4_odd_abs)
     apply (subst aux4_odd_abs, simp add: power_mult real_sqrt_mult)
     (* the simplifier should know that sqrt 2 * sqrt 2 = 2 *)

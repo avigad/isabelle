@@ -206,7 +206,7 @@ proof -
   qed
   have Y_seq_mono_on: "\<And>n. mono_on (Y_seq n) {0<..<1}" unfolding mono_on_def
     using Y_seq_le_iff by (metis order.trans order_refl)
-  hence Y_seq_meas: "\<And>n. (Y_seq n) \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc 
+  hence Y_seq_meas [simp]: "\<And>n. (Y_seq n) \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc 
       unfolding \<Omega>_def
     by simp
   have Y_seq_emeasure_distr_\<Omega>: "\<And>n. emeasure (distr \<Omega> borel (Y_seq n)) UNIV = 1"
@@ -431,19 +431,22 @@ proof -
       ultimately show ?thesis using Y_cts_cnv \<omega> by auto
     qed
   qed
-  have "\<And>n. Y_seq' n \<in> borel_measurable \<Omega>" using Y_seq_meas Y_seq'_AE
+  have [simp]: "\<And>n. Y_seq' n \<in> borel_measurable \<Omega>" using Y_seq_meas Y_seq'_AE
     by (subst measure_cong_AE[where g = "Y_seq n"], auto)
-  moreover have "\<And>n. distr \<Omega> borel (Y_seq' n) = \<mu> n" using Y_seq_distr Y_seq'_AE
-    by (subst distr_cong_AE[where f = "Y_seq' n" and g = "Y_seq n"], auto)
-  moreover have "Y' \<in> borel_measurable \<Omega>" using Y_meas Y'_AE
+  moreover {fix n  have "distr \<Omega> borel (Y_seq' n) = \<mu> n" using Y_seq_distr [of n] 
+      Y_seq'_AE [of n]
+    by (subst distr_cong_AE[where f = "Y_seq' n" and g = "Y_seq n"], auto) }
+  moreover have [simp]: "Y' \<in> borel_measurable \<Omega>" using Y_meas Y'_AE
     by (subst measure_cong_AE[where g = Y], auto)
   moreover have "distr \<Omega> borel Y' = M"
-    using Y_distr Y'_AE distr_cong_AE[where f = Y' and g = Y] by auto
+    apply (subst Y_distr [symmetric])
+    apply (rule distr_cong_AE, auto)
+    by (rule Y'_AE, rule Y_meas)
   ultimately have "prob_space \<Omega> \<and> (\<forall>n. Y_seq' n \<in> borel_measurable \<Omega>) \<and>
     (\<forall>n. distr \<Omega> borel (Y_seq' n) = \<mu> n) \<and> Y' \<in> measurable \<Omega> lborel \<and> distr \<Omega> borel Y' = M \<and>
     (\<forall>x\<in>space \<Omega>. (\<lambda>n. Y_seq' n x) ----> Y' x)" using prob_\<Omega> Y'_cnv
     unfolding \<Omega>_def by (auto simp add: space_restrict_space)
-  thus ?thesis by auto
+  thus ?thesis by metis
 qed
 
 lemma isCont_borel:

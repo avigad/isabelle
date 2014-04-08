@@ -22,14 +22,15 @@ lemma aux3:
   shows "(\<integral>\<^sup>+ x. ereal (x * exp (- x\<^sup>2 * (1 + s\<^sup>2))) * indicator {0..} x \<partial>lborel) =  1 / (2 * (1 + s\<^sup>2))"
 proof -  
   have "(\<integral>\<^sup>+ x. ereal (x * exp (- x\<^sup>2 * (1 + s\<^sup>2))) * indicator {0..} x \<partial>lborel) = ereal (0 - (\<lambda>x. ((-1 / (2 * (1 + s\<^sup>2)))) * exp (-x\<^sup>2 * (1 + s\<^sup>2))) 0)"
-    proof(rule positive_integral_FTC_atLeast, auto intro!: DERIV_intros simp: mult_nonneg_nonneg)
+    proof(rule positive_integral_FTC_atLeast, auto intro!: derivative_eq_intros 
+        simp: mult_nonneg_nonneg field_simps)
       have "((\<lambda>a. - (exp (- (a\<^sup>2 * (1 + s\<^sup>2))) / (2 + 2 * s\<^sup>2))) ---> (- (0 / (2 + 2 * s\<^sup>2)))) at_top"
         apply (intro tendsto_intros filterlim_compose[OF exp_at_bot] filterlim_compose[OF filterlim_uminus_at_bot_at_top])
         apply (subst mult_commute)         
         by (auto intro!: filterlim_tendsto_pos_mult_at_top filterlim_at_top_mult_at_top[OF filterlim_ident filterlim_ident] 
           simp: add_pos_nonneg  power2_eq_square)        
-      then show "((\<lambda>a. - (exp (- (a\<^sup>2 * (1 + s\<^sup>2))) / (2 + 2 * s\<^sup>2))) ---> 0) at_top" by simp      
-   qed (simp add:field_simps)
+      then show "((\<lambda>a. - (exp (- a\<^sup>2 - a\<^sup>2 * s\<^sup>2) / (2 + 2 * s\<^sup>2))) ---> 0) at_top" by (simp add: field_simps)      
+   qed 
   then show ?thesis by simp
 qed
 
@@ -93,7 +94,7 @@ proof -
         
   also have "... = ereal ( pi / 4 - (\<lambda>x. arctan x / 2) 0)"
     apply (rule positive_integral_FTC_atLeast, auto)
-    apply (intro DERIV_intros, auto simp:inverse_eq_divide distrib_left) 
+    apply (intro derivative_eq_intros, auto simp:inverse_eq_divide distrib_left) 
     apply (simp add:field_simps)
     proof-
       have "((\<lambda>a. arctan a / 2) ---> (pi / 2) / 2 ) at_top"
@@ -128,7 +129,8 @@ lemma positive_integral_normal_density: "(\<integral>\<^sup>+x. normal_density \
   apply (subst times_ereal.simps(1)[symmetric],subst positive_integral_cmult)
   apply (auto simp: mult_nonneg_nonneg)
   apply (subst positive_integral_real_affine[where t=\<mu> and  c="(sqrt 2) * \<sigma>"])
-  by (auto simp: power_mult_distrib gaussian_integral_positive mult_nonneg_nonneg real_sqrt_mult one_ereal_def)
+  by (auto simp: power_mult_distrib gaussian_integral_positive mult_nonneg_nonneg 
+    real_sqrt_mult one_ereal_def divide_minus_left)
 
 lemma 
   shows normal_positive: "\<And>x. 0 < normal_density \<mu> \<sigma> x"
@@ -182,7 +184,7 @@ proof(auto)
     by(rule normal_density_affine) auto
   
   then show "distributed M lborel (\<lambda>x. (X x - \<mu>) / \<sigma>) (\<lambda>x. ereal (standard_normal_density x))"
-    by (simp add: uminus_add_conv_diff diff_divide_distrib[symmetric])
+    by (simp add: uminus_add_conv_diff diff_divide_distrib[symmetric] field_simps)
 next
   assume *: "distributed M lborel (\<lambda>x. (X x - \<mu>) / \<sigma>) (\<lambda>x. ereal (standard_normal_density x))"
   have "distributed M lborel (\<lambda>x. \<mu> + \<sigma> * ((X x - \<mu>) / \<sigma>)) (\<lambda>x. ereal (normal_density \<mu> \<bar>\<sigma>\<bar> x))"
@@ -365,7 +367,8 @@ proof -
 
   have 1: "(\<integral>\<^sup>+x. ereal (x * exp (- x\<^sup>2)) * indicator {0..} x \<partial>lborel) =ereal( 0 - ?F 0)"
   apply (rule positive_integral_FTC_atLeast)
-  apply (auto intro!: DERIV_intros tendsto_minus_cancel[of "(\<lambda>a. - (exp (- a\<^sup>2) / 2))" 0] simp: mult_nonneg_nonneg)
+  apply (auto intro!: derivative_eq_intros simp: mult_nonneg_nonneg)
+  apply (rule tendsto_minus_cancel, simp add: field_simps)
   proof - 
     have "((\<lambda>(x::real). exp (- x\<^sup>2) / 2) ---> 0 / 2) at_top"
     apply (intro tendsto_divide filterlim_compose[OF exp_at_bot] filterlim_compose[OF filterlim_uminus_at_bot_at_top])
@@ -480,7 +483,7 @@ proof-
   
       also have "... = (\<lambda>x. x) z * (\<lambda>x. - exp (- x\<^sup>2 ) / 2) z - (\<lambda>x. x) 0 * (\<lambda>x. - exp (- x\<^sup>2) / 2) 0 
           -  \<integral>x. 1 * ( - exp (- x\<^sup>2) / 2) * indicator {0 .. z} x \<partial>lborel"
-        by(rule integral_by_parts, auto intro!: DERIV_intros)  
+        by(rule integral_by_parts, auto intro!: derivative_eq_intros)  
       finally have "?IFunc z = ..." .
 
       then show "?IFunc z = ?f z" by simp
@@ -495,7 +498,7 @@ proof-
       apply (intro tendsto_divide filterlim_compose[OF exp_at_bot] filterlim_compose[OF filterlim_uminus_at_bot_at_top])
       apply (auto simp: exp_minus inverse_eq_divide)
       apply (rule lhospital_at_top_at_top[where f' = "\<lambda>x. 1" and g' = "\<lambda>x. 2 * x * exp (x\<^sup>2)"])
-      apply (auto intro!: DERIV_intros eventually_elim1[OF eventually_gt_at_top, of 1])
+      apply (auto intro!: derivative_eq_intros eventually_elim1[OF eventually_gt_at_top, of 1])
       apply (subst inverse_eq_divide[symmetric])
       apply (rule  tendsto_inverse_0_at_top)
       apply (subst mult_assoc)
@@ -514,7 +517,9 @@ proof-
   have [intro]: "(?IFunc ---> sqrt pi / 4) at_top"
     apply (simp add: byparts)
     apply (subst filterlim_cong[where g = ?f])
-    apply (auto simp: eventually_ge_at_top linorder_not_less lebesgue_integral_uminus)
+    apply (auto simp: eventually_ge_at_top linorder_not_less lebesgue_integral_uminus 
+      divide_minus_left)
+thm lebesgue_integral_uminus
   proof -
     have "((\<lambda>x. (\<integral> xa. exp (- xa\<^sup>2) * indicator {0..x} xa / 2 \<partial>lborel) - x * exp (- x\<^sup>2) / 2) --->
         (0 + sqrt pi / 4 - 0)) at_top"
@@ -524,7 +529,6 @@ proof-
       apply (subst integral_multc)
       using tends
       by (auto intro!: integrable_mult_indicator integral_multc)
-
     then show "((\<lambda>x. (\<integral> xa. exp (- xa\<^sup>2) * indicator {0..x} xa / 2 \<partial>lborel) - (x * exp (- x\<^sup>2) / 2)) --->
        sqrt pi / 4) at_top" by  simp
   qed
@@ -562,7 +566,7 @@ proof -
     unfolding standard_normal_density_def
     apply (subst lebesgue_integral_real_affine[where c = "sqrt 2" and t=0], simp_all)
     apply (subst integral_cmult(2)[symmetric])
-    by (auto intro!: integral_cong simp: power_mult_distrib real_sqrt_mult)
+    by (auto intro!: integral_cong simp: power_mult_distrib real_sqrt_mult divide_minus_left)
   also have "... = 1"
     by (subst integral_xsquare_exp_xsquare, auto)
   finally show "(\<integral> x. standard_normal_density x * x\<^sup>2 \<partial>lborel) = 1" .
@@ -570,7 +574,7 @@ proof -
   show "integrable lborel (\<lambda>x. standard_normal_density x * x\<^sup>2)"
     unfolding standard_normal_density_def
     apply (subst integrable_affine[where c = "sqrt 2" and t=0])
-    by (auto simp: power_mult_distrib real_sqrt_mult)
+    by (auto simp: power_mult_distrib real_sqrt_mult divide_minus_left)
 qed
 
 lemma 

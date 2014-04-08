@@ -84,7 +84,7 @@ lemma open_Collect_conj: assumes "open {x. P x}" "open {x. Q x}" shows "open {x.
 
 lemma open_einterval[simp]: "open (einterval a b)"
   by (cases a b rule: ereal2_cases)
-     (auto simp: einterval_def intro!: open_Collect_conj open_Collect_less continuous_on_intros)
+     (auto simp: einterval_def intro!: open_Collect_conj open_Collect_less continuous_intros)
 
 lemma filterlim_sup1: "(LIM x F. f x :> G1) \<Longrightarrow> (LIM x F. f x :> (sup G1 G2))"
  unfolding filterlim_def by (auto intro: le_supI1)
@@ -734,23 +734,47 @@ qed
   Some useful things, that should be moved elsewhere.
 *)
 
+(*
 lemma has_vector_derivative_within_eq_DERIV:
   "(f has_vector_derivative y) (at x within s) = (DERIV f x : s :> y)"
   unfolding has_vector_derivative_def real_scaleR_def
 by (rule deriv_fderiv [symmetric])
+*)
 
 lemma DERIV_cong':
   fixes x D and f g s t
   assumes "x \<in> s" "s \<subseteq> t" 
   and "\<And>x. x \<in> s \<Longrightarrow> f x = g x"
-  and "DERIV f x : t :> D"
-  shows  "DERIV g x : s :> D"
+  and "(f has_field_derivative D) (at x within t)"
+  shows  "(g has_field_derivative D) (at x within s)"
 
-  using assms apply (auto simp add: deriv_fderiv FDERIV_def)
-  apply (subst Lim_cong_within)
+  using assms apply (auto simp add: has_field_derivative_def Deriv.has_derivative_at_within)
+  apply (subst Lim_cong_within)  
   prefer 5 apply (rule tendsto_within_subset [OF _ `s \<subseteq> t`])
-by assumption auto
+  apply assumption
+by auto
 
+lemma DERIV_image_chain': "(f has_field_derivative D) (at x within s) \<Longrightarrow> 
+    (g has_field_derivative E) (at (f x) within (f ` s)) \<Longrightarrow> 
+    ((\<lambda>x. g (f x)) has_field_derivative E * D) (at x within s)"
+by (drule (1) DERIV_image_chain, simp add: comp_def)
+
+(*
+now renamed DERIV_image_chain
+lemma DERIV_chain_within: "(f has_field_derivative D) (at x within s) \<Longrightarrow> 
+    (g has_field_derivative E) (at (f x) within (f ` s)) \<Longrightarrow> 
+    ((g o f) has_field_derivative E * D) (at x within s)"
+  apply (simp add: has_field_derivative_def)
+  apply (subgoal_tac "op * (E * D) = (\<lambda>x. x * E) o (\<lambda>x. x * D)")
+  apply (erule ssubst)
+  apply (rule diff_chain_within)
+  apply (subst mult_commute, assumption)
+  apply (subst mult_commute, assumption)
+by auto
+
+*)
+
+(*
 lemma DERIV_chain_within: "DERIV f x : s :> D \<Longrightarrow> DERIV g (f x) : (f ` s) :> E \<Longrightarrow> 
     DERIV (g o f) x : s :> E * D"
   apply (simp add: deriv_fderiv)
@@ -783,7 +807,7 @@ lemma has_DERIV_within_closed_interval:
   apply (rule has_DERIV_within_openI [of x "{a<..<b}"], auto)
   apply (rule DERIV_within_subset) prefer 3 
 by assumption auto
-
+*)
 (*
   A slightly stronger version of integral_FTC_atLeastAtMost and related facts, 
   with continuous_on instead of isCont
@@ -866,7 +890,8 @@ qed simp
 lemma integral_FTC_atLeastAtMost':
   fixes a b :: real
   assumes "a \<le> b"
-    and F: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> DERIV F x : {a..b} :> f x"
+(*    and F: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> DERIV F x : {a..b} :> f x" *)
+    and F: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> (F has_real_derivative (f x)) (at x within {a..b})"
     and f: "continuous_on {a..b} f"
   shows "set_lebesgue_integral lborel {a..b} f = F b - F a"
 proof -
@@ -876,9 +901,9 @@ proof -
     by (rule borel_integrable_atLeastAtMost', rule f)
   moreover
   have 1: "(f has_integral F b - F a) {a .. b}"
-    apply (rule fundamental_theorem_of_calculus, rule assms)
-    apply (subst has_vector_derivative_within_eq_DERIV)
-    by (auto intro!: F)
+    apply (rule fundamental_theorem_of_calculus, auto intro: assms)
+    apply (subst has_field_derivative_iff_has_vector_derivative [symmetric])
+    by (rule F, auto)
   have "(?f has_integral F b - F a) {a .. b}"
     by (rule has_integral_eq [OF _ 1], auto)
   then have "(?f has_integral F b - F a) UNIV"
@@ -921,16 +946,22 @@ where x and y are real. These should be automated.
 lemma interval_integral_FTC_finite:
   fixes f F :: "real \<Rightarrow> real" and a b :: real
   assumes f: "continuous_on {min a b..max a b} f"
-  assumes F: "\<And>x. min a b \<le> x \<Longrightarrow> x \<le> max a b \<Longrightarrow> DERIV F x : {min a b..max a b} :> f x" 
+(*  assumes F: "\<And>x. min a b \<le> x \<Longrightarrow> x \<le> max a b \<Longrightarrow> DERIV F x : {min a b..max a b} :> f x" *)
+  assumes F: "\<And>x. min a b \<le> x \<Longrightarrow> x \<le> max a b \<Longrightarrow> (F has_field_derivative (f x)) (at x within 
+    {min a b..max a b})" 
   shows "(LBINT x=a..b. f x) = F b - F a"
 
   apply (case_tac "a \<le> b")
-  apply (subst interval_integral_Icc, auto intro!: 
-    integral_FTC_atLeastAtMost' DERIV_within_subset [OF _ _ F] continuous_on_subset [OF f])
+  apply (subst interval_integral_Icc, auto)
+  apply (rule integral_FTC_atLeastAtMost', assumption)
+  apply (metis F max_def min_def)
+  using f apply (simp add: min_absorb1 max_absorb2)
   apply (subst interval_integral_endpoints_reverse)
   apply (subst interval_integral_Icc, auto)
-by (subst integral_FTC_atLeastAtMost', auto intro!: 
-    DERIV_within_subset [OF _ _ F] continuous_on_subset [OF f])
+  apply (subst integral_FTC_atLeastAtMost', auto)
+  apply (metis F max_def min_def)
+using f by (simp add: min_absorb2 max_absorb1)
+
 
 lemma interval_integral_FTC_nonneg:
   fixes f F :: "real \<Rightarrow> real" and a b :: ereal
@@ -951,7 +982,7 @@ proof -
     using assms approx apply (intro interval_integral_FTC_finite)
     apply (auto simp add: less_imp_le min_def max_def)
     apply (rule continuous_at_imp_continuous_on, auto intro!: f)
-    by (rule DERIV_imp_DERIV_within, auto intro!: F)
+    by (rule DERIV_subset [OF F], auto)
   show ?thesis
   proof (rule interval_integral_Icc_approx_nonneg [OF `a < b` approx _ f_nonneg])
     fix i show "set_integrable lborel {l i .. u i} f"
@@ -996,7 +1027,7 @@ proof -
     using assms approx apply (intro interval_integral_FTC_finite)
     apply (auto simp add: less_imp_le min_def max_def)
     apply (rule continuous_at_imp_continuous_on, auto intro!: f)
-    by (rule DERIV_imp_DERIV_within, auto intro!: F)
+    by (rule DERIV_subset [OF F], auto)
   have "(\<lambda>i. LBINT x=l i..u i. f x) ----> B - A"
     apply (subst FTCi)
     apply (intro tendsto_intros)
@@ -1021,7 +1052,7 @@ lemma interval_integral_FTC2:
   and contf: "continuous_on {a..b} f"
   fixes x :: real
   assumes "a \<le> x" and "x \<le> b"
-  shows "DERIV (\<lambda>u. LBINT y=c..u. f y) x : {a..b} :> f x"
+  shows "((\<lambda>u. LBINT y=c..u. f y) has_field_derivative (f x)) (at x within {a..b})"
 proof -
   let ?F = "(\<lambda>u. LBINT y=a..u. f y)"
   have intf: "set_integrable lborel {a..b} f"
@@ -1029,9 +1060,9 @@ proof -
   have "((\<lambda>u. integral {a..u} f) has_vector_derivative f x) (at x within {a..b})"
     apply (intro integral_has_vector_derivative)
     using `a \<le> x` `x \<le> b` by (intro continuous_on_subset [OF contf], auto)
-  hence 1: "DERIV (\<lambda>u. integral {a..u} f) x : {a..b} :> f x"
-    by (simp add: has_vector_derivative_within_eq_DERIV)
-  have 2: "DERIV ?F x : {a..b} :> f x"
+  hence 1: "((\<lambda>u. integral {a..u} f) has_field_derivative (f x)) (at x within {a..b})"
+    by (simp add: has_field_derivative_iff_has_vector_derivative)
+  have 2: "(?F has_field_derivative (f x)) (at x within {a..b})"
     apply (rule DERIV_cong' [OF _ _ _ 1])
     using assms apply auto
     apply (rule interval_integral_eq_integral [symmetric], auto)
@@ -1046,8 +1077,9 @@ proof -
   } note 3 = this
   show ?thesis
     apply (rule DERIV_cong' [OF _ _ 3], auto simp add: assms)
-    by (intro DERIV_intros, auto, rule 2)
+    by (intro derivative_eq_intros, auto, rule 2)
 qed
+
 
 lemma einterval_antiderivative: 
   fixes a b :: ereal and f :: "real \<Rightarrow> real"
@@ -1067,8 +1099,12 @@ proof -
     have 2: "max c x < b" by simp
     from einterval_nonempty [OF 2] obtain e :: real where [simp]: "c < e" "x < e" "e < b" 
       by (auto simp add: einterval_def)
-    show "DERIV ?F x :> f x"
-      apply (rule has_DERIV_within_closed_interval [of d _ e], auto)
+    show "(?F has_field_derivative f x) (at x)"
+      (* TODO: factor out the next three lines to has_field_derivative_within_open *)
+      unfolding has_field_derivative_def
+      apply (subst has_derivative_within_open [of _ "{d<..<e}", symmetric], auto)
+      apply (subst has_field_derivative_def [symmetric])
+      apply (rule DERIV_subset [of _ _ _ "{d..e}"])
       apply (rule interval_integral_FTC2, auto simp add: less_imp_le)
       apply (rule continuous_at_imp_continuous_on)
       apply (auto intro!: contf)
@@ -1088,7 +1124,7 @@ qed
 lemma interval_integral_substitution_finite:
   fixes a b :: real and f :: "real \<Rightarrow> real"
   assumes "a \<le> b"
-  and derivg: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> DERIV g x : {a..b} :> g' x"
+  and derivg: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> (g has_field_derivative (g' x)) (at x within {a..b})"
   and contf : "continuous_on (g ` {a..b}) f"
   and contg': "continuous_on {a..b} g'"
   shows "LBINT x=a..b. f (g x) * g' x = LBINT y=(g a)..(g b). f y"
@@ -1106,14 +1142,15 @@ proof-
   from contg `a \<le> b` have "\<exists>c d. g ` {a..b} = {c..d} \<and> c \<le> d"
     by (elim continuous_image_closed_interval)
   then obtain c d where g_im: "g ` {a..b} = {c..d}" and "c \<le> d" by auto
-  have "\<exists>F. \<forall>x\<in>{a..b}. DERIV F (g x) : (g ` {a..b}) :> f (g x)"
+  have "\<exists>F. \<forall>x\<in>{a..b}. (F has_field_derivative (f (g x))) (at (g x) within (g ` {a..b}))"
     apply (rule exI, auto, subst g_im)
     apply (rule interval_integral_FTC2 [of c c d])
     using `c \<le> d` apply auto
     apply (rule continuous_on_subset [OF contf])
     using g_im by auto
   then guess F ..
-  then have derivF: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> DERIV F (g x) : (g ` {a..b}) :> f (g x)" by auto
+  then have derivF: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> 
+    (F has_field_derivative (f (g x))) (at (g x) within (g ` {a..b}))" by auto
   have contf2: "continuous_on {min (g a) (g b)..max (g a) (g b)} f"
     apply (rule continuous_on_subset [OF contf])
     apply (auto simp add: image_def)
@@ -1127,13 +1164,15 @@ proof-
   have "LBINT x=a..b. f (g x) * g' x = F (g b) - F (g a)"
     apply (subst interval_integral_Icc, simp add: assms)
     apply (rule integral_FTC_atLeastAtMost'[of a b "\<lambda>x. F (g x)", OF `a \<le> b`])
-    apply (rule DERIV_chain_within' [where g = F])
-    by (auto intro!: derivF derivg continuous_on_mult contfg contg')
+    apply (rule DERIV_image_chain' [where g = F])
+    apply (erule (1) derivg)
+    apply (erule (1) derivF)
+    by (rule continuous_on_mult, rule contfg, rule contg')
   moreover have "LBINT y=(g a)..(g b). f y = F (g b) - F (g a)"
     apply (rule interval_integral_FTC_finite)
     apply (rule contf2)
     apply (frule (1) 1, auto)
-    apply (rule DERIV_within_subset [OF _ _ derivF])
+    apply (rule DERIV_subset [OF derivF])
     apply (auto simp add: image_def)
     by (rule 1, auto)
   ultimately show ?thesis by simp
@@ -1208,12 +1247,13 @@ proof -
       apply (rule order_less_le_trans) prefer 2
       by (rule B3, simp) 
   qed
+thm real_of_nat_def
   (* finally, the main argument *)
   {
      fix i
      have "(LBINT x=l i.. u i. (f (g x) * g' x)) = (LBINT y=g (l i)..g (u i). f y)"
         apply (rule interval_integral_substitution_finite, auto)
-        apply (rule DERIV_imp_DERIV_within, auto, rule deriv_g, auto)
+        apply (rule DERIV_subset, rule deriv_g, auto)
         apply (rule continuous_at_imp_continuous_on, auto, rule contf, auto)
         by (rule continuous_at_imp_continuous_on, auto, rule contg', auto)
   } note eq1 = this
@@ -1243,7 +1283,7 @@ proof -
     apply (subst un, rule set_integral_cont_up, auto)
     apply (rule incseq) 
     apply (rule pos_integrable_to_top, auto)
-    apply (subst incseq_mono, rule incseq)
+    apply (rule incseq)
     apply (rule nonneg_f2, erule less_imp_le, erule less_imp_le)
     apply (rule set_integrable_subset)
     apply (rule borel_integrable_atLeastAtMost')
@@ -1327,7 +1367,7 @@ proof -
      fix i
      have "(LBINT x=l i.. u i. (f (g x) * g' x)) = (LBINT y=g (l i)..g (u i). f y)"
         apply (rule interval_integral_substitution_finite, auto)
-        apply (rule DERIV_imp_DERIV_within, auto, rule deriv_g, auto)
+        apply (rule DERIV_subset, rule deriv_g, auto)
         apply (rule continuous_at_imp_continuous_on, auto, rule contf, auto)
         by (rule continuous_at_imp_continuous_on, auto, rule contg', auto)
   } note eq1 = this

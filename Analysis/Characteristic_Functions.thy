@@ -31,9 +31,9 @@ lemma (in prob_space)
     and indep_var_integrable: "integrable M (\<lambda>\<omega>. X1 \<omega> * X2 \<omega>)" (is ?int)
 unfolding indep_var_def
 proof -
-  have *: "(\<lambda>\<omega>. X1 \<omega> * X2 \<omega>) = (\<lambda>\<omega>. \<Prod>i\<in>UNIV. (bool_case X1 X2 i \<omega>))"
+  have *: "(\<lambda>\<omega>. X1 \<omega> * X2 \<omega>) = (\<lambda>\<omega>. \<Prod>i\<in>UNIV. (case_bool X1 X2 i \<omega>))"
     by (simp add: UNIV_bool mult_commute)
-  have **: "(\<lambda> _. borel) = bool_case borel borel"
+  have **: "(\<lambda> _. borel) = case_bool borel borel"
     by (rule ext, metis (full_types) bool.simps(3) bool.simps(4))
   show ?eq
     apply (subst *, subst indep_vars_lebesgue_integral, auto)
@@ -122,7 +122,8 @@ lemma fact1: "CDERIV (%s. complex_of_real(-((x - s) ^ (Suc n) / (Suc n))) * iexp
       complex_of_real(-((x - s) ^ (Suc n) / (Suc n)))"
   apply (rule CDERIV_mult)
   apply (rule CDERIV_of_real)
-  apply (auto intro!: DERIV_intros simp del: power_Suc)
+  apply (auto intro!: derivative_eq_intros simp del: power_Suc simp add: 
+    real_of_nat_Suc real_of_nat_def)
   apply (subst i_complex_of_real[symmetric])+
 by (rule CDERIV_iexp)
 
@@ -233,7 +234,7 @@ proof -
     apply (unfold f_def)
     apply (rule continuous_at_imp_continuous_on, force)
     apply (rule CDERIV_of_real)
-    by (auto intro!: DERIV_intros simp del: power_Suc)
+    by (auto intro!: derivative_eq_intros simp del: power_Suc simp add: real_of_nat_def)
   show ?thesis
     apply (subst equation_26p2 [where n = "Suc n"])
     apply (rule arg_cong) back    
@@ -299,9 +300,8 @@ proof -
       apply (subst zero_ereal_def, rule interval_integral_FTC_finite)
       apply (rule continuous_at_imp_continuous_on)
       apply force
-      apply (rule DERIV_imp_DERIV_within)
-      apply force
-      by (auto simp del: power_Suc intro!: DERIV_intros)
+      apply (rule DERIV_subset)
+      by (auto simp del: power_Suc intro!: derivative_eq_intros simp add: real_of_nat_def)
     also have "\<dots> = x ^ (Suc n) / (Suc n)" by simp
     finally show ?thesis .
   qed
@@ -405,9 +405,8 @@ proof -
       apply (subst zero_ereal_def, rule interval_integral_FTC_finite)
       apply (rule continuous_at_imp_continuous_on)
       apply force
-      apply (rule DERIV_imp_DERIV_within)
-      apply force
-      by (auto simp del: power_Suc intro!: DERIV_intros)
+      apply (rule DERIV_subset)
+      by (auto simp del: power_Suc intro!: derivative_eq_intros simp add: real_of_nat_def)
     also have "\<dots> = x ^ (Suc n) / (Suc n)" by simp
     finally show ?thesis .
   qed
