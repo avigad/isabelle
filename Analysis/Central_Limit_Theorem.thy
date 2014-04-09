@@ -13,10 +13,15 @@ begin
 lemma exp_limit:
   fixes x :: real
   shows "((\<lambda>y.(1 + x * y) powr (1 / y)) ---> exp x) (at_right 0)"
-proof -
-  have *: "(at_right 0) \<le> (at (0::real))"
+proof - 
+  have "((\<lambda>y. ln (1 + x * y)) has_real_derivative 1 * x) (at 0)"
+    apply (rule DERIV_chain') back
+    by (auto intro!: derivative_eq_intros)
+  hence 1: "((\<lambda>y. ln (1 + x * y) / y) ---> x) (at 0)"
+    by (auto simp add: has_field_derivative_def field_has_derivative_at) 
+  have 2: "(at_right 0) \<le> (at (0::real))"
     by (subst at_eq_sup_left_right, auto)
-  have **: "eventually (\<lambda>y. 0 < 1 + x * y) (at_right 0)"
+  have 3: "eventually (\<lambda>y. 0 < 1 + x * y) (at_right 0)"
     apply (case_tac "x = 0")
     apply auto
     apply (subst eventually_at_right)
@@ -26,49 +31,25 @@ proof -
     apply (auto simp add: field_simps)
     apply (rule add_pos_nonneg, auto)
     by (rule mult_nonneg_nonneg, auto)
-  have ***: "eventually (\<lambda>y. y > (0::real)) (at_right 0)"
+  have 4: "eventually (\<lambda>y. y > (0::real)) (at_right 0)"
     by (subst eventually_at_right, auto intro: gt_ex)
-  have ****: "eventually (\<lambda>y. exp (ln ((1 + x * y) powr (1 / y))) =
+  have 5: "eventually (\<lambda>y. exp (ln ((1 + x * y) powr (1 / y))) =
          (1 + x * y) powr (1 / y)) (at_right 0)"
-    apply (rule eventually_elim1 [OF eventually_conj [OF ** ***]])
+    apply (rule eventually_elim1 [OF eventually_conj [OF 3 4]])
     by (rule exp_ln, auto)
-  have 1: "eventually (\<lambda>y. ln ((1 + x * y) powr (1 / y)) =
+  have 6: "eventually (\<lambda>y. ln ((1 + x * y) powr (1 / y)) =
          ln (1 + x * y) / y) (at_right 0)"
-    apply (rule eventually_elim1 [OF eventually_conj [OF ** ***]])
+    apply (rule eventually_elim1 [OF eventually_conj [OF 3 4]])
     apply (subst ln_powr)
     apply (case_tac "x = 0")
     by auto
-  have a: " ln -- 1 --> ln 1"
-    by (subst isCont_def [symmetric], auto intro!: isCont_ln)
-  have "((\<lambda>y. ln (1 + x * y)) ---> ln 1) (at_right 0)"
-    apply (rule tendsto_mono [OF *])
-    apply (rule tendsto_compose [OF a])
-    apply (rule tendsto_const_add [of "-1"], simp)
-    by (rule tendsto_mult_right_zero, rule tendsto_ident_at)
-  hence 2: "((\<lambda>y. ln (1 + x * y)) ---> 0) (at_right 0)" by simp
-  have 3: " ((\<lambda>x. x) ---> 0) (at_right 0)" by (rule tendsto_ident_at)
-  have 4: "eventually (\<lambda>y. y \<noteq> 0) (at_right 0)"
-    by (simp add: eventually_at_filter)
-  have 5: "eventually (\<lambda>y. 1 \<noteq> (0 :: real)) (at_right 0)" by (rule always_eventually, auto)
-  have 6: "eventually (\<lambda>z. ((\<lambda>y. ln (1 + x * y)) has_real_derivative
-            inverse (1 + x * z) * x) (at z)) (at_right 0)"
-    apply (rule eventually_elim1 [OF **])
-    apply (rule DERIV_chain') back
-    by (auto intro!: derivative_eq_intros simp add: divide_inverse)
-  have "((\<lambda>y. inverse (1 + x * y) * x) ---> inverse (1 + x * 0) * x) (at_right 0)"
-    apply (rule tendsto_mono [OF *])
-    apply (subst isCont_def [symmetric])
-    by auto
-  hence 7: "((\<lambda>y. inverse (1 + x * y) * x) ---> x) (at_right 0)" by simp
   have "((\<lambda>y. ln ((1 + x * y) powr (1 / y))) ---> x) (at_right 0)"
-    apply (subst filterlim_cong [OF refl refl 1])
-    apply (rule lhopital_right [OF 2 3 4 5 6])
-    apply auto
-    by (rule 7)
+    apply (subst filterlim_cong [OF refl refl 6])
+    by (rule tendsto_mono [OF 2 1])
   hence "((\<lambda>y. exp (ln ((1 + x * y) powr (1 / y)))) ---> exp x) (at_right 0)"
     by (rule tendsto_exp)
   thus "((\<lambda>y.(1 + x * y) powr (1 / y)) ---> exp x) (at_right 0)"
-    by (rule Lim_transform_eventually [OF ****])
+    by (rule Lim_transform_eventually [OF 5])
 qed
 
 lemma exp_limit':
@@ -82,11 +63,14 @@ by (rule exp_limit)
 lemma exp_limit'':
   fixes x :: real
   shows "(\<lambda>n. (1 + x / n) ^ n) ----> exp x"
-
 proof -
-  have "eventually (\<lambda>n :: nat. 0 < 1 + x / real n) at_top"
-
-    sorry
+  from reals_Archimedean2 [of "abs x"] obtain n :: nat where *: "real n > abs x" ..
+  hence "eventually (\<lambda>n :: nat. 0 < 1 + x / real n) at_top"
+    apply (intro eventually_sequentiallyI [of n])
+    apply (case_tac "x \<ge> 0")
+    apply (rule add_pos_nonneg, auto intro: divide_nonneg_nonneg)
+    apply (subgoal_tac "x / real xa > -1")
+    by (auto simp add: field_simps)
   hence *: "eventually (\<lambda>n. (1 + x / n) powr n = (1 + x / n) ^ n) at_top"
     apply (rule eventually_elim1)
     by (erule powr_realpow)
@@ -94,29 +78,6 @@ proof -
     apply (rule Lim_transform_eventually)
     by (rule filterlim_compose [OF exp_limit' filterlim_real_sequentially])
 qed
-
-
-
-
-
-
-    
-    
-
-
-    
-  have "((\<lambda>y. (1 + x * y) powr (1 / y)) ---> exp x) (at_right 0)"
-    sorry
-
-  show ?thesis
-    sorry
-qed
-
-
-lemma exp_limit:
-  fixes x :: real
-  shows 
-
 
 
 (** Inequality for difference of complex products. **)
@@ -199,6 +160,11 @@ lemma (in prob_space) indep_vars_cmult:
   apply assumption
 by auto
 
+lemma (in prob_space) variance_mean_zero: "expectation X = 0 \<Longrightarrow>
+    variance X = expectation (\<lambda>x. (X x)^2)"
+by auto
+
+
 (* for sanity, this is a special case of equation_26p5b *)
 lemma (in real_distribution) aux:
   fixes t
@@ -208,9 +174,70 @@ lemma (in real_distribution) aux:
     integrable_2: "integrable M (\<lambda>x. x^2)" and
     integral_2: "variance (\<lambda>x. x) = \<sigma>2"
   shows 
+    "cmod (char M t - (1 - t^2 * \<sigma>2 / 2)) \<le>  (t^2 / 6) * 
+        expectation (\<lambda>x. min (6 * x^2) (abs t * (abs x)^3) )"
+proof -
+  note real_distribution.equation_26p5b_stronger [of M 2 t, simplified]
+  have [simp]: "prob UNIV = 1" by (metis prob_space space_eq_univ)
+  have 0: "ii * t * ii * t = - t * t"
+    by (metis comm_semiring_1_class.normalizing_semiring_rules(7) 
+      complex_i_mult_minus of_real_minus of_real_mult)
+  from integral_2 have [simp]: "expectation (\<lambda>x. x * x) = \<sigma>2" 
+    by (simp add: integral_1 numeral_eq_Suc)
+  {
+    fix k :: nat
+    assume "k \<le> 2"
+    hence "k = 0 \<or> k = 1 \<or> k = 2" by auto
+    with assms have "integrable M (\<lambda>x. x^k)" by auto
+  } note 1 = this
+  note equation_26p5b_stronger
+  note 2 = equation_26p5b_stronger [of 2 t, OF 1, simplified]
+  have "cmod (char M t - (\<Sum>k\<le>2. (\<i> * t) ^ k * (expectation (\<lambda>x. x ^ k)) / (real (fact k))))
+      \<le> t\<^sup>2 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3)) / real (fact (3::nat))"
+      by (rule equation_26p5b_stronger [of 2 t, OF 1, simplified], simp)
+  also have "(\<Sum>k\<le>2. (\<i> * t) ^ k * expectation (\<lambda>x. x ^ k) / (real (fact k))) = 1 - t^2 * \<sigma>2 / 2"
+    apply (simp add: numeral_eq_Suc real_of_nat_Suc integral_1 mult_assoc [symmetric])
+    by (subst 0, simp add: of_real_mult)
+  also have "real (fact (3::nat)) = 6" by (simp add: eval_nat_numeral)
+  also have "t\<^sup>2 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3)) / 6 = 
+     t\<^sup>2 / 6 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3))" by (simp add: field_simps)
+  finally show ?thesis .
+qed
+
+lemma (in prob_space) real_distribution_distr [intro, simp]: "random_variable borel X \<Longrightarrow> 
+    real_distribution (distr M borel X)"
+  unfolding real_distribution_def real_distribution_axioms_def apply auto
+by (rule prob_space_distr)  
+
+lemma (in prob_space) aux':
+  fixes \<mu> :: "real measure" and X
+  assumes
+    rv_X [simp]: "random_variable borel X" and
+    [simp]: "integrable M X" and
+    [simp]: "integrable M (\<lambda>x. (X x)^2)" and
+    expect_X [simp]: "expectation X = 0" and
+    var_X: "variance X = \<sigma>2"  and
+    \<mu>_def: "\<mu> = distr M borel X"
+  shows 
+    "cmod (char \<mu> t - (1 - t^2 * \<sigma>2 / 2)) \<le>  (t^2 / 6) * 
+        expectation (\<lambda>x. min (6 * (X x)^2) (abs t * (abs (X x))^3) )"
+
+  apply (subst \<mu>_def)
+  apply (subst integral_distr [symmetric, OF rv_X])
+  apply force
+  apply (rule real_distribution.aux)
+using var_X by (auto simp add: integrable_distr_eq integral_distr)
+
+lemma (in real_distribution) aux_old:
+  fixes t
+  assumes
+    integrable_1: "integrable M (\<lambda>x. x)" and
+    integral_1: "expectation (\<lambda>x. x) = 0" and
+    integrable_2: "integrable M (\<lambda>x. x^2)" and
+    integral_2: "variance (\<lambda>x. x) = \<sigma>2"
+  shows 
     "cmod (char M t - (1 - t^2 * \<sigma>2 / 2)) \<le>  t^2 * \<sigma>2"
 proof -
-  note real_distribution.equation_26p5b [of M 2 t]
   have [simp]: "prob UNIV = 1" by (metis prob_space space_eq_univ)
   have 0: "ii * t * ii * t = - t * t"
     by (metis comm_semiring_1_class.normalizing_semiring_rules(7) 
@@ -234,11 +261,7 @@ proof -
   finally show ?thesis .
 qed
 
-lemma (in prob_space) variance_mean_zero: "expectation X = 0 \<Longrightarrow>
-    variance X = expectation (\<lambda>x. (X x)^2)"
-by auto
-
-lemma (in prob_space) aux':
+lemma (in prob_space) aux_old':
   fixes \<mu> :: "real measure" and X
   assumes
     rv_X [simp]: "random_variable borel X" and
@@ -251,11 +274,33 @@ lemma (in prob_space) aux':
     "cmod (char \<mu> t - (1 - t^2 * \<sigma>2 / 2)) \<le>  t^2 * \<sigma>2"
 
   apply (subst \<mu>_def)
-  apply (rule real_distribution.aux)
+  apply (rule real_distribution.aux_old)
   unfolding real_distribution_def real_distribution_axioms_def apply auto
   apply (rule prob_space_distr)
 using var_X by (auto simp add: integrable_distr_eq integral_distr)
 
+lemma sqrt_at_top: "LIM x at_top. sqrt x :: real :> at_top"
+  by (rule filterlim_at_top_at_top[where Q="\<lambda>x. True" and P="\<lambda>x. 0 < x" and g="power2"])
+     (auto intro: eventually_gt_at_top)
+
+lemma (in real_distribution) cmod_char_le_1: "cmod (char M t) \<le> 1"
+  unfolding char_def
+  apply (rule order_trans)
+  apply (rule complex_lebesgue_integral_cmod)
+  apply auto
+  apply (rule complex_integrable_const_bound [of _ 1])
+by auto
+
+theorem levy_continuity:
+  fixes
+    M :: "nat \<Rightarrow> real measure" and
+    M' :: "real measure"
+  assumes 
+    prob_M : "\<And>n. prob_space (M n)" and
+    prob_M': "prob_space M'" and
+    char_conv: "\<And>t. (\<lambda>n. char (M n) t) ----> char M' t" 
+  shows "weak_conv_m M M'"
+sorry
 
 theorem (in real_distribution) central_limit_theorem:
   fixes 
@@ -264,80 +309,141 @@ theorem (in real_distribution) central_limit_theorem:
     \<sigma>2 :: real and
     S :: "nat \<Rightarrow> real \<Rightarrow> real"
   assumes
-    X_seq_meas [simp]: "\<And>n. X n \<in> measurable M borel" (* implied by indep_vars? *) and
-    X_seq_indep: "indep_vars (\<lambda>i. borel) X UNIV" and
+    X_indep: "indep_vars (\<lambda>i. borel) X UNIV" and
     X_integrable: "\<And>n. integrable M (X n)" and
-    X_seq_mean_0: "\<And>n. expectation (X n) = 0" and
-    sigma_pos: "\<sigma>2 > 0" (* eliminate this *) and 
+    X_mean_0: "\<And>n. expectation (X n) = 0" and
+    \<sigma>2_pos: "\<sigma>2 > 0" and 
     X_square_integrable: "\<And>n. integrable M (\<lambda>x. (X n x)\<^sup>2)" and
-    X_seq_variance: "\<And>n. variance (X n) = \<sigma>2" and
-    X_seq_distrib: "\<And>n. distr M borel (X n) = \<mu>"
+    X_variance: "\<And>n. variance (X n) = \<sigma>2" and
+    X_distrib: "\<And>n. distr M borel (X n) = \<mu>"
   defines
-    "S n x \<equiv> (\<Sum> i < n. X i x) / sqrt (\<sigma>2 * n)"
+    "S \<equiv> (\<lambda> n x. (\<Sum> i < n. X i x) / sqrt (\<sigma>2 * n))"
   shows
-    "weak_conv_m (\<lambda>n. distr M borel (\<lambda>x. S n x)) 
-       (density lborel standard_normal_density)"
+    "weak_conv_m (\<lambda>n. distr M borel (S n)) (density lborel standard_normal_density)"
 
 proof -
   def \<phi> \<equiv> "\<lambda>n. char (distr M borel (\<lambda>x. S n x))"
-  def \<psi> \<equiv> "\<lambda>n i. char (distr M borel (\<lambda>x. X i x / sqrt (\<sigma>2 * n)))"
-  def \<psi>' \<equiv> "\<lambda>n t. char \<mu> (t / sqrt (\<sigma>2 * n))"
-  have *: "\<And>n i t. \<psi> n i t = \<psi>' n t"
-    unfolding \<psi>_def \<psi>'_def char_def apply auto
-      apply (subst X_seq_distrib [symmetric])
-      apply (subst complex_integral_distr, auto)
-      apply (rule borel_measurable_divide, auto)
-      by (subst complex_integral_distr, auto)
-  have [simp]: "\<And>i. expectation (\<lambda>x. (X i x)\<^sup>2) = \<sigma>2" 
-    using X_seq_variance by (simp add: X_seq_mean_0)
-  {
-    fix n i :: nat and t :: real
-    have 1: "\<psi> n i t = char (distr M borel (\<lambda>x. X i x)) (t / sqrt (\<sigma>2 * n))"
-      unfolding char_def \<psi>_def apply auto
-      apply (subst complex_integral_distr, auto)
-      apply (rule borel_measurable_divide, auto)
-      by (subst complex_integral_distr, auto)
-    have "cmod (\<psi> n i t - (1 - (t / sqrt (\<sigma>2 * n))^2 * \<sigma>2 / 2)) \<le> (t / sqrt (\<sigma>2 * n))^2 * \<sigma>2"
-      apply (subst 1)
-      by (rule aux' [of "X i"], auto simp add: assms)
-    also have "(t / sqrt (\<sigma>2 * n))^2 * \<sigma>2 = t^2 / n"
-      using sigma_pos apply (simp add: power_divide)
-      by (subst real_sqrt_pow2, rule mult_nonneg_nonneg, auto)
-    also have "(t / sqrt (\<sigma>2 * n))^2 * \<sigma>2 = t^2 / n"  (* factor this! *)
-      using sigma_pos apply (simp add: power_divide)
-      by (subst real_sqrt_pow2, rule mult_nonneg_nonneg, auto)
-    also have "t^2 / n / 2 = t^2 / (2 * n)" by simp
-    also note * [of n i t]
-    finally have "cmod (\<psi>' n t - (1 - t^2 / (2 * n))) \<le> t^2 / n" .
-  } note ** = this
+  def \<psi> \<equiv> "\<lambda>n t. char \<mu> (t / sqrt (\<sigma>2 * n))"
 
-  {
+  have X_rv [simp, measurable]: "\<And>n. random_variable borel (X n)"
+    using X_indep unfolding indep_vars_def2 by simp
+  have S_rv [simp, measurable]: "\<And>n. random_variable borel (S n)"
+    unfolding S_def by measurable
+
+  interpret \<mu>: real_distribution \<mu>
+    by (subst X_distrib [symmetric, of 0], rule real_distribution_distr, simp)
+  (* these are equivalent to the hypotheses on X, given X_distr *)
+  have \<mu>_integrable [simp]: "integrable \<mu> (\<lambda>x. x)"
+    apply (simp add: X_distrib [symmetric, of 0])
+    using assms by (subst integrable_distr_eq, auto)
+  have \<mu>_mean_integrable [simp]: "\<mu>.expectation (\<lambda>x. x) = 0"
+    apply (simp add: X_distrib [symmetric, of 0])
+    using assms by (subst integral_distr, auto)
+  have \<mu>_square_integrable [simp]: "integrable \<mu> (\<lambda>x. x^2)"
+    apply (simp add: X_distrib [symmetric, of 0])
+    using assms by (subst integrable_distr_eq, auto)
+  have \<mu>_variance [simp]: "\<mu>.expectation (\<lambda>x. x^2) = \<sigma>2"
+    apply (simp add: X_distrib [symmetric, of 0])
+    using assms by (subst integral_distr, auto)
+
+  have main: "\<And>t. eventually (\<lambda>n. cmod (\<phi> n t - (1 + (-(t^2) / 2) / n)^n) \<le> 
+        (t\<^sup>2 / (6 * \<sigma>2) * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>t / sqrt (\<sigma>2 * n)\<bar> * \<bar>x\<bar> ^ 3))))
+      sequentially"
+  proof (rule eventually_sequentiallyI)
     fix n :: nat and t :: real
+    assume "n \<ge> natceiling (t^2 / 4)"
+    hence n: "n \<ge> t^2 / 4" by (subst natceiling_le_eq [symmetric])
+    let ?t = "t / sqrt (\<sigma>2 * n)"
+
+    def \<psi>' \<equiv> "\<lambda>n i. char (distr M borel (\<lambda>x. X i x / sqrt (\<sigma>2 * n)))"
+    have *: "\<And>n i t. \<psi>' n i t = \<psi> n t"
+      unfolding \<psi>_def \<psi>'_def char_def apply auto
+      apply (subst X_distrib [symmetric])
+      apply (subst complex_integral_distr, auto)
+      by (subst complex_integral_distr, auto)
+
     have 1: "S n = (\<lambda>x. (\<Sum> i < n. X i x / sqrt (\<sigma>2 * n)))" 
       by (rule ext, simp add: S_def setsum_divide_distrib)
-    have "\<phi> n t = (\<Prod> i < n. \<psi> n i t)"
-      unfolding \<phi>_def \<psi>_def apply (subst 1)
-      apply (rule char_distr_setsum)
-      by (rule indep_vars_compose2 [OF X_seq_indep], auto)
-    also have "\<dots> = (\<psi>' n t)^n"
-      by (auto simp add: * setprod_constant)
-    finally have 2: "\<phi> n t =(\<psi>' n t)^n" .
-    have "cmod (\<phi> n t - (complex_of_real (1 - t^2 / (2 * n)))^n) \<le> 
-         n * cmod (\<psi>' n t - (complex_of_real (1 - t^2 / (2 * n))))"
-      apply (subst 2)
-      apply (rule complex_power_diff)
-      sorry
-    also have "\<dots> \<le> n * (t^2 / n)"
-      apply (rule mult_left_mono)
-      by (rule **, simp)
-    also have "\<dots> = t^2" 
-      apply (simp add: field_simps)
-      sorry
-    finally have "cmod (\<phi> n t - (1 - t^2 / (2 * n))^n) \<le> t^2" 
-      by simp
-  } note 1 = this
 
-  show ?thesis
-    sorry
+    have "\<phi> n t = (\<Prod> i < n. \<psi>' n i t)"
+      unfolding \<phi>_def \<psi>'_def apply (subst 1)
+      apply (rule char_distr_setsum)
+      by (rule indep_vars_compose2 [OF X_indep], auto)
+    also have "\<dots> = (\<psi> n t)^n"
+      by (auto simp add: * setprod_constant)
+    finally have 2: "\<phi> n t =(\<psi> n t)^n" .
+
+    have "cmod (\<psi> n t - (1 - ?t^2 * \<sigma>2 / 2)) \<le> 
+        ?t\<^sup>2 / 6 * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t\<bar> * \<bar>x\<bar> ^ 3))"
+      unfolding \<psi>_def by (rule \<mu>.aux, auto)
+    also have "?t^2 * \<sigma>2 = t^2 / n"
+      using \<sigma>2_pos apply (simp add: power_divide)
+      by (subst real_sqrt_pow2, rule mult_nonneg_nonneg, auto)
+    also have "t^2 / n / 2 = (t^2 / 2) / n" by simp
+    finally have **: "cmod (\<psi> n t - (1 + (-(t^2) / 2) / n)) \<le> 
+      ?t\<^sup>2 / 6 * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t\<bar> * \<bar>x\<bar> ^ 3))" by simp
+
+    have "cmod (\<phi> n t - (complex_of_real (1 + (-(t^2) / 2) / n))^n) \<le> 
+         n * cmod (\<psi> n t - (complex_of_real (1 + (-(t^2) / 2) / n)))"
+      apply (subst 2, rule complex_power_diff)
+      unfolding \<psi>_def apply (rule \<mu>.cmod_char_le_1)
+      apply (simp only: norm_of_real)
+      apply (auto intro!: abs_leI)
+      apply (rule divide_nonneg_nonneg, auto)
+      using n by (subst divide_le_eq, auto)
+    also have "\<dots> \<le> n * (?t\<^sup>2 / 6 * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t\<bar> * \<bar>x\<bar> ^ 3)))"
+      by (rule mult_left_mono [OF **], simp)
+    also have "\<dots> = (t\<^sup>2 / (6 * \<sigma>2) * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t\<bar> * \<bar>x\<bar> ^ 3)))" 
+      using \<sigma>2_pos apply (simp add: field_simps power_divide)
+      apply (subst real_sqrt_pow2, rule mult_nonneg_nonneg, auto)
+      by (subst (asm) min_absorb2, auto)
+    finally show "cmod (\<phi> n t - (1 + (-(t^2) / 2) / n)^n) \<le> 
+        (t\<^sup>2 / (6 * \<sigma>2) * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t\<bar> * \<bar>x\<bar> ^ 3)))" 
+      by simp
+  qed
+
+  have "\<And>t. (\<lambda>n. \<phi> n t) ----> char standard_normal_distribution t"
+  proof -
+    fix t
+    let ?t = "\<lambda>n. t / sqrt (\<sigma>2 * n)"
+    have *: "\<And>n. integrable \<mu> (\<lambda>x. 6 * x^2)" by auto
+    have **: "\<And>n. integrable \<mu> (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t / sqrt (\<sigma>2 * real n)\<bar> * \<bar>x\<bar> ^ 3))"
+      apply (rule integrable_bound [OF *])
+      using \<sigma>2_pos by (subst abs_of_nonneg, auto intro: mult_nonneg_nonneg)
+    have ***: "\<And>x. (\<lambda>n. \<bar>t\<bar> * \<bar>x\<bar> ^ 3 / \<bar>sqrt (\<sigma>2 * real n)\<bar>) ----> 0"
+      apply (subst divide_inverse)
+      apply (rule tendsto_mult_right_zero)
+      using \<sigma>2_pos apply (subst abs_of_nonneg, simp add: mult_nonneg_nonneg)
+      apply (simp add: real_sqrt_mult)
+      apply (rule tendsto_mult_right_zero)
+      apply (rule tendsto_inverse_0_at_top)
+      by (rule filterlim_compose [OF sqrt_at_top filterlim_real_sequentially])
+    have "(\<lambda>n. LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t n\<bar> * \<bar>x\<bar> ^ 3)) ----> (LINT x|\<mu>. 0)"
+      apply (rule integral_dominated_convergence [where w = "\<lambda>x. 6 * x^2", OF **])
+      apply (auto intro!: AE_I2)
+      using \<sigma>2_pos apply (subst abs_of_nonneg, auto intro: mult_nonneg_nonneg)
+      apply (rule tendsto_sandwich [OF _ _ tendsto_const ***])
+      apply (auto intro!: always_eventually min.cobounded2)
+      by (rule mult_nonneg_nonneg, auto)
+    hence "(\<lambda>n. LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t n\<bar> * \<bar>x\<bar> ^ 3)) ----> 0" by simp
+    hence main2: "(\<lambda>n. t\<^sup>2 / (6 * \<sigma>2) * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t n\<bar> * \<bar>x\<bar> ^ 3))) ----> 0"
+      by (rule tendsto_mult_right_zero)
+    have **: "(\<lambda>n. (1 + (-(t^2) / 2) / n)^n) ----> exp (-(t^2) / 2)"
+      by (rule exp_limit'')
+    have "(\<lambda>n. complex_of_real ((1 + (-(t^2) / 2) / n)^n)) ----> 
+        complex_of_real (exp (-(t^2) / 2))"
+      by (rule isCont_tendsto_compose [OF _ **], auto)
+    hence "(\<lambda>n. \<phi> n t) ----> complex_of_real (exp (-(t^2) / 2))"
+      apply (rule LIMSEQ_diff_approach_zero)
+      by (rule Lim_null_comparison [OF main main2])
+    thus "(\<lambda>n. \<phi> n t) ----> char standard_normal_distribution t"
+      by (subst char_standard_normal_distribution)
+  qed
+  thus ?thesis
+    apply (intro levy_continuity)
+    apply (rule prob_space_distr [OF S_rv])
+    apply (rule prob_space_normal_density, simp)
+    unfolding \<phi>_def by -
 qed
+
 
