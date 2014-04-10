@@ -112,8 +112,8 @@ proof -
       apply (rule bdd_below)
       by (rule subset)
   qed
-  moreover have "\<And>x. continuous (at_right x) F"
-    apply (unfold continuous_def)
+  moreover have "\<And>x. continuous (at_right x) F" 
+    apply (unfold Topological_Spaces.continuous_def)
     apply (unfold tendsto_def, auto)
     apply (subst eventually_at_right)
     proof -
@@ -382,13 +382,45 @@ proof auto
   ultimately have "measure M UNIV = 1" by simp
   hence probM: "real_distribution M" sorry
   with F have "weak_conv f F" unfolding weak_conv_def using lim_subseq sorry
-  hence "weak_conv_m (\<mu> \<circ> s \<circ> r) M" unfolding weak_conv_m_def f_def unfolding M_def sorry
+  hence "weak_conv_m (\<mu> \<circ> s \<circ> r) M" unfolding weak_conv_m_def f_def M_def sorry
   hence "\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M" using probM by auto
   thus "\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" using F by auto
 next (* This half of the theorem is not needed for later developments. *)
   fix \<mu> :: "nat \<Rightarrow> real measure"
   assume "\<forall>s. subseq s \<longrightarrow> (\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M))"
   show "tight \<mu>" sorry
+qed
+
+corollary tight_subseq_weak_converge:
+  fixes \<mu> :: "nat \<Rightarrow> real measure" and M :: "real measure"
+  assumes "\<And>n. real_distribution (\<mu> n)" "real_distribution M" and tight: "tight \<mu>" and
+    subseq: "\<And>s. subseq s \<Longrightarrow> \<exists>\<nu>. weak_conv_m (\<mu> \<circ> s) \<nu> \<Longrightarrow> weak_conv_m (\<mu> \<circ> s) M"
+  shows "weak_conv_m \<mu> M"
+proof (rule ccontr)
+  from tight tight_iff_convergent_subsubsequence
+  have subsubseq: "\<forall>s. subseq s \<longrightarrow> (\<exists>r M. subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)"
+    by simp
+  {
+    fix s assume s: "subseq s"
+    with subsubseq subseq have "\<exists>r M. subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M"
+      by simp
+    then guess r .. note r = this
+    then guess \<nu> .. note \<nu> = this
+    hence subsubseq_conv: "\<exists>\<nu>. weak_conv_m (\<mu> \<circ> (s \<circ> r)) \<nu>" by (auto simp add: o_assoc)
+    from s r have sr: "subseq (s \<circ> r)" using subseq_o by auto
+    with subsubseq_conv subseq have "weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
+    with r have "\<exists>r. subseq r \<and> weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
+  }
+  hence "\<And>s. subseq s \<Longrightarrow> \<exists>r. subseq r \<and> weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
+  def f \<equiv> "\<lambda>n. cdf (\<mu> n)"
+  def F \<equiv> "cdf M"
+  assume CH: "\<not> weak_conv_m \<mu> M"
+  hence "\<exists>x. isCont F x \<and> \<not>((\<lambda>n. f n x) ----> F x)"
+    unfolding weak_conv_m_def weak_conv_def f_def F_def by auto
+  then guess x .. note x = this
+  hence "\<exists>\<epsilon>>0. \<exists>s. subseq s \<and> (\<forall>n. \<bar>f (s n) x - F x\<bar> \<ge> \<epsilon>)" sorry
+  hence "\<And>s. subseq s \<Longrightarrow> \<not>weak_conv_m (\<mu> \<circ> s) M" sorry
+  thus False using subseq tight sorry
 qed
 
 end
