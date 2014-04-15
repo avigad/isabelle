@@ -6,6 +6,10 @@ theory Convolution
   imports Probability Auxiliary
 begin
 
+lemma (in pair_sigma_finite) Fubini':
+  "(\<lambda>(x, y). f x y) \<in> borel_measurable (M1 \<Otimes>\<^sub>M M2) \<Longrightarrow> (\<integral>\<^sup>+x. \<integral>\<^sup>+y. f x y \<partial>M2 \<partial>M1) = (\<integral>\<^sup>+y. \<integral>\<^sup>+x. f x y \<partial>M1 \<partial>M2)"
+  using Fubini[of "\<lambda>(x, y). f x y"] by simp
+
 definition convolution :: "('a :: ordered_euclidean_space) measure \<Rightarrow> 'a measure \<Rightarrow> 'a measure" (infix "\<star>" 50) where
   "convolution M N = distr (M \<Otimes>\<^sub>M N) borel (\<lambda>(x, y). x + y)"
 
@@ -93,7 +97,6 @@ proof (rule measure_eqI)
 qed
 
 lemma convolution_associative:
-  (*distributive also*)
   assumes [simp]: "finite_measure M" "finite_measure N"  "finite_measure L"
   assumes [simp]: "sets N = sets borel" "sets M = sets borel" "sets L = sets borel"
   shows "(L \<star> (M \<star> N)) = ((L \<star> M) \<star> N)"
@@ -115,113 +118,119 @@ lemma (in prob_space) sum_indep_random_variable_lborel:
   using ind unfolding indep_var_distribution_eq convolution_def 
   by (auto simp: distr_distr o_def intro!: arg_cong[where f = "distr M borel"] cong: distr_cong)
 
-lemma convolution_density_ereal:
-  fixes f :: "real \<Rightarrow> ereal"
-  fixes g::"real \<Rightarrow> ereal" 
-  assumes [simp, measurable]:"f \<in> borel_measurable lborel"  "g \<in> borel_measurable lborel"
-  assumes [simp]:"finite_measure (density lborel f)" "finite_measure (density lborel g)"
-(* need this assumption to be forall instead of AE because positive_integral_cmult needs it *)
-  assumes gt_0[simp, arith]: "\<And> x. 0\<le> f x"  "\<And>x. 0\<le> g x"
-  shows "density lborel f \<star> density lborel g = density lborel (\<lambda>x. \<integral>\<^sup>+y. f (x - y) * g y \<partial>lborel)"
-apply (auto intro!: measure_eqI  simp: convolution_emeasure' positive_integral_density)
-apply (subst emeasure_density, measurable, auto simp: positive_integral_cmult[symmetric])
-apply (subst positive_integral_multc[symmetric], measurable, auto)
-proof -
-  fix A:: "real set"
-  assume [simp, measurable]:"A \<in> sets borel"  
-  
-  have "(\<integral>\<^sup>+ x. \<integral>\<^sup>+ xa. f (x - xa) * g xa * indicator A x \<partial>lborel \<partial>lborel) = \<integral>\<^sup>+ x. \<integral>\<^sup>+ xa. (\<lambda>(x, xa). f (x - xa) * g xa * indicator A x) (x, xa) \<partial>lborel \<partial>lborel"
-    by(rule positive_integral_cong)+ auto    
-  also have "... =  \<integral>\<^sup>+ xa. \<integral>\<^sup>+ x. (\<lambda>(y, z). f (y - z) * g z * indicator A y) (x, xa) \<partial>lborel \<partial>lborel"
-    by(rule lborel_pair.Fubini[symmetric], measurable, auto)    
-  also have "... =  \<integral>\<^sup>+ xa. \<integral>\<^sup>+ x. f (x - xa) * g xa * indicator A x \<partial>lborel \<partial>lborel" by(auto intro!: positive_integral_cong)
-  also have "... =  \<integral>\<^sup>+ xa. \<integral>\<^sup>+ x. f x * g xa * indicator A (x + xa) \<partial>lborel \<partial>lborel"
-    apply (rule positive_integral_cong)
-    apply (subst(2) positive_integral_real_affine[where t = "- x" and c = 1])
-    by (auto intro!: positive_integral_cong simp: add_commute)
-      
-  also have "... = \<integral>\<^sup>+ xa. \<integral>\<^sup>+ x. (\<lambda>(xa, x). f x * g xa * indicator A (x + xa)) (xa, x) \<partial>lborel \<partial>lborel"
-    by (auto intro!: positive_integral_cong)
-  also have "... = \<integral>\<^sup>+ x. \<integral>\<^sup>+ xa. (\<lambda>(xa, x). f x * g xa * indicator A (x + xa)) (xa, x) \<partial>lborel \<partial>lborel"
-    by (rule lborel_pair.Fubini[symmetric]) simp
-  also have "... = \<integral>\<^sup>+ x. \<integral>\<^sup>+ xa. f x *  g xa * indicator A (x + xa) \<partial>lborel \<partial>lborel"
-    by (auto intro!: positive_integral_cong)
-
-  finally have 1: "(\<integral>\<^sup>+ x. \<integral>\<^sup>+ xa. f (x - xa) * g xa * indicator A x \<partial>lborel \<partial>lborel) 
-      = \<integral>\<^sup>+ x. \<integral>\<^sup>+ xa. f x * g xa * indicator A (x + xa) \<partial>lborel \<partial>lborel" by simp
-  
-  show "(\<integral>\<^sup>+ x. \<integral>\<^sup>+ xa. f x * (g xa * indicator A (x + xa)) \<partial>lborel \<partial>lborel) = \<integral>\<^sup>+ x. \<integral>\<^sup>+ xa. f (x - xa) * g xa * indicator A x \<partial>lborel \<partial>lborel"
-    by (subst 1) (auto intro!: positive_integral_cong simp: field_simps)
-qed
-
 lemma convolution_density:
-  fixes f :: "real \<Rightarrow> real"
-  fixes g::"real \<Rightarrow> real"
-  assumes [simp, measurable]:"f \<in> borel_measurable lborel"  "g \<in> borel_measurable lborel"
+  fixes f g :: "real \<Rightarrow> ereal"
+  assumes [measurable]: "f \<in> borel_measurable borel" "g \<in> borel_measurable borel"
   assumes [simp]:"finite_measure (density lborel f)" "finite_measure (density lborel g)"
-  assumes gt_0[simp]: "\<And>x. 0\<le> f x"  "\<And>x. 0\<le> g x"
-  shows "density lborel f \<star> density lborel g = density lborel (\<lambda>x.\<integral>\<^sup>+y. f (x - y) * g y \<partial>lborel)"
-  by (auto simp: convolution_density_ereal)
+  assumes gt_0[simp]: "AE x in lborel. 0 \<le> f x" "AE x in lborel. 0 \<le> g x"
+  shows "density lborel f \<star> density lborel g = density lborel (\<lambda>x. \<integral>\<^sup>+y. f (x - y) * g y \<partial>lborel)"
+    (is "?l = ?r")
+proof (intro measure_eqI)
+  fix A assume "A \<in> sets ?l"
+  then have [measurable]: "A \<in> sets borel"
+    by simp
 
-lemma (in prob_space) convolution_distributed_indep_random_variable_sum:
-  fixes f :: "real \<Rightarrow> real"
-  fixes g :: "real \<Rightarrow> real"
-  assumes ind[simp]: "indep_var borel X borel Y"
-  assumes [simp, measurable]: "distributed M lborel X f"
-  assumes [simp, measurable]: "distributed M lborel Y g"
-  (* wanted to use AE but have to use for all as convolution_density uses forall *)
-  assumes gt_0[simp, arith]: "\<And> x. 0\<le> f x"  "\<And>x. 0\<le> g x"
-  shows "distributed M lborel (\<lambda>x. X x + Y x) (\<lambda>x.\<integral>\<^sup>+y. f (x - y) * g y \<partial>lborel)"
-proof(auto simp: distributed_def)  
-  from assms(2) have 1[simp, measurable]:"distr M lborel X = density lborel  (\<lambda>x. ereal (f x))"
-      "(\<lambda>x. ereal (f x)) \<in> borel_measurable lborel"
-      "(AE x in lborel. 0 \<le> f x)"
-      "random_variable lborel X"
-       by(auto simp: distributed_def)
+  have "(\<integral>\<^sup>+x. f x * (\<integral>\<^sup>+y. g y * indicator A (x + y) \<partial>lborel) \<partial>lborel) =
+    (\<integral>\<^sup>+x. (\<integral>\<^sup>+y. g y * (f x * indicator A (x + y)) \<partial>lborel) \<partial>lborel)"
+    using gt_0
+  proof (intro positive_integral_cong_AE, eventually_elim)
+    fix x assume "0 \<le> f x"
+    then have "f x * (\<integral>\<^sup>+ y. g y * indicator A (x + y) \<partial>lborel) =
+      (\<integral>\<^sup>+ y. f x * (g y * indicator A (x + y)) \<partial>lborel)"
+      by (intro positive_integral_cmult[symmetric]) auto
+    then show "f x * (\<integral>\<^sup>+ y. g y * indicator A (x + y) \<partial>lborel) =
+      (\<integral>\<^sup>+ y. g y * (f x * indicator A (x + y)) \<partial>lborel)"
+      by (simp add: ac_simps)
+  qed
+  also have "\<dots> = (\<integral>\<^sup>+y. (\<integral>\<^sup>+x. g y * (f x * indicator A (x + y)) \<partial>lborel) \<partial>lborel)"
+    by (intro lborel_pair.Fubini') simp
+  also have "\<dots> = (\<integral>\<^sup>+y. (\<integral>\<^sup>+x. f (x - y) * g y * indicator A x \<partial>lborel) \<partial>lborel)"
+    using gt_0
+  proof (intro positive_integral_cong_AE, eventually_elim)
+    fix y assume "0 \<le> g y"
+    then have "(\<integral>\<^sup>+x. g y * (f x * indicator A (x + y)) \<partial>lborel) =
+      g y * (\<integral>\<^sup>+x. f x * indicator A (x + y) \<partial>lborel)"
+      by (intro positive_integral_cmult) auto
+    also have "\<dots> = g y * (\<integral>\<^sup>+x. f (x - y) * indicator A x \<partial>lborel)"
+      using gt_0
+      by (subst positive_integral_real_affine[where c=1 and t="-y" and M=lborel]) (auto simp del: gt_0)
+    also have "\<dots> = (\<integral>\<^sup>+x. g y * (f (x - y) * indicator A x) \<partial>lborel)"
+      using `0 \<le> g y` by (intro positive_integral_cmult[symmetric]) auto
+    finally show "(\<integral>\<^sup>+ x. g y * (f x * indicator A (x + y)) \<partial>lborel) =
+      (\<integral>\<^sup>+ x. f (x - y) * g y * indicator A x \<partial>lborel)"
+      by (simp add: ac_simps)
+  qed
+  also have "\<dots> = (\<integral>\<^sup>+x. (\<integral>\<^sup>+y. f (x - y) * g y * indicator A x \<partial>lborel) \<partial>lborel)"
+    by (intro lborel_pair.Fubini') simp
+  finally show "emeasure ?l A = emeasure ?r A"
+    by (auto simp: convolution_emeasure' positive_integral_density emeasure_density
+      positive_integral_multc)
+qed simp
 
-  from assms(3) have 2[simp, measurable]:"distr M lborel Y = density lborel (\<lambda>x. ereal (g x))"
-      "(\<lambda>x. ereal (g x)) \<in> borel_measurable lborel"
-      "(AE x in lborel. 0 \<le> g x)"
-      "random_variable lborel Y"
-      by(auto simp: distributed_def )
+lemma (in prob_space) distributed_finite_measure_density:
+  "distributed M N X f \<Longrightarrow> finite_measure (density N f)"
+  using finite_measure_distr[of X N] distributed_distr_eq_density[of M N X f] by simp
+  
 
-  show "distr M lborel (\<lambda>x. X x + Y x) = density lborel (\<lambda>x. \<integral>\<^sup>+ y. f (x - y) * g y \<partial>lborel)"
-    apply (subst sum_indep_random_variable_lborel)
-    apply fact+
-    apply (auto intro!: convolution_density finite_measure_distr)
-    apply (simp_all only: 1(1)[symmetric]  2(1)[symmetric])
-    by (intro finite_measure_distr, fact)+
+lemma (in prob_space) distributed_convolution:
+  fixes f :: "real \<Rightarrow> _"
+  fixes g :: "real \<Rightarrow> _"
+  assumes indep: "indep_var borel X borel Y"
+  assumes X: "distributed M lborel X f"
+  assumes Y: "distributed M lborel Y g"
+  shows "distributed M lborel (\<lambda>x. X x + Y x) (\<lambda>x. \<integral>\<^sup>+y. f (x - y) * g y \<partial>lborel)"
+  unfolding distributed_def
+proof safe
+  show "AE x in lborel. 0 \<le> \<integral>\<^sup>+ xa. f (x - xa) * g xa \<partial>lborel"
+    by (auto simp: positive_integral_positive)
 
-  show "random_variable borel (\<lambda>x. X x + Y x)" using 1(4) 2(4) by simp
+  have fg[measurable]: "f \<in> borel_measurable borel" "g \<in> borel_measurable borel"
+    using distributed_borel_measurable[OF X] distributed_borel_measurable[OF Y] by simp_all
+  
+  show "(\<lambda>x. \<integral>\<^sup>+ xa. f (x - xa) * g xa \<partial>lborel) \<in> borel_measurable lborel" 
+    by measurable
 
-  show "AE x in lborel. 0 \<le> \<integral>\<^sup>+ xa. ereal (f (x - xa) * g xa) \<partial>lborel" by (auto simp: positive_integral_positive)      
-
-  show "(\<lambda>x. \<integral>\<^sup>+ xa. ereal (f (x - xa) * g xa) \<partial>lborel) \<in> borel_measurable borel" by (measurable) auto
+  have "distr M borel (\<lambda>x. X x + Y x) = (distr M borel X \<star> distr M borel Y)"
+    using distributed_measurable[OF X] distributed_measurable[OF Y]
+    by (intro sum_indep_random_variable) (auto simp: indep)
+  also have "\<dots> = (density lborel f \<star> density lborel g)"
+    using distributed_distr_eq_density[OF X] distributed_distr_eq_density[OF Y]
+    by (simp cong: distr_cong)
+  also have "\<dots> = density lborel (\<lambda>x. \<integral>\<^sup>+ y. f (x - y) * g y \<partial>lborel)"
+  proof (rule convolution_density)
+    show "finite_measure (density lborel f)"
+      using X by (rule distributed_finite_measure_density)
+    show "finite_measure (density lborel g)"
+      using Y by (rule distributed_finite_measure_density)
+    show "AE x in lborel. 0 \<le> f x"
+      using X by (rule distributed_AE)
+    show "AE x in lborel. 0 \<le> g x"
+      using Y by (rule distributed_AE)
+  qed fact+
+  finally show "distr M lborel (\<lambda>x. X x + Y x) = density lborel (\<lambda>x. \<integral>\<^sup>+ y. f (x - y) * g y \<partial>lborel)"
+    by (simp cong: distr_cong)
+  show "random_variable lborel (\<lambda>x. X x + Y x)"
+    using distributed_measurable[OF X] distributed_measurable[OF Y] by simp
 qed
 
 lemma prob_space_convolution_density:
-  fixes f:: "real \<Rightarrow> real"
-  fixes g:: "real \<Rightarrow> real"
+  fixes f:: "real \<Rightarrow> _"
+  fixes g:: "real \<Rightarrow> _"
   assumes [measurable]: "f\<in> borel_measurable borel"
   assumes [measurable]: "g\<in> borel_measurable borel"
-  assumes gt_0[simp]: "\<And>x. 0\<le> f x" "\<And>x. 0\<le> g x"
-  assumes [simp]: "prob_space (density lborel f)" (is "prob_space ?F")
-  assumes [simp]: "prob_space (density lborel g)" (is "prob_space ?G")
+  assumes gt_0[simp]: "\<And>x. 0 \<le> f x" "\<And>x. 0 \<le> g x"
+  assumes "prob_space (density lborel f)" (is "prob_space ?F")
+  assumes "prob_space (density lborel g)" (is "prob_space ?G")
   shows "prob_space (density lborel (\<lambda>x.\<integral>\<^sup>+y. f (x - y) * g y \<partial>lborel))" (is "prob_space ?D")
-proof -
-  have [simp]: "integral\<^sup>P lborel f = 1" "integral\<^sup>P lborel g = 1" by(auto simp: one_ereal_def)
+proof (subst convolution_density[symmetric])
+  interpret F: prob_space ?F by fact
+  show "finite_measure ?F" by unfold_locales
+  interpret G: prob_space ?G by fact
+  show "finite_measure ?G" by unfold_locales
+  interpret FG: pair_prob_space ?F ?G ..
 
-  have "emeasure ?D (space ?D) =  emeasure (density lborel (\<lambda>x.\<integral>\<^sup>+y. f (x - y) * g y  \<partial>lborel)) UNIV" by auto
-  also have "... = \<integral>\<^sup>+ x. \<integral>\<^sup>+y. f (x - y) * g y \<partial>lborel \<partial>lborel" by (simp add:emeasure_density)
-  also have "... = \<integral>\<^sup>+ x. \<integral>\<^sup>+y. (\<lambda>(x,y). f (x - y) * g y) (x,y) \<partial>lborel \<partial>lborel" by (auto intro!: positive_integral_cong)
-  also have "... = \<integral>\<^sup>+ y. \<integral>\<^sup>+x. (\<lambda>(x,y). f (x - y) * g y) (x,y) \<partial>lborel \<partial>lborel" by (rule lborel_pair.Fubini[symmetric]) simp
-  also have "... = \<integral>\<^sup>+ y. (\<integral>\<^sup>+x.  f (x - y) \<partial>lborel) * g y \<partial>lborel"
-    by(subst positive_integral_multc[symmetric]) auto
-  also have "... = \<integral>\<^sup>+ y. (\<integral>\<^sup>+x. f x  \<partial>lborel) * g y \<partial>lborel"
-    apply (rule positive_integral_cong)
-    by (subst positive_integral_real_affine[of 1 f lborel "- x"]) (auto simp: field_simps)    
-  finally have "emeasure ?D (space ?D) = 1" by simp
+  show "prob_space (density lborel f \<star> density lborel g)"
+    unfolding convolution_def by (rule FG.prob_space_distr) simp
+qed simp_all
 
-  then show "prob_space ?D" by rule 
-qed
 end

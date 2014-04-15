@@ -99,7 +99,7 @@ lemma positive_integral_even_function:
   assumes [simp, measurable]: "f \<in> borel_measurable borel" "\<And>x. 0 \<le> f x" 
   assumes even: "\<And>x. f x = f (- x)"
   shows "integral\<^sup>P lborel f = 2 * integral\<^sup>P lborel (\<lambda>x. f x * indicator {0..} x)"
-  apply (auto simp: positive_integral_indicator_partition) 
+  apply (auto simp: positive_integral_indicator_partition simp del: mult_nonneg_nonneg)
   using even
   apply (subst positive_integral_even_function_eq[symmetric], auto)
   by (cases "\<integral>\<^sup>+ x. ereal (f x * indicator {0..} x) \<partial>lborel", auto)

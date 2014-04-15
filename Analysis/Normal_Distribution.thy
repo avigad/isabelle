@@ -192,97 +192,41 @@ next
   then show "distributed M lborel X (\<lambda>x. ereal (normal_density \<mu> \<sigma> x))" by simp
 qed
 
-lemma conv_standard_normal_density:
-  "(\<lambda>x. \<integral>\<^sup>+y. ereal (standard_normal_density (x - y) * standard_normal_density y) \<partial>lborel) = (normal_density 0 (sqrt 2))"
-proof -
-  have [simp]: "sqrt 4 = 2"
-    apply (subgoal_tac "2\<^sup>2 = 4")
-    apply (erule subst)
-    by (subst real_sqrt_abs, auto simp: power2_eq_square[symmetric])
-  
-  have "(\<lambda>x. \<integral>\<^sup>+y. ereal (standard_normal_density (x - y) * standard_normal_density y) \<partial>lborel)
-            = (\<lambda>x. \<integral>\<^sup>+y. ereal((1 / (2 * pi)) * exp (- x\<^sup>2 / 4) * exp (- (2 * y - x)\<^sup>2 /( 2 * (sqrt 2)\<^sup>2))) \<partial>lborel)"
-    apply (rule HOL.ext) unfolding standard_normal_density_def
-    apply (auto intro!: positive_integral_cong simp: mult_exp_exp power2_eq_square[symmetric])
-    by (simp add: power2_eq_square field_simps)     
-
-  also have "... = (\<lambda>x. \<integral>\<^sup>+y. ereal((1 / (2 * pi)) * exp (- x\<^sup>2 / 4) * exp (- y\<^sup>2)) \<partial>lborel)"
-    proof(rule HOL.ext)
-    fix x::real
-    show "(\<integral>\<^sup>+y. ereal (1 / (2 * pi) * exp (- x\<^sup>2 / 4) * exp (- (2 * y - x)\<^sup>2 / (2 * (sqrt 2)\<^sup>2))) \<partial>lborel) =
-        \<integral>\<^sup>+y. ereal (1 / (2 * pi) * exp (- x\<^sup>2 / 4) * exp (- y\<^sup>2)) \<partial>lborel"
-      apply (subst positive_integral_real_affine[where t="x/2" and  c="1" and M= lborel], auto)
-      by (auto intro!: positive_integral_cong simp: divide_nonneg_nonneg mult_nonneg_nonneg power2_eq_square)      
-    qed
-
-  also have "... = (\<lambda>x. ((1 / (2 * pi)) * exp (- x\<^sup>2 / 4)) * \<integral>\<^sup>+ y. ereal ( exp (- y\<^sup>2 ) ) \<partial>lborel)"
-    by (auto simp: divide_nonneg_nonneg mult_nonneg_nonneg positive_integral_cmult[symmetric])
-
-  also have "... = (\<lambda>x. ((1 / (2 * pi)) * exp (- x\<^sup>2 / 4)) * sqrt pi)"
-    by (subst gaussian_integral_positive, auto)
-
-  also have "... = (normal_density 0 (sqrt 2))"
-    unfolding normal_density_def
-    apply (rule HOL.ext)
-    by (auto simp:field_simps real_sqrt_mult power2_eq_square[symmetric])
-
-  finally show ?thesis by fast
-qed
-
 lemma conv_normal_density_zero_mean:
   assumes [simp, arith]: "0 < \<sigma>" "0 < \<tau>"
-  shows "(\<lambda>x. \<integral>\<^sup>+y. ereal (normal_density 0 \<sigma> (x - y) * normal_density 0 \<tau> y) \<partial>lborel) = (normal_density 0 (sqrt (\<sigma>\<^sup>2 + \<tau>\<^sup>2)))"  (is "?LHS = ?RHS")
+  shows "(\<lambda>x. \<integral>\<^sup>+y. ereal (normal_density 0 \<sigma> (x - y) * normal_density 0 \<tau> y) \<partial>lborel) =
+    normal_density 0 (sqrt (\<sigma>\<^sup>2 + \<tau>\<^sup>2))"  (is "?LHS = ?RHS")
 proof -
-  have [simp]: "sqrt (pi * (2 * \<sigma>\<^sup>2) + pi * (2 * \<tau>\<^sup>2)) * sqrt (pi * (2 * (sqrt (\<sigma>\<^sup>2 * \<tau>\<^sup>2 / (\<sigma>\<^sup>2 + \<tau>\<^sup>2)))\<^sup>2)) = 2 * pi * \<sigma> * \<tau>"
-    apply (subst distrib_left[symmetric])+
-    apply (subst real_sqrt_mult)+
-    by(auto simp : mult_nonneg_nonneg real_sqrt_divide real_sqrt_mult field_simps power2_eq_square[symmetric])
-  
-  have [simp]: "sqrt (pi * (2 * \<sigma>\<^sup>2)) * sqrt (pi * (2 * \<tau>\<^sup>2)) = pi * 2 * \<sigma> * \<tau>"
-    by (auto simp: field_simps real_sqrt_mult) (auto simp:  power2_eq_square[symmetric])
+  def \<sigma>' \<equiv> "\<sigma>\<^sup>2" and \<tau>' \<equiv> "\<tau>\<^sup>2"
+  then have [simp, arith]: "0 < \<sigma>'" "0 < \<tau>'"
+    by simp_all
+  let ?\<sigma> = "sqrt ((\<sigma>' * \<tau>') / (\<sigma>' + \<tau>'))"  
+  have sqrt: "(sqrt (2 * pi * (\<sigma>' + \<tau>')) * sqrt (2 * pi * (\<sigma>' * \<tau>') / (\<sigma>' + \<tau>'))) = 
+    (sqrt (2 * pi * \<sigma>') * sqrt (2 * pi * \<tau>'))"
+    by (subst power_eq_iff_eq_base[symmetric, where n=2])
+       (simp_all add: real_sqrt_mult[symmetric] power2_eq_square)
+  have "?LHS =
+    (\<lambda>x. \<integral>\<^sup>+y. ereal((normal_density 0 (sqrt (\<sigma>' + \<tau>')) x) * normal_density (\<tau>' * x / (\<sigma>' + \<tau>')) ?\<sigma> y) \<partial>lborel)"
+    apply (intro ext positive_integral_cong)
+    apply (simp add: normal_density_def \<sigma>'_def[symmetric] \<tau>'_def[symmetric] sqrt mult_exp_exp)
+    apply (simp add: divide_simps power2_eq_square)
+    apply (simp add: field_simps)
+    done
 
-  have 1: "\<And>x y. y\<^sup>2 / (2 * \<tau>\<^sup>2) = (y\<^sup>2 * \<sigma>\<^sup>2 * \<sigma>\<^sup>2 + y\<^sup>2 * \<sigma>\<^sup>2 * \<tau>\<^sup>2) / ( 2 * \<sigma>\<^sup>2 * \<tau>\<^sup>2 * (\<sigma>\<^sup>2 + \<tau>\<^sup>2))"
-    by (auto simp:field_simps power2_eq_square mult_nonneg_nonneg frac_eq_eq) 
-
-  have 2: "\<And>x y. (x - y)\<^sup>2 / (2 * \<sigma>\<^sup>2) 
-          = (x\<^sup>2 * \<sigma>\<^sup>2 * \<tau>\<^sup>2 + x\<^sup>2 * \<tau>\<^sup>2 * \<tau>\<^sup>2 + y\<^sup>2 * \<sigma>\<^sup>2 * \<tau>\<^sup>2 + y\<^sup>2 * \<tau>\<^sup>2 * \<tau>\<^sup>2 
-          - 2 * x * y * \<sigma>\<^sup>2 * \<tau>\<^sup>2 - 2 * x * y * \<tau>\<^sup>2 * \<tau>\<^sup>2) / ( 2 * \<sigma>\<^sup>2 * \<tau>\<^sup>2 * (\<sigma>\<^sup>2 + \<tau>\<^sup>2))"
-    by (auto simp:field_simps power2_eq_square mult_nonneg_nonneg frac_eq_eq)
-  
-  have 3: "\<And>x y. x\<^sup>2 / (2 * \<sigma>\<^sup>2 + 2 * \<tau>\<^sup>2) = (x\<^sup>2 * \<sigma>\<^sup>2 * \<tau>\<^sup>2 ) / ( 2 * \<sigma>\<^sup>2 * \<tau>\<^sup>2* (\<sigma>\<^sup>2 + \<tau>\<^sup>2))"
-    by (auto simp:field_simps power2_eq_square mult_nonneg_nonneg frac_eq_eq)  
-
-  have 4: "\<And>x y.((y * \<sigma>\<^sup>2 + y * \<tau>\<^sup>2 - x * \<tau>\<^sup>2) / (\<sigma>\<^sup>2 + \<tau>\<^sup>2))\<^sup>2 / (2 * (sqrt (\<sigma>\<^sup>2 * \<tau>\<^sup>2 / (\<sigma>\<^sup>2 + \<tau>\<^sup>2)))\<^sup>2)
-          = (y\<^sup>2 * \<sigma>\<^sup>2 * \<sigma>\<^sup>2 +  y\<^sup>2 * \<tau>\<^sup>2 * \<tau>\<^sup>2 + 2* y\<^sup>2 *\<sigma>\<^sup>2 *\<tau>\<^sup>2 + x\<^sup>2 * \<tau>\<^sup>2 * \<tau>\<^sup>2 
-            - 2* x*y*\<sigma>\<^sup>2 *\<tau>\<^sup>2 - 2*x* y*\<tau>\<^sup>2 *\<tau>\<^sup>2  ) / ( 2 * \<sigma>\<^sup>2 * \<tau>\<^sup>2* (\<sigma>\<^sup>2 + \<tau>\<^sup>2))"
-    apply(subst power_divide)
-    apply(subst real_sqrt_pow2)
-    by (auto simp:field_simps power2_eq_square zero_le_mult_iff zero_le_divide_iff frac_eq_eq power_divide) 
-
-  let ?new_var = "sqrt ((\<sigma>\<^sup>2 * \<tau>\<^sup>2 )/ (\<sigma>\<^sup>2 + \<tau>\<^sup>2))"  
-  
-  have "?LHS = (\<lambda>x. \<integral>\<^sup>+y. ereal((1 / sqrt (2 * pi * (\<sigma>\<^sup>2 + \<tau>\<^sup>2))) * exp (- x\<^sup>2 / (2 * (sqrt (\<sigma>\<^sup>2 + \<tau>\<^sup>2))\<^sup>2))
-                * (1 / sqrt (2 * pi *  ?new_var\<^sup>2)) * exp (- (y - \<tau>\<^sup>2 * x/  (\<sigma>\<^sup>2 + \<tau>\<^sup>2))\<^sup>2 /( 2 * ?new_var\<^sup>2))) \<partial>lborel)"
-    apply(rule HOL.ext)
-    unfolding normal_density_def
-    apply(rule positive_integral_cong)
-    apply(auto simp:field_simps) 
-    apply (simp only: 1 2 3 4 mult_exp_exp minus_add_distrib[symmetric] add_divide_distrib[symmetric])  
-    by auto
-  
-  also have "... = (\<lambda>x. \<integral>\<^sup>+y. ereal((normal_density 0 (sqrt (\<sigma>\<^sup>2 + \<tau>\<^sup>2)) x) * normal_density (\<tau>\<^sup>2 * x /  (\<sigma>\<^sup>2 + \<tau>\<^sup>2)) ?new_var y) \<partial>lborel)"
-    unfolding normal_density_def by auto
-  
-  also have "... = (\<lambda>x. (normal_density 0 (sqrt (\<sigma>\<^sup>2 + \<tau>\<^sup>2)) x) * \<integral>\<^sup>+y. ereal( normal_density (\<tau>\<^sup>2* x/  (\<sigma>\<^sup>2 + \<tau>\<^sup>2)) ?new_var y) \<partial>lborel)"
-    apply (subst positive_integral_cmult[symmetric])
-    unfolding normal_density_def 
-    by (auto simp: divide_nonneg_nonneg mult_nonneg_nonneg)
+  also have "... =
+    (\<lambda>x. (normal_density 0 (sqrt (\<sigma>\<^sup>2 + \<tau>\<^sup>2)) x) * \<integral>\<^sup>+y. ereal( normal_density (\<tau>\<^sup>2* x / (\<sigma>\<^sup>2 + \<tau>\<^sup>2)) ?\<sigma> y) \<partial>lborel)"
+    by (subst positive_integral_cmult[symmetric]) (auto simp: \<sigma>'_def \<tau>'_def normal_density_def)
 
   also have "... = (\<lambda>x. (normal_density 0 (sqrt (\<sigma>\<^sup>2 + \<tau>\<^sup>2)) x))"
-    by (subst positive_integral_normal_density, auto simp: divide_pos_pos mult_pos_pos sum_power2_gt_zero_iff)
+    by (subst positive_integral_normal_density) (auto simp: sum_power2_gt_zero_iff)
 
   finally show ?thesis by fast
 qed
+
+lemma conv_standard_normal_density:
+  "(\<lambda>x. \<integral>\<^sup>+y. ereal (standard_normal_density (x - y) * standard_normal_density y) \<partial>lborel) =
+  (normal_density 0 (sqrt 2))"
+  by (subst conv_normal_density_zero_mean) simp_all
 
 lemma (in prob_space) sum_indep_normal:
   assumes indep: "indep_var borel X borel Y"
@@ -307,8 +251,7 @@ proof -
   then have 2[simp]: "distributed M lborel (\<lambda>x. - \<nu> +  Y x) (normal_density 0 \<tau>)" by simp
   
   have *: "distributed M lborel (\<lambda>x. (- \<mu> + X x) + (- \<nu> + Y x)) (\<lambda>x. ereal (normal_density 0 (sqrt (\<sigma>\<^sup>2 + \<tau>\<^sup>2)) x))"
-    using convolution_distributed_indep_random_variable_sum[OF ind 1 2] conv_normal_density_zero_mean[OF pos_var, symmetric]
-    by (metis normal_non_negative pos_var(1) pos_var(2))
+    using distributed_convolution[OF ind 1 2] conv_normal_density_zero_mean[OF pos_var] by simp
   
   have "distributed M lborel (\<lambda>x. \<mu> + \<nu> + 1 * (- \<mu> + X x + (- \<nu> + Y x)))
         (\<lambda>x. ereal (normal_density (\<mu> + \<nu> + 1 * 0) (\<bar>1\<bar> * sqrt (\<sigma>\<^sup>2 + \<tau>\<^sup>2)) x))"
@@ -346,16 +289,14 @@ next
     then have 1: "distributed M lborel (\<lambda>x. (X i x) + (\<Sum>i\<in>I. X i x)) 
                 (normal_density (\<mu> i  + setsum \<mu> I)  (sqrt ((\<sigma> i)\<^sup>2 + (sqrt (\<Sum>i\<in>I. (\<sigma> i)\<^sup>2))\<^sup>2)))"
       by (intro sum_indep_normal indep_vars_setsum insert real_sqrt_gt_zero setsum_pos_pos)  
-        (auto intro: indep_vars_subset, fastforce)
+         (auto intro: indep_vars_subset, fastforce)
          
     have 2: "(\<lambda>x. (X i x)+ (\<Sum>i\<in>I. X i x)) = (\<lambda>x. (\<Sum>j\<in>insert i I. X j x))"
           "\<mu> i + setsum \<mu> I = setsum \<mu> (insert i I)"
-      using insert by(auto simp:random_vars_insert)    
+      using insert by (auto simp: random_vars_insert)    
   
     have 3: "(sqrt ((\<sigma> i)\<^sup>2 + (sqrt (\<Sum>i\<in>I. (\<sigma> i)\<^sup>2))\<^sup>2)) = (sqrt (\<Sum>i\<in>insert i I. (\<sigma> i)\<^sup>2))"
-      apply(subst real_sqrt_pow2, rule less_imp_le)
-      using insert 
-      by(auto intro!:setsum_pos_pos simp:random_vars_insert, fastforce)
+      using insert by (simp add: setsum_nonneg)
   
     show ?case using 1 2 3 by simp  
 qed

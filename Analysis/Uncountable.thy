@@ -54,27 +54,16 @@ lemma bij_betw_open_intervals:
   assumes "a < b" "c < d"
   shows "\<exists>f. bij_betw f {a<..<b} {c<..<d}"
 proof -
-  def f \<equiv> "\<lambda>x::real. (d - c)/(b - a) * (x - a) + c"
-  def g \<equiv> "\<lambda>x::real. (b - a)/(d - c) * (x - c) + a"
-  have "bij_betw f {a<..<b} {c<..<d}"
-    apply (unfold bij_betw_def)
-    apply (unfold inj_on_def)
-    apply auto
-    unfolding f_def using assms apply simp_all
-    using assms apply (metis comm_monoid_add_class.add.left_neutral divide_divide_eq_right
-      linordered_field_class.sign_simps(3) zero_less_divide_iff)
-    apply (subst add_less_cancel_right[of _ "-c" _, symmetric], simp)
-    apply (subst mult_less_cancel_left_pos[of "b - a" _ _, symmetric])
-    using assms(1) apply simp
-    apply simp
-    unfolding image_def apply auto
-    apply (unfold Bex_def, subst greaterThanLessThan_iff)
-    apply (rule_tac x = "g x" in exI)
-    unfolding g_def apply (auto simp:)
-    using assms apply (metis diff_less_iff(1) divide_pos_pos mult_pos_pos)
-    apply (subst add_less_cancel_right[of _ "-a" _, symmetric], simp)
-    apply (subst mult_less_cancel_left_pos[of "d - c" _ _, symmetric])
-    using assms by auto
+  def f \<equiv> "\<lambda>a b c d x::real. (d - c)/(b - a) * (x - a) + c"
+  { fix a b c d x :: real assume *: "a < b" "c < d" "a < x" "x < b"
+    moreover from * have "(d - c) * (x - a) < (d - c) * (b - a)"
+      by (intro mult_strict_left_mono) simp_all
+    moreover from * have "0 < (d - c) * (x - a) / (b - a)"
+      by simp
+    ultimately have "f a b c d x < d" "c < f a b c d x"
+      by (simp_all add: f_def field_simps) }
+  with assms have "bij_betw (f a b c d) {a<..<b} {c<..<d}"
+    by (intro bij_betwI[where g="f c d a b"]) (auto simp: f_def)
   thus ?thesis by auto
 qed
 
