@@ -198,15 +198,10 @@ next
     apply (subst equation_26p1)
     (* this is a good example of a messy calculation that should be
        automatic! *)
-    apply (simp add: field_simps del: i_complex_of_real)  
-    (* ugly, but comprehensible: write it out *)
-    apply (subst nonzero_eq_divide_eq)
-    apply (metis comm_semiring_1_class.normalizing_semiring_rules(3) 
-      divisors_zero fact_nonzero_nat less_zeroE nat_less_real_le 
-      natceiling_real_of_nat of_real_add of_real_eq_0_iff of_real_mult 
-      order_refl real_of_nat_zero)
-    by (simp add: field_simps power_mult_distrib real_of_nat_Suc
-      del: i_complex_of_real)
+    apply (simp add: field_simps del: i_complex_of_real)
+    apply (simp add: field_simps real_of_nat_Suc of_real_mult[symmetric] of_real_add[symmetric]
+        del: i_complex_of_real of_real_mult of_real_add)
+    done
 qed
 (* suggests we should add real_of_nat_Suc, delete i_complex_of_real *)
 
@@ -325,20 +320,9 @@ next
       iif: "interval_lebesgue_integrable lborel a b f" and 
       iig: "interval_lebesgue_integrable lborel a b g"
     have "abs (LBINT s=a..b. f s) \<le> abs (LBINT s=a..b. g s)"
-    using f g iif iig unfolding interval_lebesgue_integral_def interval_lebesgue_integrable_def 
-      apply auto
-      apply (subst abs_of_nonneg, rule lebesgue_integral_nonneg, rule AE_I2)
-      apply (auto intro!: mult_nonneg_nonneg)
-      apply (subst abs_of_nonneg, rule lebesgue_integral_nonneg, rule AE_I2)
-      apply (auto intro!: mult_nonneg_nonneg)
-      apply (rule order_trans, assumption, assumption)
-      apply (rule set_integral_mono, auto)
-      apply (subst abs_of_nonneg, rule lebesgue_integral_nonneg, rule AE_I2)
-      apply (auto intro!: mult_nonneg_nonneg)
-      apply (subst abs_of_nonneg, rule lebesgue_integral_nonneg, rule AE_I2)
-      apply (auto intro!: mult_nonneg_nonneg)
-      apply (rule order_trans, assumption, assumption)
-      by (rule set_integral_mono, auto)
+      using f g order_trans[OF f g] iif iig
+      unfolding interval_lebesgue_integral_def interval_lebesgue_integrable_def 
+      by (auto simp: lebesgue_integral_nonneg intro!: set_integral_mono)
   } note useful = this
 
 fix n
@@ -591,7 +575,6 @@ proof -
     apply (rule min.cobounded1, rule min.boundedI)
     apply (simp del: power_Suc)
     apply (rule mult_nonneg_nonneg, force, force)
-    apply (rule mult_nonneg_nonneg, force, simp del: power_Suc)
     apply (subst mult_assoc)
     apply (rule integral_cmult)
     apply (subst mult_commute)
@@ -605,11 +588,11 @@ proof -
     (\<lambda>x. (abs t)^n / fact (Suc n) * min (2 * (abs x)^n * real (Suc n)) (abs t * (abs x)^(Suc n)))"
     apply (rule ext)
     apply (subst mult_min_right)
-    apply (simp add: field_simps del: fact_Suc)
-    apply (rule arg_cong2) back back
-    apply (simp add: field_simps abs_mult power_mult_distrib del: fact_Suc)
-    apply (simp add: fact_Suc real_of_nat_Suc field_simps)
-    by (simp add: field_simps abs_mult power_mult_distrib del: fact_Suc)
+    apply (simp add: field_simps)
+    apply (rule arg_cong2[where f=min])
+    apply (simp add: field_simps abs_mult del: fact_Suc)
+    apply (simp add: real_of_nat_Suc field_simps)
+    by (simp add: field_simps abs_mult del: fact_Suc)
   have "?t1 = (CLINT x | M. (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
     apply (subst complex_integral_setsum [OF 1], simp)
     apply (rule setsum_cong, force)
@@ -863,8 +846,6 @@ proof
     apply (subst real_norm_def)
     apply (subst abs_of_nonneg)
     apply (simp del: One_nat_def add: field_simps)
-    apply (rule mult_nonneg_nonneg)
-    apply auto [2]
     apply (rule mult_imp_div_pos_le)
     apply (simp del: One_nat_def)
     apply (subst times_divide_eq_left)
@@ -899,6 +880,7 @@ proof
   show "char standard_normal_distribution t = complex_of_real (exp (-(t^2) / 2))"
     by (rule LIMSEQ_unique [OF 7 4])
 qed
+
 
 end
 

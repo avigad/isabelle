@@ -283,13 +283,8 @@ next
   fix j::nat show "AE x in M. \<bar>f x * indicator (A j) x\<bar> \<le>
     \<bar>f x\<bar> * indicator (\<Union>i. A i) x"
     apply (rule AE_I2)
-    apply (subst abs_mult)
-    apply (case_tac "x \<in> A j")
-    apply simp
-    apply (subgoal_tac "x \<in> (\<Union>i. A i)")
-    apply simp apply auto
-    apply (case_tac "x \<in> (\<Union>i. A i)")
-    by simp_all
+    apply (auto split: split_indicator)
+    done
 next
   show "set_integrable M (\<Union>i. A i) (\<lambda>x. \<bar>f x\<bar>)"
     apply (subst indicator_abs_eq [symmetric])

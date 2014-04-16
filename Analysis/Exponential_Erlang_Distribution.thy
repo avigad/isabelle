@@ -87,15 +87,15 @@ proof -
 
   have  deriv:"\<And>x. DERIV ?F x :> ?f x"
   proof(induction k)
-    case 0 show ?case by (auto intro!:DERIV_intros)
+    case 0 show ?case by (auto intro!: derivative_eq_intros)
   next
     case (Suc m)
     have *: " DERIV (\<lambda>x. x ^ Suc m * exp (- x) / real (fact (Suc m))) x :>
          (((Suc m)* x^m * exp(- x) - x ^ Suc m * exp (- x) )/fact (Suc m))"
-      by (intro DERIV_intros, auto)
+      by (intro derivative_eq_intros, auto)
     show ?case
       apply auto
-      apply (rule DERIV_intros)
+      apply (rule derivative_eq_intros)
       apply (rule Suc.IH)
       apply (rule *)
       apply (auto simp: field_simps)
@@ -452,7 +452,7 @@ qed
 lemma conv_exponential_erlang_density:
   fixes k::nat
   assumes [simp, arith]: "0 < l" 
-  shows "(\<lambda>x. \<integral>\<^sup>+y. ereal (exponential_density l (x - y) * erlang_density k l y) \<partial>lborel) 
+  shows "(\<lambda>x. \<integral>\<^sup>+y. ereal (exponential_density l (x - y)) * (erlang_density k l y) \<partial>lborel) 
       = (erlang_density (1 + k) l)" (is "?LHS = ?RHS")
 proof -
   have "?LHS = (\<lambda>x. ereal (l ^ (k + 2) * exp (- x * l) / real (fact k)) 
@@ -475,13 +475,14 @@ lemma (in prob_space) sum_indep_exponential_erlang:
   assumes "distributed M lborel Y (erlang_density k l)"
   shows "distributed M lborel (\<lambda>x. X x + Y x) (erlang_density (1 + k) l)"
 proof-
-  have [simp, arith]:"0 <l" using expX by (auto simp: exponential_distributed_params)
+  have [simp, arith]: "0 < l" using expX by (auto simp: exponential_distributed_params)
 
-  show "distributed M lborel (\<lambda>x. X x + Y x) (\<lambda>x. ereal (erlang_density (1 + k) l x))"
-    apply (subst conv_exponential_erlang_density[symmetric], simp)
-    apply (rule convolution_distributed_indep_random_variable_sum)
-    using assms unfolding exponential_density_def erlang_density_def
-    by (auto intro!: convolution_distributed_indep_random_variable_sum simp:mult_nonneg_nonneg divide_nonneg_nonneg)
+  show "distributed M lborel (\<lambda>x. X x + Y x) (erlang_density (1 + k) l)"
+    apply (subst conv_exponential_erlang_density[symmetric])
+    apply (simp_all add: times_ereal.simps[symmetric] del: times_ereal.simps)
+    apply (rule distributed_convolution)
+    apply fact+
+    done
 qed
 
 lemma (in prob_space) exponential_distributed_setsum:
@@ -508,7 +509,7 @@ lemma conv_erlang_density:
   fixes k\<^sub>1 :: nat
   fixes k\<^sub>2 :: nat
   assumes [simp, arith]: "0 < l"  "0 < k\<^sub>1" (* for the case when 0= k\<^sub>1 we have exponential_erlang *)
-  shows "(\<lambda>x. \<integral>\<^sup>+y. ereal (erlang_density k\<^sub>1 l (x- y) * erlang_density k\<^sub>2 l y) \<partial>lborel) = (erlang_density (Suc k\<^sub>1 + Suc k\<^sub>2 - 1) l)"
+  shows "(\<lambda>x. \<integral>\<^sup>+y. ereal (erlang_density k\<^sub>1 l (x - y)) * (erlang_density k\<^sub>2 l y) \<partial>lborel) = (erlang_density (Suc k\<^sub>1 + Suc k\<^sub>2 - 1) l)"
       (is "?LHS = ?RHS")
 proof (rule HOL.ext,  case_tac "0\<ge>x")
   fix x::real assume [arith]: "0 \<ge> x"
@@ -517,7 +518,7 @@ proof (rule HOL.ext,  case_tac "0\<ge>x")
       have "(integral\<^sup>P lborel (\<lambda>y. (erlang_density k\<^sub>1 l (x- y) * erlang_density k\<^sub>2 l y)) = 0)"
         unfolding erlang_density_def
         by(auto simp:positive_integral_0_iff_AE  power_0_left order_le_less)
-      then show "(\<integral>\<^sup>+ y. ereal (erlang_density k\<^sub>1 l (x - y) * erlang_density k\<^sub>2 l y) \<partial>lborel) =
+      then show "(\<integral>\<^sup>+ y. ereal (erlang_density k\<^sub>1 l (x - y)) * (erlang_density k\<^sub>2 l y) \<partial>lborel) =
          ereal (erlang_density (Suc k\<^sub>1 + Suc k\<^sub>2 - 1) l x)" 
         unfolding erlang_density_def by simp
     qed
@@ -532,8 +533,9 @@ next
     unfolding erlang_density_def
     by (auto intro!: positive_integral_cong split:split_indicator)
 
-  have "prob_space (density  lborel ?LHS)"
-    by (auto intro!: prob_space_convolution_density prob_space_erlang_density)
+  have "prob_space (density lborel ?LHS)"
+    unfolding times_ereal.simps[symmetric]
+    by (intro prob_space_convolution_density) (auto intro!: prob_space_erlang_density)
   then have 2: "integral\<^sup>P lborel ?LHS = 1" by (auto simp: one_ereal_def)
 
   let ?I = "(integral\<^sup>P lborel (\<lambda>y. ereal ((1 - y)^ k\<^sub>1 * y^k\<^sub>2 * indicator {0..1} y)))"
@@ -541,8 +543,7 @@ next
   let ?s = "Suc k\<^sub>1 + Suc k\<^sub>2 - 1"
   let ?L = "(\<lambda>x. \<integral>\<^sup>+y. ereal (erlang_density k\<^sub>1 l (x- y) * erlang_density k\<^sub>2 l y * indicator {0..x} y) \<partial>lborel)"
 
-  have *: "\<And>x. 0 < x \<Longrightarrow> ?LHS x = (\<lambda>x. ereal (?C)* ?I * (erlang_density ?s l x)) x"
-  proof -
+  {
     fix x::real assume [arith]: "0 < x"
     have "?LHS x = ?L x"
       unfolding erlang_density_def
@@ -552,8 +553,11 @@ next
       apply (auto intro!: positive_integral_cong simp: mult_less_0_iff positive_integral_cmult[symmetric]
                positive_integral_multc[symmetric] erlang_density_def power_mult_distrib split:split_indicator)
       by(auto simp: field_simps power_mult_distrib[symmetric] mult_exp_exp power_add)
-    finally show "?LHS x = (\<lambda>x. ereal (?C)* ?I * (erlang_density ?s l x)) x" .
-  qed
+    finally have "(\<integral>\<^sup>+y. ereal (erlang_density k\<^sub>1 l (x - y) * erlang_density k\<^sub>2 l y) \<partial>lborel) = 
+      (\<lambda>x. ereal (?C)* ?I * (erlang_density ?s l x)) x"
+      by simp
+  }
+  note * = this
 
   fix x::real assume  "\<not> 0 \<ge> x" then have [arith]: "0 < x" by simp
   have 3: "1 = integral\<^sup>P lborel (\<lambda>xa. ?LHS xa * indicator {0<..} xa)"
@@ -561,13 +565,13 @@ next
     unfolding erlang_density_def 
     by (auto intro!: positive_integral_cong simp:positive_integral_multc[symmetric] split:split_indicator)
   also have "... = integral\<^sup>P lborel (\<lambda>x. (ereal (?C) * ?I) * ((erlang_density ?s l x) * indicator {0<..} x))"
-    by (auto intro!: positive_integral_cong simp: * split:split_indicator)
+    by (auto intro!: positive_integral_cong simp: * split: split_indicator)
   also have "... = ereal (?C) * ?I"
     using 1
     by (auto simp: positive_integral_positive positive_integral_cmult)  
   finally have " ereal (?C) * ?I = 1" by presburger
 
-  then show "(\<integral>\<^sup>+ y. ereal (erlang_density k\<^sub>1 l (x - y) * erlang_density k\<^sub>2 l y) \<partial>lborel) = erlang_density ?s l x"
+  then show "(\<integral>\<^sup>+ y. ereal (erlang_density k\<^sub>1 l (x - y)) * (erlang_density k\<^sub>2 l y) \<partial>lborel) = erlang_density ?s l x"
     using * by simp
 qed
 
@@ -578,17 +582,24 @@ lemma (in prob_space) sum_indep_erlang:
   assumes erlY: "distributed M lborel Y (erlang_density k\<^sub>2 l)"
   shows "distributed M lborel (\<lambda>x. X x + Y x) (erlang_density (Suc k\<^sub>1 + Suc k\<^sub>2 - 1) l)"
 proof (cases k\<^sub>1)
-case 0
+  case 0
   then have "distributed M lborel (\<lambda>x. X x + Y x) (erlang_density ( 1+ k\<^sub>2) l)"
+    using assms 
     apply (subst conv_exponential_erlang_density[symmetric], simp)
-    using assms by (auto intro!: convolution_distributed_indep_random_variable_sum
-        simp:exponential_erlang_zero conv_exponential_erlang_density[symmetric])
+    apply (intro distributed_convolution)
+    apply (auto simp: exponential_erlang_zero conv_exponential_erlang_density[symmetric])
+    done
   then show ?thesis using 0 by auto
 next
-case (Suc n) 
+  case (Suc n) 
   then show ?thesis
+    using assms
     apply (subst conv_erlang_density[symmetric])
-    using assms by (auto intro!: convolution_distributed_indep_random_variable_sum)
+    apply simp
+    apply simp
+    apply (intro distributed_convolution)
+    apply auto
+    done
 qed
 
 lemma (in prob_space) erlang_distributed_setsum:

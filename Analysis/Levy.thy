@@ -356,7 +356,7 @@ theorem Levy_Inversion:
         by auto
       also have "\<dots> = (CLBINT t. (CLINT x | M. ?f' (t, x)))"
         apply (rule complex_integral_cong, clarify)+
-        by (simp add: field_simps exp_diff exp_minus field_divide_inverse)
+        by (simp add: field_simps exp_diff exp_minus)
       also have "\<dots> = (CLINT x | M. (CLBINT t. ?f' (t, x)))"
         apply (rule P.complex_Fubini_integral [symmetric])
         unfolding complex_integrable_def apply (rule conjI)

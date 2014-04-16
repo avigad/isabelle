@@ -143,8 +143,7 @@ lemma
   shows at_left_PInf: "at_left \<infinity> = filtermap ereal at_top"
     and at_right_MInf: "at_right (-\<infinity>) = filtermap ereal at_bot"
   unfolding filter_eq_iff eventually_filtermap eventually_at_top_dense eventually_at_bot_dense
-    eventually_at_left'[OF ereal_less(5)] eventually_at_top_dense
-    eventually_at_right'[OF ereal_less(6)] eventually_at_bot_dense
+    eventually_at_left'[OF ereal_less(5)] eventually_at_right'[OF ereal_less(6)]
   by (auto simp add: ereal_all_split ereal_ex_split)
 
 lemma tendsto_compose_filtermap: "((g \<circ> f) ---> T) F \<longleftrightarrow> (g ---> T) (filtermap f F)"
@@ -161,7 +160,6 @@ lemma ereal_tendsto_simps1:
 lemma filterlim_at_bot_dense:
   fixes f :: "'a \<Rightarrow> ('b::{dense_linorder, no_bot})"
   shows "(LIM x F. f x :> at_bot) \<longleftrightarrow> (\<forall>Z. eventually (\<lambda>x. f x < Z) F)"
-
 proof (auto simp add: filterlim_at_bot[of f F])
   fix Z :: 'b
   from lt_ex [of Z] obtain Z' where 1: "Z' < Z" ..
@@ -227,7 +225,7 @@ next
     done
   ultimately show thesis
     by (intro that[of "\<lambda>i. b' - d / Suc (Suc i)"])
-       (auto simp add: real incseq_def divide_pos_pos mult_pos_pos intro!: divide_left_mono)
+       (auto simp add: real incseq_def intro!: divide_left_mono)
 qed (insert `a < b`, auto)
 
 lemma ereal_decseq_approx:

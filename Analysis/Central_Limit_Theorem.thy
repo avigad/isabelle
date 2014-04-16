@@ -34,7 +34,7 @@ proof -
     apply (case_tac "x >= 0")
     apply (auto simp add: field_simps)
     apply (rule add_pos_nonneg, auto)
-    by (rule mult_nonneg_nonneg, auto)
+    done
   have 4: "eventually (\<lambda>y. y > (0::real)) (at_right 0)"
     by (subst eventually_at_right, auto intro: gt_ex)
   have 5: "eventually (\<lambda>y. exp (ln ((1 + x * y) powr (1 / y))) =
@@ -370,8 +370,7 @@ proof -
         ?t\<^sup>2 / 6 * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t\<bar> * \<bar>x\<bar> ^ 3))"
       unfolding \<psi>_def by (rule \<mu>.aux, auto)
     also have "?t^2 * \<sigma>2 = t^2 / n"
-      using \<sigma>2_pos apply (simp add: power_divide)
-      by (subst real_sqrt_pow2, rule mult_nonneg_nonneg, auto)
+      using \<sigma>2_pos by (simp add: power_divide)
     also have "t^2 / n / 2 = (t^2 / 2) / n" by simp
     finally have **: "cmod (\<psi> n t - (1 + (-(t^2) / 2) / n)) \<le> 
       ?t\<^sup>2 / 6 * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t\<bar> * \<bar>x\<bar> ^ 3))" by simp
@@ -382,14 +381,11 @@ proof -
       unfolding \<psi>_def apply (rule \<mu>.cmod_char_le_1)
       apply (simp only: norm_of_real)
       apply (auto intro!: abs_leI)
-      apply (rule divide_nonneg_nonneg, auto)
       using n by (subst divide_le_eq, auto)
     also have "\<dots> \<le> n * (?t\<^sup>2 / 6 * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t\<bar> * \<bar>x\<bar> ^ 3)))"
       by (rule mult_left_mono [OF **], simp)
     also have "\<dots> = (t\<^sup>2 / (6 * \<sigma>2) * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t\<bar> * \<bar>x\<bar> ^ 3)))" 
-      using \<sigma>2_pos apply (simp add: field_simps power_divide)
-      apply (subst real_sqrt_pow2, rule mult_nonneg_nonneg, auto)
-      by (subst (asm) min_absorb2, auto)
+      using \<sigma>2_pos by (simp add: field_simps min_absorb2)
     finally show "cmod (\<phi> n t - (1 + (-(t^2) / 2) / n)^n) \<le> 
         (t\<^sup>2 / (6 * \<sigma>2) * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t\<bar> * \<bar>x\<bar> ^ 3)))" 
       by simp
@@ -406,18 +402,17 @@ proof -
     have ***: "\<And>x. (\<lambda>n. \<bar>t\<bar> * \<bar>x\<bar> ^ 3 / \<bar>sqrt (\<sigma>2 * real n)\<bar>) ----> 0"
       apply (subst divide_inverse)
       apply (rule tendsto_mult_right_zero)
-      using \<sigma>2_pos apply (subst abs_of_nonneg, simp add: mult_nonneg_nonneg)
+      using \<sigma>2_pos apply (subst abs_of_nonneg, simp)
       apply (simp add: real_sqrt_mult)
       apply (rule tendsto_mult_right_zero)
       apply (rule tendsto_inverse_0_at_top)
       by (rule filterlim_compose [OF sqrt_at_top filterlim_real_sequentially])
     have "(\<lambda>n. LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t n\<bar> * \<bar>x\<bar> ^ 3)) ----> (LINT x|\<mu>. 0)"
       apply (rule integral_dominated_convergence [where w = "\<lambda>x. 6 * x^2", OF **])
-      apply (auto intro!: AE_I2)
-      using \<sigma>2_pos apply (subst abs_of_nonneg, auto intro: mult_nonneg_nonneg)
+      using \<sigma>2_pos apply (auto intro!: AE_I2)
       apply (rule tendsto_sandwich [OF _ _ tendsto_const ***])
       apply (auto intro!: always_eventually min.cobounded2)
-      by (rule mult_nonneg_nonneg, auto)
+      done
     hence "(\<lambda>n. LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t n\<bar> * \<bar>x\<bar> ^ 3)) ----> 0" by simp
     hence main2: "(\<lambda>n. t\<^sup>2 / (6 * \<sigma>2) * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t n\<bar> * \<bar>x\<bar> ^ 3))) ----> 0"
       by (rule tendsto_mult_right_zero)
@@ -434,8 +429,9 @@ proof -
   qed
   thus ?thesis
     apply (intro levy_continuity)
-    apply (rule prob_space_distr [OF S_rv])
-    apply (rule prob_space_normal_density, simp)
+    apply (rule real_distribution_distr [OF S_rv])
+    unfolding real_distribution_def real_distribution_axioms_def
+    apply (simp add: prob_space_normal_density)
     unfolding \<phi>_def by -
 qed
 
