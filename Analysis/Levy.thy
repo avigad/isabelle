@@ -234,15 +234,51 @@ lemma complex_interval_integral_of_real:
 unfolding complex_interval_lebesgue_integral_eq
   by (simp only: Re_complex_of_real Im_complex_of_real, simp)
 
+(* TODO: need a better version of FTC2 *)
+
+lemma has_field_derivative_within_open: "a \<in> s \<Longrightarrow> open s \<Longrightarrow>
+    (f has_field_derivative f') (at a within s) = (f has_field_derivative f') (at a)"
+  unfolding has_field_derivative_def by (rule has_derivative_within_open)
+
+abbreviation sin_x_over_x_fixed :: "real \<Rightarrow> real" where
+  "sin_x_over_x_fixed \<equiv> (\<lambda>x. if x = 0 then 1 else sin x / x)"
+
+lemma sin_x_over_x_at_0: "((\<lambda>x. sin x / x) ---> 1) (at 0)"
+using DERIV_sin [of 0] by (auto simp add: has_field_derivative_def field_has_derivative_at)
+
+lemma isCont_sin_x_over_x_fixed: "isCont sin_x_over_x_fixed x"
+  apply (case_tac "x = 0", auto)
+  apply (simp add: isCont_def)
+  apply (subst LIM_equal [where g = "\<lambda>x. sin x / x"], auto intro: sin_x_over_x_at_0)
+  apply (rule continuous_transform_at [where d = "abs x" and f = "\<lambda>x. sin x / x"])
+  by (auto simp add: dist_real_def)
+
+lemma iSi_isCont: "isCont Si x"
+proof -
+  have "Si = (\<lambda>t. LBINT x=ereal 0..ereal t. sin_x_over_x_fixed x)"
+    apply (rule ext, simp add: Si_def zero_ereal_def)
+    apply (rule interval_integral_cong_AE)
+    by (rule AE_I' [where N = "{0}"], auto)
+  thus ?thesis
+    apply (elim ssubst)
+    apply (rule DERIV_isCont)
+    apply (subst has_field_derivative_within_open [symmetric, 
+      where s = "{(min (x - 1) (- 1))<..<(max 1 (x+1))}"], auto)
+    apply (rule DERIV_subset [where s = "{(min (x - 2) (- 2))..(max 2 (x+2))}"])
+    apply (rule interval_integral_FTC2)
+    by (auto intro: continuous_at_imp_continuous_on isCont_sin_x_over_x_fixed)
+qed
+
+lemma borel_measurable_iSi: "f \<in> borel_measurable M \<Longrightarrow> 
+  (\<lambda>x. Si (f x)) \<in> borel_measurable M"
+  apply (rule borel_measurable_continuous_on) back
+  by (rule continuous_at_imp_continuous_on, auto intro: iSi_isCont)
+
 lemma iSi_integrable: "interval_lebesgue_integrable lborel (ereal 0)
      (ereal T) (\<lambda>t. sin (t * theta) / t)"
   sorry
 
 lemma iSi_bounded: "\<exists>B. \<forall>T. abs (Si T) \<le> B"
-  sorry
-
-lemma borel_measurable_iSi: "f \<in> borel_measurable M \<Longrightarrow> 
-  (\<lambda>x. Si (f x)) \<in> borel_measurable M"
   sorry
 
 lemma borel_measurable_sgn [measurable (raw)]:

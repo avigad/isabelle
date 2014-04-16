@@ -422,8 +422,7 @@ lemma interval_integrable_endpoints_reverse: "interval_lebesgue_integrable lbore
 by (case_tac "a \<le> b", auto simp add: interval_lebesgue_integrable_def)
 
 lemma interval_integral_cong_AE:
-  assumes "AE x \<in> einterval (min a b) (max a b) in lborel. f x = g x" and 
-    "einterval (min a b) (max a b) \<in> sets M"
+  assumes "AE x \<in> einterval (min a b) (max a b) in lborel. f x = g x"
   shows "interval_lebesgue_integral lborel a b f = interval_lebesgue_integral lborel a b g"
 using assms 
   apply (case_tac "a \<le> b")
@@ -432,8 +431,7 @@ using assms
 by (rule interval_lebesgue_integral_cong_AE, auto simp add: min_absorb2 max_absorb1)
 
 lemma interval_integral_cong:
-  assumes "\<forall> x. x \<in> einterval (min a b) (max a b) \<longrightarrow> f x = g x" and 
-    "einterval (min a b) (max a b) \<in> sets M"
+  assumes "\<forall> x. x \<in> einterval (min a b) (max a b) \<longrightarrow> f x = g x" 
   shows "interval_lebesgue_integral lborel a b f = interval_lebesgue_integral lborel a b g"
 using assms by (intro interval_integral_cong_AE, auto)
 
