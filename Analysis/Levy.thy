@@ -611,6 +611,68 @@ lemma abs_sin_x_le_abs_x: "abs (sin x) \<le> abs x"
   using sin_x_ge_neg_x [of x] sin_x_le_x [of x] sin_x_ge_neg_x [of "-x"] sin_x_le_x [of "-x"]
   by (case_tac "x \<ge> 0", auto)
 
+lemma complex_integral_dominated_convergence:
+  assumes u[measurable]: "\<And>i. complex_integrable M (u i)" and 
+    bound: "\<And>j. AE x in M. cmod (u j x) \<le> w x"
+  and w[measurable]: "integrable M w"
+  and u': "AE x in M. (\<lambda>i. u i x) ----> u' x"
+  and [measurable]: "u' \<in> borel_measurable M"
+  shows "complex_integrable M u'"
+  and "(\<lambda>i. (CLINT x | M. cmod (u i x - u' x))) ----> 0" (is "?lim_diff")
+  and "(\<lambda>i. (CLINT x | M. u i x)) ----> (CLINT x | M. u' x)" (is ?lim)
+proof -
+  from u have u_re: "\<And>i. integrable M (RE (u i))" by (simp add: complex_integrable_def)
+  from u have u_im: "\<And>i. integrable M (IM (u i))" by (simp add: complex_integrable_def)
+  have bound_re: "\<And>i. AE x in M. \<bar>RE (u i) x\<bar> \<le> w x"
+    by (rule AE_mp, rule bound, rule AE_I2, rule impI, erule order_trans [OF abs_Re_le_cmod])
+  have bound_im: "\<And>i. AE x in M. \<bar>IM (u i) x\<bar> \<le> w x"
+    by (rule AE_mp, rule bound, rule AE_I2, rule impI, erule order_trans [OF abs_Im_le_cmod])
+  have u'_re: "AE x in M. (\<lambda>i. Re (u i x)) ----> Re (u' x)"
+    by (rule AE_mp [OF u'], rule AE_I2, auto intro: tendsto_Re)
+  have u'_im: "AE x in M. (\<lambda>i. Im (u i x)) ----> Im (u' x)"
+    by (rule AE_mp [OF u'], rule AE_I2, auto intro: tendsto_Im)
+  have u'm_re: "RE u' \<in> borel_measurable M" by auto
+  have u'm_im: "IM u' \<in> borel_measurable M" by auto
+  have diff_bound: "\<And>i. AE x in M. \<bar>cmod (u i x - u' x)\<bar> \<le> w x + cmod (u' x)"
+    apply (rule AE_mp [OF bound], rule AE_I2, clarsimp)
+    apply (rule order_trans [OF norm_triangle_ineq4])
+    by (erule add_right_mono)
+  show *: "complex_integrable M u'"
+    unfolding complex_integrable_def apply (rule conjI)
+    apply (rule integral_dominated_convergence [OF u_re bound_re w u'_re u'm_re])
+    by (rule integral_dominated_convergence [OF u_im bound_im w u'_im u'm_im])
+  show "?lim_diff"
+    unfolding complex_lebesgue_integral_def apply (rule tendsto_add_zero)
+    apply (subgoal_tac "0 = complex_of_real 0")
+    apply (erule ssubst, rule tendsto_compose [OF tendsto_of_real], auto intro: tendsto_ident_at)
+    apply (subgoal_tac "0 = LINT x|M. 0")
+    apply (erule ssubst)
+    apply (rule integral_dominated_convergence [OF _ diff_bound], auto)
+    apply (rule complex_integrable_cmod, rule complex_integral_diff [OF u *])
+    apply (rule integral_add [OF w complex_integrable_cmod [OF *]])
+    apply (rule AE_mp [OF u'], rule AE_I2, rule impI)
+    apply (rule tendsto_norm_zero)
+    by (subst (asm) Lim_null)
+  show "?lim"
+    unfolding complex_lebesgue_integral_def apply (rule tendsto_add)
+    apply (rule tendsto_compose [OF tendsto_of_real], auto intro: tendsto_ident_at)
+    apply (rule integral_dominated_convergence [OF u_re bound_re w u'_re u'm_re])
+    apply (rule tendsto_mult_left)
+    apply (rule tendsto_compose [OF tendsto_of_real], auto intro: tendsto_ident_at)
+    by (rule integral_dominated_convergence [OF u_im bound_im w u'_im u'm_im])
+qed
+
+lemma (in real_distribution) isCont_char: "isCont (char M) t"
+  apply (simp add: isCont_def)
+  apply (rule Lim_within_LIMSEQ, auto)
+  unfolding char_def apply (rule complex_integral_dominated_convergence)
+  prefer 2 apply (rule AE_I2, subst cmod_iexp, rule order_refl)
+  apply (rule complex_integrable_const_bound [where B = 1], rule AE_I2, 
+    subst cmod_iexp, rule order_refl)
+  apply (auto intro!: AE_I2)
+  apply (rule isCont_tendsto_compose [OF isCont_exp])
+by (rule tendsto_mult_left, rule tendsto_of_real, rule tendsto_mult_right)
+
 theorem levy_continuity:
   fixes
     M :: "nat \<Rightarrow> real measure" and
@@ -731,14 +793,41 @@ proof -
     finally show "Re (CLBINT t:{-u..u}. 1 - char (M n) t) / u \<ge> measure (M n) {x. abs x \<ge> 2 / u}" 
       by (simp add: field_simps `u > 0`)
   qed
+  have tight_aux: "\<And>\<epsilon>. \<epsilon> > 0 \<Longrightarrow> \<exists>a b. a < b \<and> (\<forall>n. 1 - \<epsilon> < measure (M n) {a<..b})"
+  proof -
+    fix \<epsilon> :: real
+    assume "\<epsilon> > 0"
+    interpret M': real_distribution M' by (rule assms)
+    note M'.isCont_char [of 0]
+    hence "\<exists>d>0. \<forall>t. abs t < d \<longrightarrow> cmod (char M' t - 1) < \<epsilon> / 4"
+      apply (subst (asm) continuous_at_eps_delta)
+      apply (drule_tac x = "\<epsilon> / 4" in spec)
+      using `\<epsilon> > 0` by (auto simp add: dist_real_def dist_complex_def M'.char_zero)
 
+
+
+    show "\<exists>a b. a < b \<and> (\<forall>n. 1 - \<epsilon> < measure (M n) {a<..b})"
+      sorry
+  qed
   have "tight M"
-    unfolding tight_def apply (auto simp add: assms)
-    sorry
+    apply (simp add: tight_def assms ereal_all_split, auto)
+    apply (subgoal_tac "1 = ereal 1", erule ssubst)
+    apply (subst ereal_minus(3), simp)
+    apply (metis gt_ex)
+    apply (metis one_ereal_def)
+    apply (subst emeasure_eq_ereal_measure)
+    prefer 2
+    apply (subgoal_tac "1 = ereal 1", erule ssubst, simp)
+    apply (erule tight_aux)
+    apply (metis one_ereal_def)
+    proof -
+      fix n a b
+      interpret Mn: real_distribution "M n" by (rule assms)
+      show "emeasure (M n) {a<..b} \<noteq> \<infinity>" by simp
+    qed
   show ?thesis
     sorry
 qed
-
 
 
 end
