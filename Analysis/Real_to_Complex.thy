@@ -329,10 +329,23 @@ lemma complex_integral_cong:
   shows "integral\<^sup>C M f = integral\<^sup>C M g"
 using assms unfolding complex_lebesgue_integral_def by (auto intro: integral_cong)
 
+lemma complex_integrable_cong:
+  assumes "\<forall>x. x \<in> space M \<longrightarrow> f x = g x"
+  shows "complex_integrable M f = complex_integrable M g"
+unfolding complex_integrable_def apply (subst (3 4) integrable_cong)
+  by (auto simp add: assms)
+
 lemma complex_integral_cong_AE:
   assumes "AE x in M. f x = g x"
   shows "integral\<^sup>C M f = integral\<^sup>C M g"
 using assms unfolding complex_lebesgue_integral_def by (auto intro: integral_cong_AE)
+
+lemma complex_integrable_cong_AE:
+  assumes *: "AE x in M. f x = g x" and "f \<in> borel_measurable M" "g \<in> borel_measurable M"
+  shows "complex_integrable M f = complex_integrable M g"
+unfolding complex_integrable_def apply (subst (3 4) integrable_cong_AE)
+  apply (auto simp add: assms borel_measurable_Re borel_measurable_Im)
+by (rule AE_mp [OF *], auto)+
 
 lemma complex_integrable_conj [simp]:
   "complex_integrable M (Cnj f) = complex_integrable M f"
@@ -470,6 +483,11 @@ lemma complex_of_real_integrable [intro, simp]:
   fixes f
   assumes "integrable M f"
   shows "complex_integrable M (\<lambda>x. complex_of_real (f x))"
+using assms unfolding complex_integrable_def by auto
+
+lemma complex_of_real_integrable_eq:
+  fixes f
+  shows "integrable M f = complex_integrable M (\<lambda>x. complex_of_real (f x))"
 using assms unfolding complex_integrable_def by auto
 
 lemma complex_integrable_Re:

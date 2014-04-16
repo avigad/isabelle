@@ -5,7 +5,11 @@ Authors: Jeremy Avigad, Luke Serafin
 
 theory Central_Limit_Theorem
 
+(*
 imports Library_Misc Weak_Convergence Characteristic_Functions Normal_Distribution
+*)
+
+imports Levy
 
 begin
 
@@ -290,17 +294,6 @@ lemma (in real_distribution) cmod_char_le_1: "cmod (char M t) \<le> 1"
   apply auto
   apply (rule complex_integrable_const_bound [of _ 1])
 by auto
-
-theorem levy_continuity:
-  fixes
-    M :: "nat \<Rightarrow> real measure" and
-    M' :: "real measure"
-  assumes 
-    prob_M : "\<And>n. prob_space (M n)" and
-    prob_M': "prob_space M'" and
-    char_conv: "\<And>t. (\<lambda>n. char (M n) t) ----> char M' t" 
-  shows "weak_conv_m M M'"
-sorry
 
 theorem (in real_distribution) central_limit_theorem:
   fixes 
