@@ -332,7 +332,7 @@ qed
 (** Weak convergence corollaries to Helly's theorem. **)
 
 definition tight :: "(nat \<Rightarrow> real measure) \<Rightarrow> bool"
-where "tight \<mu> \<equiv> (\<forall>n. real_distribution (\<mu> n)) \<and> (\<forall>\<epsilon>>0. \<exists>a b. a < b \<and> (\<forall>n. (\<mu> n) {a<..b} > 1 - \<epsilon>))"
+where "tight \<mu> \<equiv> (\<forall>n. real_distribution (\<mu> n)) \<and> (\<forall>(\<epsilon>::real)>0. \<exists>a b::real. a < b \<and> (\<forall>n. measure (\<mu> n) {a<..b} > 1 - \<epsilon>))"
 
 theorem tight_iff_convergent_subsubsequence:
   "\<And>\<mu>. tight \<mu> = (\<forall>s. subseq s \<longrightarrow> (\<exists>r. \<exists>M.  subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M))"
@@ -353,15 +353,49 @@ proof auto
   where "subseq r \<and> (\<exists>F. rcont_inc F \<and> (\<forall>x. \<bar>F x\<bar> \<le> 1) \<and>
     (\<forall>x.  continuous (at x) F \<longrightarrow> (\<lambda>n. f (r n) x) ----> F x))" by blast
   then guess F by auto note F = this
-  hence "\<exists>\<nu>. (\<forall>a b. a < b \<longrightarrow> \<nu> {a<..b} = ereal (F b - F a)) \<and> measure_space UNIV (sets borel) \<nu>"
-    using cdf_to_measure unfolding rcont_inc_def mono_def by auto
+  have "\<And>x. F x \<ge> 0"
+  proof -
+    from f_rcont_inc f_at_bot have "\<And>n x. f n x \<ge> 0" unfolding rcont_inc_def mono_def sorry
+    hence "\<And>x. isCont F x \<Longrightarrow> F x \<ge> 0" sorry
+    thus "\<And>x. F x \<ge> 0" sorry
+  qed
+  have "\<forall>\<epsilon>>0. \<exists>a b. (\<forall>x\<ge>b. F x \<ge> 1 - \<epsilon>) \<and> (\<forall>x\<le>a. F x \<le> \<epsilon>)"
+  proof -
+    fix \<epsilon>::real assume \<epsilon>: "\<epsilon> > 0"
+    with \<mu> have "\<exists>a' b'. a' < b' \<and> (\<forall>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>)" unfolding tight_def by auto
+    then obtain a' b' where a'b': "a' < b'" "\<And>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>" by auto
+    have "uncountable {a' - 1<..<a'}" using open_interval_uncountable by simp
+    hence "uncountable ({a' - 1<..<a'} - {x. \<not> isCont F x})"
+      using uncountable_minus_countable mono_ctble_discont F unfolding rcont_inc_def by auto
+    then obtain a where "a \<in> {a' - 1<..<a'} - {x. \<not> isCont F x}" unfolding uncountable_def by blast
+    hence a: "a < a'" "isCont F a"
+      using DiffD1 greaterThanLessThan_iff by (simp_all add: linorder_not_less)
+    have "uncountable {b'<..<b' + 1}" using open_interval_uncountable by simp
+    hence "uncountable ({b'<..<b' + 1} - {x. \<not> isCont F x})"
+      using uncountable_minus_countable mono_ctble_discont F unfolding rcont_inc_def by auto
+    then obtain b where "b \<in> ({b'<..<b' + 1} - {x. \<not> isCont F x})" unfolding uncountable_def by blast
+    hence b: "b' < b" "isCont F b"
+      using DiffD1 greaterThanLessThan_iff by (simp_all add: linorder_not_less)
+    from a b a'b' have ab: "a < b" "\<And>k. measure (\<mu> k) {a<..b} > 1 - \<epsilon>"
+      apply simp
+      using assms a b a'b'(2) finite_measure.finite_measure_mono sorry
+    from b(2) F have "(\<lambda>k. f (r k) b) ----> F b" by auto
+    hence "(\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..b}) ----> F b" unfolding f_def cdf_def using \<mu> sorry
+    hence "lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}) \<le> F b" sorry
+    from a(2) F have "(\<lambda>n. f (r n) a) ----> F a" by auto
+    hence "(\<lambda>n. measure (\<mu> n) {..a}) ----> F a" unfolding f_def cdf_def using \<mu> sorry
+    
+
+
+  from F have "\<exists>\<nu>. (\<forall>a b. a < b \<longrightarrow> \<nu> {a<..b} = ereal (F b - F a)) \<and> measure_space UNIV (sets borel) \<nu>"
+    using cdf_to_measure assms unfolding rcont_inc_def mono_def by auto
   then guess \<nu> .. note \<nu> = this
   def M \<equiv> "measure_of UNIV (sets borel) \<nu>"
   then interpret M: finite_borel_measure M sorry (* Is this needed? *)
+  have "cdf M = F" unfolding M_def using \<nu> sorry
   { fix \<epsilon> :: real assume \<epsilon>: "\<epsilon> > 0"
-    with \<mu> have "\<exists>a' b'. a' < b' \<and> (\<forall>k. (\<mu> k) {a'<..b'} > 1 - \<epsilon>)" unfolding tight_def
-      by (metis ereal_less(2) ereal_minus(1) one_ereal_def)
-    then obtain a' b' where a'b': "a' < b'" "\<And>k. (\<mu> k) {a'<..b'} > 1 - \<epsilon>" by auto
+    with \<mu> have "\<exists>a' b'. a' < b' \<and> (\<forall>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>)" unfolding tight_def by auto
+    then obtain a' b' where a'b': "a' < b'" "\<And>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>" by auto
     have "uncountable {a' - 1<..<a'}" using open_interval_uncountable by simp
     hence "uncountable ({a' - 1<..<a'} - {x. measure M {x} > 0})"
       using uncountable_minus_countable M.countable_atoms by auto
@@ -374,7 +408,9 @@ proof auto
     then obtain b where "b \<in> ({b'<..<b' + 1} - {x. measure M {x} > 0})" unfolding uncountable_def by blast
     hence b: "b' < b" "measure M {b} = 0"
       using DiffD1 greaterThanLessThan_iff measure_nonneg[of M "{b}"] by (simp_all add: linorder_not_less)
-    from a b F M.isCont_cdf have "measure M {a<..b} \<ge> 1 - \<epsilon>" sorry
+    (*from a b F M.isCont_cdf*) have "measure M {a<..b} \<ge> 1 - \<epsilon>"
+    proof -
+      from a(2) have "isCont F a" by auto
     hence "\<exists>a b. measure M {a<..b} \<ge> 1 - \<epsilon>" by auto
   }
   hence "measure M UNIV \<ge> 1" using M.finite_measure_mono sorry
