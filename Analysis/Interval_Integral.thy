@@ -645,24 +645,25 @@ lemma interval_integral_Icc_approx_nonneg:
   assumes f_nonneg: "AE x in lborel. a < ereal x \<longrightarrow> ereal x < b \<longrightarrow> 0 \<le> f x"
   assumes f_measurable: "set_borel_measurable lborel (einterval a b) f"
   assumes lbint_lim: "(\<lambda>i. LBINT x=l i.. u i. f x) ----> C"
-  shows "(LBINT x=a..b. f x) = C"
+  shows 
+    "set_integrable lborel (einterval a b) f"
+    "(LBINT x=a..b. f x) = C"
 proof -
-  have "(LBINT x=a..b. f x) = lebesgue_integral lborel (\<lambda>x. f x * indicator (einterval a b) x)"
-    using assms by (simp add: interval_lebesgue_integral_def less_imp_le)
-  also have "... = C"
-  proof (rule integral_monotone_convergence)
-    fix i show "set_integrable lborel {l i..u i} f" by (rule f_integrable)
-  next
-    from f_nonneg have "AE x in lborel. \<forall>i. l i \<le> x \<longrightarrow> x \<le> u i \<longrightarrow> 0 \<le> f x"
+  have 1: "\<And>i. set_integrable lborel {l i..u i} f" by (rule f_integrable)
+  have 2: "AE x in lborel. mono (\<lambda>n. f x * indicator {l n..u n} x)"
+  proof -
+     from f_nonneg have "AE x in lborel. \<forall>i. l i \<le> x \<longrightarrow> x \<le> u i \<longrightarrow> 0 \<le> f x"
       by eventually_elim
          (metis approx(5) approx(6) dual_order.strict_trans1 ereal_less_eq(3) le_less_trans)
-    then show "AE x in lborel. mono (\<lambda>n. f x * indicator {l n..u n} x)"
+    then show ?thesis
       apply eventually_elim
       apply (auto simp: mono_def split: split_indicator)
       apply (metis approx(3) decseqD order_trans)
       apply (metis approx(2) incseqD order_trans)
       done
-  next
+  qed
+  have 3: "AE x in lborel. (\<lambda>i. f x * indicator {l i..u i} x) ----> f x * indicator (einterval a b) x"
+  proof -
     { fix x i assume "l i \<le> x" "x \<le> u i"
       then have "eventually (\<lambda>i. l i \<le> x \<and> x \<le> u i) sequentially"
         apply (auto simp: eventually_sequentially intro!: exI[of _ i])
@@ -671,13 +672,18 @@ proof -
         done
       then have "eventually (\<lambda>i. f x * indicator {l i..u i} x = f x) sequentially"
         by eventually_elim auto }
-    then show "AE x in lborel. (\<lambda>i. f x * indicator {l i..u i} x) ----> f x * indicator (einterval a b) x"
+    then show ?thesis
       unfolding approx(1) by (auto intro!: AE_I2 Lim_eventually split: split_indicator)
-  next show "(\<lambda>i. \<integral> x. f x * indicator {l i..u i} x \<partial>lborel) ----> C"
-    using lbint_lim by (simp add: interval_integral_Icc approx less_imp_le)
-  next show "set_borel_measurable lborel (einterval a b) f" by (rule assms)
   qed
-  finally show ?thesis .
+  have 4: "(\<lambda>i. \<integral> x. f x * indicator {l i..u i} x \<partial>lborel) ----> C"
+    using lbint_lim by (simp add: interval_integral_Icc approx less_imp_le)
+  have 5: "set_borel_measurable lborel (einterval a b) f" by (rule assms)
+  have "(LBINT x=a..b. f x) = lebesgue_integral lborel (\<lambda>x. f x * indicator (einterval a b) x)"
+    using assms by (simp add: interval_lebesgue_integral_def less_imp_le)
+  also have "... = C" by (rule integral_monotone_convergence [OF 1 2 3 4 5])
+  finally show "(LBINT x=a..b. f x) = C" .
+  show "set_integrable lborel (einterval a b) f" 
+    by (rule integral_monotone_convergence [OF 1 2 3 4 5])
 qed
 
 lemma interval_integral_Icc_approx_integrable:
@@ -958,7 +964,6 @@ lemma interval_integral_FTC_finite:
   apply (metis F max_def min_def)
 using f by (simp add: min_absorb2 max_absorb1)
 
-
 lemma interval_integral_FTC_nonneg:
   fixes f F :: "real \<Rightarrow> real" and a b :: ereal
   assumes "a < b"
@@ -967,7 +972,9 @@ lemma interval_integral_FTC_nonneg:
   assumes f_nonneg: "AE x in lborel. a < ereal x \<longrightarrow> ereal x < b \<longrightarrow> 0 \<le> f x"
   assumes A: "((F \<circ> real) ---> A) (at_right a)"
   assumes B: "((F \<circ> real) ---> B) (at_left b)"
-  shows "(LBINT x=a..b. f x) = B - A"
+  shows
+    "set_integrable lborel (einterval a b) f" 
+    "(LBINT x=a..b. f x) = B - A"
 proof -
   from einterval_Icc_approximation[OF `a < b`] guess u l . note approx = this
   have [simp]: "\<And>x i. l i \<le> x \<Longrightarrow> a < ereal x"
@@ -979,29 +986,34 @@ proof -
     apply (auto simp add: less_imp_le min_def max_def)
     apply (rule continuous_at_imp_continuous_on, auto intro!: f)
     by (rule DERIV_subset [OF F], auto)
-  show ?thesis
-  proof (rule interval_integral_Icc_approx_nonneg [OF `a < b` approx _ f_nonneg])
+  have 1: "\<And>i. set_integrable lborel {l i..u i} f"
+  proof -
     fix i show "set_integrable lborel {l i .. u i} f"
-        using `a < l i` `u i < b`
-        by (intro borel_integrable_atLeastAtMost f)
-           (auto simp del: ereal_less_eq simp add: ereal_less_eq(3)[symmetric])
-    next  
-      have "(\<lambda>x. if x \<in> einterval a b then f x else 0) \<in> borel_measurable borel"
-        by (rule borel_measurable_continuous_on_open')
-           (auto simp add: continuous_on_eq_continuous_at einterval_iff f)
-      also have "(\<lambda>x. if x \<in> einterval a b then f x else 0) = (\<lambda>x. f x * indicator (einterval a b) x)"
-        by auto
-      finally show "set_borel_measurable lborel (einterval a b) f"
-        by simp
-    next
-      show "(\<lambda>i. LBINT x=l i..u i. f x) ----> B - A"
-        apply (subst FTCi)
-        apply (intro tendsto_intros)
-        using B approx unfolding tendsto_at_iff_sequentially comp_def
-        apply (elim allE[of _ "\<lambda>i. ereal (u i)"], auto)
-        using A approx unfolding tendsto_at_iff_sequentially comp_def
-        by (elim allE[of _ "\<lambda>i. ereal (l i)"], auto)
+      using `a < l i` `u i < b`
+      by (intro borel_integrable_atLeastAtMost f)
+         (auto simp del: ereal_less_eq simp add: ereal_less_eq(3)[symmetric])
   qed
+  have 2: "set_borel_measurable lborel (einterval a b) f"
+  proof -
+    have "(\<lambda>x. if x \<in> einterval a b then f x else 0) \<in> borel_measurable borel"
+      by (rule borel_measurable_continuous_on_open')
+         (auto simp add: continuous_on_eq_continuous_at einterval_iff f)
+    also have "(\<lambda>x. if x \<in> einterval a b then f x else 0) = (\<lambda>x. f x * indicator (einterval a b) x)"
+      by auto
+    finally show "set_borel_measurable lborel (einterval a b) f"
+      by simp
+  qed
+  have 3: "(\<lambda>i. LBINT x=l i..u i. f x) ----> B - A"
+    apply (subst FTCi)
+    apply (intro tendsto_intros)
+    using B approx unfolding tendsto_at_iff_sequentially comp_def
+    apply (elim allE[of _ "\<lambda>i. ereal (u i)"], auto)
+    using A approx unfolding tendsto_at_iff_sequentially comp_def
+    by (elim allE[of _ "\<lambda>i. ereal (l i)"], auto)
+  show "(LBINT x=a..b. f x) = B - A"
+    by (rule interval_integral_Icc_approx_nonneg [OF `a < b` approx 1 f_nonneg 2 3])
+  show "set_integrable lborel (einterval a b) f" 
+    by (rule interval_integral_Icc_approx_nonneg [OF `a < b` approx 1 f_nonneg 2 3])
 qed
 
 lemma interval_integral_FTC_integrable:
@@ -1075,7 +1087,6 @@ proof -
     apply (rule DERIV_cong' [OF _ _ 3], auto simp add: assms)
     by (intro derivative_eq_intros, auto, rule 2)
 qed
-
 
 lemma einterval_antiderivative: 
   fixes a b :: ereal and f :: "real \<Rightarrow> real"
@@ -1189,7 +1200,9 @@ lemma interval_integral_substitution_nonneg:
   and A: "((ereal \<circ> g \<circ> real) ---> A) (at_right a)"
   and B: "((ereal \<circ> g \<circ> real) ---> B) (at_left b)"
   and integrable: "set_integrable lborel (einterval a b) (\<lambda>x. f (g x) * g' x)"
-  shows "(LBINT x=A..B. f x) = (LBINT x=a..b. (f (g x) * g' x))"
+  shows 
+    "set_integrable lborel (einterval A B) f"
+    "(LBINT x=A..B. f x) = (LBINT x=a..b. (f (g x) * g' x))"
 proof -
   from einterval_Icc_approximation[OF `a < b`] guess u l . note approx [simp] = this
   note less_imp_le [simp]
@@ -1243,7 +1256,6 @@ proof -
       apply (rule order_less_le_trans) prefer 2
       by (rule B3, simp) 
   qed
-thm real_of_nat_def
   (* finally, the main argument *)
   {
      fix i
@@ -1273,11 +1285,7 @@ thm real_of_nat_def
     by (frule (1) img, auto, rule f_nonneg, auto)
   have contf_2: "\<And>x i. g (l i) \<le> x \<Longrightarrow> x \<le> g (u i) \<Longrightarrow> isCont f x"
     by (frule (1) img, auto, rule contf, auto)
-  have "(\<lambda>i. (LBINT y=g (l i)..g (u i). f y)) ----> (LBINT x = A..B. f x)"
-    apply (subst interval_lebesgue_integral_le_eq, auto)
-    apply (subst interval_lebesgue_integral_le_eq, rule `A \<le> B`)
-    apply (subst un, rule set_integral_cont_up, auto)
-    apply (rule incseq) 
+  have integrable: "set_integrable lborel (\<Union>i. {g (l i)<..<g (u i)}) f"
     apply (rule pos_integrable_to_top, auto)
     apply (rule incseq)
     apply (rule nonneg_f2, erule less_imp_le, erule less_imp_le)
@@ -1288,8 +1296,16 @@ thm real_of_nat_def
     apply (erule less_imp_le)+
     using 2 unfolding interval_lebesgue_integral_def
     by auto
-  thus ?thesis by (intro LIMSEQ_unique [OF _ 2])
+  thus "set_integrable lborel (einterval A B) f"
+    by (simp add: un)
+  have "(\<lambda>i. (LBINT y=g (l i)..g (u i). f y)) ----> (LBINT x = A..B. f x)"
+    apply (subst interval_lebesgue_integral_le_eq, auto)
+    apply (subst interval_lebesgue_integral_le_eq, rule `A \<le> B`)
+    apply (subst un, rule set_integral_cont_up, auto)
+    by (rule incseq, rule integrable) 
+  thus "(LBINT x=A..B. f x) = (LBINT x=a..b. (f (g x) * g' x))" by (intro LIMSEQ_unique [OF _ 2])
 qed
+
 
 (* TODO: is it possible to lift the assumption here that g' is nonnegative? *)
 

@@ -549,7 +549,7 @@ theorem Levy_Inversion:
 qed
 
 (*
-  The Levy contintuity theorem.
+  The Levy continuity theorem.
 *)
 
 theorem levy_continuity1:
