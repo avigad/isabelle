@@ -7,7 +7,7 @@ Lebesgue integral over an interval (with endpoints possibly +-\<infinity>)
 
 theory Interval_Integral
   imports Probability Set_Integral
-begin
+begin                              
 
 (* 
     Things that belong somewhere else 
