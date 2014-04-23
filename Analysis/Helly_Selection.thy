@@ -360,7 +360,7 @@ proof auto
     thus "\<And>x. F x \<ge> 0" sorry
   qed
   have "\<forall>\<epsilon>>0. \<exists>a b. (\<forall>x\<ge>b. F x \<ge> 1 - \<epsilon>) \<and> (\<forall>x\<le>a. F x \<le> \<epsilon>)"
-  proof -
+  proof auto
     fix \<epsilon>::real assume \<epsilon>: "\<epsilon> > 0"
     with \<mu> have "\<exists>a' b'. a' < b' \<and> (\<forall>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>)" unfolding tight_def by auto
     then obtain a' b' where a'b': "a' < b'" "\<And>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>" by auto
@@ -380,46 +380,29 @@ proof auto
       apply simp
       using assms a b a'b'(2) finite_measure.finite_measure_mono sorry
     from b(2) F have "(\<lambda>k. f (r k) b) ----> F b" by auto
-    hence "(\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..b}) ----> F b" unfolding f_def cdf_def using \<mu> sorry
+    hence "(\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..b}) ----> F b" unfolding f_def cdf_def o_def by auto
     hence "lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}) \<le> F b" sorry
-    from a(2) F have "(\<lambda>n. f (r n) a) ----> F a" by auto
-    hence "(\<lambda>n. measure (\<mu> n) {..a}) ----> F a" unfolding f_def cdf_def using \<mu> sorry
-    
-
-
-  from F have "\<exists>\<nu>. (\<forall>a b. a < b \<longrightarrow> \<nu> {a<..b} = ereal (F b - F a)) \<and> measure_space UNIV (sets borel) \<nu>"
-    using cdf_to_measure assms unfolding rcont_inc_def mono_def by auto
-  then guess \<nu> .. note \<nu> = this
-  def M \<equiv> "measure_of UNIV (sets borel) \<nu>"
-  then interpret M: finite_borel_measure M sorry (* Is this needed? *)
-  have "cdf M = F" unfolding M_def using \<nu> sorry
-  { fix \<epsilon> :: real assume \<epsilon>: "\<epsilon> > 0"
-    with \<mu> have "\<exists>a' b'. a' < b' \<and> (\<forall>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>)" unfolding tight_def by auto
-    then obtain a' b' where a'b': "a' < b'" "\<And>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>" by auto
-    have "uncountable {a' - 1<..<a'}" using open_interval_uncountable by simp
-    hence "uncountable ({a' - 1<..<a'} - {x. measure M {x} > 0})"
-      using uncountable_minus_countable M.countable_atoms by auto
-    then obtain a where "a \<in> {a' - 1<..<a'} - {x. measure M {x} > 0}" unfolding uncountable_def by blast
-    hence a: "a < a'" "measure M {a} = 0"
-      using DiffD1 greaterThanLessThan_iff measure_nonneg[of M "{a}"] by (simp_all add: linorder_not_less)
-    have "uncountable {b'<..<b' + 1}" using open_interval_uncountable by simp
-    hence "uncountable ({b'<..<b' + 1} - {x. measure M {x} > 0})"
-      using uncountable_minus_countable M.countable_atoms by auto
-    then obtain b where "b \<in> ({b'<..<b' + 1} - {x. measure M {x} > 0})" unfolding uncountable_def by blast
-    hence b: "b' < b" "measure M {b} = 0"
-      using DiffD1 greaterThanLessThan_iff measure_nonneg[of M "{b}"] by (simp_all add: linorder_not_less)
-    (*from a b F M.isCont_cdf*) have "measure M {a<..b} \<ge> 1 - \<epsilon>"
-    proof -
-      from a(2) have "isCont F a" by auto
-    hence "\<exists>a b. measure M {a<..b} \<ge> 1 - \<epsilon>" by auto
-  }
-  hence "measure M UNIV \<ge> 1" using M.finite_measure_mono sorry
-  moreover have "measure M UNIV \<le> 1" using F sorry
-  ultimately have "measure M UNIV = 1" by simp
-  hence probM: "real_distribution M" sorry
-  with F have "weak_conv f F" unfolding weak_conv_def using lim_subseq sorry
-  hence "weak_conv_m (\<mu> \<circ> s \<circ> r) M" unfolding weak_conv_m_def f_def M_def sorry
-  hence "\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M" using probM by auto
+    moreover from ab(2) have "1 - \<epsilon> \<le> lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b})" sorry
+    ultimately have "1 - \<epsilon> \<le> F b" by (metis order.trans)
+    hence "\<forall>x\<ge>b. F x \<ge> 1 - \<epsilon>" using F unfolding rcont_inc_def mono_def by (metis order.trans)
+    thus "\<exists>b. \<forall>x\<ge>b. 1 - \<epsilon> \<le> F x" by auto
+    from a(2) F have "(\<lambda>k. f (r k) a) ----> F a" by auto
+    hence "(\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..a}) ----> F a" unfolding f_def cdf_def o_def by auto
+    hence "lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..a}) = F a" using limI by auto
+    moreover have "\<And>n. (\<mu> n) {..a} \<le> \<epsilon>" using ab(2) sorry
+    ultimately have "F a \<le> \<epsilon>" sorry
+    hence  "\<forall>x\<le>a. F x \<le> \<epsilon>" using F unfolding rcont_inc_def mono_def by (metis order.trans)
+    thus "\<exists>a. \<forall>x\<le>a. F x \<le> \<epsilon>" by auto
+  qed
+  hence "(F ---> 1) at_top" "(F ---> 0) at_bot" using F unfolding rcont_inc_def
+    apply auto
+    apply (rule tendsto_at_topI_sequentially, auto) sorry
+  with F have "\<exists>M. real_distribution M \<and> cdf M = F" using cdf_to_real_distribution
+    unfolding rcont_inc_def mono_def by auto
+  then guess M .. note M = this
+  with F have "weak_conv (f \<circ> r) F" unfolding weak_conv_def f_def using lim_subseq by auto
+  hence "weak_conv_m (\<mu> \<circ> s \<circ> r) M" using M unfolding weak_conv_m_def f_def o_def by auto
+  hence "\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M" using M by auto
   thus "\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" using F by auto
 next (* This half of the theorem is not needed for later developments. *)
   fix \<mu> :: "nat \<Rightarrow> real measure"
