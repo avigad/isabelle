@@ -99,10 +99,103 @@ by (erule measurable_sets, simp add: sets.sigma_sets_eq)
 thm continuous_at_right_real_increasing
 
 lemma continuous_at_right_real_mono_on_open:
-  fixes f U a
-  assumes "open U" "a \<in> U" "mono_on f U"
+  fixes f :: "real \<Rightarrow> real" and U a
+  assumes "open U" "a \<in> U" and mono: "mono_on f U"
   shows "continuous (at_right a) f = (\<forall>\<epsilon>>0. \<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>)"
-sorry
+proof (auto simp add: continuous_within_eps_delta dist_real_def greaterThan_def)
+  from mono have nondec: "\<And>x y. x \<in> U \<Longrightarrow> y \<in> U \<Longrightarrow> x \<le> y \<Longrightarrow> f x \<le> ((f y) :: real)"
+    unfolding mono_on_def by auto
+  {
+    fix \<epsilon> :: real
+    assume "\<epsilon> > 0" and
+      hyp: "\<forall>e>0. \<exists>d>0. \<forall>x'>a. x' - a < d \<longrightarrow> \<bar>f x' - f a\<bar> < e"
+    show "\<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>"
+      sorry
+  }
+  next
+  {
+    fix e :: real
+    assume "e > 0" and
+      hyp: "\<forall>\<epsilon>>0. \<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>"
+    show "\<exists>d>0. \<forall>x'>a. x' - a < d \<longrightarrow> \<bar>f x' - f a\<bar> < e"
+     sorry
+  }
+qed
+
+(*
+  apply (drule_tac x = \<epsilon> in spec, auto)
+  apply (drule_tac x = "a + d / 2" in spec)
+  apply (subst (asm) abs_of_nonneg)
+  apply (auto intro!: nondec simp add: field_simps assms)
+  apply (rule_tac x = "d / 2" in exI)
+  apply (auto simp add: field_simps)
+  apply (drule_tac x = e in spec, auto)
+  apply (rule_tac x = delta in exI, auto)
+  apply (subst abs_of_nonneg)
+  apply (auto intro: nondecF simp add: field_simps)
+  apply (rule le_less_trans)
+  prefer 2 apply assumption
+by (rule nondecF, auto)
+sorry 
+*)
+
+lemma "mono f = mono_on f UNIV"
+  unfolding mono_def mono_on_def by auto
+
+(* Show such a function is an ereal-valued measurable function times the indicator function of the
+   complement of A. *)
+lemma mono_on_ctble_discont:
+  fixes f :: "real \<Rightarrow> real"
+  fixes A :: "real set"
+  assumes "mono_on f A"
+  shows "countable {a\<in>A. \<not>(continuous (at a within A) f)}"
+proof -
+  have 1: "\<And>a. \<not> (continuous (at a within A) f) \<Longrightarrow> Liminf (at a within A) f < 
+    Limsup (at a within A) f"
+  unfolding continuous_within 
+thm tendsto_iff_Liminf_eq_Limsup [of _ f]
+(*    apply (subst (asm) tendsto_iff_Liminf_eq_Limsup) *)
+  proof -
+    fix a (*assume a: "\<not> isCont f a"*)
+    have "\<not> isCont f a \<Longrightarrow> Liminf (at a) f \<noteq> Limsup (at a) f"
+      apply (unfold isCont_def)
+      apply (rule contrapos_nn) sorry
+      (*apply (subst tendsto_iff_Liminf_eq_Limsup[symmetric])*)
+    hence "Liminf (at a) f < Limsup (at a) f"
+      using Liminf_le_Limsup sorry (*by (metis less_eq_ereal_def trivial_limit_at)*) (* Why is this failing? *)
+    thm tendsto_iff_Liminf_eq_Limsup
+    thm Liminf_le_Limsup thm at_neq_bot
+    thus "Liminf (at a within A) f < Limsup (at a within A) f" sorry
+  qed
+  have 2: "\<And>x y. x \<le> y \<Longrightarrow> f x \<le> Liminf (at y) f" sorry
+  have 3: "\<And>x y. x \<le> y \<Longrightarrow> Limsup (at x) f \<le> f y" sorry
+  def jint \<equiv> "\<lambda>a. {Liminf (at a) f<..<Limsup (at a) f}"
+  def rosc \<equiv> "\<lambda>a. SOME q. q \<in> jint a \<inter> ereal ` \<rat>"
+  def D \<equiv> "{a. \<not> isCont f a}"
+  have "\<And>a. \<not> isCont f a \<Longrightarrow> jint a \<noteq> {}" (* using 1 *) sorry
+  moreover have "\<And>a b. \<not> isCont f a \<and> \<not> isCont f b \<Longrightarrow> jint a \<inter> jint b = {}"
+    (* using 1 2 3 *) unfolding jint_def sorry
+  ultimately have 4: "\<And>a b. \<not> isCont f a \<and> \<not> isCont f b \<Longrightarrow> rosc a \<noteq> rosc b" sorry
+  have 5: "inj_on rosc D" sorry
+  thus ?thesis sorry
+qed
+
+lemma continuous_within_open: "a \<in> A \<Longrightarrow> open A \<Longrightarrow> (continuous (at a within A) f) = isCont f a"
+  by (simp add: continuous_within, rule Lim_within_open)
+
+lemma mono_on_ctble_discont_open:
+  fixes f :: "real \<Rightarrow> real"
+  fixes A :: "real set"
+  assumes "open A" "mono_on f A"
+  shows "countable {a\<in>A. \<not>isCont f a}"
+proof -
+  have "{a\<in>A. \<not>isCont f a} = {a\<in>A. \<not>(continuous (at a within A) f)}"
+    by (auto simp add: continuous_within_open [OF _ `open A`])
+  thus ?thesis
+    apply (elim ssubst)
+    by (rule mono_on_ctble_discont, rule assms)
+qed
+
 
 lemma mono_ctble_discont:
   fixes f :: "real \<Rightarrow> real"
@@ -135,14 +228,6 @@ proof -
   thus ?thesis sorry
 qed
 
-(* Show such a function is an ereal-valued measurable function times the indicator function of the
-   complement of A. *)
-lemma mono_on_ctble_discont:
-  fixes f :: "real \<Rightarrow> real"
-  fixes A :: "real set"
-  assumes "A \<in> sets borel" "mono_on f A"
-  shows "countable {a\<in>A. \<not>isCont f a}"
-sorry
 
 lemma emeasure_lborel_countable:
   fixes A :: "real set"
