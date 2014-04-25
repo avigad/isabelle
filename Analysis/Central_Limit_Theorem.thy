@@ -168,7 +168,6 @@ lemma (in prob_space) variance_mean_zero: "expectation X = 0 \<Longrightarrow>
     variance X = expectation (\<lambda>x. (X x)^2)"
 by auto
 
-
 (* for sanity, this is a special case of equation_26p5b *)
 lemma (in real_distribution) aux:
   fixes t
@@ -287,13 +286,6 @@ lemma sqrt_at_top: "LIM x at_top. sqrt x :: real :> at_top"
   by (rule filterlim_at_top_at_top[where Q="\<lambda>x. True" and P="\<lambda>x. 0 < x" and g="power2"])
      (auto intro: eventually_gt_at_top)
 
-lemma (in real_distribution) cmod_char_le_1: "cmod (char M t) \<le> 1"
-  unfolding char_def
-  apply (rule order_trans)
-  apply (rule complex_lebesgue_integral_cmod)
-  apply auto
-  apply (rule complex_integrable_const_bound [of _ 1])
-by auto
 
 theorem (in real_distribution) central_limit_theorem:
   fixes 

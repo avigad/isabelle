@@ -170,8 +170,18 @@ proof -
   finally show ?thesis .
 qed
 
+(* TODO: restore these? *)
 declare i_complex_of_real [simp del]
 declare of_real_mult [simp del]
+
+lemma (in real_distribution) cmod_char_le_1: "cmod (char M t) \<le> 1"
+  unfolding char_def
+  apply (rule order_trans)
+  apply (rule complex_lebesgue_integral_cmod)
+  apply auto
+  apply (rule complex_integrable_const_bound [of _ 1])
+by auto
+
 
 lemma complex_set_bounded_integrable_AE:
   fixes f A B and M :: "'a measure"
@@ -626,6 +636,9 @@ lemma (in real_distribution) isCont_char: "isCont (char M) t"
   apply (rule isCont_tendsto_compose [OF isCont_exp])
 by (rule tendsto_mult_left, rule tendsto_of_real, rule tendsto_mult_right)
 
+lemma (in real_distribution) char_measurable [measurable]: "char M \<in> borel_measurable borel"
+  by (auto intro!: borel_measurable_continuous_on1 continuous_at_imp_continuous_on isCont_char)
+
 theorem levy_continuity:
   fixes
     M :: "nat \<Rightarrow> real measure" and
@@ -673,9 +686,8 @@ proof -
     finally show "(CLBINT t:{-u..u}. 1 - iexp (t * x)) = 2 * (u  - sin (u * x) / x)"
       by (simp add: field_simps)
   qed
- 
-  have "\<And>u n. u > 0 \<Longrightarrow> Re (CLBINT t:{-u..u}. 1 - char (M n) t) / u \<ge> 
-    measure (M n) {x. abs x \<ge> 2 / u}"
+  have main_bound: "\<And>u n. u > 0 \<Longrightarrow> Re (CLBINT t:{-u..u}. 1 - char (M n) t) \<ge> 
+    u * measure (M n) {x. abs x \<ge> 2 / u}"
   proof -
     fix u :: real and n
     assume "u > 0"
@@ -743,9 +755,9 @@ proof -
     also (xtrans) have "(LINT x : {x. abs x \<ge> 2 / u} | M n. u) = 
         u * measure (M n) {x. abs x \<ge> 2 / u}"
       by (simp add: Mn.emeasure_eq_measure)
-    finally show "Re (CLBINT t:{-u..u}. 1 - char (M n) t) / u \<ge> measure (M n) {x. abs x \<ge> 2 / u}" 
-      by (simp add: field_simps `u > 0`)
+    finally show "Re (CLBINT t:{-u..u}. 1 - char (M n) t) \<ge> u * measure (M n) {x. abs x \<ge> 2 / u}" .
   qed
+
   have tight_aux: "\<And>\<epsilon>. \<epsilon> > 0 \<Longrightarrow> \<exists>a b. a < b \<and> (\<forall>n. 1 - \<epsilon> < measure (M n) {a<..b})"
   proof -
     fix \<epsilon> :: real
@@ -756,31 +768,142 @@ proof -
       apply (subst (asm) continuous_at_eps_delta)
       apply (drule_tac x = "\<epsilon> / 4" in spec)
       using `\<epsilon> > 0` by (auto simp add: dist_real_def dist_complex_def M'.char_zero)
-
-
-
-    show "\<exists>a b. a < b \<and> (\<forall>n. 1 - \<epsilon> < measure (M n) {a<..b})"
+    then obtain d where "d > 0 \<and> (\<forall>t. (abs t < d \<longrightarrow> cmod (char M' t - 1) < \<epsilon> / 4))" ..
+    hence d0: "d > 0" and d1: "\<And>t. abs t < d \<Longrightarrow> cmod (char M' t - 1) < \<epsilon> / 4" by auto
+    have 1: "\<And>x. cmod (1 - char M' x) \<le> 2"
+      by (rule order_trans [OF norm_triangle_ineq4], auto simp add: M'.cmod_char_le_1)
+    have 2: "\<And>u v. complex_set_integrable lborel {u..v} (\<lambda>x. 1 - char M' x)"
+      by (rule complex_set_bounded_integrable_AE, auto intro: 1)
+    have 3: "\<And>u v. set_integrable lborel {u..v} (\<lambda>x. cmod (1 - char M' x))"
+      apply (rule borel_integrable_atLeastAtMost)
+      by (rule continuous_norm, rule continuous_diff, auto intro: M'.isCont_char)
+    have "cmod (CLBINT t:{-d/2..d/2}. 1 - char M' t) \<le> LBINT t:{-d/2..d/2}. cmod (1 - char M' t)"
+      by (rule complex_set_lebesgue_integral_cmod [OF 2])
+    also have "\<dots> \<le> LBINT t:{-d/2..d/2}. \<epsilon> / 4"
+      apply (rule integral_mono [OF 3])
+      apply (rule integral_cmult, force) (* alas, auto doesn't work alone here *)
+      apply (case_tac "t \<in> {-d/2..d/2}", auto)
+      apply (subst norm_minus_commute)
+      apply (rule less_imp_le)
+      apply (rule d1 [simplified])
+      using d0 by auto
+    also with d0 have "\<dots> = d * \<epsilon> / 4"
+      by (subst integral_cmult, auto)  (* with simps for division, again, no longer automatic *)
+    finally have bound: "cmod (CLBINT t:{-d/2..d/2}. 1 - char M' t) \<le> d * \<epsilon> / 4" .
+    { fix n x
+      interpret Mn: real_distribution "M n" by (rule assms)
+      have "cmod (1 - char (M n) x) \<le> 2"
+        by (rule order_trans [OF norm_triangle_ineq4], auto simp add: Mn.cmod_char_le_1)
+    } note bd1 = this
+    have 4: "\<And>j. AE x in lborel. cmod ((1 - char (M j) x) * indicator {- d / 2..d / 2} x)
+        \<le> 2 * indicator {- d / 2..d / 2} x"
+      apply (rule AE_I2, subst norm_mult)
+      apply (case_tac "x \<in> {-d/2..d/2}", auto)
+      by (rule bd1)
+    {
+      fix n
+      interpret Mn: real_distribution "M n" by (rule assms)
+      have "\<And>u v. complex_set_integrable lborel {u..v} (\<lambda>x. 1 - char (M n) x)"
+        by (rule complex_set_bounded_integrable_AE, auto intro: bd1)
+    } note 5 = this
+    have "(\<lambda>n. CLBINT t:{-d/2..d/2}. 1 - char (M n) t) ----> (CLBINT t:{-d/2..d/2}. 1 - char M' t)"
+      apply (rule complex_integral_dominated_convergence [OF 5 4], auto)
+      apply (rule AE_I2)
+      by (auto intro!: char_conv tendsto_intros)
+    hence "eventually (\<lambda>n. cmod ((CLBINT t:{-d/2..d/2}. 1 - char (M n) t) -
+        (CLBINT t:{-d/2..d/2}. 1 - char M' t)) < d * \<epsilon> / 4) sequentially"
+      using d0 `\<epsilon> > 0` apply (subst (asm) tendsto_iff)
+      by (subst (asm) dist_complex_def, drule spec, erule mp, auto)
+    hence "\<exists>N. \<forall>n \<ge> N. cmod ((CLBINT t:{-d/2..d/2}. 1 - char (M n) t) -
+        (CLBINT t:{-d/2..d/2}. 1 - char M' t)) < d * \<epsilon> / 4" by (simp add: eventually_sequentially)
+    then guess N ..
+    hence N: "\<And>n. n \<ge> N \<Longrightarrow> cmod ((CLBINT t:{-d/2..d/2}. 1 - char (M n) t) -
+        (CLBINT t:{-d/2..d/2}. 1 - char M' t)) < d * \<epsilon> / 4" by auto
+    {
+      fix n
+      assume "n \<ge> N"
+      interpret Mn: real_distribution "M n" by (rule assms)
+      have "cmod (CLBINT t:{-d/2..d/2}. 1 - char (M n) t) = 
+        cmod ((CLBINT t:{-d/2..d/2}. 1 - char (M n) t) - (CLBINT t:{-d/2..d/2}. 1 - char M' t)
+          + (CLBINT t:{-d/2..d/2}. 1 - char M' t))" by simp
+      also have "\<dots> \<le> cmod ((CLBINT t:{-d/2..d/2}. 1 - char (M n) t) - 
+          (CLBINT t:{-d/2..d/2}. 1 - char M' t)) + cmod(CLBINT t:{-d/2..d/2}. 1 - char M' t)"
+        by (rule norm_triangle_ineq)
+      also have "\<dots> < d * \<epsilon> / 4 + d * \<epsilon> / 4" 
+        by (rule add_less_le_mono [OF N [OF `n \<ge> N`] bound])
+      also have "\<dots> = d * \<epsilon> / 2" by auto
+      finally have "cmod (CLBINT t:{-d/2..d/2}. 1 - char (M n) t) < d * \<epsilon> / 2" .
+      hence "d * \<epsilon> / 2 > Re (CLBINT t:{-d/2..d/2}. 1 - char (M n) t)"
+        by (rule order_le_less_trans [OF complex_Re_le_cmod])
+      hence "d * \<epsilon> / 2 > Re (CLBINT t:{-(d/2)..d/2}. 1 - char (M n) t)" (is "_ > ?lhs") by simp
+      also have "?lhs \<ge> (d / 2) * measure (M n) {x. abs x \<ge> 2 / (d / 2)}" 
+        using d0 by (intro main_bound, simp)
+      finally (xtrans) have "d * \<epsilon> / 2 > (d / 2) * measure (M n) {x. abs x \<ge> 2 / (d / 2)}" .
+      with d0 `\<epsilon> > 0` have "\<epsilon> > measure (M n) {x. abs x \<ge> 2 / (d / 2)}" by (simp add: field_simps)
+      hence "\<epsilon> > 1 - measure (M n) (UNIV - {x. abs x \<ge> 2 / (d / 2)})"
+        apply (subst Mn.borel_UNIV [symmetric])
+        by (subst Mn.prob_compl, auto)
+      also have "UNIV - {x. abs x \<ge> 2 / (d / 2)} = {x. -(4 / d) < x \<and> x < (4 / d)}"
+        using d0 apply (auto simp add: field_simps)
+        (* very annoying -- this should be automatic *)
+        apply (case_tac "x \<ge> 0", auto simp add: field_simps)
+        apply (subgoal_tac "0 \<le> x * d", arith, rule mult_nonneg_nonneg, auto)
+        apply (case_tac "x \<ge> 0", auto simp add: field_simps)
+        apply (subgoal_tac "x * d \<le> 0", arith)
+        apply (rule mult_nonpos_nonneg, auto)
+        by (case_tac "x \<ge> 0", auto simp add: field_simps)
+      finally have "measure (M n) {x. -(4 / d) < x \<and> x < (4 / d)} > 1 - \<epsilon>"
+        by auto
+    } note 6 = this
+    {
+      fix n :: nat
+      interpret Mn: real_distribution "M n" by (rule assms)
+      have *: "(UN (k :: nat). {- real k<..real k}) = UNIV"
+        by (auto, metis leI le_less_trans less_imp_le minus_less_iff reals_Archimedean2)
+      have "(\<lambda>k. measure (M n) {- real k<..real k}) ----> 
+          measure (M n) (UN (k :: nat). {- real k<..real k})"
+        by (rule Mn.finite_Lim_measure_incseq, auto simp add: incseq_def)
+      hence "(\<lambda>k. measure (M n) {- real k<..real k}) ----> 1"
+        by (simp del: Mn.borel_UNIV add: * Mn.borel_UNIV [symmetric] Mn.prob_space)
+      hence "eventually (\<lambda>k. measure (M n) {- real k<..real k} > 1 - \<epsilon>) sequentially"
+        apply (elim order_tendstoD (1))
+        using `\<epsilon> > 0` by auto
+    } note 7 = this
+    {
+      fix n :: nat
+      have "eventually (\<lambda>k. \<forall>m < n. measure (M m) {- real k<..real k} > 1 - \<epsilon>) sequentially"
+        (is "?P n")
+      proof (induct n)
+        show "?P 0" by auto
+      next
+        fix n 
+        assume ih: "?P n"
+        show "?P (Suc n)"
+          apply (rule eventually_rev_mp [OF ih])
+          apply (rule eventually_rev_mp [OF 7 [of n]])
+          apply (rule always_eventually)
+          by (auto simp add: less_Suc_eq)
+      qed
+    } note 8 = this
+    from 8 [of N] have "\<exists>K :: nat. \<forall>k \<ge> K. \<forall>m<N. 1 - \<epsilon> < 
+        Sigma_Algebra.measure (M m) {- real k<..real k}"
+      by (auto simp add: eventually_sequentially)
+    hence "\<exists>K :: nat. \<forall>m<N. 1 - \<epsilon> < Sigma_Algebra.measure (M m) {- real K<..real K}" by auto
+    then obtain K :: nat where 
+      "\<forall>m<N. 1 - \<epsilon> < Sigma_Algebra.measure (M m) {- real K<..real K}" ..
+    let ?K' = "max K (4 / d)"
+    have "-?K' < ?K' \<and> (\<forall>n. 1 - \<epsilon> < measure (M n) {-?K'<..?K'})"
+      using d0 apply auto
+      apply (rule max.strict_coboundedI2, auto)
       sorry
+    thus "\<exists>a b. a < b \<and> (\<forall>n. 1 - \<epsilon> < measure (M n) {a<..b})" by (intro exI)
   qed
   have "tight M"
-    sorry
-(*
-    apply (simp add: tight_def assms ereal_all_split, auto)
-    apply (subgoal_tac "1 = ereal 1", erule ssubst)
-    apply (subst ereal_minus(3), simp)
-    apply (metis gt_ex)
-    apply (metis one_ereal_def)
-    apply (subst emeasure_eq_ereal_measure)
-    prefer 2
-    apply (subgoal_tac "1 = ereal 1", erule ssubst, simp)
-    apply (erule tight_aux)
-    apply (metis one_ereal_def)
-    proof -
-      fix n a b
-      interpret Mn: real_distribution "M n" by (rule assms)
-      show "emeasure (M n) {a<..b} \<noteq> \<infinity>" by simp
-    qed
-*)
+    unfolding tight_def apply (rule conjI)
+    apply (force intro: assms)
+    apply clarify
+    by (erule tight_aux)
+
   show ?thesis
     sorry
 qed

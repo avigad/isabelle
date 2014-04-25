@@ -21,6 +21,7 @@ where
 lemma (in real_distribution) char_zero: "char M 0 = 1"
   unfolding char_def by (simp del: space_eq_univ add: prob_space)
 
+
 (*
   Independence
 *)
