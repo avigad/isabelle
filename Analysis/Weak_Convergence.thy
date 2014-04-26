@@ -477,7 +477,7 @@ proof -
   let ?D = "{\<omega>\<in>{0<..<1}. \<not> isCont Y \<omega>}"
   (* Why did force work and then fail? *)
   have D_countable: "countable ?D" using Y_mono_on mono_on_ctble_discont
-    by (metis (erased, lifting) Collect_cong greaterThanLessThan_borel)
+    by (metis (poly_guards_query) mono_on_ctble_discont_open open_greaterThanLessThan)
   hence D: "emeasure lborel ?D = 0" using emeasure_lborel_countable by (metis (full_types))
   def Y' \<equiv> "\<lambda>\<omega>. (case \<omega>\<in>?D of True => 0 | False => Y \<omega>)"
   have Y'_AE: "AE \<omega> in \<Omega>. Y' \<omega> = Y \<omega>"
