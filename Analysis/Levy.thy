@@ -511,6 +511,14 @@ theorem Levy_Inversion:
     by (rule main3)
 qed
 
+theorem Levy_uniqueness:
+  fixes M1 M2 :: "real measure"
+  assumes "real_distribution M1" "real_distribution M2" and
+    "char M1 = char M2"
+  shows "M1 = M2"
+sorry
+
+
 (*
   The Levy continuity theorem.
 *)
@@ -891,22 +899,49 @@ proof -
     hence "\<exists>K :: nat. \<forall>m<N. 1 - \<epsilon> < Sigma_Algebra.measure (M m) {- real K<..real K}" by auto
     then obtain K :: nat where 
       "\<forall>m<N. 1 - \<epsilon> < Sigma_Algebra.measure (M m) {- real K<..real K}" ..
+    hence K: "\<And>m. m < N \<Longrightarrow> 1 - \<epsilon> < Sigma_Algebra.measure (M m) {- real K<..real K}"
+      by auto
     let ?K' = "max K (4 / d)"
     have "-?K' < ?K' \<and> (\<forall>n. 1 - \<epsilon> < measure (M n) {-?K'<..?K'})"
       using d0 apply auto
       apply (rule max.strict_coboundedI2, auto)
-      sorry
+      proof -
+        fix n
+        interpret Mn: real_distribution "M n" by (rule assms)
+        show " 1 - \<epsilon> < measure (M n) {- max (real K) (4 / d)<..max (real K) (4 / d)}"      
+          apply (case_tac "n < N")
+          apply (rule order_less_le_trans)
+          apply (erule K)
+          apply (rule Mn.finite_measure_mono, auto)
+          apply (rule order_less_le_trans)
+          apply (rule 6, erule leI)
+          by (rule Mn.finite_measure_mono, auto)
+      qed 
     thus "\<exists>a b. a < b \<and> (\<forall>n. 1 - \<epsilon> < measure (M n) {a<..b})" by (intro exI)
   qed
-  have "tight M"
+  have tight: "tight M"
     unfolding tight_def apply (rule conjI)
     apply (force intro: assms)
     apply clarify
     by (erule tight_aux)
-
   show ?thesis
-    sorry
+    proof (rule tight_subseq_weak_converge [OF real_distr_M real_distr_M' tight])
+      fix s
+      assume s: "subseq s"
+      assume nu: "\<exists>\<nu>. weak_conv_m (M \<circ> s) \<nu>"
+      then obtain \<nu> where 1: "weak_conv_m (M \<circ> s) \<nu>" ..
+      have *: "real_distribution \<nu>" sorry
+      have 2: "\<And>n. real_distribution ((M \<circ> s) n)" unfolding comp_def by (rule assms)
+      have 3: "\<And>t. (\<lambda>n. char ((M \<circ> s) n) t) ----> char \<nu> t" by (intro levy_continuity1 [OF 2 * 1])
+      have 4: "\<And>t. (\<lambda>n. char ((M \<circ> s) n) t) = ((\<lambda>n. char (M n) t) \<circ> s)" by (rule ext, simp)
+      have 5: "\<And>t. (\<lambda>n. char ((M \<circ> s) n) t) ----> char M' t"
+        by (subst 4, rule lim_subseq [OF s], rule assms)
+      hence "char \<nu> = char M'" by (intro ext, intro LIMSEQ_unique [OF 3 5])
+      hence "\<nu> = M'" by (rule Levy_uniqueness [OF * `real_distribution M'`])
+      thus "weak_conv_m (M \<circ> s) M'" 
+        apply (elim subst)
+        by (rule 1)  
+  qed
 qed
-
 
 end
