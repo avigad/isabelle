@@ -511,12 +511,146 @@ theorem Levy_Inversion:
     by (rule main3)
 qed
 
+lemma real_arbitrarily_close_eq:
+  fixes x y :: real
+  assumes "\<And>\<epsilon>. \<epsilon> > 0 \<Longrightarrow> abs (x - y) \<le> \<epsilon>"
+  shows "x = y"
+by (metis abs_le_zero_iff assms dense_ge eq_iff_diff_eq_0)
+
+(* TODO: holds more generally for finite real measures *)
+lemma (in real_distribution) cdf_diff_eq: 
+  assumes "x < y"
+  shows "cdf M y - cdf M x = measure M {x<..y}"
+proof -
+  from assms have *: "{..x} \<union> {x<..y} = {..y}" by auto
+  have "prob {..y} = prob {..x} + prob {x<..y}"
+    by (subst finite_measure_Union [symmetric], auto simp add: *)
+  thus ?thesis
+    unfolding cdf_def by auto
+qed
+
+lemma real_interval_avoid_countable_set:
+  fixes a b :: real and A :: "real set"
+  assumes "a < b" and "countable A"
+  shows "\<exists>x. x \<in> {a<..<b} \<and> x \<notin> A"
+proof -
+  from `countable A` have "countable (A \<inter> {a<..<b})" by auto
+  moreover with `a < b` have "\<not> countable {a<..<b}" 
+    by (simp add: uncountable_not_countable [symmetric] open_interval_uncountable) 
+  ultimately have "A \<inter> {a<..<b} \<noteq> {a<..<b}" by auto
+  hence "A \<inter> {a<..<b} \<subset> {a<..<b}" 
+    by (intro psubsetI, auto)
+  hence "\<exists>x. x \<in> {a<..<b} - A \<inter> {a<..<b}"
+    by (rule psubset_imp_ex_mem)
+  thus ?thesis by auto
+qed
+ 
 theorem Levy_uniqueness:
   fixes M1 M2 :: "real measure"
   assumes "real_distribution M1" "real_distribution M2" and
     "char M1 = char M2"
   shows "M1 = M2"
-sorry
+proof -
+  interpret M1: real_distribution M1 by (rule assms)
+  interpret M2: real_distribution M2 by (rule assms)
+  have "(cdf M1 ---> 0) at_bot" by (rule M1.cdf_lim_at_bot)
+  have "(cdf M2 ---> 0) at_bot" by (rule M2.cdf_lim_at_bot)
+  have "countable {x. measure M1 {x} > 0}" by (rule M1.countable_atoms)
+  moreover have "countable {x. measure M2 {x} > 0}" by (rule M2.countable_atoms)
+  ultimately have "countable ({x. measure M1 {x} > 0} \<union> {x. measure M2 {x} > 0})"
+    by (rule countable_Un)
+  also have "{x. measure M1 {x} > 0} \<union> {x. measure M2 {x} > 0} = 
+      {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}"
+    apply auto
+    by (metis antisym_conv1 measure_nonneg)+
+  finally have count: "countable {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}" .
+
+  have "cdf M1 = cdf M2"
+  proof (rule ext)
+    fix x
+    from M1.cdf_is_right_cont [of x] have "(cdf M1 ---> cdf M1 x) (at_right x)"
+      by (simp add: continuous_within)
+    from M2.cdf_is_right_cont [of x] have "(cdf M2 ---> cdf M2 x) (at_right x)"
+      by (simp add: continuous_within)
+    show "cdf M1 x = cdf M2 x"
+    proof (rule real_arbitrarily_close_eq)
+      fix \<epsilon> :: real
+      assume "\<epsilon> > 0"
+      with `(cdf M1 ---> 0) at_bot` have "eventually (\<lambda>y. abs (cdf M1 y) < \<epsilon> / 4) at_bot"
+        by (simp only: tendsto_iff dist_real_def diff_0_right)
+      hence "\<exists>a. \<forall>a' \<le> a. abs (cdf M1 a') < \<epsilon> / 4" by (simp add: eventually_at_bot_linorder)
+      then obtain a1 where a1 [rule_format]: "\<forall>a' \<le> a1. abs (cdf M1 a') < \<epsilon> / 4"  ..
+      from `\<epsilon> > 0` `(cdf M2 ---> 0) at_bot` have "eventually (\<lambda>y. abs (cdf M2 y) < \<epsilon> /4) at_bot"
+        by (simp only: tendsto_iff dist_real_def diff_0_right)
+      hence "\<exists>a. \<forall>a' \<le> a. abs (cdf M2 a') < \<epsilon> / 4" by (simp add: eventually_at_bot_linorder)
+      then obtain a2 where a2 [rule_format]: "\<forall>a' \<le> a2. abs (cdf M2 a') < \<epsilon> / 4"  ..
+      have "\<exists>a. a \<in> {min (min a1 a2) x - 1<..<min (min a1 a2) x} \<and> 
+          a \<notin> {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}"
+        by (rule real_interval_avoid_countable_set [OF _ count], auto)
+      then guess a ..
+      hence "a \<le> x" "a \<le> a1" "a \<le> a2" "measure M1 {a} = 0" "measure M2 {a} = 0" by auto
+
+      from `\<epsilon> > 0` `(cdf M1 ---> cdf M1 x) (at_right x)` 
+          have "eventually (\<lambda>y. abs (cdf M1 y - cdf M1 x) < \<epsilon> / 4) (at_right x)"
+        by (simp only: tendsto_iff dist_real_def)
+      hence "\<exists>b. b > x \<and> (\<forall>z. x < z \<and> z < b \<longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4)"
+        by (simp add: eventually_at_right)
+      then obtain b1 where "b1 > x \<and> (\<forall>z. x < z \<and> z < b1 \<longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4)" ..
+      hence "b1 > x" and b1: "\<And>z. x < z \<Longrightarrow> z < b1 \<Longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4" by auto
+      from `\<epsilon> > 0` `(cdf M2 ---> cdf M2 x) (at_right x)` 
+          have "eventually (\<lambda>y. abs (cdf M2 y - cdf M2 x) < \<epsilon> / 4) (at_right x)"
+        by (simp only: tendsto_iff dist_real_def)
+      hence "\<exists>b. b > x \<and> (\<forall>z. x < z \<and> z < b \<longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4)"
+        by (simp add: eventually_at_right)
+      then obtain b2 where "b2 > x \<and> (\<forall>z. x < z \<and> z < b2 \<longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4)" ..
+      hence "b2 > x" and b2: "\<And>z. x < z \<Longrightarrow> z < b2 \<Longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4" by auto
+      with `x < b1` `x < b2` have "\<exists>b. b \<in> {x<..<min b1 b2} \<and> 
+          b \<notin> {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}"
+        by (intro real_interval_avoid_countable_set [OF _ count], auto)
+      then guess b ..
+      hence "x < b" "b < b1" "b < b2" "measure M1 {b} = 0" "measure M2 {b} = 0" by auto
+      from `a \<le> x` `x < b` have "a < b" "a \<le> b" by auto
+
+      note Levy_Inversion [OF `a \<le> b` `real_distribution M1` `measure M1 {a} = 0` 
+        `measure M1 {b} = 0`]
+      moreover note Levy_Inversion [OF `a \<le> b` `real_distribution M2` `measure M2 {a} = 0` 
+        `measure M2 {b} = 0`]
+      moreover note `char M1 = char M2`
+      ultimately have "complex_of_real (measure M1 {a<..b}) = complex_of_real (measure M2 {a<..b})"
+        apply (intro LIMSEQ_unique)
+        by (assumption, auto)
+      hence "measure M1 {a<..b} = measure M2 {a<..b}" by auto
+      hence *: "cdf M1 b - cdf M1 a = cdf M2 b - cdf M2 a"
+        apply (subst M1.cdf_diff_eq [OF `a < b`])
+        by (subst M2.cdf_diff_eq [OF `a < b`])
+
+      have "abs (cdf M1 x - (cdf M1 b - cdf M1 a)) = abs (cdf M1 x - cdf M1 b + cdf M1 a)" by simp
+      also have "\<dots> \<le> abs (cdf M1 x - cdf M1 b) + abs (cdf M1 a)" by (rule abs_triangle_ineq)
+      also have "\<dots> \<le> \<epsilon> / 4 + \<epsilon> / 4"
+        apply (rule add_mono)
+        apply (rule less_imp_le, subst abs_minus_commute, rule b1 [OF `x < b` `b < b1`])
+        by (rule less_imp_le, rule a1 [OF `a \<le> a1`])
+      finally have 1: "abs (cdf M1 x - (cdf M1 b - cdf M1 a)) \<le> \<epsilon> / 2" by simp
+
+      have "abs (cdf M2 x - (cdf M2 b - cdf M2 a)) = abs (cdf M2 x - cdf M2 b + cdf M2 a)" by simp
+      also have "\<dots> \<le> abs (cdf M2 x - cdf M2 b) + abs (cdf M2 a)" by (rule abs_triangle_ineq)
+      also have "\<dots> \<le> \<epsilon> / 4 + \<epsilon> / 4"
+        apply (rule add_mono)
+        apply (rule less_imp_le, subst abs_minus_commute, rule b2 [OF `x < b` `b < b2`])
+        by (rule less_imp_le, rule a2 [OF `a \<le> a2`])
+      finally have 2: "abs (cdf M2 x - (cdf M2 b - cdf M2 a)) \<le> \<epsilon> / 2" by simp
+
+      have "abs (cdf M1 x - cdf M2 x) = abs ((cdf M1 x - (cdf M1 b - cdf M1 a)) - 
+          (cdf M2 x - (cdf M2 b - cdf M2 a)))" by (subst *, simp)
+      also have "\<dots> \<le> abs (cdf M1 x - (cdf M1 b - cdf M1 a)) + 
+          abs (cdf M2 x - (cdf M2 b - cdf M2 a))" by (rule abs_triangle_ineq4)
+      also have "\<dots> \<le> \<epsilon> / 2 + \<epsilon> / 2" by (rule add_mono [OF 1 2])
+      finally show "abs (cdf M1 x - cdf M2 x) \<le> \<epsilon>" by simp
+    qed
+  qed
+  thus ?thesis
+    by (rule cdf_unique [OF `real_distribution M1` `real_distribution M2`])
+qed
 
 
 (*
