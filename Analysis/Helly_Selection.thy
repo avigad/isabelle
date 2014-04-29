@@ -386,9 +386,24 @@ proof auto
       prefer 2 using open_real_greaterThanLessThan
       apply (metis greaterThanLessThan_iff neg_less_0_iff_less)
       by (metis greaterThanLessThan_iff less_le_trans linear not_less)
-    hence "\<And>x. isCont F x \<Longrightarrow> F x \<ge> 0" using F by (metis LIMSEQ_le_const)
-    thus "\<And>x. F x \<ge> 0" using F sorry (* Want general lemma to the effect that if a property holds
-      at continuity points of a right continuous increasing function, then it holds everywhere. *)
+    hence cts_nonneg: "\<And>x. isCont F x \<Longrightarrow> F x \<ge> 0" using F by (metis LIMSEQ_le_const)
+    (* Want general lemma to the effect that if a property holds at continuity points of a right
+      continuous increasing function, then it holds everywhere. *)
+    show "\<And>x. F x \<ge> 0" 
+      apply (rule ccontr)
+    proof (subst (asm) not_le)
+      fix x assume x: "F x < 0"
+      (* Should have made this a general lemma. *)
+      have "uncountable {x - 1<..<x}" using open_interval_uncountable by simp
+      hence "uncountable ({x - 1<..<x} - {x. \<not> isCont F x})"
+        using uncountable_minus_countable mono_ctble_discont F unfolding rcont_inc_def by auto
+      then obtain y where "y \<in> {x - 1<..<x} - {x. \<not> isCont F x}" unfolding uncountable_def by blast
+      hence y: "y < x" "isCont F y"
+        using DiffD1 greaterThanLessThan_iff by (simp_all add: linorder_not_less)
+      with F have "F y \<le> F x" unfolding rcont_inc_def mono_def by auto
+      hence "F y < 0" using x by auto
+      thus False using y(2) cts_nonneg leD by auto
+    qed
   qed
   have Fab: "\<forall>\<epsilon>>0. \<exists>a b. (\<forall>x\<ge>b. F x \<ge> 1 - \<epsilon>) \<and> (\<forall>x\<le>a. F x \<le> \<epsilon>)"
   proof auto
@@ -499,6 +514,7 @@ proof auto
       hence "\<forall>n\<ge>b. F n \<in> S" using \<epsilon> by auto
       thus "\<exists>N. \<forall>n\<ge>N. F n \<in> S" by auto
     qed
+  (* Duplication to be removed. *)
   next fix S :: "real set" assume S: "open S" "0 \<in> S"
     show "\<exists>N. \<forall>n\<le>N. F n \<in> S"
     proof (rule openE[of _ 0], auto intro: S)
@@ -548,10 +564,12 @@ proof (rule ccontr)
   def f \<equiv> "\<lambda>n. cdf (\<mu> n)"
   def F \<equiv> "cdf M"
   assume CH: "\<not> weak_conv_m \<mu> M"
-  hence "\<exists>x. isCont F x \<and> \<not>((\<lambda>n. f n x) ----> F x)"
+  hence not_cnv: "\<exists>x. isCont F x \<and> \<not>((\<lambda>n. f n x) ----> F x)"
     unfolding weak_conv_m_def weak_conv_def f_def F_def by auto
   then guess x .. note x = this
-  hence "\<exists>\<epsilon>>0. \<exists>s. subseq s \<and> (\<forall>n. \<bar>f (s n) x - F x\<bar> \<ge> \<epsilon>)" sorry
+  have "\<exists>\<epsilon>>0. \<exists>s. subseq s \<and> (\<forall>n. \<bar>f (s n) x - F x\<bar> \<ge> \<epsilon>)"
+    apply (rule ccontr, auto simp add: not_le)
+    sorry
   hence "\<And>s. subseq s \<Longrightarrow> \<not>weak_conv_m (\<mu> \<circ> s) M" sorry
   thus False using subseq tight sorry
 qed
