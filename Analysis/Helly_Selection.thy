@@ -355,9 +355,18 @@ proof auto
   then guess F by auto note F = this
   have "\<And>x. F x \<ge> 0"
   proof -
-    from f_rcont_inc f_at_bot have "\<And>n x. f n x \<ge> 0" unfolding rcont_inc_def mono_def sorry
-    hence "\<And>x. isCont F x \<Longrightarrow> F x \<ge> 0" sorry
-    thus "\<And>x. F x \<ge> 0" sorry
+    thm field_le_epsilon
+    from f_rcont_inc f_at_bot have "\<And>n x. f n x \<ge> 0" unfolding rcont_inc_def mono_def tendsto_def
+      apply (subst (asm) eventually_at_bot_linorder)
+      apply (rule field_le_epsilon)
+      apply (subst add_le_cancel_right[symmetric, where c = "-e"], simp)
+      apply (subgoal_tac "\<And>k. \<exists>N. \<forall>n\<le>N. f k n \<in> {-e<..<e}")
+      prefer 2 using open_real_greaterThanLessThan
+      apply (metis greaterThanLessThan_iff neg_less_0_iff_less)
+      by (metis greaterThanLessThan_iff less_le_trans linear not_less)
+    hence "\<And>x. isCont F x \<Longrightarrow> F x \<ge> 0" using F by (metis LIMSEQ_le_const)
+    thus "\<And>x. F x \<ge> 0" using F sorry (* Want general lemma to the effect that if a property holds
+      at continuity points of a right continuous increasing function, then it holds everywhere. *)
   qed
   have "\<forall>\<epsilon>>0. \<exists>a b. (\<forall>x\<ge>b. F x \<ge> 1 - \<epsilon>) \<and> (\<forall>x\<le>a. F x \<le> \<epsilon>)"
   proof auto
@@ -413,7 +422,7 @@ qed
 corollary tight_subseq_weak_converge:
   fixes \<mu> :: "nat \<Rightarrow> real measure" and M :: "real measure"
   assumes "\<And>n. real_distribution (\<mu> n)" "real_distribution M" and tight: "tight \<mu>" and
-    subseq: "\<And>s. subseq s \<Longrightarrow> \<exists>\<nu>. weak_conv_m (\<mu> \<circ> s) \<nu> \<Longrightarrow> weak_conv_m (\<mu> \<circ> s) M"
+    subseq: "\<And>s \<nu>. subseq s \<Longrightarrow> real_distribution \<nu> \<Longrightarrow> weak_conv_m (\<mu> \<circ> s) \<nu> \<Longrightarrow> weak_conv_m (\<mu> \<circ> s) M"
   shows "weak_conv_m \<mu> M"
 proof (rule ccontr)
   from tight tight_iff_convergent_subsubsequence
@@ -425,9 +434,9 @@ proof (rule ccontr)
       by simp
     then guess r .. note r = this
     then guess \<nu> .. note \<nu> = this
-    hence subsubseq_conv: "\<exists>\<nu>. weak_conv_m (\<mu> \<circ> (s \<circ> r)) \<nu>" by (auto simp add: o_assoc)
+    hence subsubseq_conv: "weak_conv_m (\<mu> \<circ> (s \<circ> r)) \<nu>" by (auto simp add: o_assoc)
     from s r have sr: "subseq (s \<circ> r)" using subseq_o by auto
-    with subsubseq_conv subseq have "weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
+    with subsubseq_conv subseq \<nu> have "weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
     with r have "\<exists>r. subseq r \<and> weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
   }
   hence "\<And>s. subseq s \<Longrightarrow> \<exists>r. subseq r \<and> weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
