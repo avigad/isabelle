@@ -356,12 +356,12 @@ proof auto
   fix s assume s: "subseq s"
   def f \<equiv> "\<lambda>k. cdf (\<mu> (s k))"
   {  fix k
-    interpret \<mu>: real_distribution "\<mu> k" using \<mu> unfolding tight_def by auto
+     interpret \<mu>: real_distribution "\<mu> k" using \<mu> unfolding tight_def by auto
      interpret \<mu>_s: real_distribution "(\<mu> (s k))" using \<mu> unfolding tight_def by auto
      have "rcont_inc (f k)" "((f k) ---> 1) at_top" "((f k) ---> 0) at_bot" "\<forall>x. \<bar>f k x\<bar> \<le> 1"
       "\<And>A B. A \<subseteq> B \<Longrightarrow> B \<in> sets borel \<Longrightarrow> measure (\<mu> k) A \<le> measure (\<mu> k) B"
       "\<And>A B. A \<in> sets (\<mu> k) \<Longrightarrow> B \<in> sets (\<mu> k) \<Longrightarrow> A \<inter> B = {} \<Longrightarrow> measure (\<mu> k) (A \<union> B) =
-        measure (\<mu> k) A + measure (\<mu> k) B"
+        measure (\<mu> k) A + measure (\<mu> k) B" "\<And>A. measure (\<mu> k) A \<le> 1"
       unfolding rcont_inc_def f_def mono_def
       using \<mu>_s.cdf_nondecreasing \<mu>_s.cdf_is_right_cont \<mu>_s.cdf_lim_at_top_prob \<mu>_s.cdf_lim_at_bot
       apply auto
@@ -370,7 +370,7 @@ proof auto
       using \<mu>.finite_measure_mono apply force
       using \<mu>.finite_measure_Union by auto
   } note f_rcont_inc = this(1) and f_at_top = this(2) and f_at_bot = this(3) and f_bdd = this(4)
-    and \<mu>_mono = this(5) and \<mu>_disj_un = this(6)
+    and \<mu>_mono = this(5) and \<mu>_disj_un = this(6) and \<mu>_le_1 = this(7)
   from f_rcont_inc f_bdd Helly_selection obtain r
   where "subseq r \<and> (\<exists>F. rcont_inc F \<and> (\<forall>x. \<bar>F x\<bar> \<le> 1) \<and>
     (\<forall>x.  continuous (at x) F \<longrightarrow> (\<lambda>n. f (r n) x) ----> F x))" by blast
@@ -417,31 +417,61 @@ proof auto
     from b(2) F have "(\<lambda>k. f (r k) b) ----> F b" by auto
     hence subsubseq_lim: "(\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..b}) ----> F b"
       unfolding f_def cdf_def o_def by auto
+    have "\<And>k. measure ((\<mu> \<circ> s \<circ> r) k) {..b} =
+      measure ((\<mu> \<circ> s \<circ> r) k) {..a} + measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}"
+      apply (subst ivl_disj_un(9)[symmetric,of a b], simp add: ab less_imp_le)
+      apply auto apply (rule \<mu>_disj_un) apply auto
+      apply (metis \<mu> atMost_borel real_distribution.events_eq_borel tight_def)
+      by (metis \<mu> greaterThanAtMost_borel real_distribution.events_eq_borel tight_def)
+    hence "\<And>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b} =
+      measure ((\<mu> \<circ> s \<circ> r) k) {..b} - measure ((\<mu> \<circ> s \<circ> r) k) {..a}" by simp
+    hence *: "\<And>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b} = f (r k) b - f (r k) a"
+      unfolding f_def cdf_def o_def by auto
     have "lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}) \<le> F b"
       apply (rule tendsto_le[of sequentially "\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..b}" "F b"
         "\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}"  "lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b})"])
       using subsubseq_lim apply auto
       apply (subst convergent_LIMSEQ_iff[symmetric])
-      unfolding convergent_def sorry
-(*
-      have "\<And>k. measure ((\<mu> \<circ> s \<circ> r) k) {..b} =
-        measure ((\<mu> \<circ> s \<circ> r) k) {..a} + measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}"
-        apply (subst ivl_disj_un(9)[symmetric,of a b], simp add: ab less_imp_le)
-        apply auto apply (rule \<mu>_disj_un) apply auto
-        apply (metis \<mu> atMost_borel real_distribution.events_eq_borel tight_def)
-        by (metis \<mu> greaterThanAtMost_borel real_distribution.events_eq_borel tight_def)
-      hence "(\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..a} + measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}) ----> F b"
-        using subsubseq_lim by simp
-*)    
-    moreover from ab(2) have "1 - \<epsilon> \<le> lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b})" sorry
+      apply (unfold convergent_def)
+      using * unfolding o_def apply simp
+      apply (rule exI)
+      apply (rule tendsto_diff)
+      using F b(2) a(2) apply auto
+      apply (rule eventually_sequentiallyI)
+      by (rule \<mu>_mono) auto
+    moreover have "1 - \<epsilon> \<le> lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b})"
+      apply (rule tendsto_le[of sequentially "\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}"
+        "lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b})" "\<lambda>k. 1 - \<epsilon>" "1 - \<epsilon>"], auto)
+      apply (subst convergent_LIMSEQ_iff[symmetric])
+      apply (unfold convergent_def)
+      apply (rule exI)
+      using * unfolding o_def apply simp
+      apply (rule tendsto_diff)
+      using a b F apply auto
+      apply (rule eventually_sequentiallyI)
+      using ab(2) less_imp_le by metis
     ultimately have "1 - \<epsilon> \<le> F b" by (metis order.trans)
     hence "\<forall>x\<ge>b. F x \<ge> 1 - \<epsilon>" using F unfolding rcont_inc_def mono_def by (metis order.trans)
     thus "\<exists>b. \<forall>x\<ge>b. 1 - \<epsilon> \<le> F x" by auto
     from a(2) F have "(\<lambda>k. f (r k) a) ----> F a" by auto
     hence "(\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..a}) ----> F a" unfolding f_def cdf_def o_def by auto
     hence "lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..a}) = F a" using limI by auto
-    moreover have "\<And>n. (\<mu> n) {..a} \<le> \<epsilon>" using ab(2) sorry
-    ultimately have "F a \<le> \<epsilon>" sorry
+    have 1: "\<And>n. measure (\<mu> n) {..a} < \<epsilon>"
+    proof-
+      fix n
+      have "measure (\<mu> n) {..a} + measure (\<mu> n) {a<..b} \<le> 1"
+        apply (subst \<mu>_disj_un[symmetric], auto)
+        apply (metis \<mu> atMost_borel real_distribution.events_eq_borel tight_def)
+        apply (metis \<mu> greaterThanAtMost_borel real_distribution.events_eq_borel tight_def)
+        by (rule \<mu>_le_1)
+      thus "measure (\<mu> n) {..a} < \<epsilon>" using ab(2) by smt2
+    qed
+    have "F a \<le> \<epsilon>"
+      apply (rule tendsto_le[of sequentially "\<lambda>k. \<epsilon>" \<epsilon> "\<lambda>k. f (r k) a" "F a"], auto)
+      using F a apply auto
+      apply (rule eventually_sequentiallyI)
+      apply (unfold f_def cdf_def)
+      using 1 less_imp_le by metis
     hence  "\<forall>x\<le>a. F x \<le> \<epsilon>" using F unfolding rcont_inc_def mono_def by (metis order.trans)
     thus "\<exists>a. \<forall>x\<le>a. F x \<le> \<epsilon>" by auto
   qed
@@ -463,7 +493,7 @@ corollary tight_subseq_weak_converge:
     subseq: "\<And>s \<nu>. subseq s \<Longrightarrow> real_distribution \<nu> \<Longrightarrow> weak_conv_m (\<mu> \<circ> s) \<nu> \<Longrightarrow> weak_conv_m (\<mu> \<circ> s) M"
   shows "weak_conv_m \<mu> M"
 proof (rule ccontr)
-  from tight tight_iff_convergent_subsubsequence
+  from tight tight_imp_convergent_subsubsequence
   have subsubseq: "\<forall>s. subseq s \<longrightarrow> (\<exists>r M. subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)"
     by simp
   {
