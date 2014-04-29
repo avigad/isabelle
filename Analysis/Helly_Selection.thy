@@ -375,7 +375,7 @@ proof auto
   where "subseq r \<and> (\<exists>F. rcont_inc F \<and> (\<forall>x. \<bar>F x\<bar> \<le> 1) \<and>
     (\<forall>x.  continuous (at x) F \<longrightarrow> (\<lambda>n. f (r n) x) ----> F x))" by blast
   then guess F by auto note F = this
-  have "\<And>x. F x \<ge> 0"
+  have F_nonneg: "\<And>x. F x \<ge> 0"
   proof -
     thm field_le_epsilon
     from f_rcont_inc f_at_bot have "\<And>n x. f n x \<ge> 0" unfolding rcont_inc_def mono_def tendsto_def
@@ -390,7 +390,7 @@ proof auto
     thus "\<And>x. F x \<ge> 0" using F sorry (* Want general lemma to the effect that if a property holds
       at continuity points of a right continuous increasing function, then it holds everywhere. *)
   qed
-  have "\<forall>\<epsilon>>0. \<exists>a b. (\<forall>x\<ge>b. F x \<ge> 1 - \<epsilon>) \<and> (\<forall>x\<le>a. F x \<le> \<epsilon>)"
+  have Fab: "\<forall>\<epsilon>>0. \<exists>a b. (\<forall>x\<ge>b. F x \<ge> 1 - \<epsilon>) \<and> (\<forall>x\<le>a. F x \<le> \<epsilon>)"
   proof auto
     fix \<epsilon>::real assume \<epsilon>: "\<epsilon> > 0"
     with \<mu> have "\<exists>a' b'. a' < b' \<and> (\<forall>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>)" unfolding tight_def by auto
@@ -466,7 +466,7 @@ proof auto
         by (rule \<mu>_le_1)
       thus "measure (\<mu> n) {..a} < \<epsilon>" using ab(2) by smt2
     qed
-    have "F a \<le> \<epsilon>"
+    have Fa: "F a \<le> \<epsilon>"
       apply (rule tendsto_le[of sequentially "\<lambda>k. \<epsilon>" \<epsilon> "\<lambda>k. f (r k) a" "F a"], auto)
       using F a apply auto
       apply (rule eventually_sequentiallyI)
@@ -475,9 +475,46 @@ proof auto
     hence  "\<forall>x\<le>a. F x \<le> \<epsilon>" using F unfolding rcont_inc_def mono_def by (metis order.trans)
     thus "\<exists>a. \<forall>x\<le>a. F x \<le> \<epsilon>" by auto
   qed
-  hence "(F ---> 1) at_top" "(F ---> 0) at_bot" using F unfolding rcont_inc_def
-    apply auto
-    apply (rule tendsto_at_topI_sequentially, auto) sorry
+  have "(F ---> 1) at_top" "(F ---> 0) at_bot"
+  unfolding tendsto_def proof (auto simp add: eventually_at_top_linorder eventually_at_bot_linorder)
+    fix S :: "real set" assume S: "open S" "1 \<in> S"
+    show "\<exists>N. \<forall>n\<ge>N. F n \<in> S"
+    proof (rule openE[of _ 1], auto intro: S)
+      fix \<epsilon> assume \<epsilon>: "\<epsilon> > 0" "ball 1 \<epsilon> \<subseteq> S"
+      with Fab have "\<exists>b. (\<forall>x\<ge>b. 1 - \<epsilon>/2 \<le> F x)" by auto
+      then guess b .. note b = this
+      hence "\<forall>n\<ge>b. 1 - \<epsilon> < F n"
+        apply (subgoal_tac "1 - \<epsilon> < 1 - \<epsilon>/2")
+        apply (metis less_le_trans)
+        by (simp add: \<epsilon>(1))
+      hence "\<forall>n\<ge>b. F n \<in> ball 1 \<epsilon>"
+        unfolding ball_def dist_real_def apply auto
+        apply (subgoal_tac "\<bar>F n\<bar> = F n")
+        apply (erule ssubst)
+        using F_nonneg F abs_of_nonneg apply auto
+        apply (subgoal_tac "\<bar>1 - F n\<bar> = 1 - F n")
+        apply (erule ssubst)
+        apply smt2
+        by (metis abs_of_nonneg diff_le_iff(1))
+      hence "\<forall>n\<ge>b. F n \<in> S" using \<epsilon> by auto
+      thus "\<exists>N. \<forall>n\<ge>N. F n \<in> S" by auto
+    qed
+  next fix S :: "real set" assume S: "open S" "0 \<in> S"
+    show "\<exists>N. \<forall>n\<le>N. F n \<in> S"
+    proof (rule openE[of _ 0], auto intro: S)
+      fix \<epsilon> assume \<epsilon>: "\<epsilon> > 0" "ball 0 \<epsilon> \<subseteq> S"
+      with Fab[rule_format, of "\<epsilon>/2"] have "\<exists>a. (\<forall>x\<le>a. F x \<le> \<epsilon>/2)" by auto
+      then guess a .. note a = this
+      hence "\<forall>n\<le>a. F n < \<epsilon>" using \<epsilon>(1) by auto
+      hence "\<forall>n\<le>a. F n \<in> ball 0 \<epsilon>"
+        unfolding ball_def dist_real_def apply auto
+        apply (subgoal_tac "\<bar>F n\<bar> = F n")
+        apply (erule ssubst)
+        using F_nonneg F abs_of_nonneg by auto
+      hence "\<forall>n\<le>a. F n \<in> S" using \<epsilon> by auto
+      thus "\<exists>N. \<forall>n\<le>N. F n \<in> S" by auto
+    qed
+  qed
   with F have "\<exists>M. real_distribution M \<and> cdf M = F" using cdf_to_real_distribution
     unfolding rcont_inc_def mono_def by auto
   then guess M .. note M = this
