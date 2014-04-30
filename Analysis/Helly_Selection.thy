@@ -540,6 +540,11 @@ proof auto
   thus "\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" using F by auto
 qed
 
+(* Should be a better way to do this with dependent choices. *)
+fun ad_hoc :: "(nat \<Rightarrow> real \<Rightarrow> real) \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> real \<Rightarrow> real \<Rightarrow> nat \<Rightarrow> nat" where
+        "ad_hoc f F e x 0 = (SOME n. e \<le> \<bar>f n x - F x\<bar>)"
+      | "ad_hoc f F e x (Suc n) = (SOME k. k \<ge> n \<and> e \<le> \<bar>f n x - F x\<bar>)"
+
 corollary tight_subseq_weak_converge:
   fixes \<mu> :: "nat \<Rightarrow> real measure" and M :: "real measure"
   assumes "\<And>n. real_distribution (\<mu> n)" "real_distribution M" and tight: "tight \<mu>" and
@@ -560,18 +565,47 @@ proof (rule ccontr)
     with subsubseq_conv subseq \<nu> have "weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
     with r have "\<exists>r. subseq r \<and> weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
   }
-  hence "\<And>s. subseq s \<Longrightarrow> \<exists>r. subseq r \<and> weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
+  hence *: "\<And>s. subseq s \<Longrightarrow> \<exists>r. subseq r \<and> weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
   def f \<equiv> "\<lambda>n. cdf (\<mu> n)"
   def F \<equiv> "cdf M"
   assume CH: "\<not> weak_conv_m \<mu> M"
-  hence not_cnv: "\<exists>x. isCont F x \<and> \<not>((\<lambda>n. f n x) ----> F x)"
+  hence "\<exists>x. isCont F x \<and> \<not>((\<lambda>n. f n x) ----> F x)"
     unfolding weak_conv_m_def weak_conv_def f_def F_def by auto
   then guess x .. note x = this
-  have "\<exists>\<epsilon>>0. \<exists>s. subseq s \<and> (\<forall>n. \<bar>f (s n) x - F x\<bar> \<ge> \<epsilon>)"
-    apply (rule ccontr, auto simp add: not_le)
-    sorry
-  hence "\<And>s. subseq s \<Longrightarrow> \<not>weak_conv_m (\<mu> \<circ> s) M" sorry
-  thus False using subseq tight sorry
+  hence "\<exists>\<epsilon>>0. \<exists>s. subseq s \<and> (\<forall>n. \<bar>f (s n) x - F x\<bar> \<ge> \<epsilon>)"
+    apply (subst (asm) tendsto_iff, auto simp add: not_less)
+    apply (subst (asm) eventually_sequentially, auto)
+    unfolding dist_real_def apply (simp add: not_less)
+    apply (subst subseq_Suc_iff)
+    apply (rule_tac x = e in exI, safe)
+    proof -
+      fix e assume e: "0 < e" "\<forall>N. \<exists>n\<ge>N. e \<le> \<bar>f n x - F x\<bar>"
+      def s \<equiv> "ad_hoc f F e x"
+      have "\<And>n. s n < s (Suc n)"
+      proof -
+      fix n show "s n < s (Suc n)"
+        apply (unfold s_def)
+        apply (induct n rule: ad_hoc.induct) sorry
+      qed
+      show "\<exists>s. (\<forall>n. s n < s (Suc n)) \<and> (\<forall>n. e \<le> \<bar>f (s n) x - F x\<bar>)" sorry
+    qed
+  then obtain \<epsilon> s where \<epsilon>: "\<epsilon> > 0" and s: "subseq s \<and> (\<forall>n. \<bar>f (s n) x - F x\<bar> \<ge> \<epsilon>)" by auto
+    thm subseq_Suc_iff
+    thm dependent_choice
+    thm dependent_choice[where P = "\<lambda>x. True" and Q = "\<lambda>n x y. (x < y \<and> f n y \<ge> 0)"]
+    thm order_tendsto_iff
+  hence "\<And>r. subseq r \<Longrightarrow> \<not>weak_conv_m (\<mu> \<circ> s \<circ> r) M"
+    apply (unfold weak_conv_m_def weak_conv_def, auto)
+    apply (rule_tac x = x in exI)
+    apply (subst tendsto_iff)
+    unfolding dist_real_def apply (subst eventually_sequentially)
+    using x unfolding F_def apply auto
+    apply (subst not_less)
+    apply (subgoal_tac "(\<lambda>n. cdf (\<mu> (s (r n))) x) = (\<lambda>n. f (s (r n)) x)")
+    apply (erule ssubst)
+    apply (rule_tac x = \<epsilon> in exI)
+    unfolding f_def by auto
+  thus False using subseq * by (metis fun.map_comp s) 
 qed
 
 end
