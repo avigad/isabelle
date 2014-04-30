@@ -23,13 +23,13 @@ lemma aux3:
 proof -  
   have "(\<integral>\<^sup>+ x. ereal (x * exp (- x\<^sup>2 * (1 + s\<^sup>2))) * indicator {0..} x \<partial>lborel) = ereal (0 - (\<lambda>x. ((-1 / (2 * (1 + s\<^sup>2)))) * exp (-x\<^sup>2 * (1 + s\<^sup>2))) 0)"
     proof(rule positive_integral_FTC_atLeast, auto intro!: derivative_eq_intros 
-        simp: mult_nonneg_nonneg field_simps)
+        simp: mult_nonneg_nonneg field_simps add_nonneg_eq_0_iff)
       have "((\<lambda>a. - (exp (- (a\<^sup>2 * (1 + s\<^sup>2))) / (2 + 2 * s\<^sup>2))) ---> (- (0 / (2 + 2 * s\<^sup>2)))) at_top"
         apply (intro tendsto_intros filterlim_compose[OF exp_at_bot] filterlim_compose[OF filterlim_uminus_at_bot_at_top])
         apply (subst mult_commute)         
         by (auto intro!: filterlim_tendsto_pos_mult_at_top filterlim_at_top_mult_at_top[OF filterlim_ident filterlim_ident] 
-          simp: add_pos_nonneg  power2_eq_square)        
-      then show "((\<lambda>a. - (exp (- a\<^sup>2 - a\<^sup>2 * s\<^sup>2) / (2 + 2 * s\<^sup>2))) ---> 0) at_top" by (simp add: field_simps)      
+          simp: add_pos_nonneg  power2_eq_square add_nonneg_eq_0_iff)
+      then show "((\<lambda>a. - (exp (- a\<^sup>2 - a\<^sup>2 * s\<^sup>2) / (2 + 2 * s\<^sup>2))) ---> 0) at_top" by (simp add: field_simps)
    qed 
   then show ?thesis by simp
 qed
@@ -95,7 +95,7 @@ proof -
   also have "... = ereal ( pi / 4 - (\<lambda>x. arctan x / 2) 0)"
     apply (rule positive_integral_FTC_atLeast, auto)
     apply (intro derivative_eq_intros, auto simp:inverse_eq_divide distrib_left) 
-    apply (simp add:field_simps)
+    apply (simp add:field_simps add_nonneg_eq_0_iff)
     proof-
       have "((\<lambda>a. arctan a / 2) ---> (pi / 2) / 2 ) at_top"
       apply (intro tendsto_intros)

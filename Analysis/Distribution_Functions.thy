@@ -840,13 +840,11 @@ proof (rule countably_additiveI)
       by (frule Sbound, auto)
     also have "... \<le> ?t + (epsilon / 2)"
       apply (rule add_left_mono)
-      apply (subst atLeast0LessThan[symmetric])
-      (* apply (subst geometric_sum) *) (* change geometric_sum *) (* Stopped working. *)
-      sorry
-      (*apply auto
+      apply (subst geometric_sum)
+      apply auto
       apply (rule mult_left_mono)
       using egt0 apply auto
-      done *)
+      done
     finally have aux2: "F b - F a' \<le> (\<Sum>i\<in>S. F (right i) - F (left i)) + 
       epsilon / 2" .
     have "half_open_semiring_measure F (UNION UNIV A)

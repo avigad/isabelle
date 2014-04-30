@@ -248,7 +248,30 @@ proof -
     by (metis assms bot.extremum_unique emeasure_empty image_eq_UN range_from_nat_into sets.empty_sets)
   thus ?thesis by (auto simp add: emeasure_le_0_iff)
 qed
-  
+
+lemma measurable_cong_countable_exceptions:
+  assumes X: "countable X"
+  assumes "g \<in> space M \<rightarrow> space N"
+  assumes "\<And>x. x \<in> space M \<Longrightarrow> x \<notin> X \<Longrightarrow> f x = g x"
+  assumes measurable_X: "\<And>x. x \<in> X \<Longrightarrow> {x} \<in> sets M"
+  assumes [measurable]: "f \<in> measurable M N"
+  shows "g \<in> measurable M N"
+  unfolding measurable_def
+proof (safe intro!: assms)
+  fix A assume [measurable]: "A \<in> sets N"
+  have [measurable]: "X \<in> sets M"
+    using measurable_X X by (rule lborel_countable)
+  have "((f -` A \<inter> space M) - X) \<union> (\<Union>x\<in>X. if g x \<in> A then {x} else {}) \<in> sets M"
+    apply measurable
+    apply (rule sets.countable_UN'[OF X])
+    apply (auto intro: measurable_X)
+    done
+  also have "((f -` A \<inter> space M) - X) \<union> (\<Union>x\<in>X. if g x \<in> A then {x} else {}) = g -` A \<inter> space M"
+    using measurable_X[THEN sets.sets_into_space]
+    by (force split: split_if_asm simp: assms)
+  finally show "g -` A \<inter> space M \<in> sets M" .
+qed
+
 (* state using obtains? *)
 theorem Skorohod:
   fixes 
@@ -495,7 +518,7 @@ proof -
     apply force
     using D apply force
     apply (rule lborel_countable)
-    unfolding \<Omega>_def using D_countable by (subst space_restrict_space, auto)
+    unfolding \<Omega>_def using D_countable by (subst sets_restrict_space, auto)
   def Y_seq' \<equiv> "\<lambda>n \<omega>. (case \<omega>\<in>?D of True => 0 | False => Y_seq n \<omega>)"
   have Y_seq'_AE: "\<And>n. AE \<omega> in \<Omega>. Y_seq' n \<omega> = Y_seq n \<omega>"
     apply (rule AE_I[where N = "?D"])
@@ -505,7 +528,7 @@ proof -
     apply force
     using D apply force
     apply (rule lborel_countable)
-    unfolding \<Omega>_def using D_countable by (subst space_restrict_space, auto)
+    unfolding \<Omega>_def using D_countable by (subst sets_restrict_space, auto)
   have Y'_cnv: "\<forall>\<omega>\<in>{0<..<1}. (\<lambda>n. Y_seq' n \<omega>) ----> Y' \<omega>"
   proof
     fix \<omega>::real assume \<omega>: "\<omega> \<in> {0<..<1}"
@@ -523,13 +546,15 @@ proof -
       ultimately show ?thesis using Y_cts_cnv \<omega> by auto
     qed
   qed
-  have [simp]: "\<And>n. Y_seq' n \<in> borel_measurable \<Omega>" using Y_seq_meas Y_seq'_AE
-    by (subst measure_cong_AE[where g = "Y_seq n"], auto)
+  have [simp]: "\<And>n. Y_seq' n \<in> borel_measurable \<Omega>"
+    by (rule measurable_cong_countable_exceptions[OF D_countable _ _ _ Y_seq_meas])
+       (auto simp: Y_seq'_def \<Omega>_def sets_restrict_space)
   moreover {fix n  have "distr \<Omega> borel (Y_seq' n) = \<mu> n" using Y_seq_distr [of n] 
       Y_seq'_AE [of n]
     by (subst distr_cong_AE[where f = "Y_seq' n" and g = "Y_seq n"], auto) }
-  moreover have [simp]: "Y' \<in> borel_measurable \<Omega>" using Y_meas Y'_AE
-    by (subst measure_cong_AE[where g = Y], auto)
+  moreover have [simp]: "Y' \<in> borel_measurable \<Omega>"
+    by (rule measurable_cong_countable_exceptions[OF D_countable _ _ _ Y_meas])
+       (auto simp: Y'_def \<Omega>_def sets_restrict_space)
   moreover have "distr \<Omega> borel Y' = M"
     apply (subst Y_distr [symmetric])
     apply (rule distr_cong_AE, auto)

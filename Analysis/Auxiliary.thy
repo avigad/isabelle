@@ -112,10 +112,10 @@ lemma positive_integral_power_nat:
 proof-
   let ?F = "\<lambda>x. x^(1 + k) / (1 + k)"
   have "integral\<^sup>P lborel (\<lambda>y. ereal( y^ k) * indicator {0..x} y) = ereal( ?F x) - ereal( ?F 0)"
-  apply (rule positive_integral_FTC_atLeastAtMost)
-  apply (auto intro!: derivative_intros derivative_eq_intros positive_integral_FTC_atLeastAtMost 
-    simp del: power_Suc)
-  by (simp add: real_of_nat_Suc field_simps real_of_nat_def)
+  by (rule positive_integral_FTC_atLeastAtMost)
+     (auto intro!: derivative_intros derivative_eq_intros positive_integral_FTC_atLeastAtMost 
+        simp: real_of_nat_def[symmetric]
+        simp del: power_Suc)
   also have "... = x^ (1 + k) / (1 + k)" by force
   finally show ?thesis by fast
 qed

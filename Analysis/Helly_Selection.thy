@@ -479,7 +479,7 @@ proof auto
         apply (metis \<mu> atMost_borel real_distribution.events_eq_borel tight_def)
         apply (metis \<mu> greaterThanAtMost_borel real_distribution.events_eq_borel tight_def)
         by (rule \<mu>_le_1)
-      thus "measure (\<mu> n) {..a} < \<epsilon>" using ab(2) by smt2
+      thus "measure (\<mu> n) {..a} < \<epsilon>" using ab(2)[of n] by simp
     qed
     have Fa: "F a \<le> \<epsilon>"
       apply (rule tendsto_le[of sequentially "\<lambda>k. \<epsilon>" \<epsilon> "\<lambda>k. f (r k) a" "F a"], auto)
@@ -509,7 +509,8 @@ proof auto
         using F_nonneg F abs_of_nonneg apply auto
         apply (subgoal_tac "\<bar>1 - F n\<bar> = 1 - F n")
         apply (erule ssubst)
-        apply smt2
+        apply (erule_tac x=n in allE)
+        apply simp
         by (metis abs_of_nonneg diff_le_iff(1))
       hence "\<forall>n\<ge>b. F n \<in> S" using \<epsilon> by auto
       thus "\<exists>N. \<forall>n\<ge>N. F n \<in> S" by auto
@@ -539,11 +540,6 @@ proof auto
   hence "\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M" using M by auto
   thus "\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" using F by auto
 qed
-
-(* Should be a better way to do this with dependent choices. *)
-fun ad_hoc :: "(nat \<Rightarrow> real \<Rightarrow> real) \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> real \<Rightarrow> real \<Rightarrow> nat \<Rightarrow> nat" where
-        "ad_hoc f F e x 0 = (SOME n. e \<le> \<bar>f n x - F x\<bar>)"
-      | "ad_hoc f F e x (Suc n) = (SOME k. k \<ge> n \<and> e \<le> \<bar>f n x - F x\<bar>)"
 
 corollary tight_subseq_weak_converge:
   fixes \<mu> :: "nat \<Rightarrow> real measure" and M :: "real measure"
@@ -580,14 +576,16 @@ proof (rule ccontr)
     apply (rule_tac x = e in exI, safe)
     proof -
       fix e assume e: "0 < e" "\<forall>N. \<exists>n\<ge>N. e \<le> \<bar>f n x - F x\<bar>"
-      def s \<equiv> "ad_hoc f F e x"
-      have "\<And>n. s n < s (Suc n)"
-      proof -
-      fix n show "s n < s (Suc n)"
-        apply (unfold s_def)
-        apply (induct n rule: ad_hoc.induct) sorry
-      qed
-      show "\<exists>s. (\<forall>n. s n < s (Suc n)) \<and> (\<forall>n. e \<le> \<bar>f (s n) x - F x\<bar>)" sorry
+      then obtain n where n: "\<And>N. N \<le> n N" "\<And>N. e \<le> \<bar>f (n N) x - F x\<bar>" by metis
+      def s \<equiv> "rec_nat (n 0) (\<lambda>_ i. n (Suc i))"
+      then have s[simp]: "s 0 = n 0" "\<And>i. s (Suc i) = n (Suc (s i))"
+        by simp_all
+      { fix i have "s i < s (Suc i)"
+          using n(1)[of "Suc (s i)"] n(2)[of 0]  by simp_all }
+      moreover { fix i have "e \<le> \<bar>f (s i) x - F x\<bar>"
+        by (cases i) (simp_all add: n) }
+      ultimately show "\<exists>s. (\<forall>n. s n < s (Suc n)) \<and> (\<forall>n. e \<le> \<bar>f (s n) x - F x\<bar>)"
+        by metis
     qed
   then obtain \<epsilon> s where \<epsilon>: "\<epsilon> > 0" and s: "subseq s \<and> (\<forall>n. \<bar>f (s n) x - F x\<bar> \<ge> \<epsilon>)" by auto
     thm subseq_Suc_iff

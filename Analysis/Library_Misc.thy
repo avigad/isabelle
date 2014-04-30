@@ -114,14 +114,19 @@ done
 
 (* Why were these not in the library? *)
 lemma measure_cong_AE: "AE x in M. f x = g x \<Longrightarrow> (f \<in> measurable M N) = (g \<in> measurable M N)"
-  sorry
+  oops (* this is not true*)
   
 (* Perhaps generalize to arbitrary T1 spaces *)
 lemma lborel_countable:
-fixes A M
-assumes "A \<subseteq> space M" "countable A"
-shows "A \<in> sets M"
-sorry
+  fixes A M
+  assumes "\<And>a. a\<in>A \<Longrightarrow> {a} \<in> sets M" "countable A"
+  shows "A \<in> sets M"
+proof -
+  have "(\<Union>a\<in>A. {a}) \<in> sets M"
+    using assms by (intro sets.countable_UN') auto
+  also have "(\<Union>a\<in>A. {a}) = A" by auto
+  finally show ?thesis by auto
+qed
 
 (* This should have been in the library, like convergent_limsup_cl. *)
 lemma convergent_liminf_cl:

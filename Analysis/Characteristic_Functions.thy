@@ -123,7 +123,7 @@ lemma fact1: "CDERIV (%s. complex_of_real(-((x - s) ^ (Suc n) / (Suc n))) * iexp
       complex_of_real(-((x - s) ^ (Suc n) / (Suc n)))"
   apply (rule CDERIV_mult)
   apply (rule CDERIV_of_real)
-  apply (auto intro!: derivative_eq_intros simp del: power_Suc simp add: 
+  apply (auto intro!: derivative_eq_intros simp del: power_Suc simp add: add_nonneg_eq_0_iff
     real_of_nat_Suc real_of_nat_def)
   apply (subst i_complex_of_real[symmetric])+
 by (rule CDERIV_iexp)
@@ -199,8 +199,8 @@ next
     apply (subst equation_26p1)
     (* this is a good example of a messy calculation that should be
        automatic! *)
-    apply (simp add: field_simps del: i_complex_of_real)
-    apply (simp add: field_simps real_of_nat_Suc of_real_mult[symmetric] of_real_add[symmetric]
+    apply (simp add: add_nonneg_eq_0_iff field_simps del: i_complex_of_real)
+    apply (simp add: field_simps real_of_nat_Suc of_real_mult[symmetric] of_real_add[symmetric] add_nonneg_eq_0_iff
         del: i_complex_of_real of_real_mult of_real_add)
     done
 qed
@@ -230,7 +230,7 @@ proof -
     apply (unfold f_def)
     apply (rule continuous_at_imp_continuous_on, force)
     apply (rule CDERIV_of_real)
-    by (auto intro!: derivative_eq_intros simp del: power_Suc simp add: real_of_nat_def)
+    by (auto intro!: derivative_eq_intros simp del: power_Suc simp add: real_of_nat_def add_nonneg_eq_0_iff)
   show ?thesis
     apply (subst equation_26p2 [where n = "Suc n"])
     apply (rule arg_cong) back    
@@ -297,7 +297,7 @@ proof -
       apply (rule continuous_at_imp_continuous_on)
       apply force
       apply (rule DERIV_subset)
-      by (auto simp del: power_Suc intro!: derivative_eq_intros simp add: real_of_nat_def)
+      by (auto simp del: power_Suc intro!: derivative_eq_intros simp add: real_of_nat_def add_nonneg_eq_0_iff)
     also have "\<dots> = x ^ (Suc n) / (Suc n)" by simp
     finally show ?thesis .
   qed
@@ -391,7 +391,7 @@ proof -
       apply (rule continuous_at_imp_continuous_on)
       apply force
       apply (rule DERIV_subset)
-      by (auto simp del: power_Suc intro!: derivative_eq_intros simp add: real_of_nat_def)
+      by (auto simp del: power_Suc intro!: derivative_eq_intros simp add: real_of_nat_def add_nonneg_eq_0_iff)
     also have "\<dots> = x ^ (Suc n) / (Suc n)" by simp
     finally show ?thesis .
   qed

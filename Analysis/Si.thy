@@ -116,7 +116,7 @@ lemma ex_18_4_1:
   apply (auto intro: continuous_at_imp_continuous_on)
   apply (rule DERIV_subset, auto)
   apply (auto intro!: derivative_eq_intros)
-by (simp_all add: power2_eq_square field_simps)
+by (simp_all add: power2_eq_square field_simps add_nonneg_eq_0_iff)
 
 lemma ex_18_4_2_deriv:
   "DERIV (\<lambda>u. 1/x * (1 - exp (-u * x)) * \<bar>sin x\<bar>) u :> \<bar>exp (-u * x) * sin x\<bar>"
@@ -206,14 +206,14 @@ proof -
     by simp
   show "LBINT x=-\<infinity>..\<infinity>. inverse (1 + x^2) = pi"
     apply (subst interval_integral_substitution_nonneg[of "-pi/2" "pi/2" tan "\<lambda>x. 1 + (tan x)^2"])
-    apply (auto intro: derivative_eq_intros simp add: ereal_tendsto_simps filterlim_tan_at_left)
+    apply (auto intro: derivative_eq_intros simp add: ereal_tendsto_simps filterlim_tan_at_left add_nonneg_eq_0_iff)
     apply (erule (1) 1)
     apply (erule (1) 2)
     apply (subst minus_divide_left)+
     by (rule filterlim_tan_at_right)
   show "set_integrable lborel (einterval (-\<infinity>) \<infinity>) (\<lambda>x. inverse (1 + x^2))"
     apply (subst interval_integral_substitution_nonneg[of "-pi/2" "pi/2" tan "\<lambda>x. 1 + (tan x)^2"])
-    apply (auto intro: derivative_eq_intros simp add: ereal_tendsto_simps filterlim_tan_at_left)
+    apply (auto intro: derivative_eq_intros simp add: ereal_tendsto_simps filterlim_tan_at_left add_nonneg_eq_0_iff)
     apply (erule (1) 1)
     apply (erule (1) 2)
     apply (subst minus_divide_left)+
@@ -252,13 +252,13 @@ proof -
   show "LBINT x=0..\<infinity>. inverse (1 + x^2) = pi / 2"
     apply (subst interval_integral_substitution_nonneg[of "0" "pi/2" tan "\<lambda>x. 1 + (tan x)^2"])
     apply (auto intro: derivative_eq_intros simp add: ereal_tendsto_simps filterlim_tan_at_left
-      zero_ereal_def)
+      zero_ereal_def add_nonneg_eq_0_iff)
     apply (erule (1) 1)
     by (erule (1) 2)
   show "set_integrable lborel (einterval 0 \<infinity>) (\<lambda>x. inverse (1 + x^2))"
     apply (subst interval_integral_substitution_nonneg[of "0" "pi/2" tan "\<lambda>x. 1 + (tan x)^2"])
     apply (auto intro: derivative_eq_intros simp add: ereal_tendsto_simps filterlim_tan_at_left
-      zero_ereal_def)
+      zero_ereal_def add_nonneg_eq_0_iff)
     apply (erule (1) 1)
     by (erule (1) 2)
 qed
@@ -510,7 +510,7 @@ proof -
       using Billingsley_ex_17_5' (1) apply (simp add: field_simps)
       apply (subst zero_ereal_def)
       apply (rule interval_integral_substitution_nonneg [of "ereal 0" \<infinity>, OF _ 1])
-      apply (auto simp add: ereal_tendsto_simps)
+      apply (auto simp add: ereal_tendsto_simps add_nonneg_eq_0_iff)
       apply (rule tendsto_mono [OF at_right_le_at])
       apply (subgoal_tac "0 = 0 / t")
       apply (erule ssubst) back back
