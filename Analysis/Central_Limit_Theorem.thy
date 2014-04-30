@@ -287,12 +287,12 @@ lemma sqrt_at_top: "LIM x at_top. sqrt x :: real :> at_top"
      (auto intro: eventually_gt_at_top)
 
 
-theorem (in real_distribution) central_limit_theorem:
+theorem (in prob_space) central_limit_theorem:
   fixes 
-    X :: "nat \<Rightarrow> real \<Rightarrow> real" and
+    X :: "nat \<Rightarrow> 'a \<Rightarrow> real" and
     \<mu> :: "real measure" and
     \<sigma>2 :: real and
-    S :: "nat \<Rightarrow> real \<Rightarrow> real"
+    S :: "nat \<Rightarrow> 'a \<Rightarrow> real"
   assumes
     X_indep: "indep_vars (\<lambda>i. borel) X UNIV" and
     X_integrable: "\<And>n. integrable M (X n)" and
@@ -427,4 +427,5 @@ proof -
     unfolding \<phi>_def by -
 qed
 
+end
 
