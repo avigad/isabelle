@@ -588,10 +588,6 @@ proof (rule ccontr)
         by metis
     qed
   then obtain \<epsilon> s where \<epsilon>: "\<epsilon> > 0" and s: "subseq s \<and> (\<forall>n. \<bar>f (s n) x - F x\<bar> \<ge> \<epsilon>)" by auto
-    thm subseq_Suc_iff
-    thm dependent_choice
-    thm dependent_choice[where P = "\<lambda>x. True" and Q = "\<lambda>n x y. (x < y \<and> f n y \<ge> 0)"]
-    thm order_tendsto_iff
   hence "\<And>r. subseq r \<Longrightarrow> \<not>weak_conv_m (\<mu> \<circ> s \<circ> r) M"
     apply (unfold weak_conv_m_def weak_conv_def, auto)
     apply (rule_tac x = x in exI)
