@@ -1060,13 +1060,12 @@ proof -
     by (erule tight_aux)
   show ?thesis
     proof (rule tight_subseq_weak_converge [OF real_distr_M real_distr_M' tight])
-      fix s
+      fix s \<nu>
       assume s: "subseq s"
-      assume nu: "\<exists>\<nu>. weak_conv_m (M \<circ> s) \<nu>"
-      then obtain \<nu> where 1: "weak_conv_m (M \<circ> s) \<nu>" ..
-      have *: "real_distribution \<nu>" sorry
+      assume nu: "weak_conv_m (M \<circ> s) \<nu>"
+      assume *: "real_distribution \<nu>"
       have 2: "\<And>n. real_distribution ((M \<circ> s) n)" unfolding comp_def by (rule assms)
-      have 3: "\<And>t. (\<lambda>n. char ((M \<circ> s) n) t) ----> char \<nu> t" by (intro levy_continuity1 [OF 2 * 1])
+      have 3: "\<And>t. (\<lambda>n. char ((M \<circ> s) n) t) ----> char \<nu> t" by (intro levy_continuity1 [OF 2 * nu])
       have 4: "\<And>t. (\<lambda>n. char ((M \<circ> s) n) t) = ((\<lambda>n. char (M n) t) \<circ> s)" by (rule ext, simp)
       have 5: "\<And>t. (\<lambda>n. char ((M \<circ> s) n) t) ----> char M' t"
         by (subst 4, rule lim_subseq [OF s], rule assms)
@@ -1074,7 +1073,7 @@ proof -
       hence "\<nu> = M'" by (rule Levy_uniqueness [OF * `real_distribution M'`])
       thus "weak_conv_m (M \<circ> s) M'" 
         apply (elim subst)
-        by (rule 1)  
+        by (rule nu)  
   qed
 qed
 

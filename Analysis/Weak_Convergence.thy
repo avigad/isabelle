@@ -41,12 +41,12 @@ proof -
   def F \<equiv> "\<lambda>x. Inf (ereal ` {f y |y. y \<in> A \<and> x \<le> y})"
   fix a :: real
   have monoF: "mono F" unfolding F_def mono_def
-  apply auto sorry
-(*  apply (unfold INF_def)
-  apply (rule Inf_superset_mono)
-  apply (unfold image_def)
-  using assms(1) unfolding mono_on_def mono_def apply auto
-  by (metis order.trans) *)
+    apply auto
+    apply (unfold INF_def)
+    apply (rule Inf_superset_mono)
+    apply (unfold image_def)
+    using assms(1) unfolding mono_on_def mono_def apply auto
+  by (metis order.trans)
   hence "{w. a \<le> F w} \<in> sets borel" using borel_measurable_mono_fnc
     by (smt dual_order.trans is_interval_1 mem_Collect_eq mono_def real_interval_borel_measurable)
   moreover have "{w \<in> A. a \<le> f w} = {w. a \<le> F w} \<inter> A"
@@ -80,8 +80,6 @@ lemma measure_restrict_space:
 lemma lebesgue_measure_interval: "a \<le> b \<Longrightarrow> measure lborel {a..b} = b - a"
  unfolding measure_def by auto
 
-thm distr_cong
-
 lemma distr_cong_AE:
   assumes 1: "M = K" and "sets N = sets L" and 
     2: "(AE x in M. f x = g x)" and "f \<in> measurable M N" and "g \<in> measurable K L"
@@ -96,51 +94,46 @@ using assms sets_eq_imp_space_eq[of N L] apply (simp add: distr_def)
   apply (erule measurable_sets, simp add: sets.sigma_sets_eq)
 by (erule measurable_sets, simp add: sets.sigma_sets_eq)
 
-thm continuous_at_right_real_increasing
-
+(* TODO: turn this into an iff by weakening the hypothesis *)
+(* compare to continuous_at_right_real_mono *)
 lemma continuous_at_right_real_mono_on_open:
   fixes f :: "real \<Rightarrow> real" and U a
   assumes "open U" "a \<in> U" and mono: "mono_on f U"
-  shows "continuous (at_right a) f = (\<forall>\<epsilon>>0. \<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>)"
+  shows "continuous (at_right a) f \<Longrightarrow> (\<forall>\<epsilon>>0. \<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>)"
 proof (auto simp add: continuous_within_eps_delta dist_real_def greaterThan_def)
   from mono have nondec: "\<And>x y. x \<in> U \<Longrightarrow> y \<in> U \<Longrightarrow> x \<le> y \<Longrightarrow> f x \<le> ((f y) :: real)"
     unfolding mono_on_def by auto
+  from `a \<in> U` `open U` have "\<exists>e>0. \<forall>x'. \<bar>x' - a\<bar> < e \<longrightarrow> x' \<in> U"
+    by (auto simp add: open_real_def dist_real_def)
+  then obtain d' where "d' > 0 \<and> (\<forall>x'. \<bar>x' - a\<bar> < d' \<longrightarrow> x' \<in> U)" ..
+  hence "d' > 0" and d': "\<And>x'. \<bar>x' - a\<bar> < d' \<Longrightarrow> x' \<in> U" by auto
   {
     fix \<epsilon> :: real
     assume "\<epsilon> > 0" and
       hyp: "\<forall>e>0. \<exists>d>0. \<forall>x'>a. x' - a < d \<longrightarrow> \<bar>f x' - f a\<bar> < e"
-    show "\<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>"
-      sorry
+    hence "\<exists>d>0. \<forall>x'>a. x' - a < d \<longrightarrow> \<bar>f x' - f a\<bar> < \<epsilon>" by auto
+    then obtain d where "d > 0 \<and> (\<forall>x'>a. x' - a < d \<longrightarrow> \<bar>f x' - f a\<bar> < \<epsilon>)" ..
+    hence "d > 0" and d: "\<And>x'. x'>a \<Longrightarrow> x' - a < d \<Longrightarrow> \<bar>f x' - f a\<bar> < \<epsilon>" by auto
+    let ?delta = "min (d / 2) (d' / 2)"
+    from `d > 0` `d' > 0` have "?delta >0 \<and> a + ?delta \<in> U \<and> f (a + ?delta) - f a < \<epsilon>"
+      apply (auto intro: d')
+      by (rule order_le_less_trans [OF abs_ge_self d], auto)
+    thus "\<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>" ..
   }
-  next
-  {
-    fix e :: real
-    assume "e > 0" and
-      hyp: "\<forall>\<epsilon>>0. \<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>"
-    show "\<exists>d>0. \<forall>x'>a. x' - a < d \<longrightarrow> \<bar>f x' - f a\<bar> < e"
-     sorry
-  }
-qed
 
-(*
-  apply (drule_tac x = \<epsilon> in spec, auto)
-  apply (drule_tac x = "a + d / 2" in spec)
-  apply (subst (asm) abs_of_nonneg)
-  apply (auto intro!: nondec simp add: field_simps assms)
-  apply (rule_tac x = "d / 2" in exI)
-  apply (auto simp add: field_simps)
-  apply (drule_tac x = e in spec, auto)
-  apply (rule_tac x = delta in exI, auto)
-  apply (subst abs_of_nonneg)
-  apply (auto intro: nondecF simp add: field_simps)
-  apply (rule le_less_trans)
-  prefer 2 apply assumption
-by (rule nondecF, auto)
-sorry 
-*)
+qed
 
 lemma "mono f = mono_on f UNIV"
   unfolding mono_def mono_on_def by auto
+
+lemma of_rat_dense:
+  fixes x y :: real
+  assumes "x < y"
+  shows "\<exists>q :: rat. x < of_rat q \<and> of_rat q < y"
+
+using Rats_dense_in_real [OF `x < y`]
+by (auto elim: Rats_cases)
+
 
 (* Show such a function is an ereal-valued measurable function times the indicator function of the
    complement of A. *)
@@ -148,36 +141,77 @@ lemma mono_on_ctble_discont:
   fixes f :: "real \<Rightarrow> real"
   fixes A :: "real set"
   assumes "mono_on f A"
-  shows "countable {a\<in>A. \<not>(continuous (at a within A) f)}"
+  shows "countable {a\<in>A. \<not> continuous (at a within A) f}"
 proof -
-  have 1: "\<And>a. \<not> (continuous (at a within A) f) \<Longrightarrow> Liminf (at a within A) f < 
-    Limsup (at a within A) f"
-  unfolding continuous_within 
-thm tendsto_iff_Liminf_eq_Limsup [of _ f]
-(*    apply (subst (asm) tendsto_iff_Liminf_eq_Limsup) *)
-  proof -
-    fix a (*assume a: "\<not> isCont f a"*)
-    have "\<not> isCont f a \<Longrightarrow> Liminf (at a) f \<noteq> Limsup (at a) f"
-      apply (unfold isCont_def)
-      apply (rule contrapos_nn) sorry
-      (*apply (subst tendsto_iff_Liminf_eq_Limsup[symmetric])*)
-    hence "Liminf (at a) f < Limsup (at a) f"
-      using Liminf_le_Limsup sorry (*by (metis less_eq_ereal_def trivial_limit_at)*) (* Why is this failing? *)
-    thm tendsto_iff_Liminf_eq_Limsup
-    thm Liminf_le_Limsup thm at_neq_bot
-    thus "Liminf (at a within A) f < Limsup (at a within A) f" sorry
+
+  have "\<forall>a \<in> {a\<in>A. \<not> continuous (at a within A) f}. \<exists>q :: nat \<times> rat.
+      (fst q = 0 \<and> of_rat (snd q) < f a \<and> (\<forall>x \<in> A. x < a \<longrightarrow> f x < of_rat (snd q))) |
+      (fst q = 1 \<and> of_rat (snd q) > f a \<and> (\<forall>x \<in> A. x > a \<longrightarrow> f x > of_rat (snd q)))"
+  proof auto
+    from `mono_on f A` have mono: "\<And>x y. x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> x \<le> y \<Longrightarrow> f x \<le> f y"
+      by (simp add: mono_on_def)
+    fix a
+    assume "a \<in> A"
+    assume "\<not> continuous (at a within A) f"
+    thus "\<exists>q1 q2.
+            q1 = 0 \<and> real_of_rat q2 < f a \<and> (\<forall>x\<in>A. x < a \<longrightarrow> f x < real_of_rat q2) \<or>
+            q1 = Suc 0 \<and> f a < real_of_rat q2 \<and> (\<forall>x\<in>A. a < x \<longrightarrow> real_of_rat q2 < f x)"
+    proof (auto simp add: continuous_within order_tendsto_iff eventually_at)
+      fix l
+      assume "l < f a"
+      hence "\<exists>q :: rat. l < of_rat q \<and> of_rat q < f a"
+        by (rule of_rat_dense)
+      then guess q2 .. note 1 = this
+      assume 2 [rule_format]: "\<forall>d>0. \<exists>x\<in>A. x \<noteq> a \<and> dist x a < d \<and> \<not> l < f x"
+      from 1 have "real_of_rat q2 < f a \<and> (\<forall>x\<in>A. x < a \<longrightarrow> f x < real_of_rat q2)"
+      proof auto
+        fix x 
+        assume "x \<in> A" "x < a"
+        with 1 2 [of "a - x"] show "f x < real_of_rat q2"
+          apply (auto simp add: dist_real_def)
+          apply (subgoal_tac "f x \<le> f xa")
+          by (auto intro: mono)
+      qed 
+      thus ?thesis by auto
+    next
+      fix u
+      assume "u > f a"
+      hence "\<exists>q :: rat. f a < of_rat q \<and> of_rat q < u"
+        by (rule of_rat_dense)
+      then guess q2 .. note 1 = this
+      assume 2 [rule_format]: "\<forall>d>0. \<exists>x\<in>A. x \<noteq> a \<and> dist x a < d \<and> \<not> u > f x"
+      from 1 have "real_of_rat q2 > f a \<and> (\<forall>x\<in>A. x > a \<longrightarrow> f x > real_of_rat q2)"
+      proof auto
+        fix x 
+        assume "x \<in> A" "x > a"
+        with 1 2 [of "x - a"] show "f x > real_of_rat q2"
+          apply (auto simp add: dist_real_def)
+          apply (subgoal_tac "f x \<ge> f xa")
+          by (auto intro: mono)
+      qed 
+      thus ?thesis by auto
+    qed
   qed
-  have 2: "\<And>x y. x \<le> y \<Longrightarrow> f x \<le> Liminf (at y) f" sorry
-  have 3: "\<And>x y. x \<le> y \<Longrightarrow> Limsup (at x) f \<le> f y" sorry
-  def jint \<equiv> "\<lambda>a. {Liminf (at a) f<..<Limsup (at a) f}"
-  def rosc \<equiv> "\<lambda>a. SOME q. q \<in> jint a \<inter> ereal ` \<rat>"
-  def D \<equiv> "{a. \<not> isCont f a}"
-  have "\<And>a. \<not> isCont f a \<Longrightarrow> jint a \<noteq> {}" (* using 1 *) sorry
-  moreover have "\<And>a b. \<not> isCont f a \<and> \<not> isCont f b \<Longrightarrow> jint a \<inter> jint b = {}"
-    (* using 1 2 3 *) unfolding jint_def sorry
-  ultimately have 4: "\<And>a b. \<not> isCont f a \<and> \<not> isCont f b \<Longrightarrow> rosc a \<noteq> rosc b" sorry
-  have 5: "inj_on rosc D" sorry
-  thus ?thesis sorry
+  hence "\<exists>g :: real \<Rightarrow> nat \<times> rat . \<forall>a \<in> {a\<in>A. \<not> continuous (at a within A) f}. 
+      (fst (g a) = 0 \<and> of_rat (snd (g a)) < f a \<and> (\<forall>x \<in> A. x < a \<longrightarrow> f x < of_rat (snd (g a)))) |
+      (fst (g a) = 1 \<and> of_rat (snd (g a)) > f a \<and> (\<forall>x \<in> A. x > a \<longrightarrow> f x > of_rat (snd (g a))))"
+    by (rule bchoice)
+  then guess g ..
+  hence g: "\<And>a x. a \<in> A \<Longrightarrow> \<not> continuous (at a within A) f \<Longrightarrow> x \<in> A \<Longrightarrow>
+      (fst (g a) = 0 \<and> of_rat (snd (g a)) < f a \<and> (x < a \<longrightarrow> f x < of_rat (snd (g a)))) |
+      (fst (g a) = 1 \<and> of_rat (snd (g a)) > f a \<and> (x > a \<longrightarrow> f x > of_rat (snd (g a))))"
+    by auto
+  have "inj_on (\<lambda>x. g x) {a\<in>A. \<not> continuous (at a within A) f}"
+  proof (auto simp add: inj_on_def)
+    fix w z
+    assume 1: "w \<in> A" and 2: "\<not> continuous (at w within A) f" and
+           3: "z \<in> A" and 4: "\<not> continuous (at z within A) f" and
+           5: "g w = g z"
+    from g [OF 1 2 3] g [OF 3 4 1] 5 
+    show "w = z" by auto
+  qed
+  thus ?thesis 
+    by (rule countableI') 
 qed
 
 lemma continuous_within_open: "a \<in> A \<Longrightarrow> open A \<Longrightarrow> (continuous (at a within A) f) = isCont f a"
@@ -196,38 +230,11 @@ proof -
     by (rule mono_on_ctble_discont, rule assms)
 qed
 
-
 lemma mono_ctble_discont:
   fixes f :: "real \<Rightarrow> real"
   assumes "mono f"
   shows "countable {a. \<not> isCont f a}"
-proof -
-  have 1: "\<And>a. \<not> isCont f a \<Longrightarrow> Liminf (at a) f < Limsup (at a) f"
-  unfolding isCont_def proof -
-    fix a (*assume a: "\<not> isCont f a"*)
-    have "\<not> isCont f a \<Longrightarrow> Liminf (at a) f \<noteq> Limsup (at a) f"
-      apply (unfold isCont_def)
-      apply (rule contrapos_nn) sorry
-      (*apply (subst tendsto_iff_Liminf_eq_Limsup[symmetric])*)
-    hence "Liminf (at a) f < Limsup (at a) f"
-      using Liminf_le_Limsup sorry (*by (metis less_eq_ereal_def trivial_limit_at)*) (* Why is this failing? *)
-    thm tendsto_iff_Liminf_eq_Limsup
-    thm Liminf_le_Limsup thm at_neq_bot
-    thus "Liminf (at a) f < Limsup (at a) f" sorry
-  qed
-  have 2: "\<And>x y. x \<le> y \<Longrightarrow> f x \<le> Liminf (at y) f" sorry
-  have 3: "\<And>x y. x \<le> y \<Longrightarrow> Limsup (at x) f \<le> f y" sorry
-  def jint \<equiv> "\<lambda>a. {Liminf (at a) f<..<Limsup (at a) f}"
-  def rosc \<equiv> "\<lambda>a. SOME q. q \<in> jint a \<inter> ereal ` \<rat>"
-  def D \<equiv> "{a. \<not> isCont f a}"
-  have "\<And>a. \<not> isCont f a \<Longrightarrow> jint a \<noteq> {}" (* using 1 *) sorry
-  moreover have "\<And>a b. \<not> isCont f a \<and> \<not> isCont f b \<Longrightarrow> jint a \<inter> jint b = {}"
-    (* using 1 2 3 *) unfolding jint_def sorry
-  ultimately have 4: "\<And>a b. \<not> isCont f a \<and> \<not> isCont f b \<Longrightarrow> rosc a \<noteq> rosc b" sorry
-  have 5: "inj_on rosc D" sorry
-  thus ?thesis sorry
-qed
-
+using assms mono_on_ctble_discont [of f UNIV] unfolding mono_on_def mono_def by auto
 
 lemma emeasure_lborel_countable:
   fixes A :: "real set"
