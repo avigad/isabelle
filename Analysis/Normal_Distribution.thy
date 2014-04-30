@@ -499,7 +499,8 @@ lemma integral_xsquare_times_standard_normal[intro]: "(\<integral> x. standard_n
 proof -
   have [intro]:"integrable lborel (\<lambda>x. exp (- x\<^sup>2) * (2 * x\<^sup>2) / (sqrt 2 * sqrt pi))"
     apply (subst integrable_cong[where g ="(\<lambda>x. (2 * inverse (sqrt 2 * sqrt pi)) * (exp (- x\<^sup>2) * x\<^sup>2))"])
-    by (auto intro!: integral_cmult(1) integrable_xsquare_exp_xsquare simp: field_simps)
+    by (auto intro!: integral_cmult(1) integrable_xsquare_exp_xsquare simp: field_simps
+       simp del: inverse_eq_divide)
 
   have "(\<integral> x. standard_normal_density x * x\<^sup>2 \<partial>lborel) = (2 / sqrt pi) * \<integral> x. x\<^sup>2 * exp (- x\<^sup>2) \<partial>lborel"
     apply (subst integral_cmult(2)[symmetric])
