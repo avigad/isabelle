@@ -329,20 +329,6 @@ proof -
   ultimately show ?thesis using subseq by auto
 qed
 
-(* Perhaps not needed for our formalization. *)
-lemma lim_eventually_le: "convergent f \<Longrightarrow> (eventually (\<lambda>n. f n \<le> (x::'a::linorder_topology)) sequentially) \<Longrightarrow> lim f \<le> x"
-proof (subst (asm) eventually_sequentially)
-  assume cnv: "convergent f" and fx: "\<exists>N. \<forall>n\<ge>N. f n \<le> x"
-  from fx guess N .. note N = this
-  let ?g = "\<lambda>n. f (n + N)"
-  have g: "convergent ?g" "lim ?g = lim f"
-    using cnv unfolding convergent_def apply (metis LIMSEQ_ignore_initial_segment)
-    using cnv unfolding lim_def by (metis LIMSEQ_ignore_initial_segment LIMSEQ_offset)
-  moreover have "lim ?g \<le> x"
-    by (rule lim_le) (auto simp add: g(1) N)
-  ultimately show "lim f \<le> x" using g(2) by simp
-qed
-
 (** Weak convergence corollaries to Helly's theorem. **)
 
 definition tight :: "(nat \<Rightarrow> real measure) \<Rightarrow> bool"
