@@ -20,7 +20,7 @@ lemma (in pair_sigma_finite) complex_Fubini_integral:
   assumes "complex_integrable (M1 \<Otimes>\<^sub>M M2) f"
   shows "CLINT y|M2. CLINT x|M1. f (x, y) = CLINT x|M1. CLINT y|M2. f (x, y)"
 using assms unfolding complex_lebesgue_integral_def complex_integrable_def
-by (auto intro: Fubini_integral simp add: i_complex_of_real)
+by (auto intro!: Fubini_integral complex_eqI)
 (* How delightful that this is so easy! *)
 
 (* extracted from Binary_Product_Measure.integrable_fst_measurable *)
@@ -88,7 +88,7 @@ lemma (in pair_sigma_finite) complex_Fubini_integrable:
   assumes "complex_integrable (M1 \<Otimes>\<^sub>M M2) f"
   shows "complex_integrable M1 (\<lambda>x. CLINT y | M2. f (x, y))"
 using assms unfolding complex_lebesgue_integral_def complex_integrable_def
-by (auto intro: Fubini_integrable simp add: i_complex_of_real)
+by (auto intro: Fubini_integrable)
 
 
 (* 
@@ -112,7 +112,7 @@ proof -
           (iexp (-(t * b)) - (1 + ii * -(t * b))) / (ii * t))"  
              (is "_ = cmod (?one / (ii * t) - ?two / (ii * t))")
         apply (rule arg_cong) back
-        using `t \<noteq> 0` by (simp add: field_simps del: i_complex_of_real)
+        using `t \<noteq> 0` by (simp add: field_simps)
       also have "\<dots> \<le> cmod (?one / (ii * t)) + cmod (?two / (ii * t))" 
         by (rule norm_triangle_ineq4)
       also have "cmod (?one / (ii * t)) = cmod ?one / abs t"
@@ -145,7 +145,7 @@ proof -
 qed
 
 lemma cmod_iexp [simp]: "cmod (iexp x) = 1"
-  by (simp add: cis_conv_exp [symmetric] i_complex_of_real)
+  by (simp add: cis_conv_exp [symmetric])
 
 lemma Levy_Inversion_aux2:
   fixes a b t :: real
@@ -160,7 +160,7 @@ proof -
     apply (subst norm_divide)
     apply (subst norm_mult)
     apply (subst cmod_iexp)
-    using `t \<noteq> 0` by (simp add: i_complex_of_real)
+    using `t \<noteq> 0` by (simp add: complex_eq_iff norm_mult)
   also have "\<dots> \<le> abs (t * (b - a)) / abs t"
     apply (rule divide_right_mono)
     using equation_26p4a [of "t * (b - a)" 0] apply (simp add: field_simps eval_nat_numeral)
@@ -171,7 +171,6 @@ proof -
 qed
 
 (* TODO: restore these? *)
-declare i_complex_of_real [simp del]
 declare of_real_mult [simp del]
 
 lemma (in real_distribution) cmod_char_le_1: "cmod (char M t) \<le> 1"
@@ -315,11 +314,11 @@ theorem Levy_Inversion:
         also have "\<dots> = (CLBINT t=(0::real)..T. complex_of_real(
             2 * (sin (t * (x - a)) / t) - 2 * (sin (t * (x - b)) / t)))"
           apply (rule complex_interval_integral_cong)
-          using `T \<ge> 0` apply (auto simp add: field_simps of_real_mult expi_def cis_def
-             i_complex_of_real)
-          apply (subst (2 5 7 10) minus_diff_eq [symmetric])
+          using `T \<ge> 0`
+          apply (auto simp add: field_simps cis.ctr expi_def)
+          apply (subst (2 4 5 7 9 10) minus_diff_eq [symmetric])
           apply (simp only: sin_minus cos_minus)
-          by (simp add: complex_of_real_def field_simps)
+          by (simp add: field_simps complex_eq_iff)
         also have "\<dots> = complex_of_real (LBINT t=(0::real)..T. 
             2 * (sin (t * (x - a)) / t) - 2 * (sin (t * (x - b)) / t))" 
           by (rule complex_interval_integral_of_real)
@@ -815,7 +814,7 @@ proof -
       apply (subst complex_interval_lebesgue_integral_add (2) [symmetric])
       apply (rule complex_interval_integrable_isCont, auto)+
       (* TODO: shouldn't of_real_numeral be a simplifier rule? *)
-      by (auto simp add: expi_def cis_def complex_of_real_def [symmetric] of_real_numeral)
+      by (auto simp add: expi_def cis.ctr of_real_numeral of_real_mult)
     also have "\<dots> = 2 * u - 2 * sin (u * x) / x"
       apply simp
       apply (subst complex_interval_lebesgue_integral_diff)

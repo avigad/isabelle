@@ -466,8 +466,7 @@ proof -
     apply (simp_all del: One_nat_def power_Suc add: divide_minus_left)
     apply (subst *, subst integral_cmult, rule aux4_odd_abs)
     apply (subst aux4_odd_abs, simp add: power_mult real_sqrt_mult)
-    (* the simplifier should know that sqrt 2 * sqrt 2 = 2 *)
-    by (subst real_sqrt_mult_distrib2 [symmetric], subst real_sqrt_abs2, simp)
+    done
 qed
 
 (* which is more convenient? *)

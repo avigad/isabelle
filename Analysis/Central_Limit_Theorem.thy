@@ -182,9 +182,6 @@ lemma (in real_distribution) aux:
 proof -
   note real_distribution.equation_26p5b_stronger [of M 2 t, simplified]
   have [simp]: "prob UNIV = 1" by (metis prob_space space_eq_univ)
-  have 0: "ii * t * ii * t = - t * t"
-    by (metis comm_semiring_1_class.normalizing_semiring_rules(7) 
-      complex_i_mult_minus of_real_minus of_real_mult)
   from integral_2 have [simp]: "expectation (\<lambda>x. x * x) = \<sigma>2" 
     by (simp add: integral_1 numeral_eq_Suc)
   {
@@ -197,10 +194,9 @@ proof -
   note 2 = equation_26p5b_stronger [of 2 t, OF 1, simplified]
   have "cmod (char M t - (\<Sum>k\<le>2. (\<i> * t) ^ k * (expectation (\<lambda>x. x ^ k)) / (real (fact k))))
       \<le> t\<^sup>2 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3)) / real (fact (3::nat))"
-      by (rule equation_26p5b_stronger [of 2 t, OF 1, simplified], simp)
+      using equation_26p5b_stronger [of 2 t, OF 1] by simp
   also have "(\<Sum>k\<le>2. (\<i> * t) ^ k * expectation (\<lambda>x. x ^ k) / (real (fact k))) = 1 - t^2 * \<sigma>2 / 2"
-    apply (simp add: numeral_eq_Suc real_of_nat_Suc integral_1 mult_assoc [symmetric])
-    by (subst 0, simp add: of_real_mult)
+    by (simp add: complex_eq_iff numeral_eq_Suc integral_1 Re_divide Im_divide)
   also have "real (fact (3::nat)) = 6" by (simp add: eval_nat_numeral)
   also have "t\<^sup>2 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3)) / 6 = 
      t\<^sup>2 / 6 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3))" by (simp add: field_simps)
@@ -253,12 +249,12 @@ proof -
     hence "k = 0 \<or> k = 1 \<or> k = 2" by auto
     with assms have "integrable M (\<lambda>x. x^k)" by auto
   } note 1 = this 
-  have "cmod (char M t - (\<Sum>k\<le>2. (\<i> * t) ^ k / (int (fact k)) * expectation (\<lambda>x. x ^ k))) \<le> 
-      2 * (abs t)\<^sup>2 / fact (2::nat) * expectation (\<lambda>x. (abs x)^2)"
-    by (rule equation_26p5b [OF 1], simp)
-  also have "(\<Sum>k\<le>2. (\<i> * t) ^ k / (int (fact k)) * expectation (\<lambda>x. x ^ k)) = 1 - t^2 * \<sigma>2 / 2"
+  have "cmod (char M t - (\<Sum>k\<le>2. (\<i> * t) ^ k / (fact k) * expectation (\<lambda>x. x ^ k))) \<le> 
+      2 * (abs t)\<^sup>2 / real (fact (2::nat)) * expectation (\<lambda>x. (abs x)^2)"
+    by (rule equation_26p5b [OF 1]) simp
+  also have "(\<Sum>k\<le>2. (\<i> * t) ^ k / (fact k) * expectation (\<lambda>x. x ^ k)) = 1 - t^2 * \<sigma>2 / 2"
     apply (simp add: numeral_eq_Suc real_of_nat_Suc integral_1 mult_assoc [symmetric])
-    by (subst 0, simp add: of_real_mult)
+    by (subst 0, simp add: of_real_mult of_real_numeral)
   also have "2 * (abs t)\<^sup>2 / fact (2::nat) * expectation (\<lambda>x. (abs x)^2) = t^2 * \<sigma>2"
     by (simp add: numeral_eq_Suc integral_2)
   finally show ?thesis .

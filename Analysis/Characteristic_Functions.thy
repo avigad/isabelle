@@ -89,8 +89,8 @@ using assms proof -
   have [simp]: "indep_var borel (\<lambda>x. cos (t * X1 x)) borel (\<lambda>x. sin (t * X2 x))"
     by (rule indep_var_compose2 [OF assms], auto) 
   show ?thesis 
-    using assms unfolding char_def complex_lebesgue_integral_def expi_def apply auto
-    by (simp_all add: integral_distr cos_add sin_add ring_distribs indep_var_lebesgue_integral)
+    using assms unfolding char_def complex_lebesgue_integral_def expi_def
+    by (simp_all add: integral_distr cos_add sin_add ring_distribs indep_var_lebesgue_integral complex_eq_iff)
 qed
 
 lemma (in prob_space) char_distr_setsum:
@@ -123,10 +123,9 @@ lemma fact1: "CDERIV (%s. complex_of_real(-((x - s) ^ (Suc n) / (Suc n))) * iexp
       complex_of_real(-((x - s) ^ (Suc n) / (Suc n)))"
   apply (rule CDERIV_mult)
   apply (rule CDERIV_of_real)
-  apply (auto intro!: derivative_eq_intros simp del: power_Suc simp add: add_nonneg_eq_0_iff
-    real_of_nat_Suc real_of_nat_def)
-  apply (subst i_complex_of_real[symmetric])+
-by (rule CDERIV_iexp)
+  apply (auto intro!: derivative_eq_intros CDERIV_iexp simp del: power_Suc 
+      simp add: add_nonneg_eq_0_iff real_of_nat_Suc real_of_nat_def)
+  done
 
 lemma equation_26p1:
   fixes x :: real and n :: nat
@@ -147,14 +146,16 @@ proof -
       apply (case_tac "0 \<le> x")
       apply (subst (1 2) zero_ereal_def)
       apply (rule complex_interval_integral_cong, force)
-      unfolding f_def apply simp
-      by simp
+      unfolding f_def
+      apply (simp add: real_of_nat_def)
+      apply (simp add: real_of_nat_def)
+      done
     also have "... = ?F x - ?F 0"
       apply (subst zero_ereal_def)
       apply (rule complex_interval_integral_FTC_finite)
       apply (unfold f_def)
       apply (rule continuous_at_imp_continuous_on)
-      apply (auto simp del: i_complex_of_real) [1]
+      apply (auto intro!: continuous_intros simp: add_nonneg_eq_0_iff complex_eq_iff) [1]
       by (rule fact1)
     also have "... = x^(Suc n) / (Suc n)"
       by auto
@@ -170,13 +171,13 @@ thus ?thesis
   unfolding f_def
   apply (subst complex_interval_lebesgue_integral_add(2) [symmetric])
   (* the nex few lines should be automatic *)
-  apply (subst zero_ereal_def)
-  apply (rule complex_interval_integrable_isCont)
-  apply (simp del: i_complex_of_real) 
-  apply (subst zero_ereal_def)
-  apply (rule complex_interval_integrable_isCont)
-  apply (simp del: i_complex_of_real) 
-  by simp
+  unfolding zero_ereal_def
+  apply (intro complex_interval_integrable_isCont continuous_intros)
+  apply (simp add: complex_eq_iff real_of_nat_def[symmetric])
+  apply (intro complex_interval_integrable_isCont continuous_intros)
+  apply (simp add: complex_eq_iff real_of_nat_def[symmetric])
+  apply simp
+  done
 qed
 
 lemma equation_26p2:
@@ -188,7 +189,7 @@ lemma equation_26p2:
 proof (induction n)
   show "?P 0"
     unfolding f_def apply (subst zero_ereal_def)
-    by (auto simp add: field_simps interval_integral_iexp simp del: i_complex_of_real)  
+    by (auto simp add: field_simps interval_integral_iexp)
 next
   fix n 
   assume ih: "?P n"
@@ -199,9 +200,10 @@ next
     apply (subst equation_26p1)
     (* this is a good example of a messy calculation that should be
        automatic! *)
-    apply (simp add: add_nonneg_eq_0_iff field_simps del: i_complex_of_real)
-    apply (simp add: field_simps real_of_nat_Suc of_real_mult[symmetric] of_real_add[symmetric] add_nonneg_eq_0_iff
-        del: i_complex_of_real of_real_mult of_real_add)
+    apply (simp add: add_nonneg_eq_0_iff field_simps)
+    apply (auto simp add: complex_eq_iff Re_divide Im_divide real_of_nat_def[symmetric]
+        real_of_nat_Suc add_nonneg_eq_0_iff nonzero_eq_divide_eq ring_distribs
+        Re_power_real Im_power_real power2_eq_square)
     done
 qed
 (* suggests we should add real_of_nat_Suc, delete i_complex_of_real *)
@@ -220,7 +222,7 @@ proof -
     unfolding f_def apply (simp del: i_complex_of_real)
     apply (subst zero_ereal_def)
     apply (rule complex_interval_integrable_isCont)
-    apply (simp del: i_complex_of_real)
+    apply simp
     by (simp add: field_simps)
   have calc2: "(CLBINT s=0..x. f s n) = x^(Suc n) / (Suc n)"
     apply (subst zero_ereal_def)
@@ -233,15 +235,13 @@ proof -
     by (auto intro!: derivative_eq_intros simp del: power_Suc simp add: real_of_nat_def add_nonneg_eq_0_iff)
   show ?thesis
     apply (subst equation_26p2 [where n = "Suc n"])
-    apply (rule arg_cong) back    
+    apply (rule arg_cong) back
     apply (subst calc1)
     apply (subst calc2)
-    apply (subgoal_tac 
-      "ii ^ (Suc (Suc n)) / complex_of_real (real (int (fact (Suc n)))) = 
-       (ii ^ (Suc n) / complex_of_real (real (int (fact n)))) *
-       (ii / complex_of_real (real (int (Suc n))))")
+    apply (subgoal_tac
+      "ii ^ (Suc (Suc n)) / (fact (Suc n)) = (ii ^ (Suc n) / (fact n)) * (ii / (Suc n))")
     prefer 2
-    apply (simp add: field_simps)
+    apply (simp add: field_simps of_nat_mult)
     apply (erule ssubst)
     apply (subst mult_assoc)+
     apply (rule arg_cong) back
@@ -260,7 +260,7 @@ proof -
     by (subst equation_26p2 [of _ n], simp add: field_simps)
   hence "cmod (?t1) = cmod (?t2)" by simp
   also have "\<dots> =  (1 / (fact n)) * cmod (CLBINT s=0..x. (x - s)^n * (iexp s))"
-    by (simp add: norm_mult norm_divide norm_power)
+    by (simp add: norm_mult norm_divide norm_power real_of_nat_def)
   also have "\<dots> \<le> (1 / (fact n)) * abs (LBINT s=0..x. cmod ((x - s)^n * (iexp s)))"
     apply (rule mult_left_mono, rule complex_interval_integral_cmod2)
     apply auto
@@ -268,7 +268,7 @@ proof -
     apply (rule complex_interval_integrable_isCont)
     by auto
   also have "\<dots> \<le> (1 / (fact n)) * abs (LBINT s=0..x. abs ((x - s)^n))"
-    by (simp add: norm_mult i_complex_of_real del: of_real_diff of_real_power)
+    by (simp add: norm_mult del: of_real_diff of_real_power)
   also have "abs (LBINT s=0..x. abs ((x - s)^n)) = abs (LBINT s=0..x. (x - s)^n)"
     proof (cases "0 \<le> x | even n")
       assume "0 \<le> x \<or> even n"
@@ -313,7 +313,7 @@ lemma equation_26p4b: "cmod (iexp x - (\<Sum>k \<le> n. (ii * x)^k / fact k)) \<
 proof (induction n)  (* really cases *)
 show "?P 0" 
   apply simp
-  by (rule order_trans [OF norm_triangle_ineq4], simp add: i_complex_of_real)
+  by (rule order_trans [OF norm_triangle_ineq4], simp)
 next
   {
     fix a b f g
@@ -335,7 +335,7 @@ proof -
     by (subst equation_26p3 [of _ n], simp add: field_simps)
   hence "cmod (?t1) = cmod (?t2)" by simp
   also have "\<dots> =  (1 / (fact n)) * cmod (CLBINT s=0..x. (x - s)^n * (iexp s - 1))"
-    by (simp add: norm_mult norm_divide norm_power)
+    by (simp add: norm_mult norm_divide norm_power real_of_nat_def)
   also have "\<dots> \<le> (1 / (fact n)) * abs (LBINT s=0..x. cmod ((x - s)^n * (iexp s - 1)))"
     apply (rule mult_left_mono, rule complex_interval_integral_cmod2)
     apply auto
@@ -343,14 +343,14 @@ proof -
     apply (rule complex_interval_integrable_isCont)
     by auto
   also have "\<dots> = (1 / (fact n)) * abs (LBINT s=0..x. abs ((x - s)^n) * cmod((iexp s - 1)))"
-    by (simp add: norm_mult i_complex_of_real del: of_real_diff of_real_power)
+    by (simp add: norm_mult del: of_real_diff of_real_power)
   also have "\<dots> \<le> (1 / (fact n)) * abs (LBINT s=0..x. abs ((x - s)^n) * 2)"
     apply (rule mult_left_mono)
     prefer 2 apply force
     apply (rule useful)
     apply (rule mult_nonneg_nonneg, auto)
     apply (rule mult_left_mono, auto)
-    apply (rule order_trans [OF norm_triangle_ineq4], simp add: i_complex_of_real)
+    apply (rule order_trans [OF norm_triangle_ineq4], simp)
     apply (subst mult_commute)
     apply (subst zero_ereal_def)
     apply (rule interval_integrable_isCont, auto)
@@ -427,11 +427,6 @@ lemma complex_integrable_distr:
   apply auto
 by (frule complex_integrable_measurable, simp)
 
-lemma of_real_setsum:
-  "of_real (setsum f S) = setsum (\<lambda>x. of_real (f x)) S"
-  apply (case_tac "finite S", auto)
-by (induct rule: finite_induct, auto)
-
 lemma complex_integrable_bound:
   assumes "integrable M f" and f: "AE x in M. cmod (g x) \<le> f x"
   assumes borel: "g \<in> borel_measurable M"
@@ -456,7 +451,7 @@ lemma complex_integral_setsum [simp, intro]:
 by (auto simp add: Re_setsum Im_setsum of_real_setsum setsum_addf setsum_right_distrib)
 
 lemma cmod_expi_real_eq: "cmod (expi (ii * (x :: real))) = 1"
-  by (auto simp add: i_complex_of_real)
+  by auto
 
 (* these calculations were difficult -- in some ways I felt like I was fighting with the
    simplifier. Could we do better?
@@ -598,7 +593,7 @@ proof -
     apply (subst complex_integral_setsum [OF 1], simp)
     apply (rule setsum_cong, force)
     apply (subst *, subst of_real_power [symmetric], subst complex_integral_cmult, rule **, simp)
-    by (simp add: field_simps complex_of_real_lebesgue_integral)
+    by (simp add: field_simps complex_of_real_lebesgue_integral real_of_nat_def)
   hence "char M t - ?t1 = (CLINT x | M. iexp (t * x) - (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
       (is "_ = (CLINT x | M. ?f x)")
     apply (elim ssubst)
@@ -747,14 +742,16 @@ proof
       also have "?f' (2 * n + 1) = 0" by (subst standard_normal_distribution_odd_moments, simp)
       also have "?f' (2 * (n + 1)) = (ii * t)^(2 * (n + 1)) / fact (2 * (n + 1)) * 
          fact (2 * (n + 1)) / (2^(n + 1) * fact (n + 1))"
-        by (subst standard_normal_distribution_even_moments, simp)
+        apply (subst standard_normal_distribution_even_moments)
+        apply (simp add: real_of_nat_def)
+        done
       also have "\<dots> = (ii * t)^(2 * (n + 1)) / (2^(n + 1) * fact (n + 1))"
         apply (subst times_divide_eq_left)
         apply (subst (3) mult_commute)
         apply (subst times_divide_eq_left [symmetric])
         apply (subst divide_self)
         (* ouch! how to avoid this? *)
-        apply (metis of_nat_fact_not_zero of_real_eq_0_iff real_of_int_zero_cancel)
+        apply (metis of_nat_fact_not_zero)
         by simp
       also have "(ii * t)^(2 * (n + 1)) = (- (t^2))^(n + 1)"
         apply (subst mult_commute)
@@ -765,7 +762,7 @@ proof
         apply (subst power_mult)
         by (case_tac "even n", auto simp add: power2_eq_square)
       finally have "?f (2 * Suc n) = ?g n + (- (t^2))^(n + 1) / (2^(n + 1) * fact (n + 1))"
-        by simp
+        by (simp add: real_of_nat_def)
       also have "(- (t^2))^(n + 1) / (2^(n + 1) * fact (n + 1)) = 
           (- (t^2 / 2))^(n + 1) / fact (n + 1)"
         apply (subst real_of_nat_mult)
