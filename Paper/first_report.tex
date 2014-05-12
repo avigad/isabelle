@@ -149,7 +149,7 @@ Finally, as will become clear in the next section, we also need notions of integ
 
 \section{Overview of the proof}
 
-[All?] Contemporary proofs of the CLT rely on the use of \emph{characteristic functions}, a powerful method that dates back to Laplace. If $\mu$ is a real-valued distribution, its characteristic function $\ph(t)$ is defined by
+Contemporary proofs of the CLT rely on the use of \emph{characteristic functions}, a powerful method that dates back to Laplace. If $\mu$ is a real-valued distribution, its characteristic function $\ph(t)$ is defined by
 \[
 \ph(t) = \int_{-\infty}^{\infty} e^{itx} \mu(dx),
 \]
@@ -157,23 +157,15 @@ that is, the integral of the function $f(x) = e^{itx}$ over the whole real line,
 
 The \emph{Levy Uniqueness Theorem} asserts that if $\mu_1$ and $\mu_2$ have the same characteristic function, then $\mu_1 = \mu_2$. In other words, a measure $\mu$ can be ``reconstructed'' from its characteristic function, and so the characteristic function of a measure determines the measure uniquely. To prove the theorem, it is enough to show that $\mu_1((a,b]) = \mu_2((a,b])$ for real numbers $a$ and $b$ with the property that $\mu_1(\{a\}) = \mu_2(\{a\}) = \mu_1(\{b\}) = \mu_(\{b\}) = 0$. Doing so involves approximating the indicator function of $(a,b]$ in terms of the complex exponential (this is where the function $\sin x / x$ comes into play), unfolding the definition of the characteristic function, and doing an explicit calculation with integrals and limits.
 
-The \emph{Levy Continuity Theorem}. Helly selection theorem. 
-
-
+Let $(\mu_n)$ be a sequence of distributions, where each $\mu_n$ has characteristic function $\ph_n$, and let $\mu$ be a distribution with characteristic function $\ph$. The \emph{Levy Continuity Theorem} states that if $\ph_n$ converges to $\ph$ weakly if and only if $\ph_n(t)$ converges to $\ph(t)$ for every $t$. Proving the ``only if'' direction is easy. The other direction is a lot harder; it relies on a result known as \emph{Helly's Selection Theorem}, a form of compactness for the space of distributions.
 
 Remember that the CLT asserts that if $(X_n)$ is a sequence of random variable satifying certain hypotheses, and, for each $n$, $\mu_n$ is a certain distribution defined in terms of $X_1, \ldots, X_n$, then $\mu_n$ weakly converges to the standard normal distribution. The considerations of the previous paragraph provide a simple strategy for proving the CLT: simply show that if, for each $n$, $\ph_n$ is the characteristic function of $\mu_n$, then $\ph_n$ approaches the characteristic function of the standard normal distribution, pointwise.
 
-Calculation of moments of the normal distribution (built on work by \ldots), and hence the characteristic function.
+To implement this strategy, one needs to know that the characteristic function of the standard normal distribution is $\ph(t) = e^{-t^2/t}$. Establishing this fact took more work than we thought it would. Many contemporary presentations invoke facts from complex analysis which were unavailable to us. Billingsley [cite] sketches an elementary proof, which required calculating the moments and absolute moments of the standard normal distribution, which is where the calculations of $\int_{-\infty}^\infty x^k e^{-x^2 / t}$, mentioned in the last section, come into play. The full proof involved carrying out careful computations with integrals and power series approximations to $e^x$.
 
-Other part: random variables, characteristic function. Independent random variables. 
-
-With all the machinery, the proof of the Central Limit Theorem was quite short, about 120 lines. 
+The other component to implementing the strategy involves computing the characteristic functions of the distributions $\mu_n$, which are defined in terms of finite sums of the random variables $X_0, X_1, \ldots$. This is where the utility of characteristic functions some in. Let $X$ is a random variable, define the characteristic function of $X$ to be the characteristic function of its distribution. A straightforward calculation (involving fundamental but nontrivial properties of independent random variables) shows that if $X_1, \ldots, X_n$ are independent random variables, then the characteristic function of $X_1 + \ldots + X_n$ is the product of the individual characteristic functions of each $X_i$. This facilitates the requisite computation of the characteristic functions of the distributions $\mu_n$. Putting the pieces together is not hard: once we have the continuity theorem, the characteristic function of the standard normal distribution, the result on the characteristic functions of sums of random variables just cited, and certain power series approximations to the complex exponential function, the proof of the Central Limit Theorem is quite short. Our formalization of the proof runs about 120 lines. 
 
 When people hear of a large formalization, it is common to ask as to the number of lines. Such a figure can be very misleading. For one thing, different styles of writing proofs can compress or expand the number of lines dramatically. For another, length is often a poor proxy for difficulty: some proofs are short but hard (for example, because they involve combining heterogeneous facts in tricky ways) and others are long and easy. For what it is worth though, the files in our repository contain about 13,000 lines, and depends up Isabelle's HOL-Probability library (which, in turn, imports Isabelle's main library and HOL-Multivariate).
-
-
-
-
 
 \end{document}
 
