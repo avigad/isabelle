@@ -117,23 +117,22 @@ Our formulation of Theorem~\ref{theorem:clt} in Isabelle reads as follows:
 \ \ \isakeyword{fixes}\ \isanewline
 \ \ \ \ X\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ {\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
 \ \ \ \ {\isasymmu}\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
-\ \ \ \ {\isasymsigma}{\isadigit{2}}\ {\isacharcolon}{\isacharcolon}\ real\ \isakeyword{and}\isanewline
+\ \ \ \ {\isasymsigma}\ {\isacharcolon}{\isacharcolon}\ real\ \isakeyword{and}\isanewline
 \ \ \ \ S\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ {\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{assumes}\isanewline
 \ \ \ \ X{\isacharunderscore}indep{\isacharcolon}\ {\isachardoublequoteopen}indep{\isacharunderscore}vars\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ borel{\isacharparenright}\ X\ UNIV{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
 \ \ \ \ X{\isacharunderscore}integrable{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}X\ n{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
 \ \ \ \ X{\isacharunderscore}mean{\isacharunderscore}{\isadigit{0}}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ expectation\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
-\ \ \ \ {\isasymsigma}{\isadigit{2}}{\isacharunderscore}pos{\isacharcolon}\ {\isachardoublequoteopen}{\isasymsigma}{\isadigit{2}}\ {\isachargreater}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{and}\ \isanewline
+\ \ \ \ {\isasymsigma}{\isacharunderscore}pos{\isacharcolon}\ {\isachardoublequoteopen}{\isasymsigma}\ {\isachargreater}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{and}\ \isanewline
 \ \ \ \ X{\isacharunderscore}square{\isacharunderscore}integrable{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isacharparenleft}X\ n\ x{\isacharparenright}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
-\ \ \ \ X{\isacharunderscore}variance{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ variance\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isasymsigma}{\isadigit{2}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}variance{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ variance\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
 \ \ \ \ X{\isacharunderscore}distrib{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isasymmu}{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{defines}\isanewline
-\ \ \ \ {\isachardoublequoteopen}S\ {\isasymequiv}\ {\isacharparenleft}{\isasymlambda}\ n\ x{\isachardot}\ {\isacharparenleft}{\isasymSum}\ i\ {\isacharless}\ n{\isachardot}\ X\ i\ x{\isacharparenright}\ {\isacharslash}\ sqrt\ {\isacharparenleft}{\isasymsigma}{\isadigit{2}}\ {\isacharasterisk}\ n{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ {\isachardoublequoteopen}S\ n\ {\isasymequiv}\ {\isasymlambda}x{\isachardot}\  {\isacharparenleft}{\isasymSum}i{\isacharless}n{\isachardot}\ X\ i\ x{\isacharparenright}\ {\isacharslash}\ sqrt\ {\isacharparenleft}n\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{shows}\isanewline
 \ \ \ \ {\isachardoublequoteopen}weak{\isacharunderscore}conv{\isacharunderscore}m\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}S\ n{\isacharparenright}{\isacharparenright}\isanewline
 \ \ \ \ \ \ \ \ {\isacharparenleft}density\ lborel\ standard{\isacharunderscore}normal{\isacharunderscore}density{\isacharparenright}{\isachardoublequoteclose}\isanewline 
 \end{isabellebody}
-
 
 \section{Supporting libraries}
 
@@ -171,7 +170,7 @@ Let $(\mu_n)$ be a sequence of distributions, where each $\mu_n$ has characteris
 
 Remember that the CLT asserts that if $(X_n)$ is a sequence of random variable satisfying certain hypotheses, and, for each $n$, $\mu_n$ is a certain distribution defined in terms of $X_1, \ldots, X_n$, then $\mu_n$ converges weakly to the standard normal distribution. The considerations of the previous paragraph provide a simple strategy for proving the theorem: writing the characteristic function of $\mu_n$ as $\ph_n$ for each $n$, we need only show that $\ph_n$ approaches the characteristic function of the standard normal distribution pointwise.
 
-To implement this strategy, one needs to know that the characteristic function of the standard normal distribution is $\ph(t) = e^{-t^2/2}$. Establishing this fact took more work than we thought it would. Many textbook proofs of this invoke facts from complex analysis that were unavailable to us. Billingsley \cite[page 344]{billingsley:95} sketches an elementary proof, which required calculating the moments and absolute moments of the standard normal distribution. (This is where the calculations of $\int_{-\infty}^\infty x^k e^{-x^2 / t}$, mentioned in the last section, were needed.) Filling in the details involved carrying out careful computations with integrals and power series approximations to $e^x$.
+To implement this strategy, one needs to know that the characteristic function of the standard normal distribution is $\ph(t) = e^{-t^2/2}$. Establishing this fact took more work than we thought it would. Many textbook proofs of this invoke facts from complex analysis that were unavailable to us. Billingsley \cite[page 344]{billingsley:95} sketches an elementary proof, which required calculating the moments and absolute moments of the standard normal distribution. (This is where the calculations of $\int_{-\infty}^\infty x^k e^{-x^2 / t} \; dx$, mentioned in the last section, were needed.) Filling in the details involved carrying out careful computations with integrals and power series approximations to $e^x$.
 
 The other component to implementing the strategy involves computing the characteristic functions of the distributions $\mu_n$, which are defined in terms of finite sums of the random variables $X_0, X_1, \ldots$. This is where the utility of characteristic functions becomes apparent. If $X$ is a random variable, define the characteristic function of $X$ to be the characteristic function of its distribution. A straightforward calculation involving properties of independent random variables shows that if $X_1, \ldots, X_n$ are independent random then the characteristic function of $X_1 + \ldots + X_n$ is the product of the characteristic functions of each $X_i$. This facilitates the computation of the characteristic functions of the distributions $\mu_n$. 
 
