@@ -68,6 +68,62 @@ lemma real_to_complex_expand: "f = (\<lambda>x. (RE f) x + ii * (IM f) x)"
 lemma complex_expand: "a = Re a + ii * Im a"
   by (simp add: fun_eq_iff complex_eq_iff)
 
+
+(* measurability of functions from real to complex *)
+
+lemma borel_measurable_Re [measurable (raw)]: 
+  "f \<in> borel_measurable M \<Longrightarrow> (\<lambda>x. Re (f x)) \<in> 
+  borel_measurable M"
+apply (rule borel_measurable_continuous_on [of _ f])
+apply (simp add: continuous_on_def)
+apply (rule allI)
+apply (rule tendsto_Re)
+apply (rule tendsto_ident_at)
+by assumption
+
+lemma borel_measurable_Im [measurable (raw)]: 
+  "f \<in> borel_measurable M \<Longrightarrow> (\<lambda>x. Im (f x)) \<in> 
+  borel_measurable M"
+apply (rule borel_measurable_continuous_on [of _ f])
+apply (simp add: continuous_on_def)
+apply (rule allI)
+apply (rule tendsto_Im)
+apply (rule tendsto_ident_at)
+by assumption
+
+lemma borel_measurable_complex_of_real [measurable (raw)]: 
+  "f \<in> borel_measurable M \<Longrightarrow> (\<lambda>x. complex_of_real (f x)) \<in> 
+  borel_measurable M"
+
+  apply (rule borel_measurable_continuous_on) back
+  apply (rule continuous_at_imp_continuous_on)
+by auto
+
+lemma complex_borel_measurable_eq: "f \<in> borel_measurable M = 
+  (RE f \<in> borel_measurable M \<and> IM f \<in> borel_measurable M)"
+  apply auto
+  apply (subst real_to_complex_expand)
+  apply (rule borel_measurable_add)
+  apply (erule borel_measurable_complex_of_real)
+  apply (rule borel_measurable_times)
+  apply (rule borel_measurable_const)
+by (erule borel_measurable_complex_of_real)
+
+(* move this to Complex *)
+lemma cmod_le: "cmod z \<le> abs (Re z) + abs (Im z)"
+  apply (subst complex_expand)
+  apply (rule order_trans)
+  apply (rule norm_triangle_ineq)
+  apply (simp add: norm_mult)
+  done
+  
+lemma borel_measurable_cmod [measurable (raw)]:
+  assumes "f \<in> borel_measurable M"
+  shows "(\<lambda>x. cmod (f x)) \<in> borel_measurable M"
+using assms unfolding cmod_def by auto
+
+
+(*
 lemma Re_setsum:
   assumes "finite S"
   shows "Re (\<Sum>x\<in>S. f x) = (\<Sum>x\<in>S. RE f x)"
@@ -77,7 +133,7 @@ lemma Im_setsum:
   assumes "finite S"
   shows "Im (\<Sum>x\<in>S. f x) = (\<Sum>x\<in>S. IM f x)"
   apply (rule finite_induct) using assms by auto
-
+*)
 
 (** Function e^(ix). **)
 
@@ -138,7 +194,8 @@ lemma has_vector_derivative_complex_mul:
   apply (subst mult_scaleR_right [symmetric])
 by (rule mult_right_has_derivative)
 
-(* this is an instance of the previous lemma *)
+(* TODO: this is an instance of the previous lemma, but that is not obvious. *)
+(* Keep it? *)
 lemma CDERIV_cmult: "(CDERIV f z : s :> D) \<Longrightarrow> (CDERIV (\<lambda>x. c * f x) z : s :> c * D)"
   by (erule has_vector_derivative_complex_mul)
 
@@ -251,45 +308,6 @@ lemma CDERIV_of_real [simp]: "(f has_field_derivative u) (at x within s) \<Longr
    (CDERIV (%x. complex_of_real (f x)) x : s :> complex_of_real u)"
   unfolding CDERIV_def by auto
 
-(* measurability of functions from real to complex *)
-
-lemma borel_measurable_Re [measurable (raw)]: 
-  "f \<in> borel_measurable M \<Longrightarrow> (\<lambda>x. Re (f x)) \<in> 
-  borel_measurable M"
-apply (rule borel_measurable_continuous_on [of _ f])
-apply (simp add: continuous_on_def)
-apply (rule allI)
-apply (rule tendsto_Re)
-apply (rule tendsto_ident_at)
-by assumption
-
-lemma borel_measurable_Im [measurable (raw)]: 
-  "f \<in> borel_measurable M \<Longrightarrow> (\<lambda>x. Im (f x)) \<in> 
-  borel_measurable M"
-apply (rule borel_measurable_continuous_on [of _ f])
-apply (simp add: continuous_on_def)
-apply (rule allI)
-apply (rule tendsto_Im)
-apply (rule tendsto_ident_at)
-by assumption
-
-lemma borel_measurable_complex_of_real [measurable (raw)]: 
-  "f \<in> borel_measurable M \<Longrightarrow> (\<lambda>x. complex_of_real (f x)) \<in> 
-  borel_measurable M"
-
-  apply (rule borel_measurable_continuous_on) back
-  apply (rule continuous_at_imp_continuous_on)
-by auto
-
-lemma complex_borel_measurable_eq: "f \<in> borel_measurable M = 
-  (RE f \<in> borel_measurable M \<and> IM f \<in> borel_measurable M)"
-  apply auto
-  apply (subst real_to_complex_expand)
-  apply (rule borel_measurable_add)
-  apply (erule borel_measurable_complex_of_real)
-  apply (rule borel_measurable_times)
-  apply (rule borel_measurable_const)
-by (erule borel_measurable_complex_of_real)
 
 (* 
   Integration of functions from real to complex
@@ -355,6 +373,29 @@ lemma complex_integral_conj [simp]:
   "complex_lebesgue_integral M (Cnj f) = cnj (complex_lebesgue_integral M f)"
 unfolding complex_lebesgue_integral_def by (auto simp add: lebesgue_integral_uminus complex_eq_iff)
 (* lebesgue_integral_uminus should be a simp rule *)
+
+
+lemma complex_integrable_measurable:
+  assumes f: "complex_integrable M f"
+  shows "f \<in> borel_measurable M"
+using f unfolding complex_integrable_def apply auto
+  apply (subst real_to_complex_expand)
+  apply (rule borel_measurable_add, force)
+  by (rule borel_measurable_times) auto
+
+lemma complex_integrable_cmod [simp,intro]:
+  assumes f: "complex_integrable M f"
+  shows "integrable M (\<lambda>t. cmod (f t))"
+proof -
+  have *: "f \<in> borel_measurable M"
+    by (rule complex_integrable_measurable [OF f])
+  have **: "AE x in M. \<bar>cmod (f x)\<bar> \<le> \<bar>RE f x\<bar> + \<bar>IM f x\<bar>"
+    by (rule AE_I2, simp, rule cmod_le)
+  show ?thesis
+    apply (rule integrable_bound [OF _ **])
+    using f apply (auto simp add: integrable_abs complex_integrable_def)
+    using * by measurable
+qed
 
 (*
   Linearity facts transported from real case. 
@@ -432,42 +473,6 @@ apply (rule integral_FTC_atLeastAtMost, rule assms)
 apply (frule F, assumption)
 apply (simp_all add: CDERIV_def cont)
 done
-
-(* move these next two elsewhere *)
-lemma cmod_le: "cmod z \<le> abs (Re z) + abs (Im z)"
-  apply (subst complex_expand)
-  apply (rule order_trans)
-  apply (rule norm_triangle_ineq)
-  apply (simp add: norm_mult)
-  done
-  
-lemma borel_measurable_cmod [measurable (raw)]:
-  assumes "f \<in> borel_measurable M"
-  shows "(\<lambda>x. cmod (f x)) \<in> borel_measurable M"
-using assms unfolding cmod_def by auto
-
-(* move these up *)
-lemma complex_integrable_measurable:
-  assumes f: "complex_integrable M f"
-  shows "f \<in> borel_measurable M"
-using f unfolding complex_integrable_def apply auto
-  apply (subst real_to_complex_expand)
-  apply (rule borel_measurable_add, force)
-  by (rule borel_measurable_times) auto
-
-lemma complex_integrable_cmod [simp,intro]:
-  assumes f: "complex_integrable M f"
-  shows "integrable M (\<lambda>t. cmod (f t))"
-proof -
-  have *: "f \<in> borel_measurable M"
-    by (rule complex_integrable_measurable [OF f])
-  have **: "AE x in M. \<bar>cmod (f x)\<bar> \<le> \<bar>RE f x\<bar> + \<bar>IM f x\<bar>"
-    by (rule AE_I2, simp, rule cmod_le)
-  show ?thesis
-    apply (rule integrable_bound [OF _ **])
-    using f apply (auto simp add: integrable_abs complex_integrable_def)
-    using * by measurable
-qed
 
 lemma complex_of_real_lebesgue_integral:
   fixes f

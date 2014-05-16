@@ -237,6 +237,27 @@ lemma continuous_at_left_real_increasing:
   apply auto
 by (rule nondecF, auto)
 
+(* TODO: move this somewhere else *)
+lemma infinite_arbitrarily_large:
+  fixes n :: nat 
+  assumes "infinite A"
+  shows "\<exists>B. finite B \<and> card B = n \<and> B \<subseteq> A"
+
+proof (induction n)
+  case 0 show ?case by auto
+next 
+  case (Suc n)
+  fix n
+  assume "\<exists>B. finite B \<and> card B = n \<and> B \<subseteq> A"
+  then guess B .. note B = this
+  with `infinite A` have "A \<noteq> B" by auto
+  with B have "B \<subset> A" by auto
+  hence "\<exists>x. x \<in> A - B" by (elim psubset_imp_ex_mem)
+  then guess x .. note x = this
+  with B have "finite (insert x B) \<and> card (insert x B) = Suc n \<and> insert x B \<subseteq> A"
+    by auto
+  thus "\<exists>B. finite B \<and> card B = Suc n \<and> B \<subseteq> A" ..
+qed
 
 subsection {* Properties of cdf's *}
 
@@ -362,27 +383,6 @@ lemma isCont_cdf:
   apply (erule ssubst)
   apply (subst finite_measure_Union)
 by auto
-
-lemma infinite_arbitrarily_large:
-  fixes n :: nat 
-  assumes "infinite A"
-  shows "\<exists>B. finite B \<and> card B = n \<and> B \<subseteq> A"
-
-proof (induction n)
-  case 0 show ?case by auto
-next 
-  case (Suc n)
-  fix n
-  assume "\<exists>B. finite B \<and> card B = n \<and> B \<subseteq> A"
-  then guess B .. note B = this
-  with `infinite A` have "A \<noteq> B" by auto
-  with B have "B \<subset> A" by auto
-  hence "\<exists>x. x \<in> A - B" by (elim psubset_imp_ex_mem)
-  then guess x .. note x = this
-  with B have "finite (insert x B) \<and> card (insert x B) = Suc n \<and> insert x B \<subseteq> A"
-    by auto
-  thus "\<exists>B. finite B \<and> card B = Suc n \<and> B \<subseteq> A" ..
-qed
 
 lemma countable_atoms: "countable {x. measure M {x} > 0}"
 proof -

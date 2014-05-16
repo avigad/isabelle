@@ -11,7 +11,14 @@ imports Interval_Integral
 
 begin
 
+(* move this to Deriv.thy *)
+
+lemma has_field_derivative_within_open: "a \<in> s \<Longrightarrow> open s \<Longrightarrow>
+    (f has_field_derivative f') (at a within s) = (f has_field_derivative f') (at a)"
+  unfolding has_field_derivative_def by (rule has_derivative_within_open)
+
 (* copied from Distributions.borel_integral_x_exp -- only the conclusion has changed! *)
+(* this shows the integral and integrability should be combined *)
 lemma borel_integrable_x_exp:
   "set_integrable lborel {0..} (\<lambda>x :: real. x * exp (- x))"
 proof (rule integral_monotone_convergence)
@@ -57,6 +64,87 @@ proof (rule integral_monotone_convergence)
     done
 qed (auto intro!: borel_measurable_times borel_measurable_exp)
 
+(* This is really needed  -- it is a canonical way to show that something
+   is integrable wrt a product measure. *)
+(* Move to Binary_Product_Measure *)
+lemma (in pair_sigma_finite) Fubini_integrable_nonneg:
+  assumes f[measurable]: "f \<in> borel_measurable (M1 \<Otimes>\<^sub>M M2)"
+    and nonneg [simp]: "\<And>p. f p \<ge> 0"
+    and integ1: "integrable M1 (\<lambda>x. \<integral> y. f (x, y) \<partial>M2)"
+    and integ2: "AE x in M1. integrable M2 (\<lambda>y. f (x, y))"
+  shows "integrable (M1 \<Otimes>\<^sub>M M2) f"
+proof -
+  from f have f': "(\<lambda>p. ereal (f p)) \<in> borel_measurable (M1 \<Otimes>\<^sub>M M2)"
+    by auto
+  have "(\<integral>\<^sup>+ p. ereal (f p) \<partial>(M1 \<Otimes>\<^sub>M M2)) = (\<integral>\<^sup>+ x. (\<integral>\<^sup>+ y. ereal (f (x, y)) \<partial>M2) \<partial>M1)"
+    by (simp add: M2.positive_integral_fst_measurable (2) [OF f', symmetric])
+  also have "\<dots> = (\<integral>\<^sup>+ x. ereal (LINT y|M2. f (x, y)) \<partial>M1)"
+    apply (rule positive_integral_cong_AE)
+    by (rule AE_mp [OF integ2], rule AE_I2, auto simp add: positive_integral_eq_integral)
+  finally have *: "(\<integral>\<^sup>+ p. ereal (f p) \<partial>(M1 \<Otimes>\<^sub>M M2)) = (\<integral>\<^sup>+ x. ereal (LINT y|M2. f (x, y)) \<partial>M1)" .
+  show ?thesis
+    apply (rule integrable_nonneg [OF f], auto simp add: *)
+    using integ1 unfolding integrable_def by auto
+qed
+
+(* more useful stuff *)
+
+(* This is useful to apply the dominated convergence theorem. Are there better ways of
+   formulating this, or other facts we should have?
+*)
+
+lemma tendsto_at_top_imp_sequentially:
+  fixes f :: "real => real"
+  assumes *: "\<And>Y. (\<forall>n. Y n > 0) \<Longrightarrow> filterlim Y at_top sequentially \<Longrightarrow> (\<lambda>n. f (Y n)) ----> a"
+  shows "((f ---> a) at_top)"
+
+  apply (subst filterlim_at_top_to_right)
+  apply (subst tendsto_at_iff_sequentially)
+  unfolding comp_def apply auto
+  apply (rule *, auto)
+  by (erule filterlim_inverse_at_top, auto)
+
+lemma tendsto_at_top_imp_sequentially':
+  fixes f :: "real => real"
+  assumes *: "\<And>Y. (\<forall>n. Y n \<ge> B) \<Longrightarrow> filterlim Y at_top sequentially \<Longrightarrow> (\<lambda>n. f (Y n)) ----> a"
+  shows "((f ---> a) at_top)"
+proof (rule tendsto_at_top_imp_sequentially)
+  fix Y :: "nat \<Rightarrow> real"
+  assume 2: "filterlim Y at_top sequentially"
+  hence 3: "eventually (\<lambda>n. Y n \<ge> B) sequentially" by (simp add: filterlim_at_top)
+  hence "\<exists>N. \<forall>n \<ge> N. Y n \<ge> B" by (simp add: eventually_sequentially)
+  then obtain N where N: "\<forall>n \<ge> N. Y n \<ge> B" ..
+  let ?Y' = "\<lambda>n. Y (n + N)"
+  from N have 4: "(\<forall>n. ?Y' n \<ge> B)" by auto
+  from 2 have 5: "filterlim ?Y' at_top sequentially" apply (simp add: filterlim_at_top)
+    by (auto intro!: sequentially_offset)
+  have "(\<lambda>n. f (?Y' n)) ----> a" by (rule * [OF 4 5])
+  thus "(\<lambda>n. f (Y n)) ----> a" by (rule LIMSEQ_offset)
+qed
+
+lemma interval_integral_to_infinity_eq: "(LINT x=ereal a..\<infinity> | M. f x) = (LINT x : {a<..} | M. f x)"
+  unfolding interval_lebesgue_integral_def by auto
+
+lemma interval_integrable_to_infinity_eq: "(interval_lebesgue_integrable M a \<infinity> f) = 
+  (set_integrable M {a<..} f)"
+  unfolding interval_lebesgue_integrable_def by auto
+
+lemma at_right_le_at: "(at_right (x::'a::linorder_topology)) \<le> (at x)" 
+  by (simp add: at_eq_sup_left_right)
+
+(* can this be generalized? *)
+lemma tendsto_divide_constant: "(f ---> (l :: real)) F \<Longrightarrow> ((\<lambda>x. f x / t) ---> (l / t)) F"
+  apply (auto simp add: field_divide_inverse)
+  by (auto intro: tendsto_intros)
+
+
+(*
+  Calculations of various integrals.
+
+  TODO: clean these up.
+*)
+
+(* TODO: better name? *)
 lemma integral_expneg_alpha_atLeast0:
   fixes u :: real
   assumes pos: "0 < u"
@@ -101,8 +189,10 @@ proof -
     by (auto simp add: zero_ereal_def)
 qed
 
+(*
 lemma Collect_eq_Icc: "{r. t \<le> r \<and> r \<le> b} = {t .. b}"
   by auto
+*)
 
 (* From Billingsley section 18. *)
 lemma ex_18_4_1:
@@ -221,6 +311,7 @@ proof -
 qed
 
 (* a slight modification of the preceding one *)
+(* TODO: refactor *)
 lemma Billingsley_ex_17_5': 
   shows "set_integrable lborel (einterval 0 \<infinity>) (\<lambda>x. inverse (1 + x^2))"
     "LBINT x=0..\<infinity>. inverse (1 + x^2) = pi / 2"
@@ -263,6 +354,10 @@ proof -
     by (erule (1) 2)
 qed
 
+(*
+  The sinc function, and the sine integral (Si)
+*)
+
 abbreviation sinc :: "real \<Rightarrow> real" where
   "sinc \<equiv> (\<lambda>x. if x = 0 then 1 else sin x / x)"
 
@@ -289,9 +384,53 @@ lemma Si_alt_def : "Si t = LBINT x=0..t. sinc x"
   apply (rule interval_lebesgue_integral_cong_AE, auto)
 by (rule AE_I' [where N = "{0}"], auto)
 
+lemma sinc_neg [simp]: "sinc (- x) = sinc x" by auto
+
+lemma Si_neg: 
+  fixes T :: real
+  assumes "T \<ge> 0"
+  shows "Si (- T) = - Si T"
+proof -
+  have "LBINT x=ereal 0..T. sinc (- x) * -1 = LBINT y= ereal (- 0)..ereal (- T). sinc y"
+    apply (rule interval_integral_substitution_finite [OF assms])
+    by (auto intro: derivative_intros continuous_at_imp_continuous_on isCont_sinc)
+  also have "(LBINT x=ereal 0..T. sinc (- x) * -1) = -(LBINT x=ereal 0..T. sinc x)"
+    apply (subst sinc_neg, simp)
+    by (rule interval_lebesgue_integral_uminus)
+  finally have *: "-(LBINT x=ereal 0..T. sinc x) = LBINT y= ereal 0..ereal (- T). sinc y"
+    by simp
+  show ?thesis
+    using assms unfolding Si_alt_def
+     apply (subst zero_ereal_def)+
+     by (auto simp add: * [symmetric])
+qed
+
+(* TODO: need a better version of FTC2 *)
+
+lemma iSi_isCont: "isCont Si x"
+proof -
+  have "Si = (\<lambda>t. LBINT x=ereal 0..ereal t. sinc x)"
+    apply (rule ext, simp add: Si_def zero_ereal_def)
+    apply (rule interval_integral_cong_AE)
+    by (rule AE_I' [where N = "{0}"], auto)
+  thus ?thesis
+    apply (elim ssubst)
+    apply (rule DERIV_isCont)
+    apply (subst has_field_derivative_within_open [symmetric, 
+      where s = "{(min (x - 1) (- 1))<..<(max 1 (x+1))}"], auto)
+    apply (rule DERIV_subset [where s = "{(min (x - 2) (- 2))..(max 2 (x+2))}"])
+    apply (rule interval_integral_FTC2)
+    by (auto intro: continuous_at_imp_continuous_on isCont_sinc)
+qed
+
+lemma borel_measurable_iSi: "f \<in> borel_measurable M \<Longrightarrow> 
+  (\<lambda>x. Si (f x)) \<in> borel_measurable M"
+  apply (rule borel_measurable_continuous_on) back
+  by (rule continuous_at_imp_continuous_on, auto intro: iSi_isCont)
+
 (** Add to main Lebesgue integration library; does not require integrability as hypothesis, which in
 my experience greatly increases usability. **)
-(** JDA: this is probably not needed if we keep track of integrability hypotheses *)
+(** JDA: this is probably not needed if we keep track of integrability hypotheses
 lemma positive_integral_eq_integral_measurable:
   assumes f: "f \<in> borel_measurable M" and I: "integral\<^sup>L M f \<noteq> 0"
   assumes nonneg: "AE x in M. 0 \<le> f x" 
@@ -309,28 +448,8 @@ proof -
     apply (subst (asm) ereal_real)
     using I ereal_eq_0 by metis
 qed
+*)
 
-(* This is really needed in the library -- it is a canonical way to show that something
-   is integrable wrt a product measure. *)
-lemma (in pair_sigma_finite) Fubini_integrable_nonneg:
-  assumes f[measurable]: "f \<in> borel_measurable (M1 \<Otimes>\<^sub>M M2)"
-    and nonneg [simp]: "\<And>p. f p \<ge> 0"
-    and integ1: "integrable M1 (\<lambda>x. \<integral> y. f (x, y) \<partial>M2)"
-    and integ2: "AE x in M1. integrable M2 (\<lambda>y. f (x, y))"
-  shows "integrable (M1 \<Otimes>\<^sub>M M2) f"
-proof -
-  from f have f': "(\<lambda>p. ereal (f p)) \<in> borel_measurable (M1 \<Otimes>\<^sub>M M2)"
-    by auto
-  have "(\<integral>\<^sup>+ p. ereal (f p) \<partial>(M1 \<Otimes>\<^sub>M M2)) = (\<integral>\<^sup>+ x. (\<integral>\<^sup>+ y. ereal (f (x, y)) \<partial>M2) \<partial>M1)"
-    by (simp add: M2.positive_integral_fst_measurable (2) [OF f', symmetric])
-  also have "\<dots> = (\<integral>\<^sup>+ x. ereal (LINT y|M2. f (x, y)) \<partial>M1)"
-    apply (rule positive_integral_cong_AE)
-    by (rule AE_mp [OF integ2], rule AE_I2, auto simp add: positive_integral_eq_integral)
-  finally have *: "(\<integral>\<^sup>+ p. ereal (f p) \<partial>(M1 \<Otimes>\<^sub>M M2)) = (\<integral>\<^sup>+ x. ereal (LINT y|M2. f (x, y)) \<partial>M1)" .
-  show ?thesis
-    apply (rule integrable_nonneg [OF f], auto simp add: *)
-    using integ1 unfolding integrable_def by auto
-qed
 
 (*
 lemma  interval_Fubini_integral:
@@ -341,90 +460,6 @@ lemma  interval_Fubini_integral:
     and f: "integrable (M1 \<Otimes>\<^sub>M M2) f" (* add indicators *)
   shows "LINT y=a..b|M2. (LINT x=c..d|M1. f (x, y)) = LINT x=c..d|M1. (LINT y=a..b|M2. f (x, y))"
 *)
-
-
-(* This is useful to apply the dominated convergence theorem. Are there better ways of
-   formulating this, or other facts we should have?
-*)
-
-lemma tendsto_at_top_imp_sequentially:
-  fixes f :: "real => real"
-  assumes *: "\<And>Y. (\<forall>n. Y n > 0) \<Longrightarrow> filterlim Y at_top sequentially \<Longrightarrow> (\<lambda>n. f (Y n)) ----> a"
-  shows "((f ---> a) at_top)"
-
-  apply (subst filterlim_at_top_to_right)
-  apply (subst tendsto_at_iff_sequentially)
-  unfolding comp_def apply auto
-  apply (rule *, auto)
-  by (erule filterlim_inverse_at_top, auto)
-
-lemma tendsto_at_top_imp_sequentially':
-  fixes f :: "real => real"
-  assumes *: "\<And>Y. (\<forall>n. Y n \<ge> B) \<Longrightarrow> filterlim Y at_top sequentially \<Longrightarrow> (\<lambda>n. f (Y n)) ----> a"
-  shows "((f ---> a) at_top)"
-proof (rule tendsto_at_top_imp_sequentially)
-  fix Y :: "nat \<Rightarrow> real"
-  assume 2: "filterlim Y at_top sequentially"
-  hence 3: "eventually (\<lambda>n. Y n \<ge> B) sequentially" by (simp add: filterlim_at_top)
-  hence "\<exists>N. \<forall>n \<ge> N. Y n \<ge> B" by (simp add: eventually_sequentially)
-  then obtain N where N: "\<forall>n \<ge> N. Y n \<ge> B" ..
-  let ?Y' = "\<lambda>n. Y (n + N)"
-  from N have 4: "(\<forall>n. ?Y' n \<ge> B)" by auto
-  from 2 have 5: "filterlim ?Y' at_top sequentially" apply (simp add: filterlim_at_top)
-    by (auto intro!: sequentially_offset)
-  have "(\<lambda>n. f (?Y' n)) ----> a" by (rule * [OF 4 5])
-  thus "(\<lambda>n. f (Y n)) ----> a" by (rule LIMSEQ_offset)
-qed
-
-lemma interval_integral_to_infinity_eq: "(LINT x=ereal a..\<infinity> | M. f x) = (LINT x : {a<..} | M. f x)"
-  unfolding interval_lebesgue_integral_def by auto
-
-lemma interval_integrable_to_infinity_eq: "(interval_lebesgue_integrable M a \<infinity> f) = 
-  (set_integrable M {a<..} f)"
-  unfolding interval_lebesgue_integrable_def by auto
-
-lemma at_right_le_at: "(at_right (x::'a::linorder_topology)) \<le> (at x)" 
-  by (simp add: at_eq_sup_left_right)
-
-(* can this be generalized? *)
-lemma tendsto_divide_constant: "(f ---> (l :: real)) F \<Longrightarrow> ((\<lambda>x. f x / t) ---> (l / t)) F"
-  apply (auto simp add: field_divide_inverse)
-  by (auto intro: tendsto_intros)
-
-lemma set_integrable_abs_iff:
-    "set_borel_measurable M A f \<Longrightarrow>
-    set_integrable M A (\<lambda>x. \<bar>f x\<bar>) = set_integrable M A f" 
-using integrable_abs_iff [of "\<lambda>x. f x * indicator A x" M, symmetric] by (simp add: abs_mult)
-
-lemma set_integrable_abs_iff':
-    "f \<in> borel_measurable M \<Longrightarrow> A \<in> sets M \<Longrightarrow> 
-    set_integrable M A (\<lambda>x. \<bar>f x\<bar>) = set_integrable M A f"
-by (subst set_integrable_abs_iff, auto)
-
-lemma interval_integrable_abs_iff:
-    "f \<in> borel_measurable lborel \<Longrightarrow>
-    interval_lebesgue_integrable lborel a b (\<lambda>x. \<bar>f x\<bar>) = interval_lebesgue_integrable lborel a b f"
-unfolding interval_lebesgue_integrable_def
-  by (auto simp add: set_integrable_abs_iff')
-
-(* TODO: could restrict to the set *)
-lemma set_integrable_cong_AE:
-    "f \<in> borel_measurable M \<Longrightarrow> g \<in> borel_measurable M \<Longrightarrow>
-    AE x in M. f x = g x \<Longrightarrow> A \<in> sets M \<Longrightarrow> 
-    set_integrable M A f = set_integrable M A g"
-  unfolding interval_lebesgue_integrable_def by (rule integrable_cong_AE, auto)
-
-(* TODO: could restrict to the interval *)
-lemma interval_lebesgue_integrable_cong_AE:
-    "f \<in> borel_measurable lborel \<Longrightarrow> g \<in> borel_measurable lborel \<Longrightarrow>
-    AE x in lborel. f x = g x \<Longrightarrow>
-    interval_lebesgue_integrable lborel a b f = interval_lebesgue_integrable lborel a b g"
-  unfolding interval_lebesgue_integrable_def 
-  apply (case_tac "a \<le> b", simp_all)
-  apply (rule set_integrable_cong_AE)
-  apply auto [4]
-  apply (rule set_integrable_cong_AE)
-by auto
 
 lemma Si_at_top_lemma:
   shows "\<And>t. t \<ge> 0 \<Longrightarrow> interval_lebesgue_integrable lborel 0 \<infinity>
@@ -844,54 +879,6 @@ proof -
     apply (erule aux1)
     by (rule aux2, auto)
 qed
-
-lemma sinc_neg [simp]: "sinc (- x) = sinc x" by auto
-
-lemma Si_neg: 
-  fixes T :: real
-  assumes "T \<ge> 0"
-  shows "Si (- T) = - Si T"
-proof -
-  have "LBINT x=ereal 0..T. sinc (- x) * -1 = LBINT y= ereal (- 0)..ereal (- T). sinc y"
-    apply (rule interval_integral_substitution_finite [OF assms])
-    by (auto intro: derivative_intros continuous_at_imp_continuous_on isCont_sinc)
-  also have "(LBINT x=ereal 0..T. sinc (- x) * -1) = -(LBINT x=ereal 0..T. sinc x)"
-    apply (subst sinc_neg, simp)
-    by (rule interval_lebesgue_integral_uminus)
-  finally have *: "-(LBINT x=ereal 0..T. sinc x) = LBINT y= ereal 0..ereal (- T). sinc y"
-    by simp
-  show ?thesis
-    using assms unfolding Si_alt_def
-     apply (subst zero_ereal_def)+
-     by (auto simp add: * [symmetric])
-qed
-
-(* TODO: need a better version of FTC2 *)
-
-lemma has_field_derivative_within_open: "a \<in> s \<Longrightarrow> open s \<Longrightarrow>
-    (f has_field_derivative f') (at a within s) = (f has_field_derivative f') (at a)"
-  unfolding has_field_derivative_def by (rule has_derivative_within_open)
-
-lemma iSi_isCont: "isCont Si x"
-proof -
-  have "Si = (\<lambda>t. LBINT x=ereal 0..ereal t. sinc x)"
-    apply (rule ext, simp add: Si_def zero_ereal_def)
-    apply (rule interval_integral_cong_AE)
-    by (rule AE_I' [where N = "{0}"], auto)
-  thus ?thesis
-    apply (elim ssubst)
-    apply (rule DERIV_isCont)
-    apply (subst has_field_derivative_within_open [symmetric, 
-      where s = "{(min (x - 1) (- 1))<..<(max 1 (x+1))}"], auto)
-    apply (rule DERIV_subset [where s = "{(min (x - 2) (- 2))..(max 2 (x+2))}"])
-    apply (rule interval_integral_FTC2)
-    by (auto intro: continuous_at_imp_continuous_on isCont_sinc)
-qed
-
-lemma borel_measurable_iSi: "f \<in> borel_measurable M \<Longrightarrow> 
-  (\<lambda>x. Si (f x)) \<in> borel_measurable M"
-  apply (rule borel_measurable_continuous_on) back
-  by (rule continuous_at_imp_continuous_on, auto intro: iSi_isCont)
 
 lemma iSi_bounded: "\<exists>B. \<forall>T. abs (Si T) \<le> B"
 proof -

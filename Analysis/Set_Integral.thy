@@ -8,7 +8,7 @@ TODO: keep all these? Need unicode translations as well.
 *)
 
 theory Set_Integral
-  imports Probability
+  imports Probability Library_Misc
 begin
 
 (* 
@@ -45,12 +45,37 @@ syntax
 translations
   "AE x\<in>A in M. P" == "CONST set_almost_everywhere A M (\<lambda>x. P)"
 
+(*
+    Notation for integration wrt lebesgue measure on the reals:
+
+      LBINT x. f
+      LBINT x : A. f
+
+    TODO: keep all these? Need unicode.
+*)
+
+syntax
+"_lebesgue_borel_integral" :: "pttrn \<Rightarrow> real \<Rightarrow> real"
+("(2LBINT _. _)" [0,60] 60)
+
+translations
+"LBINT x. f" == "CONST lebesgue_integral CONST lborel (\<lambda>x. f)"
+
+syntax
+"_set_lebesgue_borel_integral" :: "pttrn \<Rightarrow> real set \<Rightarrow> real \<Rightarrow> real"
+("(3LBINT _:_. _)" [0,60,61] 60)
+
+translations
+"LBINT x:A. f" == "CONST set_lebesgue_integral CONST lborel A (\<lambda>x. f)"
+
 (* 
     Basic properties 
 *)
 
+(*
 lemma indicator_abs_eq: "\<And>A x. abs (indicator A x) = ((indicator A x) :: real)"
   by (auto simp add: indicator_def)
+*)
 
 lemma set_lebesgue_integral_cong:
   assumes "A \<in> sets M" and "\<forall>x. x \<in> A \<longrightarrow> f x = g x"
@@ -66,6 +91,13 @@ proof-
     using assms by auto
   thus ?thesis using integral_cong_AE by metis
 qed
+
+(* TODO: could restrict to the set *)
+lemma set_integrable_cong_AE:
+    "f \<in> borel_measurable M \<Longrightarrow> g \<in> borel_measurable M \<Longrightarrow>
+    AE x in M. f x = g x \<Longrightarrow> A \<in> sets M \<Longrightarrow> 
+    set_integrable M A f = set_integrable M A g"
+  by (rule integrable_cong_AE, auto)
 
 lemma set_integrable_subset: 
   fixes M A B f
@@ -121,6 +153,16 @@ using assms by (auto intro: integral_mono_AE split: split_indicator)
 lemma set_integrable_abs: "set_integrable M A f \<Longrightarrow> set_integrable M A (\<lambda>x. \<bar>f x\<bar>)"
   using integrable_abs[of M "\<lambda>x. f x * indicator A x"] by (simp add: abs_mult)
 
+lemma set_integrable_abs_iff:
+    "set_borel_measurable M A f \<Longrightarrow>
+    set_integrable M A (\<lambda>x. \<bar>f x\<bar>) = set_integrable M A f" 
+using integrable_abs_iff [of "\<lambda>x. f x * indicator A x" M, symmetric] by (simp add: abs_mult)
+
+lemma set_integrable_abs_iff':
+    "f \<in> borel_measurable M \<Longrightarrow> A \<in> sets M \<Longrightarrow> 
+    set_integrable M A (\<lambda>x. \<bar>f x\<bar>) = set_integrable M A f"
+by (subst set_integrable_abs_iff, auto)
+
 lemma set_integrable_Un:
   assumes "set_integrable M A f" "set_integrable M B f"
     "A \<in> sets M" "B \<in> sets M"
@@ -167,6 +209,7 @@ lemma set_integral_finite_Union:
   apply (auto intro!: set_integral_Un set_integrable_Un set_integrable_UN simp: disjoint_family_on_def)
 by (subst set_integral_Un, auto intro: set_integrable_UN)
 
+(* TODO: find a better name? *)
 lemma pos_integrable_to_top:
   fixes l::real
   assumes "\<And>i. A i \<in> sets M" "mono A"
@@ -200,7 +243,6 @@ proof (rule AE_I2)
     by (rule borel_measurable_LIMSEQ) (auto intro: borel_measurable_integrable intgbl)
 qed
 
-(** FIXME: Names of facts have changed and caused proof to fail. *)
 (* Proof from Royden Real Analysis, p. 91. *)
 lemma lebesgue_integral_countable_add:
   assumes meas[intro]: "\<And>i::nat. A i \<in> sets M"

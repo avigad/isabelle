@@ -24,6 +24,7 @@ lemma tendsto_at_iff_sequentially:
   unfolding filterlim_def[of _ "nhds a"] le_filter_def eventually_filtermap at_within_def eventually_nhds_within_iff_sequentially comp_def
   by metis
 
+(* a slight generalization of eventually_at_right *)
 lemma eventually_at_right':
   fixes x :: "'a :: linorder_topology"
   assumes gt_ex: "x < y"
@@ -278,31 +279,7 @@ proof -
     by (intro that) fact+
 qed
 
-(*
-    Notation for integration wrt lebesgue measure on the reals:
 
-      LBINT x. f
-      LBINT x : A. f
-      LBINT x=a..b. f
-
-    In the last one, a and b are ereals, so they can be \<infinity> or -\<infinity>.
-
-    TODO: keep all these? Need unicode.
-*)
-
-syntax
-"_lebesgue_borel_integral" :: "pttrn \<Rightarrow> real \<Rightarrow> real"
-("(2LBINT _. _)" [0,60] 60)
-
-translations
-"LBINT x. f" == "CONST lebesgue_integral CONST lborel (\<lambda>x. f)"
-
-syntax
-"_set_lebesgue_borel_integral" :: "pttrn \<Rightarrow> real set \<Rightarrow> real \<Rightarrow> real"
-("(3LBINT _:_. _)" [0,60,61] 60)
-
-translations
-"LBINT x:A. f" == "CONST set_lebesgue_integral CONST lborel A (\<lambda>x. f)"
 
 (* TODO: in this definition, it would be more natural if einterval a b included a and b when 
    they are real. *)
@@ -434,6 +411,24 @@ lemma interval_integral_cong:
   assumes "\<forall> x. x \<in> einterval (min a b) (max a b) \<longrightarrow> f x = g x" 
   shows "interval_lebesgue_integral lborel a b f = interval_lebesgue_integral lborel a b g"
 using assms by (intro interval_integral_cong_AE, auto)
+
+(* TODO: could restrict to the interval *)
+lemma interval_lebesgue_integrable_cong_AE:
+    "f \<in> borel_measurable lborel \<Longrightarrow> g \<in> borel_measurable lborel \<Longrightarrow>
+    AE x in lborel. f x = g x \<Longrightarrow>
+    interval_lebesgue_integrable lborel a b f = interval_lebesgue_integrable lborel a b g"
+  unfolding interval_lebesgue_integrable_def 
+  apply (case_tac "a \<le> b", simp_all)
+  apply (rule set_integrable_cong_AE)
+  apply auto [4]
+  apply (rule set_integrable_cong_AE)
+by auto
+
+lemma interval_integrable_abs_iff:
+    "f \<in> borel_measurable lborel \<Longrightarrow>
+    interval_lebesgue_integrable lborel a b (\<lambda>x. \<bar>f x\<bar>) = interval_lebesgue_integrable lborel a b f"
+unfolding interval_lebesgue_integrable_def
+  by (auto simp add: set_integrable_abs_iff')
 
 lemma interval_integral_Icc:
   fixes a b :: real
@@ -892,7 +887,6 @@ qed simp
 lemma integral_FTC_atLeastAtMost':
   fixes a b :: real
   assumes "a \<le> b"
-(*    and F: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> DERIV F x : {a..b} :> f x" *)
     and F: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> (F has_real_derivative (f x)) (at x within {a..b})"
     and f: "continuous_on {a..b} f"
   shows "set_lebesgue_integral lborel {a..b} f = F b - F a"
@@ -936,7 +930,7 @@ TODO: many proofs below require inferences like
 
   a < ereal x \<Longrightarrow> x < y \<Longrightarrow> a < ereal y
 
-where x and y are real. These should be automated.
+where x and y are real. These should be better automated.
 *)
 
 (*

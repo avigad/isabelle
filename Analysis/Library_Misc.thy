@@ -42,6 +42,7 @@ lemma mult_indicator_subset:
   apply auto
   by (metis in_mono sub)
 
+(*
 lemma setseq_inc:
   "(\<And>i::nat. A i \<subseteq> A (i+1)) \<Longrightarrow> i \<le> j \<Longrightarrow> A i \<subseteq> A j"
   by (rule lift_Suc_mono_le) simp_all
@@ -51,6 +52,7 @@ lemma setseq_dec:
   shows "A j \<subseteq> A i"
   using assms(2,1)
   by (induct rule: dec_induct) auto
+*)
 
 lemma indicator_cont_up:
   assumes inc: "\<And>i::nat. A i \<subseteq> A (i+1)"
@@ -58,7 +60,7 @@ lemma indicator_cont_up:
   using LIMSEQ_indicator_UN
 proof -
   have "\<And>i j. i \<le> j \<Longrightarrow> A i \<subseteq> A j"
-    using inc setseq_inc[of A] by auto  
+    by (rule lift_Suc_mono_le, rule assms [simplified]) 
   then have "\<And>k. (\<Union> i<Suc k. A i) = A k"
     by (force simp: less_Suc_eq_le)
   with LIMSEQ_indicator_UN[of A x, THEN LIMSEQ_Suc]
@@ -112,10 +114,6 @@ done
 
 (** Miscellany from Helly. **)
 
-(* Why were these not in the library? *)
-lemma measure_cong_AE: "AE x in M. f x = g x \<Longrightarrow> (f \<in> measurable M N) = (g \<in> measurable M N)"
-  oops (* this is not true*)
-  
 (* Perhaps generalize to arbitrary T1 spaces *)
 lemma lborel_countable:
   fixes A M
@@ -134,6 +132,7 @@ lemma convergent_liminf_cl:
   shows "convergent X \<Longrightarrow> liminf X = lim X"
   by (auto simp: convergent_def limI lim_imp_Liminf)
 
+(*
 primrec halfseq :: "real \<Rightarrow> real \<Rightarrow> nat \<Rightarrow> real" where
   "halfseq l a0 0 = a0"
 | "halfseq l a0 (Suc n) = (halfseq l a0 n + l) / 2"
@@ -164,6 +163,7 @@ proof -
     thus "\<exists>n. \<forall>m\<ge>n. dist (halfseq l a0 m) l < r" ..
   qed
 qed
+*)
 
 lemma real_Inf_greatest': 
   fixes A and x :: real 
@@ -196,6 +196,7 @@ proof -
     using assms by auto
 qed
 
+(* TODO: at least, move to Helly *)
 (* Should this definition be eliminated? **)
 definition rcont_inc :: "(real \<Rightarrow> real) \<Rightarrow> bool"
   where "rcont_inc f \<equiv> (\<forall>x. continuous (at_right x) f) \<and> mono f"
@@ -241,6 +242,7 @@ next (* Duplication; how to avoid? *)
   thus ?thesis ..
 qed
 
+(* TODO: move to Helly, and refactor *)
 lemma lim_close_limsup_liminf:
   fixes a :: "nat \<Rightarrow> ereal" and L :: real
   assumes "\<forall>(e::real)>0. \<bar>limsup a - L\<bar> < e \<and> \<bar>L - liminf a\<bar> < e"
@@ -280,17 +282,20 @@ proof -
   thus "lim (\<lambda>n. ereal (a n)) = ereal (lim a)" using lim L limI by metis
 qed
 
+(*
 lemma ereal_not_infty:
   fixes x :: ereal and B :: real
   assumes "x \<le> ereal B"
   shows "x \<noteq> \<infinity>"
 by (metis PInfty_neq_ereal(1) assms ereal_infty_less_eq(1))
+*)
 
 lemma abs_bounds: "x \<le> y \<Longrightarrow> -x \<le> y \<Longrightarrow> abs (x :: ereal) \<le> y"
 by (metis abs_ereal_ge0 abs_ereal_uminus ereal_0_le_uminus_iff linear)
 
 (** For Weak_Convergence **)
 
+(* TODO: move to Weak_Convergence *)
 lemma bdd_rcont_inc_pseudoinverse:
   fixes F :: "real \<Rightarrow> real"
   fixes M a b :: real
