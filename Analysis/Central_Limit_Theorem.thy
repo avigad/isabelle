@@ -298,19 +298,18 @@ theorem (in prob_space) central_limit_theorem:
     X_variance: "\<And>n. variance (X n) = \<sigma>\<^sup>2" and
     X_distrib: "\<And>n. distr M borel (X n) = \<mu>"
   defines
-    "S n \<equiv> \<lambda>x. (\<Sum>i<n. X i x) / sqrt (n * \<sigma>\<^sup>2)"
+    "S n \<equiv> \<lambda>x. \<Sum>i<n. X i x"
   shows
-    "weak_conv_m (\<lambda>n. distr M borel (S n)) (density lborel standard_normal_density)"
+    "weak_conv_m (\<lambda>n. distr M borel (\<lambda>x. S n x / sqrt (n * \<sigma>\<^sup>2))) 
+        (density lborel standard_normal_density)"
 
 proof -
-  def \<phi> \<equiv> "\<lambda>n. char (distr M borel (\<lambda>x. S n x))"
+  def S' \<equiv> "\<lambda>n x. S n x / sqrt (n * \<sigma>\<^sup>2)"
+  def \<phi> \<equiv> "\<lambda>n. char (distr M borel (S' n))"
   def \<psi> \<equiv> "\<lambda>n t. char \<mu> (t / sqrt (\<sigma>\<^sup>2 * n))"
 
   have X_rv [simp, measurable]: "\<And>n. random_variable borel (X n)"
     using X_indep unfolding indep_vars_def2 by simp
-  have S_rv [simp, measurable]: "\<And>n. random_variable borel (S n)"
-    unfolding S_def by measurable
-
   interpret \<mu>: real_distribution \<mu>
     by (subst X_distrib [symmetric, of 0], rule real_distribution_distr, simp)
   (* these are equivalent to the hypotheses on X, given X_distr *)
@@ -343,8 +342,8 @@ proof -
       apply (subst complex_integral_distr, auto)
       by (subst complex_integral_distr, auto)
 
-    have 1: "S n = (\<lambda>x. (\<Sum> i < n. X i x / sqrt (\<sigma>\<^sup>2 * n)))" 
-      by (rule ext, simp add: S_def setsum_divide_distrib ac_simps)
+    have 1: "S' n = (\<lambda>x. (\<Sum> i < n. X i x / sqrt (\<sigma>\<^sup>2 * n)))" 
+      by (rule ext, simp add: S'_def S_def setsum_divide_distrib ac_simps)
 
     have "\<phi> n t = (\<Prod> i < n. \<psi>' n i t)"
       unfolding \<phi>_def \<psi>'_def apply (subst 1)
@@ -379,6 +378,8 @@ proof -
       by simp
   qed
 
+  have S_rv [simp, measurable]: "\<And>n. random_variable borel (\<lambda>x. S n x / sqrt (n * \<sigma>\<^sup>2))"
+    unfolding S_def by measurable
   have "\<And>t. (\<lambda>n. \<phi> n t) ----> char standard_normal_distribution t"
   proof -
     fix t
@@ -420,7 +421,7 @@ proof -
     apply (rule real_distribution_distr [OF S_rv])
     unfolding real_distribution_def real_distribution_axioms_def
     apply (simp add: prob_space_normal_density)
-    unfolding \<phi>_def by -
+    unfolding \<phi>_def S'_def by -
 qed
 
 end

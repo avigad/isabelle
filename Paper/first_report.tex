@@ -4,6 +4,10 @@
 \usepackage{isabelle,isabellesym}
 \usepackage{url}
 
+%\usepackage{float}
+%\floatstyle{boxed}
+%\restylefloat{figure}
+
 \newcommand{\RR}{\mathbb{R}}
 \newcommand{\CC}{\mathbb{C}}
 \newcommand{\st}{ \; | \;}
@@ -105,12 +109,9 @@ The Central Limit Theorem can now be stated precisely as follows:
 \label{theorem:clt}
 Let $X_0, X_1, X_2, \ldots$ be a sequence of independent random variables with mean $0$, variance $\sigma^2$, and common distribution $\mu$. Let $S_n = (X_0 + X_1 + \ldots + X_{n-1})$. Then the distribution of $S_n / \sqrt{n \sigma^2}$ converges weakly to the standard normal distribution.
 \end{theorem}
-The restriction to mean $0$ does not result in any loss of generality, since if each $X_i$ has mean $m$, we can apply Theorem~\ref{theorem:clt} to the sequence $(X_i - m)$ to obtain the more general statement above. 
+The restriction to mean $0$ does not result in any loss of generality, since if each $X_i$ has mean $m$, we can apply Theorem~\ref{theorem:clt} to the sequence $(X_i - m)$ to obtain the more general statement above. Our formulation of Theorem~\ref{theorem:clt} in Isabelle is depicted as Figure~\ref{fig:clt}.
 
-Our formulation of Theorem~\ref{theorem:clt} in Isabelle reads as follows:
-
-\bigskip
-
+\begin{figure}
 \begin{isabellebody}
 \isacommand{theorem}\isamarkupfalse%
 \ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ central{\isacharunderscore}limit{\isacharunderscore}theorem{\isacharcolon}\isanewline
@@ -123,16 +124,19 @@ Our formulation of Theorem~\ref{theorem:clt} in Isabelle reads as follows:
 \ \ \ \ X{\isacharunderscore}indep{\isacharcolon}\ {\isachardoublequoteopen}indep{\isacharunderscore}vars\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ borel{\isacharparenright}\ X\ UNIV{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
 \ \ \ \ X{\isacharunderscore}integrable{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}X\ n{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
 \ \ \ \ X{\isacharunderscore}mean{\isacharunderscore}{\isadigit{0}}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ expectation\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
-\ \ \ \ {\isasymsigma}{\isacharunderscore}pos{\isacharcolon}\ {\isachardoublequoteopen}{\isasymsigma}\ {\isachargreater}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{and}\ \isanewline
+\ \ \ \ {\isasymsigma}{\isacharunderscore}pos{\isacharcolon}\ {\isachardoublequoteopen}{\isasymsigma}\ {\isachargreater}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
 \ \ \ \ X{\isacharunderscore}square{\isacharunderscore}integrable{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isacharparenleft}X\ n\ x{\isacharparenright}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
 \ \ \ \ X{\isacharunderscore}variance{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ variance\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
 \ \ \ \ X{\isacharunderscore}distrib{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isasymmu}{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{defines}\isanewline
-\ \ \ \ {\isachardoublequoteopen}S\ n\ {\isasymequiv}\ {\isasymlambda}x{\isachardot}\  {\isacharparenleft}{\isasymSum}i{\isacharless}n{\isachardot}\ X\ i\ x{\isacharparenright}\ {\isacharslash}\ sqrt\ {\isacharparenleft}n\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ {\isachardoublequoteopen}S\ n\ {\isasymequiv}\ {\isasymlambda}x{\isachardot}\ {\isasymSum}i{\isacharless}n{\isachardot}\ X\ i\ x{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{shows}\isanewline
-\ \ \ \ {\isachardoublequoteopen}weak{\isacharunderscore}conv{\isacharunderscore}m\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}S\ n{\isacharparenright}{\isacharparenright}\isanewline
-\ \ \ \ \ \ \ \ {\isacharparenleft}density\ lborel\ standard{\isacharunderscore}normal{\isacharunderscore}density{\isacharparenright}{\isachardoublequoteclose}\isanewline 
+\ \ \ \ {\isachardoublequoteopen}weak{\isacharunderscore}conv{\isacharunderscore}m\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ S\ n\ x\ {\isacharslash}\ sqrt\ {\isacharparenleft}n\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isacharparenright}{\isacharparenright}\ \isanewline
+\ \ \ \ \ \ \ \ {\isacharparenleft}density\ lborel\ standard{\isacharunderscore}normal{\isacharunderscore}density{\isacharparenright}{\isachardoublequoteclose}
 \end{isabellebody}
+\caption{The Central Limit Theorem}
+\label{fig:clt}
+\end{figure}
 
 \section{Supporting libraries}
 
