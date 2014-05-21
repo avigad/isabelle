@@ -5,15 +5,39 @@ Authors: Jeremy Avigad, Luke Serafin
 
 theory Central_Limit_Theorem
 
-(*
-imports Library_Misc Weak_Convergence Characteristic_Functions Normal_Distribution
-*)
-
 imports Levy
 
 begin
 
-(* it is funny that this isn't in the library! *)
+(* TODO: move these elsewhere *)
+
+lemma (in prob_space) indep_vars_compose2:
+  assumes "indep_vars M' X I"
+  assumes rv: "\<And>i. i \<in> I \<Longrightarrow> Y i \<in> measurable (M' i) (N i)"
+  shows "indep_vars N (\<lambda>i x. Y i (X i x)) I"
+using indep_vars_compose [OF assms] by (simp add: comp_def)
+
+lemma (in prob_space) indep_vars_cmult:
+  shows "indep_vars (\<lambda>i. borel) X I \<Longrightarrow> indep_vars (\<lambda>i. borel) (\<lambda>i x. (c :: real) * X i x) I"
+  apply (rule indep_vars_compose2) back
+  apply assumption
+by auto
+
+lemma (in prob_space) real_distribution_distr [intro, simp]: "random_variable borel X \<Longrightarrow> 
+    real_distribution (distr M borel X)"
+  unfolding real_distribution_def real_distribution_axioms_def apply auto
+by (rule prob_space_distr)  
+
+lemma (in prob_space) variance_mean_zero: "expectation X = 0 \<Longrightarrow>
+    variance X = expectation (\<lambda>x. (X x)^2)"
+by auto
+
+lemma sqrt_at_top: "LIM x at_top. sqrt x :: real :> at_top"
+  by (rule filterlim_at_top_at_top[where Q="\<lambda>x. True" and P="\<lambda>x. 0 < x" and g="power2"])
+     (auto intro: eventually_gt_at_top)
+
+
+(* it is funny that this isn't in the library! It could go in Transcendental *)
 lemma exp_limit:
   fixes x :: real
   shows "((\<lambda>y.(1 + x * y) powr (1 / y)) ---> exp x) (at_right 0)"
@@ -152,22 +176,6 @@ proof -
   finally show ?thesis .
 qed
 
-lemma (in prob_space) indep_vars_compose2:
-  assumes "indep_vars M' X I"
-  assumes rv: "\<And>i. i \<in> I \<Longrightarrow> Y i \<in> measurable (M' i) (N i)"
-  shows "indep_vars N (\<lambda>i x. Y i (X i x)) I"
-using indep_vars_compose [OF assms] by (simp add: comp_def)
-
-lemma (in prob_space) indep_vars_cmult:
-  shows "indep_vars (\<lambda>i. borel) X I \<Longrightarrow> indep_vars (\<lambda>i. borel) (\<lambda>i x. (c :: real) * X i x) I"
-  apply (rule indep_vars_compose2) back
-  apply assumption
-by auto
-
-lemma (in prob_space) variance_mean_zero: "expectation X = 0 \<Longrightarrow>
-    variance X = expectation (\<lambda>x. (X x)^2)"
-by auto
-
 (* for sanity, this is a special case of equation_26p5b *)
 lemma (in real_distribution) aux:
   fixes t
@@ -203,11 +211,8 @@ proof -
   finally show ?thesis .
 qed
 
-lemma (in prob_space) real_distribution_distr [intro, simp]: "random_variable borel X \<Longrightarrow> 
-    real_distribution (distr M borel X)"
-  unfolding real_distribution_def real_distribution_axioms_def apply auto
-by (rule prob_space_distr)  
-
+(* This is a more familiar textbook formulation in terms of random variables, but 
+   we will use the previous version for the CLT *)
 lemma (in prob_space) aux':
   fixes \<mu> :: "real measure" and X
   assumes
@@ -226,61 +231,6 @@ lemma (in prob_space) aux':
   apply force
   apply (rule real_distribution.aux)
 using var_X by (auto simp add: integrable_distr_eq integral_distr)
-
-lemma (in real_distribution) aux_old:
-  fixes t
-  assumes
-    integrable_1: "integrable M (\<lambda>x. x)" and
-    integral_1: "expectation (\<lambda>x. x) = 0" and
-    integrable_2: "integrable M (\<lambda>x. x^2)" and
-    integral_2: "variance (\<lambda>x. x) = \<sigma>2"
-  shows 
-    "cmod (char M t - (1 - t^2 * \<sigma>2 / 2)) \<le>  t^2 * \<sigma>2"
-proof -
-  have [simp]: "prob UNIV = 1" by (metis prob_space space_eq_univ)
-  have 0: "ii * t * ii * t = - t * t"
-    by (metis comm_semiring_1_class.normalizing_semiring_rules(7) 
-      complex_i_mult_minus of_real_minus of_real_mult)
-  from integral_2 have [simp]: "expectation (\<lambda>x. x * x) = \<sigma>2" 
-    by (simp add: integral_1 numeral_eq_Suc)
-  {
-    fix k :: nat
-    assume "k \<le> 2"
-    hence "k = 0 \<or> k = 1 \<or> k = 2" by auto
-    with assms have "integrable M (\<lambda>x. x^k)" by auto
-  } note 1 = this 
-  have "cmod (char M t - (\<Sum>k\<le>2. (\<i> * t) ^ k / (fact k) * expectation (\<lambda>x. x ^ k))) \<le> 
-      2 * (abs t)\<^sup>2 / real (fact (2::nat)) * expectation (\<lambda>x. (abs x)^2)"
-    by (rule equation_26p5b [OF 1]) simp
-  also have "(\<Sum>k\<le>2. (\<i> * t) ^ k / (fact k) * expectation (\<lambda>x. x ^ k)) = 1 - t^2 * \<sigma>2 / 2"
-    apply (simp add: numeral_eq_Suc real_of_nat_Suc integral_1 mult_assoc [symmetric])
-    by (subst 0, simp add: of_real_mult of_real_numeral)
-  also have "2 * (abs t)\<^sup>2 / fact (2::nat) * expectation (\<lambda>x. (abs x)^2) = t^2 * \<sigma>2"
-    by (simp add: numeral_eq_Suc integral_2)
-  finally show ?thesis .
-qed
-
-lemma (in prob_space) aux_old':
-  fixes \<mu> :: "real measure" and X
-  assumes
-    rv_X [simp]: "random_variable borel X" and
-    [simp]: "integrable M X" and
-    [simp]: "integrable M (\<lambda>x. (X x)^2)" and
-    expect_X [simp]: "expectation X = 0" and
-    var_X: "variance X = \<sigma>2"  and
-    \<mu>_def: "\<mu> = distr M borel X"
-  shows 
-    "cmod (char \<mu> t - (1 - t^2 * \<sigma>2 / 2)) \<le>  t^2 * \<sigma>2"
-
-  apply (subst \<mu>_def)
-  apply (rule real_distribution.aux_old)
-  unfolding real_distribution_def real_distribution_axioms_def apply auto
-  apply (rule prob_space_distr)
-using var_X by (auto simp add: integrable_distr_eq integral_distr)
-
-lemma sqrt_at_top: "LIM x at_top. sqrt x :: real :> at_top"
-  by (rule filterlim_at_top_at_top[where Q="\<lambda>x. True" and P="\<lambda>x. 0 < x" and g="power2"])
-     (auto intro: eventually_gt_at_top)
 
 
 theorem (in prob_space) central_limit_theorem:

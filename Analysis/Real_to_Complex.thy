@@ -374,8 +374,7 @@ lemma complex_integral_conj [simp]:
 unfolding complex_lebesgue_integral_def by (auto simp add: lebesgue_integral_uminus complex_eq_iff)
 (* lebesgue_integral_uminus should be a simp rule *)
 
-
-lemma complex_integrable_measurable:
+lemma complex_integrable_measurable [simp, measurable]:
   assumes f: "complex_integrable M f"
   shows "f \<in> borel_measurable M"
 using f unfolding complex_integrable_def apply auto
@@ -542,6 +541,99 @@ proof -
   also have "\<dots> = LINT t | M. cmod (f t)"
     unfolding cmod_iexp norm_mult by simp
   finally show ?thesis by (simp add: z_def)
+qed
+
+
+lemma complex_integral_distr:
+  "T \<in> measurable M M' \<Longrightarrow> f \<in> borel_measurable M' \<Longrightarrow> 
+    complex_lebesgue_integral (distr M M' T) f = (CLINT x | M. f (T x))"
+  unfolding complex_lebesgue_integral_def
+by (simp add: integral_distr)
+
+lemma complex_integrable_distr_eq:
+  "T \<in> measurable M M' \<Longrightarrow> f \<in> borel_measurable M' \<Longrightarrow> complex_integrable (distr M M' T) f \<longleftrightarrow> 
+    complex_integrable M (\<lambda>x. f (T x))"
+  unfolding complex_integrable_def
+by (simp add: integrable_distr_eq)
+
+lemma complex_integrable_distr:
+  "T \<in> measurable M M' \<Longrightarrow> complex_integrable (distr M M' T) f \<Longrightarrow> 
+    complex_integrable M (\<lambda>x. f (T x))"
+  apply (subst complex_integrable_distr_eq[symmetric]) back
+  by auto
+
+lemma complex_integrable_bound:
+  assumes "integrable M f" and f: "AE x in M. cmod (g x) \<le> f x"
+  assumes borel: "g \<in> borel_measurable M"
+  shows "complex_integrable M g"
+using assms unfolding complex_integrable_def apply auto
+  apply (erule integrable_bound, erule AE_mp, rule AE_I2, auto)
+  apply (rule order_trans, rule abs_Re_le_cmod, assumption)
+  apply (erule integrable_bound, erule AE_mp, rule AE_I2, auto)
+by (rule order_trans, rule abs_Im_le_cmod, assumption)
+
+lemma (in finite_measure) complex_integrable_const_bound:
+  "AE x in M. cmod (f x) \<le> B \<Longrightarrow> f \<in> borel_measurable M \<Longrightarrow> complex_integrable M f"
+by (rule complex_integrable_bound [of _ "\<lambda>x. B"], auto)
+
+lemma complex_integral_setsum [simp, intro]:
+  assumes "\<And>n. n \<in> S \<Longrightarrow> complex_integrable M (f n)"
+  shows "(CLINT x | M. (\<Sum> i \<in> S. f i x)) = (\<Sum> i \<in> S. (CLINT x | M. (f i x)))"
+    and "complex_integrable M (\<lambda>x. \<Sum> i \<in> S. f i x)" (is "?I S")
+  apply (case_tac "finite S", auto)
+  prefer 2 apply (case_tac "finite S", auto)
+  using assms unfolding complex_integrable_def complex_lebesgue_integral_def
+by (auto simp add: Re_setsum Im_setsum of_real_setsum setsum_addf setsum_right_distrib)
+
+lemma complex_integral_dominated_convergence:
+  assumes u[measurable]: "\<And>i. complex_integrable M (u i)" and 
+    bound: "\<And>j. AE x in M. cmod (u j x) \<le> w x"
+  and w[measurable]: "integrable M w"
+  and u': "AE x in M. (\<lambda>i. u i x) ----> u' x"
+  and [measurable]: "u' \<in> borel_measurable M"
+  shows "complex_integrable M u'"
+  and "(\<lambda>i. (CLINT x | M. cmod (u i x - u' x))) ----> 0" (is "?lim_diff")
+  and "(\<lambda>i. (CLINT x | M. u i x)) ----> (CLINT x | M. u' x)" (is ?lim)
+proof -
+  from u have u_re: "\<And>i. integrable M (RE (u i))" by (simp add: complex_integrable_def)
+  from u have u_im: "\<And>i. integrable M (IM (u i))" by (simp add: complex_integrable_def)
+  have bound_re: "\<And>i. AE x in M. \<bar>RE (u i) x\<bar> \<le> w x"
+    by (rule AE_mp, rule bound, rule AE_I2, rule impI, erule order_trans [OF abs_Re_le_cmod])
+  have bound_im: "\<And>i. AE x in M. \<bar>IM (u i) x\<bar> \<le> w x"
+    by (rule AE_mp, rule bound, rule AE_I2, rule impI, erule order_trans [OF abs_Im_le_cmod])
+  have u'_re: "AE x in M. (\<lambda>i. Re (u i x)) ----> Re (u' x)"
+    by (rule AE_mp [OF u'], rule AE_I2, auto intro: tendsto_Re)
+  have u'_im: "AE x in M. (\<lambda>i. Im (u i x)) ----> Im (u' x)"
+    by (rule AE_mp [OF u'], rule AE_I2, auto intro: tendsto_Im)
+  have u'm_re: "RE u' \<in> borel_measurable M" by auto
+  have u'm_im: "IM u' \<in> borel_measurable M" by auto
+  have diff_bound: "\<And>i. AE x in M. \<bar>cmod (u i x - u' x)\<bar> \<le> w x + cmod (u' x)"
+    apply (rule AE_mp [OF bound], rule AE_I2, clarsimp)
+    apply (rule order_trans [OF norm_triangle_ineq4])
+    by (erule add_right_mono)
+  show *: "complex_integrable M u'"
+    unfolding complex_integrable_def apply (rule conjI)
+    apply (rule integral_dominated_convergence [OF u_re bound_re w u'_re u'm_re])
+    by (rule integral_dominated_convergence [OF u_im bound_im w u'_im u'm_im])
+  show "?lim_diff"
+    unfolding complex_lebesgue_integral_def apply (rule tendsto_add_zero)
+    apply (subgoal_tac "0 = complex_of_real 0")
+    apply (erule ssubst, rule tendsto_compose [OF tendsto_of_real], auto intro: tendsto_ident_at)
+    apply (subgoal_tac "0 = LINT x|M. 0")
+    apply (erule ssubst)
+    apply (rule integral_dominated_convergence [OF _ diff_bound], auto)
+    apply (rule complex_integrable_cmod, rule complex_integral_diff [OF u *])
+    apply (rule integral_add [OF w complex_integrable_cmod [OF *]])
+    apply (rule AE_mp [OF u'], rule AE_I2, rule impI)
+    apply (rule tendsto_norm_zero)
+    by (subst (asm) Lim_null)
+  show "?lim"
+    unfolding complex_lebesgue_integral_def apply (rule tendsto_add)
+    apply (rule tendsto_compose [OF tendsto_of_real], auto intro: tendsto_ident_at)
+    apply (rule integral_dominated_convergence [OF u_re bound_re w u'_re u'm_re])
+    apply (rule tendsto_mult_left)
+    apply (rule tendsto_compose [OF tendsto_of_real], auto intro: tendsto_ident_at)
+    by (rule integral_dominated_convergence [OF u_im bound_im w u'_im u'm_im])
 qed
 
 (*
@@ -1015,6 +1107,46 @@ using assms unfolding complex_interval_lebesgue_integral_eq complex_set_lebesgue
     complex_set_integrable_iff
   apply (auto simp: complex_eq_iff)
 by (rule interval_integral_substitution_integrable, auto)+
+
+
+lemma complex_set_bounded_integrable_AE:
+  fixes f A B and M :: "'a measure"
+  assumes "A \<in> sets M" "AE x \<in> A in M. cmod (f x) \<le> B"
+   and "emeasure M A \<noteq> \<infinity>" and "f \<in> borel_measurable M"
+  shows "complex_set_integrable M A f"
+using assms unfolding complex_set_integrable_iff apply (intro conjI)
+  apply (rule integrable_bound [of _ "\<lambda>x. B * indicator A x"])
+  apply (rule integral_cmult, erule (1) integral_indicator)
+  apply auto
+  apply (rule AE_I [of _ _ "{}"], auto split: split_indicator)
+  apply (erule order_trans [OF abs_Re_le_cmod])
+  apply (rule integrable_bound [of _ "\<lambda>x. B * indicator A x"])
+  apply (rule integral_cmult, erule (1) integral_indicator)
+  apply auto
+  apply (rule AE_I [of _ _ "{}"], auto split: split_indicator)
+by (erule order_trans [OF abs_Im_le_cmod])
+
+lemma complex_interval_integral_reflect:
+  fixes a b :: real and f
+  assumes "f \<in> borel_measurable borel"
+  shows "(CLBINT x=a..b. f x) = (CLBINT x=-b..-a. f (-x))"
+unfolding complex_interval_lebesgue_integral_eq
+  using assms by (subst interval_integral_reflect, auto)+
+
+lemma complex_integral_of_real: 
+  "(CLINT t | M. complex_of_real (f t)) = complex_of_real (LINT t | M. f t)"
+unfolding complex_lebesgue_integral_def
+  by (simp only: Re_complex_of_real Im_complex_of_real, simp)
+
+lemma complex_set_integral_of_real: 
+  "(CLINT t : S | M. complex_of_real (f t)) = complex_of_real (LINT t : S | M. f t)"
+unfolding complex_set_lebesgue_integral_eq
+  by (simp only: Re_complex_of_real Im_complex_of_real, simp)
+
+lemma complex_interval_integral_of_real: 
+  "(CLBINT t=a..b. complex_of_real (f t)) = complex_of_real (LBINT t=a..b. f t)"
+unfolding complex_interval_lebesgue_integral_eq
+  by (simp only: Re_complex_of_real Im_complex_of_real, simp)
 
 (*
   First application of the FTC: integrating e^ix

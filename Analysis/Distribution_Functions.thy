@@ -10,6 +10,9 @@ Conversely, every such function is the cdf of a unique distribution. This direct
 measure in the obvious way on half-open intervals, and then applies the Caratheodory extension 
 theorem.
 
+TODO: the locales "finite_borel_measure" and "real_distribution" are defined here, but maybe they
+ should be somewhere else.
+
 ***************************************************************************************************)
 
 theory Distribution_Functions
@@ -274,6 +277,17 @@ begin
 
 lemma [intro]: "a \<in> sets borel \<Longrightarrow> a \<in> sets M"
   using M_super_borel by auto
+
+lemma cdf_diff_eq: 
+  assumes "x < y"
+  shows "cdf M y - cdf M x = measure M {x<..y}"
+proof -
+  from assms have *: "{..x} \<union> {x<..y} = {..y}" by auto
+  have "measure M {..y} = measure M {..x} + measure M {x<..y}"
+    by (subst finite_measure_Union [symmetric], auto simp add: *)
+  thus ?thesis
+    unfolding cdf_def by auto
+qed
 
 lemma cdf_nondecreasing [rule_format]: "(\<forall>x y. x \<le> y \<longrightarrow> cdf M x \<le> cdf M y)"
   unfolding cdf_def by (auto intro!: finite_measure_mono)

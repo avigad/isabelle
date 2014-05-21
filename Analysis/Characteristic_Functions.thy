@@ -21,11 +21,47 @@ where
 lemma (in real_distribution) char_zero: "char M 0 = 1"
   unfolding char_def by (simp del: space_eq_univ add: prob_space)
 
+(* TODO: restore this? 
+declare of_real_mult [simp del] 
+*)
+
+lemma (in real_distribution) cmod_char_le_1: "cmod (char M t) \<le> 1"
+  unfolding char_def
+  apply (rule order_trans)
+  apply (rule complex_lebesgue_integral_cmod)
+  apply (auto simp del: of_real_mult)
+  apply (rule complex_integrable_const_bound [of _ 1])
+by (auto simp del: of_real_mult)
+
+lemma (in real_distribution) isCont_char: "isCont (char M) t"
+  apply (simp add: isCont_def)
+  apply (rule Lim_within_LIMSEQ, auto)
+  unfolding char_def apply (rule complex_integral_dominated_convergence)
+  prefer 2 apply (rule AE_I2, subst cmod_iexp, rule order_refl)
+  apply (rule complex_integrable_const_bound [where B = 1], rule AE_I2, 
+    subst cmod_iexp, rule order_refl)
+  apply (auto intro!: AE_I2 simp del: of_real_mult)
+  apply (rule isCont_tendsto_compose [OF isCont_exp])
+by (rule tendsto_mult_left, rule tendsto_of_real, rule tendsto_mult_right)
+
+lemma (in real_distribution) char_measurable [measurable]: "char M \<in> borel_measurable borel"
+  by (auto intro!: borel_measurable_continuous_on1 continuous_at_imp_continuous_on isCont_char)
+
+
+(* 
+  Miscellany
+*)
+
+(* strange this isn't in the library *)
+lemma mult_min_right: "a \<ge> 0 \<Longrightarrow> (a :: real) * min b c = min (a * b) (a * c)"
+by (metis min.absorb_iff2 min_def mult_left_mono)
+
 
 (*
   Independence
 *)
 
+(* TODO: this goes with Auxliary.thy, a speci case of indep_vars_... *)
 lemma (in prob_space)
   assumes "indep_var borel X1 borel X2" "integrable M X1" "integrable M X2"
   shows indep_var_lebesgue_integral: "(\<integral>\<omega>. X1 \<omega> * X2 \<omega> \<partial>M) = (\<integral>\<omega>. X1 \<omega> \<partial>M) * (\<integral>\<omega>. X2 \<omega> \<partial>M)" (is ?eq)
@@ -250,7 +286,9 @@ proof -
     by auto
 qed
 
+(* Happily, it seems this is no longer needed!
 declare i_complex_of_real [simp del]
+*)
 
 lemma equation_26p4a: "cmod (iexp x - (\<Sum>k \<le> n. (ii * x)^k / fact k)) \<le>
     (abs x)^(Suc n) / fact (Suc n)"
@@ -404,55 +442,6 @@ qed
 qed
 
 
-(* move these to Real_to_Complex *)
-
-declare complex_integrable_measurable [simp]
-
-lemma complex_integral_distr:
-  "T \<in> measurable M M' \<Longrightarrow> f \<in> borel_measurable M' \<Longrightarrow> 
-    complex_lebesgue_integral (distr M M' T) f = (CLINT x | M. f (T x))"
-  unfolding complex_lebesgue_integral_def
-by (simp add: integral_distr)
-
-lemma complex_integrable_distr_eq:
-  "T \<in> measurable M M' \<Longrightarrow> f \<in> borel_measurable M' \<Longrightarrow> complex_integrable (distr M M' T) f \<longleftrightarrow> 
-    complex_integrable M (\<lambda>x. f (T x))"
-  unfolding complex_integrable_def
-by (simp add: integrable_distr_eq)
-
-lemma complex_integrable_distr:
-  "T \<in> measurable M M' \<Longrightarrow> complex_integrable (distr M M' T) f \<Longrightarrow> 
-    complex_integrable M (\<lambda>x. f (T x))"
-  apply (subst complex_integrable_distr_eq[symmetric]) back
-  apply auto
-by (frule complex_integrable_measurable, simp)
-
-lemma complex_integrable_bound:
-  assumes "integrable M f" and f: "AE x in M. cmod (g x) \<le> f x"
-  assumes borel: "g \<in> borel_measurable M"
-  shows "complex_integrable M g"
-using assms unfolding complex_integrable_def apply auto
-  apply (erule integrable_bound, erule AE_mp, rule AE_I2, auto)
-  apply (rule order_trans, rule abs_Re_le_cmod, assumption)
-  apply (erule integrable_bound, erule AE_mp, rule AE_I2, auto)
-by (rule order_trans, rule abs_Im_le_cmod, assumption)
-
-lemma (in finite_measure) complex_integrable_const_bound:
-  "AE x in M. cmod (f x) \<le> B \<Longrightarrow> f \<in> borel_measurable M \<Longrightarrow> complex_integrable M f"
-by (rule complex_integrable_bound [of _ "\<lambda>x. B"], auto)
-
-lemma complex_integral_setsum [simp, intro]:
-  assumes "\<And>n. n \<in> S \<Longrightarrow> complex_integrable M (f n)"
-  shows "(CLINT x | M. (\<Sum> i \<in> S. f i x)) = (\<Sum> i \<in> S. (CLINT x | M. (f i x)))"
-    and "complex_integrable M (\<lambda>x. \<Sum> i \<in> S. f i x)" (is "?I S")
-  apply (case_tac "finite S", auto)
-  prefer 2 apply (case_tac "finite S", auto)
-  using assms unfolding complex_integrable_def complex_lebesgue_integral_def
-by (auto simp add: Re_setsum Im_setsum of_real_setsum setsum_addf setsum_right_distrib)
-
-lemma cmod_expi_real_eq: "cmod (expi (ii * (x :: real))) = 1"
-  by auto
-
 (* these calculations were difficult -- in some ways I felt like I was fighting with the
    simplifier. Could we do better?
 *)
@@ -467,7 +456,7 @@ lemma (in real_distribution) equation_26p5b:
 proof -
   have [simplified, simp]: "complex_integrable M (\<lambda>x. iexp (t * x))"
     apply (rule complex_integrable_const_bound, rule AE_I2)
-    by (subst cmod_expi_real_eq, auto)
+    by (subst cmod_iexp, auto)
   have *: "\<And>k x. (ii * t * x)^k / fact k = (ii * t)^k / fact k * x^k"
     by (simp add: power_mult_distrib)
   have ** [simp]: "!!k. k \<le> n \<Longrightarrow> complex_integrable M (\<lambda>x. complex_of_real (x ^ k))"
@@ -513,10 +502,6 @@ proof -
   finally show ?thesis .
 qed
 
-(* strange this isn't in the library *)
-lemma mult_min_right: "a \<ge> 0 \<Longrightarrow> (a :: real) * min b c = min (a * b) (a * c)"
-by (metis min.absorb_iff2 min_def mult_left_mono)
-
 lemma (in real_distribution) equation_26p5b_stronger:
   assumes 
     integrable_moments : "\<And>k. k \<le> n \<Longrightarrow> integrable M (\<lambda>x :: real. x ^ k)"
@@ -528,7 +513,7 @@ lemma (in real_distribution) equation_26p5b_stronger:
 proof -
   have [simplified, simp]: "complex_integrable M (\<lambda>x. iexp (t * x))"
     apply (rule complex_integrable_const_bound, rule AE_I2)
-    by (subst cmod_expi_real_eq, auto)
+    by (subst cmod_iexp, auto)
   have *: "\<And>k x. (ii * t * x)^k / fact k = (ii * t)^k / fact k * x^k"
     by (simp add: power_mult_distrib)
   have ** [simp]: "!!k. k \<le> n \<Longrightarrow> complex_integrable M (\<lambda>x. complex_of_real (x ^ k))"
@@ -634,7 +619,7 @@ lemma (in prob_space) equation_26p5b':
 proof -
   have [simplified, simp]: "complex_integrable M (\<lambda>x. iexp (t * X x))"
     apply (rule complex_integrable_const_bound, rule AE_I2)
-    using rv_X by (subst cmod_expi_real_eq, auto)
+    using rv_X by (subst cmod_iexp, auto)
   have *: "\<And>k x. (ii * t * X x)^k / fact k = (ii * t)^k / fact k * (X x)^k"
     by (simp add: power_mult_distrib)
   have ** [simp]: "\<And>k. k \<le> n \<Longrightarrow> complex_integrable M (\<lambda>x. complex_of_real (X x ^ k))"
@@ -680,6 +665,7 @@ qed
 
 (* Calculation of the characteristic function of the standard distribution *)
 
+(* TODO: should this be an instance statement? *)
 lemma real_dist_normal_dist: "real_distribution standard_normal_distribution"
   unfolding real_distribution_def apply (rule conjI)
   apply (rule prob_space_normal_density, auto)
@@ -878,7 +864,6 @@ proof
   show "char standard_normal_distribution t = complex_of_real (exp (-(t^2) / 2))"
     by (rule LIMSEQ_unique [OF 7 4])
 qed
-
 
 end
 

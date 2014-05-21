@@ -11,6 +11,87 @@ imports Characteristic_Functions Helly_Selection
 
 begin
 
+(*
+  TODO: move elsewhere 
+*)
+
+lemma borel_measurable_sgn [measurable (raw)]:
+  fixes f :: "real \<Rightarrow> real"
+  assumes "f \<in> borel_measurable M"
+  shows "(\<lambda>x. sgn (f x)) \<in> borel_measurable M"
+proof -
+  have "(\<lambda>x. sgn (f x)) = (\<lambda>x. indicator {0<..} (f x) - indicator {..<0} (f x))"
+    unfolding indicator_def by auto
+  thus ?thesis
+    apply (elim ssubst) 
+    using assms by measurable
+qed
+
+lemma real_arbitrarily_close_eq:
+  fixes x y :: real
+  assumes "\<And>\<epsilon>. \<epsilon> > 0 \<Longrightarrow> abs (x - y) \<le> \<epsilon>"
+  shows "x = y"
+by (metis abs_le_zero_iff assms dense_ge eq_iff_diff_eq_0)
+
+lemma real_interval_avoid_countable_set:
+  fixes a b :: real and A :: "real set"
+  assumes "a < b" and "countable A"
+  shows "\<exists>x. x \<in> {a<..<b} \<and> x \<notin> A"
+proof -
+  from `countable A` have "countable (A \<inter> {a<..<b})" by auto
+  moreover with `a < b` have "\<not> countable {a<..<b}" 
+    by (simp add: uncountable_not_countable [symmetric] open_interval_uncountable) 
+  ultimately have "A \<inter> {a<..<b} \<noteq> {a<..<b}" by auto
+  hence "A \<inter> {a<..<b} \<subset> {a<..<b}" 
+    by (intro psubsetI, auto)
+  hence "\<exists>x. x \<in> {a<..<b} - A \<inter> {a<..<b}"
+    by (rule psubset_imp_ex_mem)
+  thus ?thesis by auto
+qed
+
+
+(* TODO: should this be a simp rule? *)
+lemma complex_of_real_indicator: "complex_of_real (indicator A x) = indicator A x"
+  by (simp split: split_indicator)
+
+(* TODO: should we have a library of facts like these? *)
+lemma integral_cos: "t \<noteq> 0 \<Longrightarrow> LBINT x=a..b. cos (t * x) = sin (t * b) / t - sin (t * a) / t"
+  apply (rule interval_integral_FTC_finite)
+  by (rule continuous_at_imp_continuous_on, auto intro!: derivative_eq_intros)
+
+lemma sin_x_le_x: "x \<ge> 0 \<Longrightarrow> sin x \<le> x"
+proof -
+  fix x :: real 
+  assume "x \<ge> 0"
+  let ?f = "\<lambda>x. x - sin x"
+  have "?f x \<ge> ?f 0"
+    apply (rule DERIV_nonneg_imp_nondecreasing [OF `x \<ge> 0`])
+    apply auto
+    apply (rule_tac x = "1 - cos x" in exI)
+    apply (auto intro!: derivative_intros)
+    by (simp add: field_simps)
+  thus "sin x \<le> x" by simp
+qed
+
+lemma sin_x_ge_neg_x: "x \<ge> 0 \<Longrightarrow> sin x \<ge> - x"
+proof -
+  fix x :: real 
+  assume "x \<ge> 0"
+  let ?f = "\<lambda>x. x + sin x"
+  have "?f x \<ge> ?f 0"
+    apply (rule DERIV_nonneg_imp_nondecreasing [OF `x \<ge> 0`])
+    apply auto
+    apply (rule_tac x = "1 + cos x" in exI)
+    apply (auto intro!: derivative_intros)
+    by (metis cos_ge_minus_one real_0_le_add_iff)
+  thus "sin x \<ge> -x" by simp
+qed
+
+lemma abs_sin_x_le_abs_x: "abs (sin x) \<le> abs x"
+  using sin_x_ge_neg_x [of x] sin_x_le_x [of x] sin_x_ge_neg_x [of "-x"] sin_x_le_x [of "-x"]
+  by (case_tac "x \<ge> 0", auto)
+
+
 (* 
   A real / complex version of Fubini's theorem.
 *)
@@ -144,8 +225,8 @@ proof -
     by auto
 qed
 
-lemma cmod_iexp [simp]: "cmod (iexp x) = 1"
-  by (simp add: cis_conv_exp [symmetric])
+(* TODO: what to do? this causes problems below, but elsewhere it is needed *)
+declare of_real_mult [simp del]
 
 lemma Levy_Inversion_aux2:
   fixes a b t :: real
@@ -170,91 +251,7 @@ proof -
   finally show ?thesis .
 qed
 
-(* TODO: restore these? *)
-declare of_real_mult [simp del]
-
-lemma (in real_distribution) cmod_char_le_1: "cmod (char M t) \<le> 1"
-  unfolding char_def
-  apply (rule order_trans)
-  apply (rule complex_lebesgue_integral_cmod)
-  apply auto
-  apply (rule complex_integrable_const_bound [of _ 1])
-by auto
-
-
-lemma complex_set_bounded_integrable_AE:
-  fixes f A B and M :: "'a measure"
-  assumes "A \<in> sets M" "AE x \<in> A in M. cmod (f x) \<le> B"
-   and "emeasure M A \<noteq> \<infinity>" and "f \<in> borel_measurable M"
-  shows "complex_set_integrable M A f"
-using assms unfolding complex_set_integrable_iff apply (intro conjI)
-  apply (rule integrable_bound [of _ "\<lambda>x. B * indicator A x"])
-  apply (rule integral_cmult, erule (1) integral_indicator)
-  apply auto
-  apply (rule AE_I [of _ _ "{}"], auto split: split_indicator)
-  apply (erule order_trans [OF abs_Re_le_cmod])
-  apply (rule integrable_bound [of _ "\<lambda>x. B * indicator A x"])
-  apply (rule integral_cmult, erule (1) integral_indicator)
-  apply auto
-  apply (rule AE_I [of _ _ "{}"], auto split: split_indicator)
-by (erule order_trans [OF abs_Im_le_cmod])
-
-lemma set_integral_reflect:
-  fixes S and f :: "real \<Rightarrow> real"
-  assumes "set_borel_measurable borel S f"
-  shows "(LBINT x : S. f x) = (LBINT x : {x. - x \<in> S}. f (- x))"
-
-  using assms apply (subst lebesgue_integral_real_affine [of "-1" _ 0], auto)
-by (rule integral_cong, auto split: split_indicator)
-
-(* TODO: can generalize to ereals *)
-lemma interval_integral_reflect:
-  fixes a b :: real and f
-  assumes "f \<in> borel_measurable borel"
-  shows "(LBINT x=a..b. f x) = (LBINT x=-b..-a. f (-x))"
-unfolding interval_lebesgue_integral_def
-  apply (case_tac "a \<le> b", auto)
-  apply (subst set_integral_reflect)
-  using assms apply auto
-  apply (rule integral_cong, auto simp add: einterval_def split: split_indicator)
-  apply (subst set_integral_reflect)
-  using assms apply auto
-by (rule integral_cong, auto simp add: einterval_def split: split_indicator)
-
-lemma complex_interval_integral_reflect:
-  fixes a b :: real and f
-  assumes "f \<in> borel_measurable borel"
-  shows "(CLBINT x=a..b. f x) = (CLBINT x=-b..-a. f (-x))"
-unfolding complex_interval_lebesgue_integral_eq
-  using assms by (subst interval_integral_reflect, auto)+
-
-lemma complex_integral_of_real: 
-  "(CLINT t | M. complex_of_real (f t)) = complex_of_real (LINT t | M. f t)"
-unfolding complex_lebesgue_integral_def
-  by (simp only: Re_complex_of_real Im_complex_of_real, simp)
-
-lemma complex_set_integral_of_real: 
-  "(CLINT t : S | M. complex_of_real (f t)) = complex_of_real (LINT t : S | M. f t)"
-unfolding complex_set_lebesgue_integral_eq
-  by (simp only: Re_complex_of_real Im_complex_of_real, simp)
-
-lemma complex_interval_integral_of_real: 
-  "(CLBINT t=a..b. complex_of_real (f t)) = complex_of_real (LBINT t=a..b. f t)"
-unfolding complex_interval_lebesgue_integral_eq
-  by (simp only: Re_complex_of_real Im_complex_of_real, simp)
-
-lemma borel_measurable_sgn [measurable (raw)]:
-  fixes f :: "real \<Rightarrow> real"
-  assumes "f \<in> borel_measurable M"
-  shows "(\<lambda>x. sgn (f x)) \<in> borel_measurable M"
-proof -
-  have "(\<lambda>x. sgn (f x)) = (\<lambda>x. indicator {0<..} (f x) - indicator {..<0} (f x))"
-    unfolding indicator_def by auto
-  thus ?thesis
-    apply (elim ssubst) 
-    using assms by measurable
-qed
-
+(* TODO: refactor! *)
 theorem Levy_Inversion:
   fixes M :: "real measure"
   and a b :: real
@@ -510,39 +507,6 @@ theorem Levy_Inversion:
     by (rule main3)
 qed
 
-lemma real_arbitrarily_close_eq:
-  fixes x y :: real
-  assumes "\<And>\<epsilon>. \<epsilon> > 0 \<Longrightarrow> abs (x - y) \<le> \<epsilon>"
-  shows "x = y"
-by (metis abs_le_zero_iff assms dense_ge eq_iff_diff_eq_0)
-
-(* TODO: holds more generally for finite real measures *)
-lemma (in real_distribution) cdf_diff_eq: 
-  assumes "x < y"
-  shows "cdf M y - cdf M x = measure M {x<..y}"
-proof -
-  from assms have *: "{..x} \<union> {x<..y} = {..y}" by auto
-  have "prob {..y} = prob {..x} + prob {x<..y}"
-    by (subst finite_measure_Union [symmetric], auto simp add: *)
-  thus ?thesis
-    unfolding cdf_def by auto
-qed
-
-lemma real_interval_avoid_countable_set:
-  fixes a b :: real and A :: "real set"
-  assumes "a < b" and "countable A"
-  shows "\<exists>x. x \<in> {a<..<b} \<and> x \<notin> A"
-proof -
-  from `countable A` have "countable (A \<inter> {a<..<b})" by auto
-  moreover with `a < b` have "\<not> countable {a<..<b}" 
-    by (simp add: uncountable_not_countable [symmetric] open_interval_uncountable) 
-  ultimately have "A \<inter> {a<..<b} \<noteq> {a<..<b}" by auto
-  hence "A \<inter> {a<..<b} \<subset> {a<..<b}" 
-    by (intro psubsetI, auto)
-  hence "\<exists>x. x \<in> {a<..<b} - A \<inter> {a<..<b}"
-    by (rule psubset_imp_ex_mem)
-  thus ?thesis by auto
-qed
  
 theorem Levy_uniqueness:
   fixes M1 M2 :: "real measure"
@@ -673,112 +637,6 @@ theorem levy_continuity1:
   apply (rule order_trans [OF abs_Re_le_cmod], subst cmod_iexp, rule order_refl)
   apply (rule weak_conv_imp_integral_bdd_continuous_conv [OF assms], auto)
 by (rule order_trans [OF abs_Im_le_cmod], subst cmod_iexp, rule order_refl)
-
-(* TODO: should this be a simp rule? *)
-lemma complex_of_real_indicator: "complex_of_real (indicator A x) = indicator A x"
-  by (simp split: split_indicator)
-
-(* TODO: should we have a library of facts like these? *)
-lemma integral_cos: "t \<noteq> 0 \<Longrightarrow> LBINT x=a..b. cos (t * x) = sin (t * b) / t - sin (t * a) / t"
-  apply (rule interval_integral_FTC_finite)
-  by (rule continuous_at_imp_continuous_on, auto intro!: derivative_eq_intros)
-
-lemma sin_x_le_x: "x \<ge> 0 \<Longrightarrow> sin x \<le> x"
-proof -
-  fix x :: real 
-  assume "x \<ge> 0"
-  let ?f = "\<lambda>x. x - sin x"
-  have "?f x \<ge> ?f 0"
-    apply (rule DERIV_nonneg_imp_nondecreasing [OF `x \<ge> 0`])
-    apply auto
-    apply (rule_tac x = "1 - cos x" in exI)
-    apply (auto intro!: derivative_intros)
-    by (simp add: field_simps)
-  thus "sin x \<le> x" by simp
-qed
-
-lemma sin_x_ge_neg_x: "x \<ge> 0 \<Longrightarrow> sin x \<ge> - x"
-proof -
-  fix x :: real 
-  assume "x \<ge> 0"
-  let ?f = "\<lambda>x. x + sin x"
-  have "?f x \<ge> ?f 0"
-    apply (rule DERIV_nonneg_imp_nondecreasing [OF `x \<ge> 0`])
-    apply auto
-    apply (rule_tac x = "1 + cos x" in exI)
-    apply (auto intro!: derivative_intros)
-    by (metis cos_ge_minus_one real_0_le_add_iff)
-  thus "sin x \<ge> -x" by simp
-qed
-
-lemma abs_sin_x_le_abs_x: "abs (sin x) \<le> abs x"
-  using sin_x_ge_neg_x [of x] sin_x_le_x [of x] sin_x_ge_neg_x [of "-x"] sin_x_le_x [of "-x"]
-  by (case_tac "x \<ge> 0", auto)
-
-lemma complex_integral_dominated_convergence:
-  assumes u[measurable]: "\<And>i. complex_integrable M (u i)" and 
-    bound: "\<And>j. AE x in M. cmod (u j x) \<le> w x"
-  and w[measurable]: "integrable M w"
-  and u': "AE x in M. (\<lambda>i. u i x) ----> u' x"
-  and [measurable]: "u' \<in> borel_measurable M"
-  shows "complex_integrable M u'"
-  and "(\<lambda>i. (CLINT x | M. cmod (u i x - u' x))) ----> 0" (is "?lim_diff")
-  and "(\<lambda>i. (CLINT x | M. u i x)) ----> (CLINT x | M. u' x)" (is ?lim)
-proof -
-  from u have u_re: "\<And>i. integrable M (RE (u i))" by (simp add: complex_integrable_def)
-  from u have u_im: "\<And>i. integrable M (IM (u i))" by (simp add: complex_integrable_def)
-  have bound_re: "\<And>i. AE x in M. \<bar>RE (u i) x\<bar> \<le> w x"
-    by (rule AE_mp, rule bound, rule AE_I2, rule impI, erule order_trans [OF abs_Re_le_cmod])
-  have bound_im: "\<And>i. AE x in M. \<bar>IM (u i) x\<bar> \<le> w x"
-    by (rule AE_mp, rule bound, rule AE_I2, rule impI, erule order_trans [OF abs_Im_le_cmod])
-  have u'_re: "AE x in M. (\<lambda>i. Re (u i x)) ----> Re (u' x)"
-    by (rule AE_mp [OF u'], rule AE_I2, auto intro: tendsto_Re)
-  have u'_im: "AE x in M. (\<lambda>i. Im (u i x)) ----> Im (u' x)"
-    by (rule AE_mp [OF u'], rule AE_I2, auto intro: tendsto_Im)
-  have u'm_re: "RE u' \<in> borel_measurable M" by auto
-  have u'm_im: "IM u' \<in> borel_measurable M" by auto
-  have diff_bound: "\<And>i. AE x in M. \<bar>cmod (u i x - u' x)\<bar> \<le> w x + cmod (u' x)"
-    apply (rule AE_mp [OF bound], rule AE_I2, clarsimp)
-    apply (rule order_trans [OF norm_triangle_ineq4])
-    by (erule add_right_mono)
-  show *: "complex_integrable M u'"
-    unfolding complex_integrable_def apply (rule conjI)
-    apply (rule integral_dominated_convergence [OF u_re bound_re w u'_re u'm_re])
-    by (rule integral_dominated_convergence [OF u_im bound_im w u'_im u'm_im])
-  show "?lim_diff"
-    unfolding complex_lebesgue_integral_def apply (rule tendsto_add_zero)
-    apply (subgoal_tac "0 = complex_of_real 0")
-    apply (erule ssubst, rule tendsto_compose [OF tendsto_of_real], auto intro: tendsto_ident_at)
-    apply (subgoal_tac "0 = LINT x|M. 0")
-    apply (erule ssubst)
-    apply (rule integral_dominated_convergence [OF _ diff_bound], auto)
-    apply (rule complex_integrable_cmod, rule complex_integral_diff [OF u *])
-    apply (rule integral_add [OF w complex_integrable_cmod [OF *]])
-    apply (rule AE_mp [OF u'], rule AE_I2, rule impI)
-    apply (rule tendsto_norm_zero)
-    by (subst (asm) Lim_null)
-  show "?lim"
-    unfolding complex_lebesgue_integral_def apply (rule tendsto_add)
-    apply (rule tendsto_compose [OF tendsto_of_real], auto intro: tendsto_ident_at)
-    apply (rule integral_dominated_convergence [OF u_re bound_re w u'_re u'm_re])
-    apply (rule tendsto_mult_left)
-    apply (rule tendsto_compose [OF tendsto_of_real], auto intro: tendsto_ident_at)
-    by (rule integral_dominated_convergence [OF u_im bound_im w u'_im u'm_im])
-qed
-
-lemma (in real_distribution) isCont_char: "isCont (char M) t"
-  apply (simp add: isCont_def)
-  apply (rule Lim_within_LIMSEQ, auto)
-  unfolding char_def apply (rule complex_integral_dominated_convergence)
-  prefer 2 apply (rule AE_I2, subst cmod_iexp, rule order_refl)
-  apply (rule complex_integrable_const_bound [where B = 1], rule AE_I2, 
-    subst cmod_iexp, rule order_refl)
-  apply (auto intro!: AE_I2)
-  apply (rule isCont_tendsto_compose [OF isCont_exp])
-by (rule tendsto_mult_left, rule tendsto_of_real, rule tendsto_mult_right)
-
-lemma (in real_distribution) char_measurable [measurable]: "char M \<in> borel_measurable borel"
-  by (auto intro!: borel_measurable_continuous_on1 continuous_at_imp_continuous_on isCont_char)
 
 theorem levy_continuity:
   fixes

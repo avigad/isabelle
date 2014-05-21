@@ -11,7 +11,7 @@ imports Distribution_Functions Library_Misc Uncountable
 
 begin
 
-(* weak convergence of distribution functions *)
+(* weak convergence of functions *)
 definition
   weak_conv :: "(nat \<Rightarrow> (real \<Rightarrow> real)) \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> bool"
 where
@@ -23,10 +23,37 @@ definition
 where
   "weak_conv_m M_seq M \<equiv> weak_conv (\<lambda>n. cdf (M_seq n)) (cdf M)"
 
+(* TODO: we never use this; delete? *)
 (* weak convergence of random variables *)
 abbreviation (in prob_space)
   "weak_conv_r X_seq X \<equiv> weak_conv_m (\<lambda>n. distr M borel (X_seq n)) (distr M borel X)" 
   
+
+(* 
+  general stuff - move elsewhere 
+*)
+
+lemma measure_restrict_space:
+    "\<Omega> \<in> sets M \<Longrightarrow> A \<subseteq> \<Omega> \<Longrightarrow> measure (restrict_space M \<Omega>) A = measure M A"
+  unfolding measure_def by (subst emeasure_restrict_space, auto)
+
+lemma lebesgue_measure_interval: "a \<le> b \<Longrightarrow> measure lborel {a..b} = b - a"
+ unfolding measure_def by auto
+
+lemma distr_cong_AE:
+  assumes 1: "M = K" and "sets N = sets L" and 
+    2: "(AE x in M. f x = g x)" and "f \<in> measurable M N" and "g \<in> measurable K L"
+  shows "distr M N f = distr K L g"
+using assms sets_eq_imp_space_eq[of N L] apply (simp add: distr_def)
+  apply (rule measure_of_eq)
+  apply (rule sets.space_closed)
+  apply (rule emeasure_eq_AE)
+  apply (simp only: 1 [symmetric])
+  apply (rule AE_mp [OF 2], auto)
+  apply (simp only: 1 [symmetric])
+  apply (erule measurable_sets, simp add: sets.sigma_sets_eq)
+by (erule measurable_sets, simp add: sets.sigma_sets_eq)
+
 definition mono_on :: "('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a set \<Rightarrow> bool" where
   "mono_on f A = (\<forall>x\<in>A. \<forall>y\<in>A. x \<le> y \<longrightarrow> f x \<le> f y)"
 
@@ -73,27 +100,6 @@ proof -
   ultimately show "{w \<in> A. a \<le> f w} \<in> op \<inter> A ` sets borel" by auto
 qed
 
-lemma measure_restrict_space:
-    "\<Omega> \<in> sets M \<Longrightarrow> A \<subseteq> \<Omega> \<Longrightarrow> measure (restrict_space M \<Omega>) A = measure M A"
-  unfolding measure_def by (subst emeasure_restrict_space, auto)
-
-lemma lebesgue_measure_interval: "a \<le> b \<Longrightarrow> measure lborel {a..b} = b - a"
- unfolding measure_def by auto
-
-lemma distr_cong_AE:
-  assumes 1: "M = K" and "sets N = sets L" and 
-    2: "(AE x in M. f x = g x)" and "f \<in> measurable M N" and "g \<in> measurable K L"
-  shows "distr M N f = distr K L g"
-using assms sets_eq_imp_space_eq[of N L] apply (simp add: distr_def)
-  apply (rule measure_of_eq)
-  apply (rule sets.space_closed)
-  apply (rule emeasure_eq_AE)
-  apply (simp only: 1 [symmetric])
-  apply (rule AE_mp [OF 2], auto)
-  apply (simp only: 1 [symmetric])
-  apply (erule measurable_sets, simp add: sets.sigma_sets_eq)
-by (erule measurable_sets, simp add: sets.sigma_sets_eq)
-
 (* TODO: turn this into an iff by weakening the hypothesis *)
 (* compare to continuous_at_right_real_mono *)
 lemma continuous_at_right_real_mono_on_open:
@@ -123,6 +129,7 @@ proof (auto simp add: continuous_within_eps_delta dist_real_def greaterThan_def)
 
 qed
 
+(* TODO: make mono_on primitive, and define mono f to be an abbreviation for mono_on f UNIV? *)
 lemma "mono f = mono_on f UNIV"
   unfolding mono_def mono_on_def by auto
 
@@ -270,6 +277,179 @@ proof (safe intro!: assms)
     using measurable_X[THEN sets.sets_into_space]
     by (force split: split_if_asm simp: assms)
   finally show "g -` A \<inter> space M \<in> sets M" .
+qed
+
+lemma isCont_borel:
+  fixes f :: "real \<Rightarrow> real"
+  assumes "f \<in> borel_measurable borel"
+  shows "{x. isCont f x} \<in> sets borel"
+proof -
+  {
+    fix x
+    have "isCont f x = (\<forall>(i::nat). \<exists>(j::nat). \<forall>y z. 
+      abs(x - y) < inverse(real (j + 1)) \<and> abs(x - z) < inverse(real (j + 1)) \<longrightarrow>
+        abs(f(y) - f(z)) \<le> inverse (real (i + 1)))"
+      apply (subst continuous_at_real_range, auto)
+      apply (drule_tac x = "inverse(2 * real(Suc i))" in spec, auto)
+      apply (frule reals_Archimedean, auto)
+      apply (rule_tac x = n in exI, auto)
+      apply (frule_tac x = y in spec)
+      apply (drule_tac x = z in spec, auto)
+      (* gee, it would be nice if this could be done automatically *)
+      apply (subgoal_tac "f y - f z = f y - f x + (f x - f z)")
+      apply (erule ssubst)
+      apply (rule order_trans)
+      apply (rule abs_triangle_ineq)
+      apply (auto simp add: abs_minus_commute)
+      apply (frule reals_Archimedean, auto)
+      apply (drule_tac x = n in spec, auto)
+      apply (rule_tac x = "inverse (real (Suc j))" in exI, auto)
+      apply (drule_tac x = x' in spec)
+      by (drule_tac x = x in spec, auto)
+  } note isCont_iff = this
+  {
+    fix i j :: nat
+    have "open {x. (\<exists>y. \<bar>x - y\<bar> < inverse (real (Suc i)) \<and> 
+        (\<exists>z. \<bar>x - z\<bar> < inverse (real (Suc i)) \<and> inverse (real (Suc j)) < \<bar>f y - f z\<bar>))}"
+    proof (auto simp add: not_le open_real)
+      fix x y z 
+      assume 1: "\<bar>x - y\<bar> < inverse (real (Suc i))" and 2: "\<bar>x - z\<bar> < inverse (real (Suc i))"
+        and 3: "inverse (real (Suc j)) < \<bar>f y - f z\<bar>"
+      hence "\<exists>e > 0. abs(x - y) + e \<le> inverse (real (Suc i)) \<and> 
+                     abs(x - z) + e \<le> inverse (real (Suc i))"
+        apply (rule_tac x = "min (inverse (real (Suc i)) - abs(x - y)) 
+             (inverse (real (Suc i)) - abs(x - z))" in exI)
+        by (auto split: split_min)
+      then obtain e where 4: "e > 0" and 5: "abs(x - y) + e \<le> inverse (real (Suc i))"
+          and 6: "abs(x - z) + e \<le> inverse (real (Suc i))" by auto
+      have "e > 0 \<and> (\<forall>x'. \<bar>x' - x\<bar> < e \<longrightarrow>
+               (\<exists>y. \<bar>x' - y\<bar> < inverse (real (Suc i)) \<and>
+               (\<exists>z. \<bar>x' - z\<bar> < inverse (real (Suc i)) \<and> inverse (real (Suc j)) < \<bar>f y - f z\<bar>)))"
+           (is "?P e")
+        using 1 2 3 4 5 6 apply auto
+        apply (rule_tac x = y in exI, auto)
+        by (rule_tac x = z in exI, auto)
+      thus "\<exists>e. ?P e" ..
+    qed
+  } note * = this
+  show ?thesis
+    apply (subst isCont_iff)
+    apply (subst Collect_all_eq)
+    apply (rule countable_Un_Int, auto)
+    apply (subst Collect_ex_eq)
+    apply (rule countable_Un_Int, auto)
+    apply (rule borel_closed)
+    apply (subst closed_def)
+    apply (subst Compl_eq, simp add: not_le)
+    by (rule *)
+qed
+
+lemma isCont_indicator: 
+  fixes x :: "'a::{t2_space}"
+  shows "isCont (indicator A :: 'a \<Rightarrow> real) x = (x \<notin> frontier A)"
+proof -
+  have *: "!! A x. (indicator A x > (0 :: real)) = (x \<in> A)"
+    by (case_tac "x : A", auto)
+  have **: "!! A x. (indicator A x < (1 :: real)) = (x \<notin> A)"
+    by (case_tac "x : A", auto)
+  show ?thesis
+    apply (auto simp add: frontier_def)
+    (* calling auto here produces a strange error message *)
+    apply (subst (asm) continuous_at_open)
+    apply (case_tac "x \<in> A", simp_all)
+    apply (drule_tac x = "{0<..}" in spec, clarsimp simp add: *)
+    apply (erule interiorI, assumption, force)
+    apply (drule_tac x = "{..<1}" in spec, clarsimp simp add: **)
+    apply (subst (asm) closure_interior, auto, erule notE)
+    apply (erule interiorI, auto)
+    apply (subst (asm) closure_interior, simp)
+    apply (rule continuous_on_interior)
+    prefer 2 apply assumption
+    apply (rule continuous_on_eq [where f = "\<lambda>x. 0"], auto intro: continuous_on_const)
+    apply (rule continuous_on_interior)
+    prefer 2 apply assumption
+    by (rule continuous_on_eq [where f = "\<lambda>x. 1"], auto intro: continuous_on_const)
+qed
+
+
+(*
+
+  Skorohod's theorem
+
+*)
+
+(* TODO: should this definition be eliminated? **)
+definition rcont_inc :: "(real \<Rightarrow> real) \<Rightarrow> bool"
+  where "rcont_inc f \<equiv> (\<forall>x. continuous (at_right x) f) \<and> mono f"
+
+lemma bdd_rcont_inc_pseudoinverse:
+  fixes F :: "real \<Rightarrow> real"
+  fixes M a b :: real
+  assumes "a < b" and rcont_inc: "rcont_inc F"
+    and F_at_bot: "(F ---> a) at_bot" and F_at_top: "(F ---> b) at_top"
+  shows "\<forall>\<omega>\<in>{a<..<b}. \<forall>x. (\<omega> \<le> F x) = (Inf {x. \<omega> \<le> F x} \<le> x)"
+proof safe
+  fix \<omega> x :: real assume interval: "\<omega> \<in> {a<..<b}"
+  def Y \<equiv> "\<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
+  {
+    assume "\<omega> \<le> F x"
+    hence "x \<in> {x. \<omega> \<le> F x}" using interval by auto
+    thus "Y \<omega> \<le> x" unfolding Y_def
+      apply (rule cInf_lower)
+      proof (unfold bdd_below_def Ball_def, auto)
+        from F_at_bot have "\<exists>y. F y < \<omega>" unfolding filterlim_def le_filter_def
+          apply (subst (asm) eventually_filtermap)
+          apply (subst (asm) eventually_at_bot_linorder)
+          apply (drule_tac x = "\<lambda>z. z < \<omega>" in allE[where R = "\<exists>y. F y < \<omega>"], auto)
+          using interval by (metis F_at_bot eventually_at_bot_linorder greaterThanLessThan_iff order_refl order_tendsto_iff) 
+      then guess y .. note y = this
+      hence "\<forall>x. \<omega> \<le> F x \<longrightarrow> y \<le> x" using rcont_inc unfolding rcont_inc_def mono_def
+        by (metis dual_order.irrefl le_cases le_less_trans)
+      thus "\<exists>m. \<forall>x. \<omega> \<le> F x \<longrightarrow> m \<le> x" by auto
+    qed
+  }
+  {
+    assume "Y \<omega> \<le> x"
+    hence x_less: "\<And>y. x < y \<Longrightarrow> \<omega> \<le> F y"
+    proof (unfold Y_def)
+      fix y assume x: "Inf {x. \<omega> \<le> F x} \<le> x" and y: "x < y"
+      show "\<omega> \<le> F y"
+      proof (rule ccontr)
+        assume "\<not> \<omega> \<le> F y"
+        hence "F y < \<omega>" by simp
+        hence le: "\<And>z. z \<le> y \<Longrightarrow> F z < \<omega>" using rcont_inc le_less_trans unfolding rcont_inc_def mono_def by metis
+        have "y \<le> Inf {x. \<omega> \<le> F x}"
+          apply (rule cInf_greatest)
+          prefer 2 using le
+          apply (metis (lifting) Int_Collect inf_sup_aci(1) le_cases max.semilattice_strict_iff_order not_less_iff_gr_or_eq)
+          apply (subgoal_tac "(\<lambda>k::nat. F (real k)) ----> b")
+          apply (drule LIMSEQ_D[of _ _ "b - \<omega>"])
+          using interval(1) apply (metis diff_less_iff(1) greaterThanLessThan_iff)
+          prefer 2
+          using F_at_top rcont_inc tendsto_at_topI_sequentially assms unfolding rcont_inc_def mono_def
+            apply (metis filterlim_compose filterlim_real_sequentially)      
+          proof -
+            assume 1: "\<exists>no::nat. \<forall>k\<ge>no. norm (F (real k) - b) < b - \<omega>"
+            then guess no .. note no = this
+            hence "norm (F (real no) - b) < b - \<omega>" by simp
+            hence "\<omega> \<le> F (real no)" by auto
+            thus "{x. \<omega> \<le> F x} \<noteq> {}" by auto
+          qed
+        hence "y \<le> x" using x by simp
+        thus False using y by simp
+      qed
+    qed
+    show "\<omega> \<le> F x"
+    proof (rule field_le_epsilon)
+      fix e::real assume e: "0 < e"
+      hence "\<exists>\<delta>>0. F (x + \<delta>) - F x < e"
+        using continuous_at_right_real_increasing rcont_inc unfolding rcont_inc_def mono_def by auto
+      then guess \<delta> .. note \<delta> = this
+      have \<delta>: "\<delta> > 0" "F (x + \<delta>) - F x < e" using \<delta> by simp_all
+      hence "\<omega> \<le> F (x + \<delta>)" using x_less \<delta> by auto
+      thus "\<omega> \<le> F x + e" using \<delta>(2) by simp
+    qed
+  }
 qed
 
 (* state using obtains? *)
@@ -566,70 +746,9 @@ proof -
   thus ?thesis by metis
 qed
 
-lemma isCont_borel:
-  fixes f :: "real \<Rightarrow> real"
-  assumes "f \<in> borel_measurable borel"
-  shows "{x. isCont f x} \<in> sets borel"
-proof -
-  {
-    fix x
-    have "isCont f x = (\<forall>(i::nat). \<exists>(j::nat). \<forall>y z. 
-      abs(x - y) < inverse(real (j + 1)) \<and> abs(x - z) < inverse(real (j + 1)) \<longrightarrow>
-        abs(f(y) - f(z)) \<le> inverse (real (i + 1)))"
-      apply (subst continuous_at_real_range, auto)
-      apply (drule_tac x = "inverse(2 * real(Suc i))" in spec, auto)
-      apply (frule reals_Archimedean, auto)
-      apply (rule_tac x = n in exI, auto)
-      apply (frule_tac x = y in spec)
-      apply (drule_tac x = z in spec, auto)
-      (* gee, it would be nice if this could be done automatically *)
-      apply (subgoal_tac "f y - f z = f y - f x + (f x - f z)")
-      apply (erule ssubst)
-      apply (rule order_trans)
-      apply (rule abs_triangle_ineq)
-      apply (auto simp add: abs_minus_commute)
-      apply (frule reals_Archimedean, auto)
-      apply (drule_tac x = n in spec, auto)
-      apply (rule_tac x = "inverse (real (Suc j))" in exI, auto)
-      apply (drule_tac x = x' in spec)
-      by (drule_tac x = x in spec, auto)
-  } note isCont_iff = this
-  {
-    fix i j :: nat
-    have "open {x. (\<exists>y. \<bar>x - y\<bar> < inverse (real (Suc i)) \<and> 
-        (\<exists>z. \<bar>x - z\<bar> < inverse (real (Suc i)) \<and> inverse (real (Suc j)) < \<bar>f y - f z\<bar>))}"
-    proof (auto simp add: not_le open_real)
-      fix x y z 
-      assume 1: "\<bar>x - y\<bar> < inverse (real (Suc i))" and 2: "\<bar>x - z\<bar> < inverse (real (Suc i))"
-        and 3: "inverse (real (Suc j)) < \<bar>f y - f z\<bar>"
-      hence "\<exists>e > 0. abs(x - y) + e \<le> inverse (real (Suc i)) \<and> 
-                     abs(x - z) + e \<le> inverse (real (Suc i))"
-        apply (rule_tac x = "min (inverse (real (Suc i)) - abs(x - y)) 
-             (inverse (real (Suc i)) - abs(x - z))" in exI)
-        by (auto split: split_min)
-      then obtain e where 4: "e > 0" and 5: "abs(x - y) + e \<le> inverse (real (Suc i))"
-          and 6: "abs(x - z) + e \<le> inverse (real (Suc i))" by auto
-      have "e > 0 \<and> (\<forall>x'. \<bar>x' - x\<bar> < e \<longrightarrow>
-               (\<exists>y. \<bar>x' - y\<bar> < inverse (real (Suc i)) \<and>
-               (\<exists>z. \<bar>x' - z\<bar> < inverse (real (Suc i)) \<and> inverse (real (Suc j)) < \<bar>f y - f z\<bar>)))"
-           (is "?P e")
-        using 1 2 3 4 5 6 apply auto
-        apply (rule_tac x = y in exI, auto)
-        by (rule_tac x = z in exI, auto)
-      thus "\<exists>e. ?P e" ..
-    qed
-  } note * = this
-  show ?thesis
-    apply (subst isCont_iff)
-    apply (subst Collect_all_eq)
-    apply (rule countable_Un_Int, auto)
-    apply (subst Collect_ex_eq)
-    apply (rule countable_Un_Int, auto)
-    apply (rule borel_closed)
-    apply (subst closed_def)
-    apply (subst Compl_eq, simp add: not_le)
-    by (rule *)
-qed
+(*
+  The Portmanteau theorem, that is, the equivalence of various definitions of weak convergence.
+*)
 
 theorem weak_conv_imp_bdd_ae_continuous_conv:
   fixes 
@@ -708,33 +827,6 @@ theorem weak_conv_imp_integral_bdd_continuous_conv:
   using assms apply (intro weak_conv_imp_bdd_ae_continuous_conv, auto)
   apply (rule borel_measurable_continuous_on1)
 by (rule continuous_at_imp_continuous_on, auto)
-
-lemma isCont_indicator: 
-  fixes x :: "'a::{t2_space}"
-  shows "isCont (indicator A :: 'a \<Rightarrow> real) x = (x \<notin> frontier A)"
-proof -
-  have *: "!! A x. (indicator A x > (0 :: real)) = (x \<in> A)"
-    by (case_tac "x : A", auto)
-  have **: "!! A x. (indicator A x < (1 :: real)) = (x \<notin> A)"
-    by (case_tac "x : A", auto)
-  show ?thesis
-    apply (auto simp add: frontier_def)
-    (* calling auto here produces a strange error message *)
-    apply (subst (asm) continuous_at_open)
-    apply (case_tac "x \<in> A", simp_all)
-    apply (drule_tac x = "{0<..}" in spec, clarsimp simp add: *)
-    apply (erule interiorI, assumption, force)
-    apply (drule_tac x = "{..<1}" in spec, clarsimp simp add: **)
-    apply (subst (asm) closure_interior, auto, erule notE)
-    apply (erule interiorI, auto)
-    apply (subst (asm) closure_interior, simp)
-    apply (rule continuous_on_interior)
-    prefer 2 apply assumption
-    apply (rule continuous_on_eq [where f = "\<lambda>x. 0"], auto intro: continuous_on_const)
-    apply (rule continuous_on_interior)
-    prefer 2 apply assumption
-    by (rule continuous_on_eq [where f = "\<lambda>x. 1"], auto intro: continuous_on_const)
-qed
 
 theorem weak_conv_imp_continuity_set_conv:
   fixes 

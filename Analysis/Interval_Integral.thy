@@ -369,6 +369,20 @@ lemma interval_lebesgue_integral_gt_eq:
   shows "interval_lebesgue_integral M a b f = -(LINT x : einterval b a | M. f x)"
 using assms by (auto simp add: interval_lebesgue_integral_def less_imp_le einterval_def)
 
+(* TODO: can generalize to ereals *)
+lemma interval_integral_reflect:
+  fixes a b :: real and f
+  assumes "f \<in> borel_measurable borel"
+  shows "(LBINT x=a..b. f x) = (LBINT x=-b..-a. f (-x))"
+unfolding interval_lebesgue_integral_def
+  apply (case_tac "a \<le> b", auto)
+  apply (subst set_integral_reflect)
+  using assms apply auto
+  apply (rule integral_cong, auto simp add: einterval_def split: split_indicator)
+  apply (subst set_integral_reflect)
+  using assms apply auto
+by (rule integral_cong, auto simp add: einterval_def split: split_indicator)
+
 (*
     Basic properties of integration over an interval wrt lebesgue measure.
 *)

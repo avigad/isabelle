@@ -133,6 +133,14 @@ lemma set_integral_diff [simp, intro]:
     (LINT x:A|M. f x) - (LINT x:A|M. g x)"
 using assms by (auto simp add: field_simps)
 
+lemma set_integral_reflect:
+  fixes S and f :: "real \<Rightarrow> real"
+  assumes "set_borel_measurable borel S f"
+  shows "(LBINT x : S. f x) = (LBINT x : {x. - x \<in> S}. f (- x))"
+
+  using assms apply (subst lebesgue_integral_real_affine [of "-1" _ 0], auto)
+by (rule integral_cong, auto split: split_indicator)
+
 (* question: why do we have this for negation, but multiplication by a constant
    requires an integrability assumption? *)
 lemma set_integral_uminus: "LINT x:A|M. - f x = - (LINT x:A|M. f x)"
