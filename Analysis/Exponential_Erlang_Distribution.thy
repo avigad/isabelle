@@ -120,25 +120,25 @@ proof -
   have F0: "- (?F 0) = 1" by (induction k, auto)
 
   have "(\<integral>\<^sup>+ x. ereal (x^k * exp (-x)/ real (fact k)) * indicator {0..} x \<partial>lborel) = ereal (0 - ?F 0)"
-    apply (rule positive_integral_FTC_atLeast)
+    apply (rule nn_integral_FTC_atLeast)
     using L deriv by (auto simp: field_simps mult_nonneg_nonneg)
   then have I: "(\<integral>\<^sup>+ x. ereal (x^k * exp (-x)/ real (fact k)) * indicator {0..} x \<partial>lborel) = ereal 1" 
     using F0 by (simp add: one_ereal_def)
   show "(\<integral>\<^sup>+ x. ereal (x^k * exp (-x)) * indicator {0..} x \<partial>lborel) = fact k"
     apply (subst ereal_mult1_right[of "fact k", symmetric])
-    by (auto intro!: positive_integral_cong split: split_indicator simp: positive_integral_cmult[symmetric] I[symmetric])
+    by (auto intro!: nn_integral_cong split: split_indicator simp: nn_integral_cmult[symmetric] I[symmetric])
      
   assume "0 \<le> a"
   have "(\<integral>\<^sup>+x. ereal (?f x) * indicator {0..a} x \<partial>lborel) = ereal (?F a) - ereal (?F 0)"
     using `0 \<le> a` deriv
-    apply (intro positive_integral_FTC_atLeastAtMost)
+    apply (intro nn_integral_FTC_atLeastAtMost)
     by (auto simp:field_simps mult_nonneg_nonneg)
   also have "... = ereal (?F a + 1)" using F0 by auto
   finally have **: "(\<integral>\<^sup>+x. ereal (?f x) * indicator {0..a} x \<partial>lborel) = ereal (?F a + 1)" .
     
   show "(\<integral>\<^sup>+ x. ereal (x ^ k * exp (- x)) * indicator {0..a} x \<partial>lborel) = ereal (?F a + 1) * ereal (real (fact k))"
     apply (subst **[symmetric])
-    by (auto intro!: positive_integral_cong split: split_indicator simp: positive_integral_multc[symmetric])
+    by (auto intro!: nn_integral_cong split: split_indicator simp: nn_integral_multc[symmetric])
 qed
 
 lemma
@@ -153,23 +153,23 @@ proof -
 
   have "emeasure ?D (space ?D) = (\<integral>\<^sup>+ x. ereal (?f x) * indicator {0..} x \<partial>lborel)"
     apply (auto simp: emeasure_density erlang_density_def split: split_indicator)
-    apply (intro positive_integral_cong)
+    apply (intro nn_integral_cong)
     by(auto split: split_indicator)
   also have "... = (1 / real (fact k)) * \<integral>\<^sup>+ x. ereal (x ^ k * exp (-x)) * indicator {0..} x \<partial>lborel"
-    apply (subst(2) positive_integral_real_affine[where t = 0 and c = "l"])
-    by (auto intro!: positive_integral_cong split: split_indicator
-      simp: zero_le_mult_iff zero_le_divide_iff positive_integral_cmult[symmetric] power_mult_distrib)
+    apply (subst(2) nn_integral_real_affine[where t = 0 and c = "l"])
+    by (auto intro!: nn_integral_cong split: split_indicator
+      simp: zero_le_mult_iff zero_le_divide_iff nn_integral_cmult[symmetric] power_mult_distrib)
   also have "... = 1" by (auto simp: one_ereal_def integral_for_erlang)
   finally show "prob_space ?D" by rule
 
   assume [arith]: "0 \<le> a"
   have "emeasure ?D {..a} = (\<integral>\<^sup>+x. ereal (?f x) * indicator {0..a} x \<partial>lborel)"
-    by (auto simp: emeasure_density erlang_density_def intro!: positive_integral_cong split:split_indicator)
+    by (auto simp: emeasure_density erlang_density_def intro!: nn_integral_cong split:split_indicator)
   also have "(\<integral>\<^sup>+x. ereal (?f x) * indicator {0..a} x \<partial>lborel) = 
     (1 / real (fact k)) * \<integral>\<^sup>+ x. ereal (x ^ k * exp (-x)) * indicator {0..(l * a)} x \<partial>lborel"
-    apply (subst(2) positive_integral_real_affine[where t = 0 and c = "l"])
-    by (auto intro!: positive_integral_cong split: split_indicator
-      simp: zero_le_mult_iff zero_le_divide_iff positive_integral_cmult[symmetric] power_mult_distrib)
+    apply (subst(2) nn_integral_real_affine[where t = 0 and c = "l"])
+    by (auto intro!: nn_integral_cong split: split_indicator
+      simp: zero_le_mult_iff zero_le_divide_iff nn_integral_cmult[symmetric] power_mult_distrib)
   also have "... = ereal ( 1 + ?F a)" by (auto simp: mult_nonneg_nonneg integral_for_erlang)
   finally show " emeasure ?D {.. a} = erlang_CDF k l a" 
     unfolding erlang_CDF_def by simp  
@@ -284,9 +284,9 @@ proof -
   note mult_nonneg_nonneg[simp]
   have "(\<integral>\<^sup>+x. erlang_density k l x * x ^ i \<partial>lborel) =
      (1 / (l ^ i * fact k)) * \<integral>\<^sup>+x. ereal (x ^ (k + i) * exp (- x)) * indicator {0..} x \<partial>lborel"
-    apply (subst(2) positive_integral_real_affine[where t=0 and c = l])
-    by  (auto intro!: positive_integral_cong split: split_indicator simp: zero_le_mult_iff 
-        power_mult_distrib positive_integral_cmult[symmetric] power_add erlang_density_def)
+    apply (subst(2) nn_integral_real_affine[where t=0 and c = l])
+    by  (auto intro!: nn_integral_cong split: split_indicator simp: zero_le_mult_iff 
+        power_mult_distrib nn_integral_cmult[symmetric] power_add erlang_density_def)
   also have "... = (1 / (l ^ i * fact k)) * (fact (k + i))"
     by (subst integral_for_erlang, auto)
   finally show *: "(\<integral>\<^sup>+ x. ereal (erlang_density k l x * x ^ i) \<partial>lborel) = 
@@ -295,7 +295,7 @@ proof -
 
   show "integrable M (\<lambda>x. X x ^ i)"
     apply (subst distributed_integrable[OF D, of "(\<lambda>x. x ^ i)", symmetric])
-    apply (auto intro!: integrable_if_positive_integral *)
+    apply (auto intro!: integrable_if_nn_integral *)
     unfolding erlang_density_def
     by (auto simp:divide_nonneg_nonneg) 
 qed
@@ -305,7 +305,7 @@ lemma (in prob_space) erlang_distributed_expectation:
   assumes D: "distributed M lborel X (erlang_density k l)"
   shows "expectation X = (k + 1) / l"
   apply (subst distributed_integral[OF D, of "\<lambda>x. x", symmetric], simp)
-  apply (auto intro!: lebesgue_integral_eq_positive_integral)
+  apply (auto intro!: lebesgue_integral_eq_nn_integral)
   apply (subst(8) power_one_right[symmetric])
   apply (subst erlang_ith_moment[OF assms, of 1])
   unfolding erlang_density_def
@@ -321,7 +321,7 @@ proof(subst variance_eq)
 
   have **: "expectation (\<lambda>x. (X x)\<^sup>2) = int (k + 1) * (k + 2) / l\<^sup>2"
     apply (subst distributed_integral[OF D, of "\<lambda>x. x\<^sup>2", symmetric], simp)
-    apply (auto intro!: lebesgue_integral_eq_positive_integral simp: erlang_ith_moment[OF assms, of 2])  
+    apply (auto intro!: lebesgue_integral_eq_nn_integral simp: erlang_ith_moment[OF assms, of 2])  
     unfolding erlang_density_def
     by (auto simp:field_simps transfer_int_nat_factorial mult_nonneg_nonneg divide_nonneg_nonneg) 
   
@@ -346,17 +346,17 @@ lemma (in prob_space)
 proof -
   have [arith]: "0 < l" by (rule exponential_distributed_params[OF D])
   have "(\<integral>\<^sup>+ x. exponential_density l x * x ^ k \<partial>lborel) = (1 / l ^ k) * \<integral>\<^sup>+ x. ereal (x ^ k * exp (- x)) * indicator{0..} x \<partial>lborel"
-  apply(subst positive_integral_real_affine[where c = "1 / l" and t = 0])
+  apply(subst nn_integral_real_affine[where c = "1 / l" and t = 0])
   unfolding exponential_density_def
-  by (auto intro!: positive_integral_cong split:split_indicator
-    simp: positive_integral_cmult[symmetric] mult_nonneg_nonneg power_divide divide_less_0_iff)
+  by (auto intro!: nn_integral_cong split:split_indicator
+    simp: nn_integral_cmult[symmetric] mult_nonneg_nonneg power_divide divide_less_0_iff)
   
   also have "... = (fact k) / l ^ k" by (auto simp: integral_for_erlang)
   finally show **: "(\<integral>\<^sup>+ x. exponential_density l x * x ^ k \<partial>lborel) =..." .
 
   show "integrable M (\<lambda>x. X x ^ k)"
     apply (subst distributed_integrable[OF D, of "(\<lambda>x. x^k)", symmetric])
-    apply (auto intro!: integrable_if_positive_integral **)
+    apply (auto intro!: integrable_if_nn_integral **)
     by (auto simp:mult_nonneg_nonneg exponential_density_def)
 qed
 
@@ -369,7 +369,7 @@ proof (subst variance_eq)
 
   have "expectation (\<lambda>x. (X x)\<^sup>2) = 2 / l\<^sup>2"
    apply (subst distributed_integral[OF D, of "(\<lambda>x. x\<^sup>2)", symmetric])
-   apply (auto simp: exponential_kth_moment[OF D] lebesgue_integral_eq_positive_integral 
+   apply (auto simp: exponential_kth_moment[OF D] lebesgue_integral_eq_nn_integral 
       exponential_density_nonneg mult_nonneg_nonneg)
    by (subst numeral_2_eq_2, simp)
   then show "expectation (\<lambda>x. (X x)\<^sup>2) - (expectation X)\<^sup>2 = 1/l\<^sup>2"
@@ -392,10 +392,10 @@ lemma conv_exponential_density:
   shows "(\<lambda>x. \<integral>\<^sup>+ y. ereal (exponential_density l (x - y) * exponential_density l y) \<partial>lborel) = (erlang_density 1 l)" 
     (is "?LHS = ?RHS")
 proof-
-  have "?LHS = (\<lambda>x. ereal (l\<^sup>2 * exp (- x * l)) *(integral\<^sup>P lborel (indicator {0..x})))"
+  have "?LHS = (\<lambda>x. ereal (l\<^sup>2 * exp (- x * l)) *(integral\<^sup>N lborel (indicator {0..x})))"
     unfolding exponential_density_def
-    by (subst positive_integral_cmult[symmetric])
-      (auto intro!: positive_integral_cong simp:mult_exp_exp mult_nonneg_nonneg power2_eq_square field_simps split:split_indicator)
+    by (subst nn_integral_cmult[symmetric])
+      (auto intro!: nn_integral_cong simp:mult_exp_exp mult_nonneg_nonneg power2_eq_square field_simps split:split_indicator)
   also have "... =  (erlang_density 1 l)"
     unfolding erlang_density_def
     apply(rule HOL.ext, case_tac "0>x")    
@@ -412,7 +412,7 @@ proof (subst entropy_distr[OF D])
 
   have *[intro]: "integrable lborel ( exponential_density l)"
      "integrable lborel (\<lambda>t. exponential_density l t * t)"
-    apply (rule integrable_if_positive_integral)
+    apply (rule integrable_if_nn_integral)
     apply (auto simp:one_ereal_def exponential_density_nonneg prob_space_exponential_density)
     apply (subst distributed_integrable[OF D], simp)
     apply (subst integrable_cong[where g ="(\<lambda>x. X x ^ 1)"], simp)
@@ -421,14 +421,14 @@ proof (subst entropy_distr[OF D])
   have "(\<integral> x. exponential_density l x * indicator {0..} x \<partial>lborel) = \<integral> x. exponential_density l x \<partial>lborel"
     by (auto intro!: integral_cong split:split_indicator simp :exponential_density_def)
   also have "... = 1"
-    by (auto intro!: lebesgue_integral_eq_positive_integral simp: one_ereal_def 
+    by (auto intro!: lebesgue_integral_eq_nn_integral simp: one_ereal_def 
       exponential_density_nonneg prob_space_exponential_density)
   finally have [simp]: "(\<integral> x. exponential_density l x * indicator {0..} x \<partial>lborel) = 1" .
 
   have "(\<integral> x. exponential_density l x * x * indicator {0..} x \<partial>lborel) = \<integral> x. exponential_density l x * x^1 \<partial>lborel"
     by(auto intro!: integral_cong split:split_indicator simp: exponential_density_def)
   also have "... = 1 / l"
-    apply (subst lebesgue_integral_eq_positive_integral)
+    apply (subst lebesgue_integral_eq_nn_integral)
     apply (subst exponential_kth_moment[OF D])
     by (auto split:split_indicator simp: mult_nonneg_nonneg exponential_density_def exponential_kth_moment[OF D])
   finally have **: "(\<integral> x. exponential_density l x * x * indicator {0..} x \<partial>lborel) = 1 / l" .
@@ -456,15 +456,15 @@ lemma conv_exponential_erlang_density:
       = (erlang_density (1 + k) l)" (is "?LHS = ?RHS")
 proof -
   have "?LHS = (\<lambda>x. ereal (l ^ (k + 2) * exp (- x * l) / real (fact k)) 
-                * (integral\<^sup>P lborel (\<lambda>y. ereal y ^ k * indicator {0..x} y)))"
+                * (integral\<^sup>N lborel (\<lambda>y. ereal y ^ k * indicator {0..x} y)))"
     unfolding exponential_density_def erlang_density_def
-    apply (subst positive_integral_cmult[symmetric])
-    by (auto intro!: positive_integral_cong split:split_indicator
+    apply (subst nn_integral_cmult[symmetric])
+    by (auto intro!: nn_integral_cong split:split_indicator
        simp: mult_exp_exp mult_nonneg_nonneg power2_eq_square field_simps split:split_indicator)
   also have "... = erlang_density (1 + k) l"
     unfolding erlang_density_def
     apply (rule HOL.ext, case_tac "0>x")
-    by (auto simp:field_simps positive_integral_power_nat)
+    by (auto simp:field_simps nn_integral_power_nat)
        (auto simp: comm_semiring_1_class.normalizing_semiring_rules(3))
   finally show ?thesis .
 qed
@@ -515,9 +515,9 @@ proof (rule HOL.ext,  case_tac "0\<ge>x")
   fix x::real assume [arith]: "0 \<ge> x"
   show "?LHS x = ?RHS x"
     proof -
-      have "(integral\<^sup>P lborel (\<lambda>y. (erlang_density k\<^sub>1 l (x- y) * erlang_density k\<^sub>2 l y)) = 0)"
+      have "(integral\<^sup>N lborel (\<lambda>y. (erlang_density k\<^sub>1 l (x- y) * erlang_density k\<^sub>2 l y)) = 0)"
         unfolding erlang_density_def
-        by(auto simp:positive_integral_0_iff_AE  power_0_left order_le_less)
+        by(auto simp:nn_integral_0_iff_AE  power_0_left order_le_less)
       then show "(\<integral>\<^sup>+ y. ereal (erlang_density k\<^sub>1 l (x - y)) * (erlang_density k\<^sub>2 l y) \<partial>lborel) =
          ereal (erlang_density (Suc k\<^sub>1 + Suc k\<^sub>2 - 1) l x)" 
         unfolding erlang_density_def by simp
@@ -525,20 +525,20 @@ proof (rule HOL.ext,  case_tac "0\<ge>x")
 next
   note zero_le_mult_iff[simp] zero_le_divide_iff[simp]
 
-  have I_eq1: "integral\<^sup>P lborel (erlang_density (Suc k\<^sub>1 + Suc k\<^sub>2 - 1) l) = 1"
+  have I_eq1: "integral\<^sup>N lborel (erlang_density (Suc k\<^sub>1 + Suc k\<^sub>2 - 1) l) = 1"
     by (auto intro!: prob_space_erlang_density[OF assms(1)] simp: one_ereal_def)
 
   have 1: "(\<integral>\<^sup>+ x. ereal (erlang_density (Suc k\<^sub>1 + Suc k\<^sub>2 - 1) l x * indicator {0<..} x) \<partial>lborel) = 1"
     apply (subst I_eq1[symmetric])
     unfolding erlang_density_def
-    by (auto intro!: positive_integral_cong split:split_indicator)
+    by (auto intro!: nn_integral_cong split:split_indicator)
 
   have "prob_space (density lborel ?LHS)"
     unfolding times_ereal.simps[symmetric]
     by (intro prob_space_convolution_density) (auto intro!: prob_space_erlang_density)
-  then have 2: "integral\<^sup>P lborel ?LHS = 1" by (auto simp: one_ereal_def)
+  then have 2: "integral\<^sup>N lborel ?LHS = 1" by (auto simp: one_ereal_def)
 
-  let ?I = "(integral\<^sup>P lborel (\<lambda>y. ereal ((1 - y)^ k\<^sub>1 * y^k\<^sub>2 * indicator {0..1} y)))"
+  let ?I = "(integral\<^sup>N lborel (\<lambda>y. ereal ((1 - y)^ k\<^sub>1 * y^k\<^sub>2 * indicator {0..1} y)))"
   let ?C = "real (fact (Suc (k\<^sub>1 + k\<^sub>2))) / (real (fact k\<^sub>1) * real (fact k\<^sub>2))"
   let ?s = "Suc k\<^sub>1 + Suc k\<^sub>2 - 1"
   let ?L = "(\<lambda>x. \<integral>\<^sup>+y. ereal (erlang_density k\<^sub>1 l (x- y) * erlang_density k\<^sub>2 l y * indicator {0..x} y) \<partial>lborel)"
@@ -547,11 +547,11 @@ next
     fix x::real assume [arith]: "0 < x"
     have "?LHS x = ?L x"
       unfolding erlang_density_def
-      by (auto intro!: positive_integral_cong split:split_indicator)
+      by (auto intro!: nn_integral_cong split:split_indicator)
     also have "... = (\<lambda>x. ereal (?C)* ?I * (erlang_density ?s l x)) x"
-      apply (subst positive_integral_real_affine[where c=x and t = 0 and M = lborel])
-      apply (auto intro!: positive_integral_cong simp: mult_less_0_iff positive_integral_cmult[symmetric]
-               positive_integral_multc[symmetric] erlang_density_def power_mult_distrib split:split_indicator)
+      apply (subst nn_integral_real_affine[where c=x and t = 0 and M = lborel])
+      apply (auto intro!: nn_integral_cong simp: mult_less_0_iff nn_integral_cmult[symmetric]
+               nn_integral_multc[symmetric] erlang_density_def power_mult_distrib split:split_indicator)
       by(auto simp: field_simps power_mult_distrib[symmetric] mult_exp_exp power_add)
     finally have "(\<integral>\<^sup>+y. ereal (erlang_density k\<^sub>1 l (x - y) * erlang_density k\<^sub>2 l y) \<partial>lborel) = 
       (\<lambda>x. ereal (?C)* ?I * (erlang_density ?s l x)) x"
@@ -560,15 +560,15 @@ next
   note * = this
 
   fix x::real assume  "\<not> 0 \<ge> x" then have [arith]: "0 < x" by simp
-  have 3: "1 = integral\<^sup>P lborel (\<lambda>xa. ?LHS xa * indicator {0<..} xa)"
+  have 3: "1 = integral\<^sup>N lborel (\<lambda>xa. ?LHS xa * indicator {0<..} xa)"
     apply (subst 2[symmetric])
     unfolding erlang_density_def 
-    by (auto intro!: positive_integral_cong simp:positive_integral_multc[symmetric] split:split_indicator)
-  also have "... = integral\<^sup>P lborel (\<lambda>x. (ereal (?C) * ?I) * ((erlang_density ?s l x) * indicator {0<..} x))"
-    by (auto intro!: positive_integral_cong simp: * split: split_indicator)
+    by (auto intro!: nn_integral_cong simp:nn_integral_multc[symmetric] split:split_indicator)
+  also have "... = integral\<^sup>N lborel (\<lambda>x. (ereal (?C) * ?I) * ((erlang_density ?s l x) * indicator {0<..} x))"
+    by (auto intro!: nn_integral_cong simp: * split: split_indicator)
   also have "... = ereal (?C) * ?I"
     using 1
-    by (auto simp: positive_integral_positive positive_integral_cmult)  
+    by (auto simp: nn_integral_nonneg nn_integral_cmult)  
   finally have " ereal (?C) * ?I = 1" by presburger
 
   then show "(\<integral>\<^sup>+ y. ereal (erlang_density k\<^sub>1 l (x - y)) * (erlang_density k\<^sub>2 l y) \<partial>lborel) = erlang_density ?s l x"

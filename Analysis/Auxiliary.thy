@@ -6,8 +6,117 @@ theory Auxiliary
   imports Probability
 begin
 
+lemma sets_borel: "sets borel = sigma_sets UNIV {S. open S}"
+  unfolding borel_def by (rule sets_measure_of) simp
+
+lemma borel_Times:
+  fixes A :: "'a::topological_space set" and B :: "'b::topological_space set"
+  assumes A: "A \<in> sets borel" and B: "B \<in> sets borel"
+  shows "A \<times> B \<in> sets borel"
+proof -
+  have "A \<times> B = (A\<times>UNIV) \<inter> (UNIV \<times> B)"
+    by auto
+  moreover
+  { have "A \<in> sigma_sets UNIV {S. open S}" using A by (simp add: sets_borel)
+    then have "A\<times>UNIV \<in> sets borel"
+    proof (induct A)
+      case (Basic S) then show ?case
+        by (auto intro!: borel_open open_Times)
+    next
+      case (Compl A)
+      moreover have *: "(UNIV - A) \<times> UNIV = UNIV - (A \<times> UNIV)"
+        by auto
+      ultimately show ?case
+        unfolding * by auto
+    next
+      case (Union A)
+      moreover have *: "(UNION UNIV A) \<times> UNIV = UNION UNIV (\<lambda>i. A i \<times> UNIV)"
+        by auto
+      ultimately show ?case
+        unfolding * by auto
+    qed simp }
+  moreover
+  { have "B \<in> sigma_sets UNIV {S. open S}" using B by (simp add: sets_borel)
+    then have "UNIV\<times>B \<in> sets borel"
+    proof (induct B)
+      case (Basic S) then show ?case
+        by (auto intro!: borel_open open_Times)
+    next
+      case (Compl B)
+      moreover have *: "UNIV \<times> (UNIV - B) = UNIV - (UNIV \<times> B)"
+        by auto
+      ultimately show ?case
+        unfolding * by auto
+    next
+      case (Union B)
+      moreover have *: "UNIV \<times> (UNION UNIV B) = UNION UNIV (\<lambda>i. UNIV \<times> B i)"
+        by auto
+      ultimately show ?case
+        unfolding * by auto
+    qed simp }
+  ultimately show ?thesis
+    by auto
+qed
+
+lemma borel_prod: "sets (borel \<Otimes>\<^sub>M borel) =
+    (sets borel :: ('a::second_countable_topology \<times> 'b::second_countable_topology) set set)"
+  (is "?l = ?r")
+proof -
+  obtain A :: "'a set set" where A: "countable A" "topological_basis A"
+    by (metis ex_countable_basis)
+  moreover obtain B :: "'b set set" where B: "countable B" "topological_basis B"
+    by (metis ex_countable_basis)
+  ultimately have AB: "countable ((\<lambda>(a, b). a \<times> b) ` (A \<times> B))" "topological_basis ((\<lambda>(a, b). a \<times> b) ` (A \<times> B))"
+    by (auto intro!: topological_basis_prod)
+  have "sets (borel \<Otimes>\<^sub>M borel) = sigma_sets UNIV {a \<times> b |a b. a \<in> sigma_sets UNIV A \<and> b \<in> sigma_sets UNIV B}"
+    by (simp add: sets_pair_measure
+       borel_eq_countable_basis[OF A] borel_eq_countable_basis[OF B])
+  also have "\<dots> \<supseteq> sigma_sets UNIV ((\<lambda>(a, b). a \<times> b) ` (A \<times> B))" (is "... \<supseteq> ?A")
+    by (auto intro!: sigma_sets_mono)
+  also (xtrans) have "?A = sets borel"
+    by (simp add: borel_eq_countable_basis[OF AB])
+  finally have "?r \<subseteq> ?l" .
+  moreover have "?l \<subseteq> ?r"
+  proof (simp add: sets_pair_measure, safe intro!: sigma_sets_mono)
+    fix A::"('a \<times> 'b) set" assume "A \<in> sigma_sets UNIV {a \<times> b |a b. a \<in> sets borel \<and> b \<in> sets borel}"
+    then show "A \<in> sets borel"
+      by (induct A) (auto intro!: borel_Times)
+  qed
+  ultimately show ?thesis by auto
+qed
+
+lemma borel_prod':
+  "borel \<Otimes>\<^sub>M borel = (borel :: 
+      ('a::second_countable_topology \<times> 'b::second_countable_topology) measure)"
+proof (rule measure_eqI[OF borel_prod])
+  interpret sigma_finite_measure "borel :: 'b measure"
+      by (default) (auto simp: borel_def emeasure_sigma intro!: exI[of _ "\<lambda>_. UNIV"])
+  fix X :: "('a \<times> 'b) set" assume asm: "X \<in> sets (borel \<Otimes>\<^sub>M borel)"
+  have "UNIV \<times> UNIV \<in> sets (borel \<Otimes>\<^sub>M borel :: ('a \<times> 'b) measure)" 
+      by (simp add: borel_prod)
+  moreover have "emeasure (borel \<Otimes>\<^sub>M borel) (UNIV \<times> UNIV :: ('a \<times> 'b) set) = 0"
+      by (subst emeasure_pair_measure_Times, simp_all add: borel_def emeasure_sigma)
+  moreover have "X \<subseteq> UNIV \<times> UNIV" by auto
+  ultimately have "emeasure (borel \<Otimes>\<^sub>M borel) X = 0" by (rule emeasure_eq_0)
+  thus "emeasure (borel \<Otimes>\<^sub>M borel) X = emeasure borel X"
+      by (simp add: borel_def emeasure_sigma)
+qed
+
 interpretation lborel_pair!: pair_sigma_finite lborel lborel
   proof qed
+
+lemma lborel_prod:
+  "lborel \<Otimes>\<^sub>M lborel = (lborel :: 
+      ('a::ordered_euclidean_space \<times> 'b::ordered_euclidean_space) measure)"
+proof (rule pair_measure_eqI)
+  show "sets (lborel \<Otimes>\<^sub>M lborel) = sets lborel"
+    by (simp add: borel_prod)
+  show "sigma_finite_measure lborel" ..
+  show "sigma_finite_measure lborel" ..
+  fix A :: "'a set" and B :: "'b set" assume A: "A \<in> sets lborel" and B: "B \<in> sets lborel"
+  then show "emeasure lborel A * emeasure lborel B = emeasure lborel (A \<times> B)"
+    sorry
+qed
 
 subsection {* ereal lemmas *}
 
@@ -57,63 +166,55 @@ proof (rule finite_measureI)
     by (auto simp: space_pair_measure M.emeasure_pair_measure_Times)
 qed
 
-lemma (in finite_measure) borel_measurable_positive_integral[measurable (raw)]:
+lemma (in finite_measure) borel_measurable_nn_integral[measurable (raw)]:
   "split f \<in> borel_measurable (N  \<Otimes>\<^sub>M M) \<Longrightarrow> (\<lambda>x. \<integral>\<^sup>+ y. f x y \<partial>M) \<in> borel_measurable N"
-  by (rule borel_measurable_positive_integral)
+  by (rule borel_measurable_nn_integral)
 
 subsection {* positive integral lemmas *}
 
 
-lemma positive_integral_ereal_indicator_mult:
+lemma nn_integral_ereal_indicator_mult:
   fixes f :: "real =>real"
-  shows "integral\<^sup>P lborel (\<lambda>x. ereal (f x) * indicator A x) = integral\<^sup>P lborel (\<lambda>x. ereal (f x * indicator A x))"
-  by (auto intro!: positive_integral_cong split:split_indicator)
+  shows "integral\<^sup>N lborel (\<lambda>x. ereal (f x) * indicator A x) = integral\<^sup>N lborel (\<lambda>x. ereal (f x * indicator A x))"
+  by (auto intro!: nn_integral_cong split:split_indicator)
 
-
-lemma positive_integral_real_affine:
-  fixes c :: real 
-  assumes c: "c \<noteq> 0" and f: "f \<in> borel_measurable borel" "AE x in M. 0 \<le> f x"
-  shows "(\<integral>\<^sup>+ x. f x \<partial> lborel) = \<bar>c\<bar> * (\<integral>\<^sup>+x. f (t + c * x) \<partial>lborel)"
-  by (subst lebesgue_real_affine[OF c, of t])
-     (simp add: assms positive_integral_density positive_integral_distr positive_integral_cmult)
-
-lemma positive_integral_indicator_partition:
+lemma nn_integral_indicator_partition:
   fixes f::"real \<Rightarrow> real"
   assumes  f[measurable]: "f \<in> borel_measurable lborel"
   assumes [simp,arith]: "\<And>x. 0 \<le> f x"
-  shows  "integral\<^sup>P lborel f = integral\<^sup>P lborel (\<lambda>x. f x * indicator {0..} x) + integral\<^sup>P lborel (\<lambda>x. f x * indicator {..0} x)"
-  by (auto intro!: positive_integral_cong_AE AE_I[where N= "{0}"]
-  simp:mult_nonneg_nonneg positive_integral_add[symmetric] split:split_indicator)
+  shows  "integral\<^sup>N lborel f = integral\<^sup>N lborel (\<lambda>x. f x * indicator {0..} x) + integral\<^sup>N lborel (\<lambda>x. f x * indicator {..0} x)"
+  by (auto intro!: nn_integral_cong_AE AE_I[where N= "{0}"]
+  simp:mult_nonneg_nonneg nn_integral_add[symmetric] split:split_indicator)
 
-lemma positive_integral_even_function_eq:
+lemma nn_integral_even_function_eq:
   fixes f :: "real \<Rightarrow> real" 
   assumes [simp, measurable]: "f \<in> borel_measurable borel" "\<And>x. 0 \<le> f x" 
   assumes even: "\<And>x. f x = f (- x)"
-  shows "integral\<^sup>P lborel (\<lambda>x. f x * indicator {0..} x) = integral\<^sup>P lborel (\<lambda>x. f x * indicator {..0} x)"
-  apply (subst positive_integral_real_affine[where c="-1" and t="0" and M="lborel"])
+  shows "integral\<^sup>N lborel (\<lambda>x. f x * indicator {0..} x) = integral\<^sup>N lborel (\<lambda>x. f x * indicator {..0} x)"
+  apply (subst nn_integral_real_affine[where c="-1" and t="0"])
   using even
-  by (auto intro!: positive_integral_cong simp: borel_measurable_indicator split:split_indicator)
+  by (auto intro!: nn_integral_cong simp: borel_measurable_indicator split:split_indicator)
 
-lemma positive_integral_even_function:
+lemma nn_integral_even_function:
   fixes f :: "real \<Rightarrow> real" 
   assumes [simp, measurable]: "f \<in> borel_measurable borel" "\<And>x. 0 \<le> f x" 
   assumes even: "\<And>x. f x = f (- x)"
-  shows "integral\<^sup>P lborel f = 2 * integral\<^sup>P lborel (\<lambda>x. f x * indicator {0..} x)"
-  apply (auto simp: positive_integral_indicator_partition simp del: mult_nonneg_nonneg)
+  shows "integral\<^sup>N lborel f = 2 * integral\<^sup>N lborel (\<lambda>x. f x * indicator {0..} x)"
+  apply (auto simp: nn_integral_indicator_partition simp del: mult_nonneg_nonneg)
   using even
-  apply (subst positive_integral_even_function_eq[symmetric], auto)
+  apply (subst nn_integral_even_function_eq[symmetric], auto)
   by (cases "\<integral>\<^sup>+ x. ereal (f x * indicator {0..} x) \<partial>lborel", auto)
 
-lemma positive_integral_power_nat:
+lemma nn_integral_power_nat:
   fixes x::real
   fixes k:: nat
   assumes [simp, arith]: "0 \<le> x" 
-  shows "integral\<^sup>P lborel (\<lambda>y. ereal (y^k) * indicator {0..x} y) = x^(1 + k) / (1 + k)"  
+  shows "integral\<^sup>N lborel (\<lambda>y. ereal (y^k) * indicator {0..x} y) = x^(1 + k) / (1 + k)"  
 proof-
   let ?F = "\<lambda>x. x^(1 + k) / (1 + k)"
-  have "integral\<^sup>P lborel (\<lambda>y. ereal( y^ k) * indicator {0..x} y) = ereal( ?F x) - ereal( ?F 0)"
-  by (rule positive_integral_FTC_atLeastAtMost)
-     (auto intro!: derivative_intros derivative_eq_intros positive_integral_FTC_atLeastAtMost 
+  have "integral\<^sup>N lborel (\<lambda>y. ereal( y^ k) * indicator {0..x} y) = ereal( ?F x) - ereal( ?F 0)"
+  by (rule nn_integral_FTC_atLeastAtMost)
+     (auto intro!: derivative_intros derivative_eq_intros nn_integral_FTC_atLeastAtMost 
         simp: real_of_nat_def[symmetric]
         simp del: power_Suc)
   also have "... = x^ (1 + k) / (1 + k)" by force
@@ -315,7 +416,7 @@ lemma (in prob_space) indep_vars_cong:
   "I = J \<Longrightarrow> (\<And>i. i \<in> I \<Longrightarrow> X i = Y i) \<Longrightarrow> (\<And>i. i \<in> I \<Longrightarrow> M' i = N' i) \<Longrightarrow> indep_vars M' X I \<longleftrightarrow> indep_vars N' Y J"
   unfolding indep_vars_def2 by (intro conj_cong indep_sets_cong) auto
 
-lemma (in prob_space) indep_vars_positive_integral:
+lemma (in prob_space) indep_vars_nn_integral:
   assumes I: "finite I" "indep_vars (\<lambda>_. borel) X I" "\<And>i \<omega>. i \<in> I \<Longrightarrow> 0 \<le> X i \<omega>"
   shows "(\<integral>\<^sup>+\<omega>. (\<Prod>i\<in>I. X i \<omega>) \<partial>M) = (\<Prod>i\<in>I. \<integral>\<^sup>+\<omega>. X i \<omega> \<partial>M)"
 proof cases
@@ -338,20 +439,21 @@ proof cases
     by (rule indep_vars_cong[THEN iffD1, OF _ _ _ I(2)]) (auto simp: Y_def)
 
   have "(\<integral>\<^sup>+\<omega>. (\<Prod>i\<in>I. X i \<omega>) \<partial>M) = (\<integral>\<^sup>+\<omega>. (\<Prod>i\<in>I. max 0 (Y i \<omega>)) \<partial>M)"
-    using I(3) by (auto intro!: positive_integral_cong setprod_cong simp add: Y_def max_def)
+    using I(3) by (auto intro!: nn_integral_cong setprod_cong simp add: Y_def max_def)
   also have "\<dots> = (\<integral>\<^sup>+\<omega>. (\<Prod>i\<in>I. max 0 (\<omega> i)) \<partial>distr M (Pi\<^sub>M I (\<lambda>i. borel)) (\<lambda>x. \<lambda>i\<in>I. Y i x))"
-    by (subst positive_integral_distr) auto
+    by (subst nn_integral_distr) auto
   also have "\<dots> = (\<integral>\<^sup>+\<omega>. (\<Prod>i\<in>I. max 0 (\<omega> i)) \<partial>Pi\<^sub>M I (\<lambda>i. distr M borel (Y i)))"
     unfolding indep_vars_iff_distr_eq_PiM[THEN iffD1, OF `I \<noteq> {}` rv_Y indep_Y] ..
   also have "\<dots> = (\<Prod>i\<in>I. (\<integral>\<^sup>+\<omega>. max 0 \<omega> \<partial>distr M borel (Y i)))"
-    by (rule product_positive_integral_setprod) (auto intro: `finite I`)
+    by (rule product_nn_integral_setprod) (auto intro: `finite I`)
   also have "\<dots> = (\<Prod>i\<in>I. \<integral>\<^sup>+\<omega>. X i \<omega> \<partial>M)"
-    by (intro setprod_cong positive_integral_cong)
-       (auto simp: positive_integral_distr positive_integral_max_0 Y_def rv_X)
+    by (intro setprod_cong nn_integral_cong)
+       (auto simp: nn_integral_distr nn_integral_max_0 Y_def rv_X)
   finally show ?thesis .
 qed (simp add: emeasure_space_1)
 
 lemma (in prob_space)
+  fixes X :: "'i \<Rightarrow> 'a \<Rightarrow> 'b::{real_normed_field, banach, second_countable_topology}"
   assumes I: "finite I" "indep_vars (\<lambda>_. borel) X I" "\<And>i. i \<in> I \<Longrightarrow> integrable M (X i)"
   shows indep_vars_lebesgue_integral: "(\<integral>\<omega>. (\<Prod>i\<in>I. X i \<omega>) \<partial>M) = (\<Prod>i\<in>I. \<integral>\<omega>. X i \<omega> \<partial>M)" (is ?eq)
     and indep_vars_integrable: "integrable M (\<lambda>\<omega>. (\<Prod>i\<in>I. X i \<omega>))" (is ?int)
@@ -399,6 +501,33 @@ proof (induct rule: case_split)
     by (simp add: integrable_distr_eq Y_def)
 qed (simp_all add: prob_space)
 
+(* TODO: this goes with Auxliary.thy, a special case of indep_vars_... *)
+lemma (in prob_space)
+  fixes X1 X2 :: "'a \<Rightarrow> 'b::{real_normed_field, banach, second_countable_topology}"
+  assumes "indep_var borel X1 borel X2" "integrable M X1" "integrable M X2"
+  shows indep_var_lebesgue_integral: "(\<integral>\<omega>. X1 \<omega> * X2 \<omega> \<partial>M) = (\<integral>\<omega>. X1 \<omega> \<partial>M) * (\<integral>\<omega>. X2 \<omega> \<partial>M)" (is ?eq)
+    and indep_var_integrable: "integrable M (\<lambda>\<omega>. X1 \<omega> * X2 \<omega>)" (is ?int)
+unfolding indep_var_def
+proof -
+  have *: "(\<lambda>\<omega>. X1 \<omega> * X2 \<omega>) = (\<lambda>\<omega>. \<Prod>i\<in>UNIV. (case_bool X1 X2 i \<omega>))"
+    by (simp add: UNIV_bool mult_commute)
+  have **: "(\<lambda> _. borel) = case_bool borel borel"
+    by (rule ext, metis (full_types) bool.simps(3) bool.simps(4))
+  show ?eq
+    apply (subst *)
+    apply (subst indep_vars_lebesgue_integral)
+    apply (auto)
+    apply (subst **, subst indep_var_def [symmetric], rule assms)
+    apply (simp split: bool.split add: assms)
+    by (simp add: UNIV_bool mult_commute)
+  show ?int
+    apply (subst *)
+    apply (rule indep_vars_integrable)
+    apply auto
+    apply (subst **, subst indep_var_def [symmetric], rule assms)
+    by (simp split: bool.split add: assms)
+qed
+
 lemma setsum_pos_pos:
   fixes f::"_ \<Rightarrow> real"
   assumes "finite I" "I \<noteq> {}" 
@@ -408,13 +537,13 @@ lemma setsum_pos_pos:
   by (auto simp:setsum_insert)  fastforce
 
 (* should make it more general for any space M rather than lborel *)
-lemma  prob_space_density_positive_integral[intro, simp]:
+lemma  prob_space_density_nn_integral[intro, simp]:
 assumes [simp, measurable]:"f \<in> borel_measurable lborel"
 assumes "prob_space (density lborel f)"
-shows "integral\<^sup>P lborel f = ereal 1"
+shows "integral\<^sup>N lborel f = ereal 1"
 proof-
   let ?F = "(density lborel f)"
-  have "integral\<^sup>P lborel f = emeasure ?F UNIV"
+  have "integral\<^sup>N lborel f = emeasure ?F UNIV"
     by (subst emeasure_density[of f lborel UNIV], auto)
   also have "... = emeasure ?F (space ?F)" by auto
   also have "... = 1" using assms(2) prob_space.emeasure_space_1 by blast
@@ -431,12 +560,29 @@ proof -
 qed
 
 lemma
-  assumes "integral\<^sup>P M f = ereal x" "AE x in M. 0 \<le> f x" "f \<in> borel_measurable M"
-  shows integrable_if_positive_integral: "integrable M f"
-  and lebesgue_integral_eq_positive_integral: "integral\<^sup>L M f = x"
-  using assms
-  apply (metis PInfty_neq_ereal(1) integrable_nonneg)
-  by (metis (full_types) PInfty_neq_ereal(1) assms(1) assms(2) assms(3) integrable_nonneg positive_integral_eq_integral real_of_ereal(2))
+  assumes eq: "integral\<^sup>N M f = ereal x" and ae: "AE x in M. 0 \<le> f x"
+    and [measurable]: "f \<in> borel_measurable M"
+  shows integrable_if_nn_integral: "integrable M f"
+  and lebesgue_integral_eq_nn_integral: "integral\<^sup>L M f = x"
+proof -
+  show *: "integrable M f"
+  proof (rule integrableI_bounded)
+    have "(\<integral>\<^sup>+ x. ereal (norm (f x)) \<partial>M) = (\<integral>\<^sup>+ x. ereal (f x) \<partial>M)"
+      using ae by (intro nn_integral_cong_AE) auto
+    then show "(\<integral>\<^sup>+ x. ereal (norm (f x)) \<partial>M) < \<infinity>"
+      by (simp add: eq)
+  qed fact
+  have "integrable M (\<lambda>x. max 0 (f x))"
+    using ae by (intro integrable_cong_AE[THEN iffD1, OF _ _ _ *]) auto
+  then have "(\<integral>x. max 0 (f x) \<partial>M) = (real (\<integral>\<^sup>+ x. ereal (max 0 (f x)) \<partial>M))"
+    by (rule integral_eq_nn_integral) auto
+  also have "(\<integral>x. max 0 (f x) \<partial>M) = (\<integral>x. f x \<partial>M)"
+    using ae by (intro integral_cong_AE) auto
+  also have "(real (\<integral>\<^sup>+ x. ereal (max 0 (f x)) \<partial>M)) = (real (\<integral>\<^sup>+ x. ereal (f x) \<partial>M))"
+    using ae by (auto intro!: nn_integral_cong_AE arg_cong[where f=real] simp del: ereal_max)
+  finally show "integral\<^sup>L M f = x"
+    by (simp add: eq)
+qed
 
 lemma integrable_affine:
   fixes f :: "real \<Rightarrow> real"
@@ -444,17 +590,18 @@ lemma integrable_affine:
   shows "integrable lborel f = integrable lborel (\<lambda>x. f (t + c * x))"
 proof(auto)
   assume *: "integrable lborel f" 
-  then have **: "f \<in> borel_measurable lborel" by (simp add: integrable_def)
+  then have **: "f \<in> borel_measurable lborel" 
+    by (rule borel_measurable_integrable)
 
   have [simp]: "(\<integral>\<^sup>+ x. ereal (f x / \<bar>c\<bar>) \<partial>lborel) = (1/ \<bar>c\<bar>) * \<integral>\<^sup>+ x. ereal (f x) \<partial>lborel"
        "(\<integral>\<^sup>+ x. ereal (- (f x / \<bar>c\<bar>)) \<partial>lborel) = (1 / \<bar>c\<bar>) * \<integral>\<^sup>+ x. ereal (- f x ) \<partial>lborel" 
-    using ** by (auto intro!: positive_integral_cong simp: positive_integral_cmult[symmetric])
+    using ** by (auto intro!: nn_integral_cong simp: nn_integral_cmult[symmetric])
   
   show "integrable lborel (\<lambda>x. f (t + c * x))"
     using *
-    apply (subst lebesgue_real_affine[where c= "1 / c" and t = "- t / c"], simp)
-    unfolding integrable_def apply safe 
-    by (simp_all add: positive_integral_density positive_integral_distr field_simps)
+    apply (subst lborel_real_affine[where c= "1 / c" and t = "- t / c"], simp)
+    unfolding real_integrable_def apply safe 
+    by (simp_all add: nn_integral_density nn_integral_distr field_simps)
 next
   { assume "(\<lambda>x. f (t + x * c)) \<in> borel_measurable borel"
     then have "(\<lambda>x. f (t + ((x - t) / c) * c)) \<in> borel_measurable borel"
@@ -465,17 +612,17 @@ next
   note 1[simp] = this
 
   assume *: "integrable lborel (\<lambda>x. f (t + c * x))"
-  then have **: "f \<in> borel_measurable lborel" by (simp add: integrable_def field_simps)
+  then have **: "f \<in> borel_measurable lborel" by (simp add: real_integrable_def field_simps)
 
   have [simp]: "(\<integral>\<^sup>+ x. ereal (f x / \<bar>c\<bar>) \<partial>lborel) = (1/ \<bar>c\<bar>) * \<integral>\<^sup>+ x. ereal (f x) \<partial>lborel"
        "(\<integral>\<^sup>+ x. ereal (- (f x / \<bar>c\<bar>)) \<partial>lborel) = (1 / \<bar>c\<bar>) * \<integral>\<^sup>+ x. ereal (- f x ) \<partial>lborel" 
-    using ** by (auto intro!: positive_integral_cong simp: positive_integral_cmult[symmetric])
+    using ** by (auto intro!: nn_integral_cong simp: nn_integral_cmult[symmetric])
 
   show "integrable lborel f"
     using *
-    apply (subst(asm) lebesgue_real_affine[where c= "1/ c" and t = "- t / c"], simp)
-    unfolding integrable_def apply safe
-    by (simp_all add: positive_integral_density positive_integral_distr field_simps)
+    apply (subst(asm) lborel_real_affine[where c= "1/ c" and t = "- t / c"], simp)
+    unfolding real_integrable_def apply safe
+    by (simp_all add: nn_integral_density nn_integral_distr field_simps)
 qed
 
 lemma (in prob_space) distributed_density_integrable:
@@ -483,14 +630,14 @@ lemma (in prob_space) distributed_density_integrable:
   assumes [simp]: "prob_space (density lborel f)"
   shows "integrable lborel f"
   using D unfolding distributed_def
-  by (auto intro!: integrable_if_positive_integral[where x = 1] simp: borel_measurable_ereal_iff)
+  by (auto intro!: integrable_if_nn_integral[where x = 1] simp: borel_measurable_ereal_iff)
 
 lemma (in prob_space) prob_space_distributed_density_lebesgue_integral[intro]:
   assumes D:"distributed M lborel X f"
   assumes [simp]: "prob_space (density lborel f)"
   assumes [simp, measurable]: "f \<in> borel_measurable lborel"
   shows "integral\<^sup>L lborel f = 1"
-  apply (subst lebesgue_integral_eq_positive_integral[OF prob_space_density_positive_integral])
+  apply (subst lebesgue_integral_eq_nn_integral[OF prob_space_density_nn_integral])
   using D unfolding distributed_def by auto
 
 lemma (in prob_space) expectation_affine[simp]:
@@ -512,9 +659,10 @@ subsection {* Variance *}
 abbreviation (in prob_space) "variance X \<equiv> integral\<^sup>L M (\<lambda>x. (X x - expectation X)\<^sup>2)"
 
 lemma (in prob_space) variance_eq:
+  fixes X :: "'a \<Rightarrow> real"
   assumes I[simp]: "integrable M X"
-  assumes [simp]: "integrable M (\<lambda>x. (X x)\<^sup>2)"  (* this seems to be the problem, as I cannot prove it for generic densities which means
-I can not use it freely *)
+  assumes [simp]: "integrable M (\<lambda>x. (X x)\<^sup>2)"
+    (* this seems to be the problem, as I cannot prove it for generic densities which means I can not use it freely *)
   shows "variance X = expectation (\<lambda>x. (X x)\<^sup>2) - (expectation X)\<^sup>2"
   apply (simp add: power2_diff)
   apply(subst comm_semiring_1_class.normalizing_semiring_rules(16))
@@ -531,8 +679,9 @@ lemma (in prob_space) variance_affine:
   apply(subst variance_eq)
   by (auto simp:power2_sum power_mult_distrib prob_space variance_eq right_diff_distrib)
 
-lemma (in prob_space) variance_positive: "0 \<le> variance X"
-  by (auto intro!: lebesgue_integral_nonneg)
+lemma (in prob_space) variance_positive: "0 \<le> variance (X::'a \<Rightarrow> real)"
+  apply (intro integral_nonneg_AE)
+  by (auto intro!: integral_nonneg_AE)
 
 lemma a3_minus_b3:
   fixes a::real 
@@ -566,12 +715,23 @@ proof-
 
   have "(\<integral>x. (F x * g x + f x * G x) * indicator {a .. b} x \<partial>lborel) =
     (\<integral>x. (F x * g x) * indicator {a .. b} x \<partial>lborel) + \<integral>x. (f x * G x) * indicator {a .. b} x \<partial>lborel"
-    apply (subst integral_add(2)[symmetric])
+    apply (subst integral_add[symmetric])
     apply (auto intro!: borel_integrable_atLeastAtMost continuous_intros)
     by (auto intro!: DERIV_isCont integral_cong split:split_indicator)
 
   thus ?thesis using 0 by auto
 qed
+
+lemma integral_by_parts':
+  fixes f g F G::"real \<Rightarrow> real"
+  assumes "a \<le> b"
+  assumes "!!x. a \<le>x \<Longrightarrow> x\<le>b \<Longrightarrow> isCont f x"
+  assumes "!!x. a \<le>x \<Longrightarrow> x\<le>b \<Longrightarrow> isCont g x"
+  assumes "!!x. DERIV F x :> f x"
+  assumes "!!x. DERIV G x :> g x"
+  shows "(\<integral>x. indicator {a .. b} x *\<^sub>R (F x * g x) \<partial>lborel)
+            =  F b * G b - F a * G a - \<integral>x. indicator {a .. b} x *\<^sub>R (f x * G x) \<partial>lborel" 
+  using integral_by_parts[OF assms] by (simp add: mult_ac)
 
 lemma ln_sqrt: "0< x \<Longrightarrow> ln (sqrt x) = ln x / 2"
   by (simp add: ln_powr powr_numeral ln_powr[symmetric] mult_commute)
@@ -605,7 +765,7 @@ proof (subst distributed_integral[OF D, of "(\<lambda>x. (x - expectation X)\<^s
         = \<integral>x. ((x - ?\<mu>)\<^sup>2 / measure lborel {a .. b}) * indicator {a .. b} x \<partial>lborel"
     by (intro integral_cong) auto
   also have "... = \<integral> x. (x\<^sup>2 / measure lborel {a .. b}) * indicator {(a - ?\<mu>) .. (b - ?\<mu>)} x \<partial>lborel"
-    apply (subst lebesgue_integral_real_affine[where t= ?\<mu> and c = 1], auto)
+    apply (subst lborel_integral_real_affine[where t= ?\<mu> and c = 1], auto)
     unfolding indicator_def by (auto intro!: integral_cong)
   also have "(\<integral>x. (x\<^sup>2 / measure lborel {a .. b}) * indicator {(a- ?\<mu>) .. (b- ?\<mu>)} x \<partial>lborel) = (b - a)\<^sup>2 / 12"
   proof (subst integral_FTC_atLeastAtMost)
@@ -639,15 +799,15 @@ lemma distr_cong: "M = K \<Longrightarrow> sets N = sets L \<Longrightarrow> (\<
 lemma AE_borel_affine: 
   fixes P :: "real \<Rightarrow> bool"
   shows "c \<noteq> 0 \<Longrightarrow> Measurable.pred borel P \<Longrightarrow> AE x in lborel. P x \<Longrightarrow> AE x in lborel. P (t + c * x)"
-  by (subst lebesgue_real_affine[where t="- t / c" and c="1 / c"])
+  by (subst lborel_real_affine[where t="- t / c" and c="1 / c"])
      (simp_all add: AE_density AE_distr_iff field_simps)
 
 lemma density_distr:
   assumes [measurable]: "f \<in> borel_measurable N" "X \<in> measurable M N"
   shows "density (distr M N X) f = distr (density M (\<lambda>x. f (X x))) N X"
   by (intro measure_eqI)
-     (auto simp add: emeasure_density positive_integral_distr emeasure_distr
-           split: split_indicator intro!: positive_integral_cong)
+     (auto simp add: emeasure_density nn_integral_distr emeasure_distr
+           split: split_indicator intro!: nn_integral_cong)
 
 lemma (in prob_space) distributed_affine:
   fixes f :: "real \<Rightarrow> ereal"
@@ -678,7 +838,7 @@ proof safe
   have "density lborel f = distr M lborel X"
     using f by (simp add: distributed_def)
   with c show "distr M lborel (\<lambda>x. t + c * X x) = density lborel (\<lambda>x. f ((x - t) / c) / ereal \<bar>c\<bar>)"
-    by (subst (2) lebesgue_real_affine[where c="c" and t="t"])
+    by (subst (2) lborel_real_affine[where c="c" and t="t"])
        (simp_all add: density_density_eq density_distr distr_distr field_simps eq cong: distr_cong)
 qed
 

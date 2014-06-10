@@ -20,7 +20,7 @@ lemma
     and measurable_convolution2[simp]: "measurable (convolution M N) B = measurable borel B"
   by (simp_all add: convolution_def)
 
-lemma positive_integral_convolution:
+lemma nn_integral_convolution:
   assumes "finite_measure M" "finite_measure N"
   assumes [simp]: "sets N = sets borel" "sets M = sets borel"
   assumes [measurable]: "f \<in> borel_measurable borel"
@@ -31,7 +31,7 @@ proof -
   interpret pair_sigma_finite M N ..
   show ?thesis
     unfolding convolution_def
-    by (simp add: positive_integral_distr N.positive_integral_fst_measurable(2)[symmetric])
+    by (simp add: nn_integral_distr N.nn_integral_fst[symmetric])
 qed
 
 lemma convolution_emeasure:
@@ -39,16 +39,16 @@ lemma convolution_emeasure:
   assumes [simp]: "sets N = sets borel" "sets M = sets borel"
   assumes [simp]: "space M = space N" "space N = space borel"
   shows "emeasure (M \<star> N) A = \<integral>\<^sup>+x. (emeasure N {a. a + x \<in> A}) \<partial>M "
-  using assms by (auto intro!: positive_integral_cong simp del: positive_integral_indicator simp: positive_integral_convolution 
-    positive_integral_indicator[symmetric] ab_semigroup_add_class.add_ac split:split_indicator)
+  using assms by (auto intro!: nn_integral_cong simp del: nn_integral_indicator simp: nn_integral_convolution 
+    nn_integral_indicator[symmetric] ab_semigroup_add_class.add_ac split:split_indicator)
 
 lemma convolution_emeasure':
   assumes [simp]:"A \<in> sets borel"
   assumes [simp]: "finite_measure M" "finite_measure N"
   assumes [simp]: "sets N = sets borel" "sets M = sets borel"
   shows  "emeasure (M \<star> N) A = \<integral>\<^sup>+x. \<integral>\<^sup>+y.  (indicator  A (x + y)) \<partial>N  \<partial>M"
-  by (auto simp del: positive_integral_indicator simp: positive_integral_convolution
-    positive_integral_indicator[symmetric] borel_measurable_indicator)
+  by (auto simp del: nn_integral_indicator simp: nn_integral_convolution
+    nn_integral_indicator[symmetric] borel_measurable_indicator)
 
 lemma convolution_finite:
   assumes [simp]: "finite_measure M" "finite_measure N"
@@ -62,18 +62,18 @@ lemma convolution_emeasure_3:
   assumes [simp]: "finite_measure M" "finite_measure N" "finite_measure L"
   assumes [simp]: "sets N = sets borel" "sets M = sets borel" "sets L = sets borel"
   shows "emeasure (L \<star> (M \<star> N )) A = \<integral>\<^sup>+x. \<integral>\<^sup>+y. \<integral>\<^sup>+z. indicator A (x + y + z) \<partial>N \<partial>M \<partial>L"
-  apply (subst positive_integral_indicator[symmetric], simp)
-  apply (subst positive_integral_convolution, 
+  apply (subst nn_integral_indicator[symmetric], simp)
+  apply (subst nn_integral_convolution, 
         auto intro!: borel_measurable_indicator borel_measurable_indicator' convolution_finite)+
-  by (rule positive_integral_cong)+ (auto simp: semigroup_add_class.add_assoc)
+  by (rule nn_integral_cong)+ (auto simp: semigroup_add_class.add_assoc)
 
 lemma convolution_emeasure_3':
   assumes [simp, measurable]:"A \<in> sets borel"
   assumes [simp]: "finite_measure M" "finite_measure N"  "finite_measure L"
   assumes [simp]: "sets N = sets borel" "sets M = sets borel" "sets L = sets borel"
   shows "emeasure ((L \<star> M) \<star> N ) A = \<integral>\<^sup>+x. \<integral>\<^sup>+y. \<integral>\<^sup>+z. indicator A (x + y + z) \<partial>N \<partial>M \<partial>L"
-  apply (subst positive_integral_indicator[symmetric], simp)+
-  by (subst positive_integral_convolution, auto simp: finite_measure.borel_measurable_positive_integral
+  apply (subst nn_integral_indicator[symmetric], simp)+
+  by (subst nn_integral_convolution, auto simp: finite_measure.borel_measurable_nn_integral
    intro!: borel_measurable_indicator borel_measurable_indicator' convolution_finite)+ 
 
 lemma convolution_commutative:
@@ -90,9 +90,9 @@ proof (rule measure_eqI)
   fix A assume "A \<in> sets (M \<star> N)"
   then have 1[measurable]:"A \<in> sets borel" by simp
   have "emeasure (M \<star> N) A = \<integral>\<^sup>+x. \<integral>\<^sup>+y. indicator A (x + y) \<partial>N \<partial>M" by (auto intro!: convolution_emeasure')
-  also have "... = \<integral>\<^sup>+x. \<integral>\<^sup>+y. (\<lambda>(x,y). indicator A (x + y)) (x, y) \<partial>N \<partial>M" by (auto intro!: positive_integral_cong)
+  also have "... = \<integral>\<^sup>+x. \<integral>\<^sup>+y. (\<lambda>(x,y). indicator A (x + y)) (x, y) \<partial>N \<partial>M" by (auto intro!: nn_integral_cong)
   also have "... = \<integral>\<^sup>+y. \<integral>\<^sup>+x. (\<lambda>(x,y). indicator A (x + y)) (x, y) \<partial>M \<partial>N" by (rule Fubini[symmetric]) simp
-  also have "... = emeasure (N \<star> M) A" by (auto intro!: positive_integral_cong simp: add_commute convolution_emeasure')
+  also have "... = emeasure (N \<star> M) A" by (auto intro!: nn_integral_cong simp: add_commute convolution_emeasure')
   finally show "emeasure (M \<star> N) A = emeasure (N \<star> M) A" by simp
 qed
 
@@ -133,11 +133,11 @@ proof (intro measure_eqI)
   have "(\<integral>\<^sup>+x. f x * (\<integral>\<^sup>+y. g y * indicator A (x + y) \<partial>lborel) \<partial>lborel) =
     (\<integral>\<^sup>+x. (\<integral>\<^sup>+y. g y * (f x * indicator A (x + y)) \<partial>lborel) \<partial>lborel)"
     using gt_0
-  proof (intro positive_integral_cong_AE, eventually_elim)
+  proof (intro nn_integral_cong_AE, eventually_elim)
     fix x assume "0 \<le> f x"
     then have "f x * (\<integral>\<^sup>+ y. g y * indicator A (x + y) \<partial>lborel) =
       (\<integral>\<^sup>+ y. f x * (g y * indicator A (x + y)) \<partial>lborel)"
-      by (intro positive_integral_cmult[symmetric]) auto
+      by (intro nn_integral_cmult[symmetric]) auto
     then show "f x * (\<integral>\<^sup>+ y. g y * indicator A (x + y) \<partial>lborel) =
       (\<integral>\<^sup>+ y. g y * (f x * indicator A (x + y)) \<partial>lborel)"
       by (simp add: ac_simps)
@@ -146,16 +146,16 @@ proof (intro measure_eqI)
     by (intro lborel_pair.Fubini') simp
   also have "\<dots> = (\<integral>\<^sup>+y. (\<integral>\<^sup>+x. f (x - y) * g y * indicator A x \<partial>lborel) \<partial>lborel)"
     using gt_0
-  proof (intro positive_integral_cong_AE, eventually_elim)
+  proof (intro nn_integral_cong_AE, eventually_elim)
     fix y assume "0 \<le> g y"
     then have "(\<integral>\<^sup>+x. g y * (f x * indicator A (x + y)) \<partial>lborel) =
       g y * (\<integral>\<^sup>+x. f x * indicator A (x + y) \<partial>lborel)"
-      by (intro positive_integral_cmult) auto
+      by (intro nn_integral_cmult) auto
     also have "\<dots> = g y * (\<integral>\<^sup>+x. f (x - y) * indicator A x \<partial>lborel)"
       using gt_0
-      by (subst positive_integral_real_affine[where c=1 and t="-y" and M=lborel]) (auto simp del: gt_0)
+      by (subst nn_integral_real_affine[where c=1 and t="-y"]) (auto simp del: gt_0)
     also have "\<dots> = (\<integral>\<^sup>+x. g y * (f (x - y) * indicator A x) \<partial>lborel)"
-      using `0 \<le> g y` by (intro positive_integral_cmult[symmetric]) auto
+      using `0 \<le> g y` by (intro nn_integral_cmult[symmetric]) auto
     finally show "(\<integral>\<^sup>+ x. g y * (f x * indicator A (x + y)) \<partial>lborel) =
       (\<integral>\<^sup>+ x. f (x - y) * g y * indicator A x \<partial>lborel)"
       by (simp add: ac_simps)
@@ -163,8 +163,8 @@ proof (intro measure_eqI)
   also have "\<dots> = (\<integral>\<^sup>+x. (\<integral>\<^sup>+y. f (x - y) * g y * indicator A x \<partial>lborel) \<partial>lborel)"
     by (intro lborel_pair.Fubini') simp
   finally show "emeasure ?l A = emeasure ?r A"
-    by (auto simp: convolution_emeasure' positive_integral_density emeasure_density
-      positive_integral_multc)
+    by (auto simp: convolution_emeasure' nn_integral_density emeasure_density
+      nn_integral_multc)
 qed simp
 
 lemma (in prob_space) distributed_finite_measure_density:
@@ -182,7 +182,7 @@ lemma (in prob_space) distributed_convolution:
   unfolding distributed_def
 proof safe
   show "AE x in lborel. 0 \<le> \<integral>\<^sup>+ xa. f (x - xa) * g xa \<partial>lborel"
-    by (auto simp: positive_integral_positive)
+    by (auto simp: nn_integral_nonneg)
 
   have fg[measurable]: "f \<in> borel_measurable borel" "g \<in> borel_measurable borel"
     using distributed_borel_measurable[OF X] distributed_borel_measurable[OF Y] by simp_all

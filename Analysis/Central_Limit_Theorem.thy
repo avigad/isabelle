@@ -289,8 +289,8 @@ proof -
     have *: "\<And>n i t. \<psi>' n i t = \<psi> n t"
       unfolding \<psi>_def \<psi>'_def char_def apply auto
       apply (subst X_distrib [symmetric])
-      apply (subst complex_integral_distr, auto)
-      by (subst complex_integral_distr, auto)
+      apply (subst integral_distr, auto)
+      by (subst integral_distr, auto)
 
     have 1: "S' n = (\<lambda>x. (\<Sum> i < n. X i x / sqrt (\<sigma>\<^sup>2 * n)))" 
       by (rule ext, simp add: S'_def S_def setsum_divide_distrib ac_simps)
@@ -298,7 +298,11 @@ proof -
     have "\<phi> n t = (\<Prod> i < n. \<psi>' n i t)"
       unfolding \<phi>_def \<psi>'_def apply (subst 1)
       apply (rule char_distr_setsum)
-      by (rule indep_vars_compose2 [OF X_indep], auto)
+      apply (rule indep_vars_compose2[where X=X])
+      apply (rule indep_vars_subset)
+      apply (rule X_indep)
+      apply auto
+      done
     also have "\<dots> = (\<psi> n t)^n"
       by (auto simp add: * setprod_constant)
     finally have 2: "\<phi> n t =(\<psi> n t)^n" .
@@ -336,8 +340,7 @@ proof -
     let ?t = "\<lambda>n. t / sqrt (\<sigma>\<^sup>2 * n)"
     have *: "\<And>n. integrable \<mu> (\<lambda>x. 6 * x^2)" by auto
     have **: "\<And>n. integrable \<mu> (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t / sqrt (\<sigma>\<^sup>2 * real n)\<bar> * \<bar>x\<bar> ^ 3))"
-      apply (rule integrable_bound [OF *])
-      using \<sigma>_pos by (subst abs_of_nonneg, auto intro: mult_nonneg_nonneg)
+      by (rule integrable_bound [OF *]) auto
     have ***: "\<And>x. (\<lambda>n. \<bar>t\<bar> * \<bar>x\<bar> ^ 3 / \<bar>sqrt (\<sigma>\<^sup>2 * real n)\<bar>) ----> 0"
       apply (subst divide_inverse)
       apply (rule tendsto_mult_right_zero)
@@ -347,7 +350,7 @@ proof -
       apply (rule tendsto_inverse_0_at_top)
       by (rule filterlim_compose [OF sqrt_at_top filterlim_real_sequentially])
     have "(\<lambda>n. LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t n\<bar> * \<bar>x\<bar> ^ 3)) ----> (LINT x|\<mu>. 0)"
-      apply (rule integral_dominated_convergence [where w = "\<lambda>x. 6 * x^2", OF **])
+      apply (rule integral_dominated_convergence [where w = "\<lambda>x. 6 * x^2"])
       using \<sigma>_pos apply (auto intro!: AE_I2)
       apply (rule tendsto_sandwich [OF _ _ tendsto_const ***])
       apply (auto intro!: always_eventually min.cobounded2)

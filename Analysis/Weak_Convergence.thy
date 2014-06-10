@@ -62,8 +62,7 @@ lemma borel_measurable_mono_on_fnc:
   assumes "mono_on f A" "A \<in> sets borel" "A \<noteq> {}" "bdd_below A"
   shows "f \<in> borel_measurable (restrict_space lborel A)"
 apply (subst borel_measurable_iff_ge)
-apply (subst sets_restrict_space, auto)
-apply (subst space_restrict_space)
+apply (subst sets_restrict_space_iff, auto intro: assms simp: space_restrict_space)
 proof -
   def F \<equiv> "\<lambda>x. Inf (ereal ` {f y |y. y \<in> A \<and> x \<le> y})"
   fix a :: real
@@ -97,7 +96,8 @@ proof -
       thus "a \<le> f x" using eq by (metis ereal_less_eq(3))
     }
   qed
-  ultimately show "{w \<in> A. a \<le> f w} \<in> op \<inter> A ` sets borel" by auto
+  ultimately show "{w \<in> A. a \<le> f w} \<in> sets borel" 
+    using `A \<in> sets borel` by auto
 qed
 
 (* TODO: turn this into an iff by weakening the hypothesis *)
@@ -279,8 +279,26 @@ proof (safe intro!: assms)
   finally show "g -` A \<inter> space M \<in> sets M" .
 qed
 
+lemma continuous_at_real_range:
+  fixes f :: "'a::real_normed_vector \<Rightarrow> 'b::metric_space"
+  shows "continuous (at x) f \<longleftrightarrow> (\<forall>e>0. \<exists>d>0. \<forall>x'. norm(x' - x) < d --> dist (f x') (f x) < e)"
+  unfolding continuous_at
+  unfolding Lim_at
+  unfolding dist_nz[symmetric]
+  unfolding dist_norm
+  apply auto
+  apply (erule_tac x=e in allE)
+  apply auto
+  apply (rule_tac x=d in exI)
+  apply auto
+  apply (erule_tac x=x' in allE)
+  apply auto
+  apply (erule_tac x=e in allE)
+  apply auto
+  done
+
 lemma isCont_borel:
-  fixes f :: "real \<Rightarrow> real"
+  fixes f :: "real \<Rightarrow> 'a::metric_space"
   assumes "f \<in> borel_measurable borel"
   shows "{x. isCont f x} \<in> sets borel"
 proof -
@@ -288,18 +306,22 @@ proof -
     fix x
     have "isCont f x = (\<forall>(i::nat). \<exists>(j::nat). \<forall>y z. 
       abs(x - y) < inverse(real (j + 1)) \<and> abs(x - z) < inverse(real (j + 1)) \<longrightarrow>
-        abs(f(y) - f(z)) \<le> inverse (real (i + 1)))"
+        dist (f y) (f z) \<le> inverse (real (i + 1)))"
       apply (subst continuous_at_real_range, auto)
       apply (drule_tac x = "inverse(2 * real(Suc i))" in spec, auto)
       apply (frule reals_Archimedean, auto)
       apply (rule_tac x = n in exI, auto)
       apply (frule_tac x = y in spec)
       apply (drule_tac x = z in spec, auto)
-      (* gee, it would be nice if this could be done automatically *)
-      apply (subgoal_tac "f y - f z = f y - f x + (f x - f z)")
-      apply (erule ssubst)
+      apply (simp only: pos_less_divide_eq[symmetric])
       apply (rule order_trans)
-      apply (rule abs_triangle_ineq)
+      apply (rule dist_triangle)
+      apply (rule order_trans)
+      apply (rule add_mono)
+      apply (rule less_imp_le, assumption)
+      apply (subst dist_commute)
+      apply (rule less_imp_le, assumption)
+      apply simp
       apply (auto simp add: abs_minus_commute)
       apply (frule reals_Archimedean, auto)
       apply (drule_tac x = n in spec, auto)
@@ -310,11 +332,11 @@ proof -
   {
     fix i j :: nat
     have "open {x. (\<exists>y. \<bar>x - y\<bar> < inverse (real (Suc i)) \<and> 
-        (\<exists>z. \<bar>x - z\<bar> < inverse (real (Suc i)) \<and> inverse (real (Suc j)) < \<bar>f y - f z\<bar>))}"
+        (\<exists>z. \<bar>x - z\<bar> < inverse (real (Suc i)) \<and> inverse (real (Suc j)) < dist (f y) (f z)))}"
     proof (auto simp add: not_le open_real)
       fix x y z 
       assume 1: "\<bar>x - y\<bar> < inverse (real (Suc i))" and 2: "\<bar>x - z\<bar> < inverse (real (Suc i))"
-        and 3: "inverse (real (Suc j)) < \<bar>f y - f z\<bar>"
+        and 3: "inverse (real (Suc j)) < dist (f y) (f z)"
       hence "\<exists>e > 0. abs(x - y) + e \<le> inverse (real (Suc i)) \<and> 
                      abs(x - z) + e \<le> inverse (real (Suc i))"
         apply (rule_tac x = "min (inverse (real (Suc i)) - abs(x - y)) 
@@ -324,7 +346,7 @@ proof -
           and 6: "abs(x - z) + e \<le> inverse (real (Suc i))" by auto
       have "e > 0 \<and> (\<forall>x'. \<bar>x' - x\<bar> < e \<longrightarrow>
                (\<exists>y. \<bar>x' - y\<bar> < inverse (real (Suc i)) \<and>
-               (\<exists>z. \<bar>x' - z\<bar> < inverse (real (Suc i)) \<and> inverse (real (Suc j)) < \<bar>f y - f z\<bar>)))"
+               (\<exists>z. \<bar>x' - z\<bar> < inverse (real (Suc i)) \<and> inverse (real (Suc j)) < dist (f y) (f z))))"
            (is "?P e")
         using 1 2 3 4 5 6 apply auto
         apply (rule_tac x = y in exI, auto)
@@ -501,7 +523,7 @@ proof -
   qed
   have Y_seq_mono_on: "\<And>n. mono_on (Y_seq n) {0<..<1}" unfolding mono_on_def
     using Y_seq_le_iff by (metis order.trans order_refl)
-  hence Y_seq_meas [simp]: "\<And>n. (Y_seq n) \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc 
+  hence Y_seq_meas [measurable]: "\<And>n. (Y_seq n) \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc 
       unfolding \<Omega>_def
     by simp
   have Y_seq_emeasure_distr_\<Omega>: "\<And>n. emeasure (distr \<Omega> borel (Y_seq n)) UNIV = 1"
@@ -519,25 +541,28 @@ proof -
       unfolding \<Omega>_def vimage_def apply auto
       apply (subst space_restrict_space)
       apply (subst Int_commute)
-      thm Y_seq_le_iff[rule_format]
       apply (subst Int_def, simp)
-      apply (subgoal_tac "{xa. 0 < xa \<and> xa < 1 \<and> Y_seq n xa \<le> x} = {xa. 0 < xa \<and> xa < 1 \<and> xa \<le> f n x}")
+      apply (subgoal_tac "{xa. 0 < xa \<and> xa < 1} \<inter> {xa. Y_seq n xa \<le> x} = {xa. 0 < xa \<and> xa < 1 \<and> xa \<le> f n x}")
       apply (erule ssubst)
       prefer 2
       using Y_seq_le_iff apply auto [1]
-      apply (subst measure_restrict_space, auto)
-      unfolding f_def cdf_def
+      apply (subst measure_restrict_space, simp)
+      apply (auto simp del: measure_lborel)
       apply (subgoal_tac "Sigma_Algebra.measure (\<mu> n) {..x} =
          measure lborel {0..Sigma_Algebra.measure (\<mu> n) {..x}}")
       prefer 2
-      apply (subst lebesgue_measure_interval, auto simp add: measure_nonneg)
-      apply (erule ssubst) back
-      unfolding measure_def apply (rule arg_cong) back
-      apply (rule emeasure_eq_AE, auto)
+      apply (subst lebesgue_measure_interval)
+      apply (rule measure_nonneg)
+      apply simp
+      apply (erule ssubst)
+      unfolding measure_def
+      apply (rule arg_cong[where f=real])
+      unfolding f_def cdf_def
+      apply (rule emeasure_eq_AE)
       apply (rule AE_I [of _ _ "{0, 1}"])
-      apply auto
-      apply (subst (asm) measure_def [symmetric])
-      apply (subst order_less_le, auto)
+      apply (subst measure_def [symmetric])
+      apply auto []
+      apply (subst order_less_le, simp)
       apply (erule order_trans, auto)
       by (metis lmeasure_eq_0 negligible_insert negligible_sing)
     qed
@@ -571,7 +596,7 @@ proof -
       apply (subst Int_commute)
       thm Y_seq_le_iff[rule_format]
       apply (subst Int_def, simp)
-      apply (subgoal_tac "{xa. 0 < xa \<and> xa < 1 \<and> Y xa \<le> x} = {xa. 0 < xa \<and> xa < 1 \<and> xa \<le> F x}")
+      apply (subgoal_tac "{xa. 0 < xa \<and> xa < 1} \<inter> {xa. Y xa \<le> x} = {xa. 0 < xa \<and> xa < 1 \<and> xa \<le> F x}")
       apply (erule ssubst)
       prefer 2
       using Y_le_iff apply auto [1]
@@ -754,25 +779,28 @@ theorem weak_conv_imp_bdd_ae_continuous_conv:
   fixes 
     M_seq :: "nat \<Rightarrow> real measure" and
     M :: "real measure" and
-    f :: "real \<Rightarrow> real"
+    f :: "real \<Rightarrow> 'a::{banach, second_countable_topology}"
   assumes 
     distr_M_seq: "\<And>n. real_distribution (M_seq n)" and 
     distr_M: "real_distribution M" and 
     wcM: "weak_conv_m M_seq M" and
     discont_null: "M ({x. \<not> isCont f x}) = 0" and
-    f_bdd: "\<And>x. abs (f x) \<le> B" and
-    [simp]: "f \<in> borel_measurable borel"
+    f_bdd: "\<And>x. norm (f x) \<le> B" and
+    [measurable]: "f \<in> borel_measurable borel"
   shows 
     "(\<lambda> n. integral\<^sup>L (M_seq n) f) ----> integral\<^sup>L M f"
 proof -
+  have "0 \<le> B"
+    using norm_ge_zero f_bdd by (rule order_trans)
   note Skorohod [OF distr_M_seq distr_M wcM]
   then obtain Omega Y_seq Y where
     ps_Omega [simp]: "prob_space Omega" and
-    Y_seq_measurable [simp]: "\<And>n. Y_seq n \<in> borel_measurable Omega" and
+    Y_seq_measurable [measurable]: "\<And>n. Y_seq n \<in> borel_measurable Omega" and
     distr_Y_seq: "\<And>n. distr Omega borel (Y_seq n) = M_seq n" and
-    Y_measurable [simp]: "Y \<in> borel_measurable Omega" and
+    Y_measurable [measurable]: "Y \<in> borel_measurable Omega" and
     distr_Y: "distr Omega borel Y = M" and
     YnY: "\<And>x :: real. x \<in> space Omega \<Longrightarrow> (\<lambda>n. Y_seq n x) ----> Y x"  by force
+  interpret prob_space Omega by fact
   have *: "emeasure Omega (Y -` {x. \<not> isCont f x} \<inter> space Omega) = 0"
     apply (subst emeasure_distr [symmetric])
     apply (rule Y_measurable)
@@ -780,22 +808,16 @@ proof -
     apply (rule borel_comp)
     apply (subst Compl_eq, simp, rule isCont_borel, simp)
     by (subst distr_Y, rule discont_null)
-    thm pred_Collect_borel
   show ?thesis
     apply (subst distr_Y_seq [symmetric])
     apply (subst distr_Y [symmetric])
     apply (subst integral_distr, simp_all)+
     apply (rule integral_dominated_convergence)
-    apply (rule finite_measure.integrable_const_bound)
-    apply force
-    apply (rule always_eventually, rule allI, rule f_bdd)
-    apply (rule measurable_compose) back
-    apply (rule Y_seq_measurable, force)
-    apply (rule always_eventually, rule allI, rule f_bdd)
-    apply (rule finite_measure.lebesgue_integral_const, force)
-    prefer 2    
-    apply (rule measurable_compose) back
-    apply (rule Y_measurable, simp)
+    apply measurable
+    apply (rule integrable_const_bound[where B=B and f="\<lambda>x. B"])
+    apply simp
+    using `0 \<le> B` apply simp
+    apply simp
     apply (rule AE_I [where N = "Y -` {x. \<not> isCont f x} \<inter> space Omega"])
     apply auto [1]
     apply (erule notE)
@@ -807,20 +829,23 @@ proof -
     apply (subst double_complement [symmetric])
     apply (rule borel_comp)
     apply (subst Compl_eq, simp)
-    by (rule isCont_borel, simp)
+    apply (rule isCont_borel, simp)
+    using f_bdd
+    apply simp
+    done
 qed
 
 theorem weak_conv_imp_integral_bdd_continuous_conv:
   fixes 
     M_seq :: "nat \<Rightarrow> real measure" and
     M :: "real measure" and
-    f :: "real \<Rightarrow> real"
+    f :: "real \<Rightarrow> 'a::{banach, second_countable_topology}"
   assumes 
     "\<And>n. real_distribution (M_seq n)" and 
     "real_distribution M" and 
     "weak_conv_m M_seq M" and
     "\<And>x. isCont f x" and
-    "\<And>x. abs (f x) \<le> B"
+    "\<And>x. norm (f x) \<le> B"
   shows 
     "(\<lambda> n. integral\<^sup>L (M_seq n) f) ----> integral\<^sup>L M f"
 
@@ -834,28 +859,22 @@ theorem weak_conv_imp_continuity_set_conv:
     M :: "real measure" and
     f :: "real \<Rightarrow> real"
   assumes 
-    real_dist_Mn [simp]: "\<And>n. real_distribution (M_seq n)" and 
-    real_dist_M [simp]: "real_distribution M" and 
+    "\<And>n. real_distribution (M_seq n)" "real_distribution M" and 
     "weak_conv_m M_seq M" and
-    [simp]: "A \<in> sets borel" and
+    [measurable]: "A \<in> sets borel" and
     "M (frontier A) = 0"
   shows 
     "(\<lambda> n. (measure (M_seq n) A)) ----> measure M A"
-
-  (* this is a pain -- have to instantiate the locale (or fake it) to use facts
-     about real distributions *)
-  apply (subst measure_def)+
-  apply (subst integral_indicator(1) [symmetric]) 
-  apply (auto simp add: real_distribution.events_eq_borel)[1]
-  apply (rule finite_measure.emeasure_finite, rule prob_space_simps)
-  using real_dist_Mn unfolding real_distribution_def apply auto
-  apply (subst integral_indicator(1) [symmetric]) 
-  apply (auto simp add: real_distribution.events_eq_borel)[1]
-  apply (rule finite_measure.emeasure_finite, rule prob_space_simps)
-  using real_dist_M unfolding real_distribution_def apply auto
-  apply (rule weak_conv_imp_bdd_ae_continuous_conv, auto simp add: assms)
-  apply (subst isCont_indicator, simp add: assms)
-by (rule borel_measurable_indicator, simp)
+proof -
+  interpret M: real_distribution M by fact
+  interpret M_seq: real_distribution "M_seq n" for n by fact
+  
+  have "(\<lambda>n. (\<integral>x. indicator A x \<partial>M_seq n) :: real) ----> (\<integral>x. indicator A x \<partial>M)"
+    by (intro weak_conv_imp_bdd_ae_continuous_conv[where B=1])
+       (auto intro: assms simp: isCont_indicator)
+  then show ?thesis
+    by simp
+qed
 
 (* the dual version is in Convex_Euclidean_Space.thy *)
 
@@ -903,10 +922,8 @@ theorem continuity_set_conv_imp_weak_conv:
         (\<lambda> n. (measure (M_seq n) A)) ----> measure M A"
   shows 
     "weak_conv_m M_seq M"
-
 proof -
   interpret real_distribution M by simp
-thm emeasure_eq_measure
   show ?thesis
    unfolding weak_conv_m_def weak_conv_def cdf_def2 apply auto
    by (rule *, auto simp add: frontier_real_atMost isCont_cdf emeasure_eq_measure)
@@ -977,29 +994,23 @@ lemma (in real_distribution) cdf_cts_step:
 unfolding cdf_def 
 proof -
   have "prob {..x} = integral\<^sup>L M (indicator {..x})"
-    apply (subst measure_def)
-    (* interesting -- this doesn't this work:
-      apply (auto simp add: integral_indicator)
-    *)
-    by (subst integral_indicator, auto)
+    by simp
   thus "prob {..x} \<le> expectation (cts_step x y)"
     apply (elim ssubst)
     apply (rule integral_mono)
-    apply (rule integral_indicator, auto)
-    apply (rule integrable_cts_step, rule assms)
-  unfolding cts_step_def indicator_def
-  by (auto simp add: field_simps)
+    apply simp
+    apply (auto intro!: integrable_cts_step assms) []
+    apply (auto simp add: cts_step_def indicator_def field_simps)
+    done
 next
   have "prob {..y} = integral\<^sup>L M (indicator {..y})"
-    apply (subst measure_def)
-    by (subst integral_indicator, auto)
+    by simp
   thus "expectation (cts_step x y) \<le> prob {..y}"
     apply (elim ssubst)
     apply (rule integral_mono)
     apply (rule integrable_cts_step, rule assms)
-    apply (rule integral_indicator, auto)
     unfolding cts_step_def indicator_def using `x < y`
-      by (auto simp add: field_simps)
+    by (auto simp add: field_simps)
 qed
 
 (*** NOTE: The following three lemmata are solved directly by theorems in Library_Misc. ***)
@@ -1135,7 +1146,7 @@ theorem integral_bdd_continuous_conv_imp_weak_conv:
     "\<And>n. real_distribution (M_seq n)" and 
     "real_distribution M" and 
     "\<And>f B. (\<And>x. isCont f x) \<Longrightarrow> (\<And>x. abs (f x) \<le> B) \<Longrightarrow>
-         (\<lambda>n. integral\<^sup>L (M_seq n) f) ----> integral\<^sup>L M f"
+         (\<lambda>n. integral\<^sup>L (M_seq n) f::real) ----> integral\<^sup>L M f"
   shows 
     "weak_conv_m M_seq M"
 
