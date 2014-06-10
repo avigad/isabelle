@@ -105,19 +105,6 @@ qed
 interpretation lborel_pair!: pair_sigma_finite lborel lborel
   proof qed
 
-lemma lborel_prod:
-  "lborel \<Otimes>\<^sub>M lborel = (lborel :: 
-      ('a::ordered_euclidean_space \<times> 'b::ordered_euclidean_space) measure)"
-proof (rule pair_measure_eqI)
-  show "sets (lborel \<Otimes>\<^sub>M lborel) = sets lborel"
-    by (simp add: borel_prod)
-  show "sigma_finite_measure lborel" ..
-  show "sigma_finite_measure lborel" ..
-  fix A :: "'a set" and B :: "'b set" assume A: "A \<in> sets lborel" and B: "B \<in> sets lborel"
-  then show "emeasure lborel A * emeasure lborel B = emeasure lborel (A \<times> B)"
-    sorry
-qed
-
 subsection {* ereal lemmas *}
 
 lemma ereal_mult1_left[simp]:
