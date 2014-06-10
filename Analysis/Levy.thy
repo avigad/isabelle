@@ -111,8 +111,7 @@ proof -
           (iexp (-(t * a)) - (1 + ii * -(t * a))) / (ii * t) - 
           (iexp (-(t * b)) - (1 + ii * -(t * b))) / (ii * t))"  
              (is "_ = cmod (?one / (ii * t) - ?two / (ii * t))")
-        apply (rule arg_cong) back
-        using `t \<noteq> 0` by (simp add: field_simps)
+        using `t \<noteq> 0` by (intro arg_cong[where f=norm]) (simp add: field_simps)
       also have "\<dots> \<le> cmod (?one / (ii * t)) + cmod (?two / (ii * t))" 
         by (rule norm_triangle_ineq4)
       also have "cmod (?one / (ii * t)) = cmod ?one / abs t"
@@ -137,11 +136,8 @@ proof -
     apply (rule LIM_zero_cancel)
     apply (rule tendsto_norm_zero_cancel)
     apply (rule real_LIM_sandwich_zero [OF _ _ 1])
-    apply (subgoal_tac "0 = 0 + 0")
-    apply (erule ssubst) back back
-    apply (rule tendsto_add)
-    apply (rule tendsto_mult_right_zero, rule tendsto_rabs_zero, rule tendsto_ident_at)+
-    by auto
+    apply (auto intro!: tendsto_eq_intros)
+    done
 qed
 
 (* TODO: what to do? this causes problems below, but elsewhere it is needed *)
@@ -154,8 +150,7 @@ lemma Levy_Inversion_aux2:
     (is "?F \<le> _")
 proof -
   have "?F = cmod (iexp (t * a) * (iexp (t * (b - a)) - 1) / (ii * t))"
-    apply (rule arg_cong) back
-    using `t ~= 0` by (simp add: field_simps exp_diff exp_minus)
+    using `t \<noteq> 0` by (intro arg_cong[where f=norm]) (simp add: field_simps exp_diff exp_minus)
   also have "\<dots> = cmod (iexp (t * (b - a)) - 1) / abs t"
     apply (subst norm_divide)
     apply (subst norm_mult)
@@ -268,7 +263,6 @@ theorem Levy_Inversion:
           by (rule interval_lebesgue_integral_of_real)
         also have "\<dots> = complex_of_real (2 * (sgn (x - a) * Si (T * abs (x - a)) -
             sgn (x - b) * Si (T * abs (x - b))))"
-          apply (rule arg_cong) back
           apply (subst interval_lebesgue_integral_diff)
           apply (rule interval_lebesgue_integrable_mult_right, rule iSi_integrable)+
           apply (subst interval_lebesgue_integral_mult_right)+

@@ -41,63 +41,61 @@ lemma lebesgue_measure_interval: "a \<le> b \<Longrightarrow> measure lborel {a.
  unfolding measure_def by auto
 
 lemma distr_cong_AE:
-  assumes 1: "M = K" and "sets N = sets L" and 
+  assumes 1: "M = K" "sets N = sets L" and 
     2: "(AE x in M. f x = g x)" and "f \<in> measurable M N" and "g \<in> measurable K L"
   shows "distr M N f = distr K L g"
-using assms sets_eq_imp_space_eq[of N L] apply (simp add: distr_def)
-  apply (rule measure_of_eq)
-  apply (rule sets.space_closed)
-  apply (rule emeasure_eq_AE)
-  apply (simp only: 1 [symmetric])
-  apply (rule AE_mp [OF 2], auto)
-  apply (simp only: 1 [symmetric])
-  apply (erule measurable_sets, simp add: sets.sigma_sets_eq)
-by (erule measurable_sets, simp add: sets.sigma_sets_eq)
+proof (rule measure_eqI)
+  fix A assume "A \<in> sets (distr M N f)"
+  with assms show "emeasure (distr M N f) A = emeasure (distr K L g) A"
+    by (auto simp add: emeasure_distr intro!: emeasure_eq_AE measurable_sets)
+qed (insert 1, simp)
+
 
 definition mono_on :: "('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a set \<Rightarrow> bool" where
   "mono_on f A = (\<forall>x\<in>A. \<forall>y\<in>A. x \<le> y \<longrightarrow> f x \<le> f y)"
 
+lemma mono_onD: "mono_on f A \<Longrightarrow> x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> x \<le> y \<Longrightarrow> f x \<le> f y"
+  unfolding mono_on_def by auto
+
 lemma borel_measurable_mono_on_fnc:
   fixes f :: "real \<Rightarrow> real" and  A :: "real set"
-  assumes "mono_on f A" "A \<in> sets borel" "A \<noteq> {}" "bdd_below A"
+  assumes "mono_on f A" and [measurable]: "A \<in> sets borel"
   shows "f \<in> borel_measurable (restrict_space lborel A)"
-apply (subst borel_measurable_iff_ge)
-apply (subst sets_restrict_space_iff, auto intro: assms simp: space_restrict_space)
 proof -
-  def F \<equiv> "\<lambda>x. Inf (ereal ` {f y |y. y \<in> A \<and> x \<le> y})"
-  fix a :: real
-  have monoF: "mono F" unfolding F_def mono_def
-    apply auto
-    apply (unfold INF_def)
-    apply (rule Inf_superset_mono)
-    apply (unfold image_def)
-    using assms(1) unfolding mono_on_def mono_def apply auto
-  by (metis order.trans)
-  hence "{w. a \<le> F w} \<in> sets borel" using borel_measurable_mono_fnc
-    by (smt dual_order.trans is_interval_1 mem_Collect_eq mono_def real_interval_borel_measurable)
-  moreover have "{w \<in> A. a \<le> f w} = {w. a \<le> F w} \<inter> A"
-  proof auto
-    have *: "\<And>w. w \<in> A \<Longrightarrow> f w = F w"
-    proof -
-      fix w assume w: "w \<in> A"
-      hence fw: "f w \<in> {f y |y. y \<in> A \<and> w \<le> y}" unfolding F_def by auto
-      hence "F w \<le> f w" unfolding F_def using Inf_lower by (metis (erased, lifting) rev_image_eqI)
-      moreover have "f w \<le> F w" unfolding F_def image_def
-        apply (subst le_Inf_iff, auto)
-        using w assms(1) unfolding mono_on_def mono_def by auto
-      ultimately show "f w = F w" by auto
-    qed
-    fix x assume 1: "x \<in> A"
-    hence eq: "f x = F x" using 1 * by simp
-    { assume "a \<le> f x"
-      thus "ereal a \<le> F x" using eq by (metis ereal_less_eq(3))
-    }
-    { assume "ereal a \<le> F x"
-      thus "a \<le> f x" using eq by (metis ereal_less_eq(3))
-    }
-  qed
-  ultimately show "{w \<in> A. a \<le> f w} \<in> sets borel" 
-    using `A \<in> sets borel` by auto
+  { fix x def X \<equiv> "{a \<in> A. x \<le> f a}" def I \<equiv> "Inf X"
+    have "X \<in> sets borel"
+    proof cases
+      assume X: "bdd_below X \<and> X \<noteq> {}"
+      then have X_le: "X \<subseteq> {I ..} \<inter> A"
+        by (auto simp: X_def I_def intro!: cInf_lower)
+      moreover have le_X: "{I <..} \<inter> A \<subseteq> X"
+      proof safe
+        fix a assume "a \<in> A" "I < a"
+        with X obtain b where "b \<in> X" "b < a"
+          using cInf_less_iff[of X a] by (auto simp: I_def)
+        with mono_onD[OF `mono_on f A`, of b a] `a\<in>A` show "a \<in> X"
+          by (auto simp: X_def)
+      qed
+      ultimately have "X = {I ..} \<inter> A \<or> X = {I <..} \<inter> A"
+        by (cases "I \<in> X") (auto simp add: ivl_disj_un(1)[symmetric])
+      then show ?thesis
+        by auto
+    next
+      assume "\<not> (bdd_below X \<and> X \<noteq> {})"
+      moreover
+      { assume "\<not> bdd_below X"
+        { fix a assume "a \<in> A"
+          from `\<not> bdd_below X` obtain b where "b \<in> X" "b \<le> a"
+            by (auto simp: bdd_below_def not_le intro: less_imp_le)
+          with mono_onD[OF `mono_on f A`, of b a] `a\<in>A` have "a \<in> X"
+            by (auto simp: X_def) }
+        then have "X = A"
+          by (auto simp: X_def) }
+      ultimately show ?thesis
+        by auto
+    qed }
+  then show ?thesis
+    by (simp add: sets_restrict_space_iff space_restrict_space borel_measurable_iff_ge)
 qed
 
 (* TODO: turn this into an iff by weakening the hypothesis *)
@@ -279,91 +277,86 @@ proof (safe intro!: assms)
   finally show "g -` A \<inter> space M \<in> sets M" .
 qed
 
-lemma continuous_at_real_range:
-  fixes f :: "'a::real_normed_vector \<Rightarrow> 'b::metric_space"
-  shows "continuous (at x) f \<longleftrightarrow> (\<forall>e>0. \<exists>d>0. \<forall>x'. norm(x' - x) < d --> dist (f x') (f x) < e)"
-  unfolding continuous_at
-  unfolding Lim_at
-  unfolding dist_nz[symmetric]
-  unfolding dist_norm
-  apply auto
-  apply (erule_tac x=e in allE)
-  apply auto
-  apply (rule_tac x=d in exI)
-  apply auto
-  apply (erule_tac x=x' in allE)
-  apply auto
-  apply (erule_tac x=e in allE)
-  apply auto
-  done
+lemma closed_Collect_imp: assumes "open {x. P x}" "closed {x. Q x}" shows "closed {x. P x \<longrightarrow> Q x}"
+proof -
+  have *: "{x. P x \<longrightarrow> Q x} = - {x. P x} \<union> {x. Q x}"
+    by auto
+  show ?thesis
+    unfolding * by (intro closed_Un closed_Compl assms)
+qed
+
+lemma open_Collect_conj: assumes "open {x. P x}" "open {x. Q x}" shows "open {x. P x \<and> Q x}"
+proof -
+  have *: "{x. P x \<and> Q x} = {x. P x} \<inter> {x. Q x}"
+    by auto
+  show ?thesis
+    unfolding * by (intro open_Int assms)
+qed
 
 lemma isCont_borel:
-  fixes f :: "real \<Rightarrow> 'a::metric_space"
-  assumes "f \<in> borel_measurable borel"
+  fixes f :: "'b::metric_space \<Rightarrow> 'a::metric_space"
   shows "{x. isCont f x} \<in> sets borel"
 proof -
-  {
-    fix x
-    have "isCont f x = (\<forall>(i::nat). \<exists>(j::nat). \<forall>y z. 
-      abs(x - y) < inverse(real (j + 1)) \<and> abs(x - z) < inverse(real (j + 1)) \<longrightarrow>
-        dist (f y) (f z) \<le> inverse (real (i + 1)))"
-      apply (subst continuous_at_real_range, auto)
-      apply (drule_tac x = "inverse(2 * real(Suc i))" in spec, auto)
-      apply (frule reals_Archimedean, auto)
-      apply (rule_tac x = n in exI, auto)
-      apply (frule_tac x = y in spec)
-      apply (drule_tac x = z in spec, auto)
-      apply (simp only: pos_less_divide_eq[symmetric])
-      apply (rule order_trans)
-      apply (rule dist_triangle)
-      apply (rule order_trans)
-      apply (rule add_mono)
-      apply (rule less_imp_le, assumption)
-      apply (subst dist_commute)
-      apply (rule less_imp_le, assumption)
-      apply simp
-      apply (auto simp add: abs_minus_commute)
-      apply (frule reals_Archimedean, auto)
-      apply (drule_tac x = n in spec, auto)
-      apply (rule_tac x = "inverse (real (Suc j))" in exI, auto)
-      apply (drule_tac x = x' in spec)
-      by (drule_tac x = x in spec, auto)
-  } note isCont_iff = this
-  {
-    fix i j :: nat
-    have "open {x. (\<exists>y. \<bar>x - y\<bar> < inverse (real (Suc i)) \<and> 
-        (\<exists>z. \<bar>x - z\<bar> < inverse (real (Suc i)) \<and> inverse (real (Suc j)) < dist (f y) (f z)))}"
-    proof (auto simp add: not_le open_real)
-      fix x y z 
-      assume 1: "\<bar>x - y\<bar> < inverse (real (Suc i))" and 2: "\<bar>x - z\<bar> < inverse (real (Suc i))"
-        and 3: "inverse (real (Suc j)) < dist (f y) (f z)"
-      hence "\<exists>e > 0. abs(x - y) + e \<le> inverse (real (Suc i)) \<and> 
-                     abs(x - z) + e \<le> inverse (real (Suc i))"
-        apply (rule_tac x = "min (inverse (real (Suc i)) - abs(x - y)) 
-             (inverse (real (Suc i)) - abs(x - z))" in exI)
-        by (auto split: split_min)
-      then obtain e where 4: "e > 0" and 5: "abs(x - y) + e \<le> inverse (real (Suc i))"
-          and 6: "abs(x - z) + e \<le> inverse (real (Suc i))" by auto
-      have "e > 0 \<and> (\<forall>x'. \<bar>x' - x\<bar> < e \<longrightarrow>
-               (\<exists>y. \<bar>x' - y\<bar> < inverse (real (Suc i)) \<and>
-               (\<exists>z. \<bar>x' - z\<bar> < inverse (real (Suc i)) \<and> inverse (real (Suc j)) < dist (f y) (f z))))"
-           (is "?P e")
-        using 1 2 3 4 5 6 apply auto
-        apply (rule_tac x = y in exI, auto)
-        by (rule_tac x = z in exI, auto)
-      thus "\<exists>e. ?P e" ..
-    qed
-  } note * = this
-  show ?thesis
-    apply (subst isCont_iff)
-    apply (subst Collect_all_eq)
-    apply (rule countable_Un_Int, auto)
-    apply (subst Collect_ex_eq)
-    apply (rule countable_Un_Int, auto)
-    apply (rule borel_closed)
-    apply (subst closed_def)
-    apply (subst Compl_eq, simp add: not_le)
-    by (rule *)
+  let ?I = "\<lambda>j. inverse(real (Suc j))"
+
+  { fix x
+    have "isCont f x = (\<forall>i. \<exists>j. \<forall>y z. dist x y < ?I j \<and> dist x z < ?I j \<longrightarrow> dist (f y) (f z) \<le> ?I i)"
+      unfolding continuous_at_eps_delta
+    proof safe
+      fix i assume "\<forall>e>0. \<exists>d>0. \<forall>y. dist y x < d \<longrightarrow> dist (f y) (f x) < e"
+      moreover have "0 < ?I i / 2"
+        by simp
+      ultimately obtain d where d: "0 < d" "\<And>y. dist x y < d \<Longrightarrow> dist (f y) (f x) < ?I i / 2"
+        by (metis dist_commute)
+      then obtain j where j: "?I j < d"
+        by (metis reals_Archimedean)
+
+      show "\<exists>j. \<forall>y z. dist x y < ?I j \<and> dist x z < ?I j \<longrightarrow> dist (f y) (f z) \<le> ?I i"
+      proof (safe intro!: exI[where x=j])
+        fix y z assume *: "dist x y < ?I j" "dist x z < ?I j"
+        have "dist (f y) (f z) \<le> dist (f y) (f x) + dist (f z) (f x)"
+          by (rule dist_triangle2)
+        also have "\<dots> < ?I i / 2 + ?I i / 2"
+          by (intro add_strict_mono d less_trans[OF _ j] *)
+        also have "\<dots> \<le> ?I i"
+          by (simp add: field_simps real_of_nat_Suc)
+        finally show "dist (f y) (f z) \<le> ?I i"
+          by simp
+      qed
+    next
+      fix e::real assume "0 < e"
+      then obtain n where n: "?I n < e"
+        by (metis reals_Archimedean)
+      assume "\<forall>i. \<exists>j. \<forall>y z. dist x y < ?I j \<and> dist x z < ?I j \<longrightarrow> dist (f y) (f z) \<le> ?I i"
+      from this[THEN spec, of "Suc n"]
+      obtain j where j: "\<And>y z. dist x y < ?I j \<Longrightarrow> dist x z < ?I j \<Longrightarrow> dist (f y) (f z) \<le> ?I (Suc n)"
+        by auto
+      
+      show "\<exists>d>0. \<forall>y. dist y x < d \<longrightarrow> dist (f y) (f x) < e"
+      proof (safe intro!: exI[of _ "?I j"])
+        fix y assume "dist y x < ?I j"
+        then have "dist (f y) (f x) \<le> ?I (Suc n)"
+          by (intro j) (auto simp: dist_commute)
+        also have "?I (Suc n) < ?I n"
+          by simp
+        also note n
+        finally show "dist (f y) (f x) < e" .
+      qed simp
+    qed }
+  note * = this
+
+  have **: "\<And>e y. open {x. dist x y < e}"
+    using open_ball by (simp_all add: ball_def dist_commute)
+
+  have "{x\<in>space borel. isCont f x } \<in> sets borel"
+    unfolding *
+    apply (intro sets.sets_Collect_countable_All sets.sets_Collect_countable_Ex)
+    apply (simp add: Collect_all_eq)
+    apply (intro borel_closed closed_INT ballI closed_Collect_imp open_Collect_conj **)
+    apply auto
+    done
+  then show ?thesis
+    by simp
 qed
 
 lemma isCont_indicator: 
@@ -474,6 +467,13 @@ proof safe
   }
 qed
 
+lemma AE_lborel_singleton: "AE x in lborel. x \<noteq> c"
+  by (intro AE_I[where N="{c}"]) auto
+
+lemma emeasure_insert':
+  "A \<noteq> {} \<Longrightarrow> {x} \<in> sets M \<Longrightarrow> A \<in> sets M \<Longrightarrow> x \<notin> A \<Longrightarrow> emeasure M (insert x A) = emeasure M {x} + emeasure M A"
+    by (rule emeasure_insert) 
+
 (* state using obtains? *)
 theorem Skorohod:
   fixes 
@@ -578,44 +578,28 @@ proof -
     unfolding rcont_inc_def using F_inc F_right_cts F_at_top F_at_bot by auto
   have Y_mono_on: "mono_on Y {0<..<1}" unfolding mono_on_def
     using Y_le_iff by (metis order.trans order_refl)
-  hence Y_meas: "Y \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc unfolding \<Omega>_def
+  hence Y_meas[measurable]: "Y \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc unfolding \<Omega>_def
     by simp
   have Y_emeasure_distr_\<Omega>: "emeasure (distr \<Omega> borel Y) UNIV = 1"
      apply (subst emeasure_distr)
      using Y_meas unfolding \<Omega>_def 
      by (auto simp add: emeasure_restrict_space space_restrict_space)
-  have "cdf (distr \<Omega> borel Y) = cdf M"
-  proof -
-    interpret M: real_distribution M by (rule assms)
-    show "cdf (distr \<Omega> borel Y) = cdf M"
-      apply (unfold cdf_def, rule ext)
-      apply (subst measure_distr)
-      apply (rule Y_meas, auto)
-      unfolding \<Omega>_def vimage_def apply auto
-      apply (subst space_restrict_space)
-      apply (subst Int_commute)
-      thm Y_seq_le_iff[rule_format]
-      apply (subst Int_def, simp)
-      apply (subgoal_tac "{xa. 0 < xa \<and> xa < 1} \<inter> {xa. Y xa \<le> x} = {xa. 0 < xa \<and> xa < 1 \<and> xa \<le> F x}")
-      apply (erule ssubst)
-      prefer 2
-      using Y_le_iff apply auto [1]
-      apply (subst measure_restrict_space, auto)
-      unfolding F_def cdf_def
-      apply (subgoal_tac "Sigma_Algebra.measure M {..x} =
-         measure lborel {0..Sigma_Algebra.measure M {..x}}")
-      prefer 2
-      apply (subst lebesgue_measure_interval, auto simp add: measure_nonneg)
-      apply (erule ssubst) back
-      unfolding measure_def apply (rule arg_cong) back
-      apply (rule emeasure_eq_AE, auto)
-      apply (rule AE_I [of _ _ "{0, 1}"])
-      apply auto
-      apply (subst (asm) measure_def [symmetric])
-      apply (subst order_less_le, auto)
-      apply (erule order_trans, auto)
-      by (metis lmeasure_eq_0 negligible_insert negligible_sing)
-    qed
+  interpret M: real_distribution M by (rule assms)
+  { fix x 
+    have "cdf (distr \<Omega> borel Y) x = measure \<Omega> (Y -` {..x} \<inter> space \<Omega>)"
+      by (simp add: cdf_def measure_distr)
+    also have "(Y -` {..x} \<inter> space \<Omega>) = ({.. F x} \<inter> {0 <..< 1})"
+      using Y_le_iff by (auto simp: Ball_def \<Omega>_def space_restrict_space)
+    also have "measure \<Omega> ({.. F x} \<inter> {0 <..< 1}) = measure lborel ({.. F x} \<inter> {0 <..< 1})"
+      by (simp add: \<Omega>_def measure_restrict_space del: measure_lborel)
+    also have "\<dots> = measure lborel {0 .. F x}"
+      unfolding measure_def using M.cdf_bounded_prob[of x]
+      by (intro arg_cong[where f=real] emeasure_eq_AE)
+         (auto intro!: AE_I[where N="{0, 1}"] simp: emeasure_insert' less_le F_def)
+    also have "\<dots> = cdf M x"
+      using M.cdf_nonneg[of x] by (simp add: measure_def F_def)
+    finally have "cdf (distr \<Omega> borel Y) x = cdf M x" . }
+  then have "cdf (distr \<Omega> borel Y) = cdf M" ..
   hence Y_distr: "distr \<Omega> borel Y = M"
     apply (intro cdf_unique, auto simp add: assms)
     unfolding real_distribution_def apply auto
@@ -763,7 +747,7 @@ proof -
   moreover have "distr \<Omega> borel Y' = M"
     apply (subst Y_distr [symmetric])
     apply (rule distr_cong_AE, auto)
-    by (rule Y'_AE, rule Y_meas)
+    by (rule Y'_AE)
   ultimately have "prob_space \<Omega> \<and> (\<forall>n. Y_seq' n \<in> borel_measurable \<Omega>) \<and>
     (\<forall>n. distr \<Omega> borel (Y_seq' n) = \<mu> n) \<and> Y' \<in> measurable \<Omega> lborel \<and> distr \<Omega> borel Y' = M \<and>
     (\<forall>x\<in>space \<Omega>. (\<lambda>n. Y_seq' n x) ----> Y' x)" using prob_\<Omega> Y'_cnv
@@ -806,7 +790,7 @@ proof -
     apply (rule Y_measurable)
     apply (subst double_complement [symmetric])
     apply (rule borel_comp)
-    apply (subst Compl_eq, simp, rule isCont_borel, simp)
+    apply (subst Compl_eq, simp, rule isCont_borel)
     by (subst distr_Y, rule discont_null)
   show ?thesis
     apply (subst distr_Y_seq [symmetric])
@@ -829,7 +813,7 @@ proof -
     apply (subst double_complement [symmetric])
     apply (rule borel_comp)
     apply (subst Compl_eq, simp)
-    apply (rule isCont_borel, simp)
+    apply (rule isCont_borel)
     using f_bdd
     apply simp
     done

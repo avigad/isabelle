@@ -193,9 +193,7 @@ proof -
   proof -
     let ?f5 = "\<lambda>k :: nat. \<lambda>y :: real. (y^2)^(k + 1) / exp (y\<^sup>2)"
     have *: "\<And>k. (?f5 k ---> 0) at_top"
-      apply (rule filterlim_compose) back
-      apply (rule tendsto_power_div_exp_0)
-      by (rule filterlim_power2_at_top)
+      using tendsto_power_div_exp_0 filterlim_power2_at_top by (rule filterlim_compose)
     let ?f6 = "(\<lambda>y :: real. exp (- y\<^sup>2) * y ^ (k + 1))"
     have **: "(?f6 ---> 0) at_top"
     proof (cases "even k")

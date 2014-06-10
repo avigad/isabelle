@@ -707,17 +707,14 @@ proof (rule countably_additiveI)
               using hyp UNiS apply auto
               apply (frule_tac x = "ia" in bspec)
               apply auto
-              by (smt DiffI Set.set_insert hyp singleton_insert_inj_eq')
-              (* The fact euclidean_trans seems to have been renamed; above are the results of
-                 running sledgehammer. *)
-              (*by (metis euclidean_trans(2) euclidean_trans(3)
-                hyp le_less less_imp_triv mem_delete not_le)*)
-            also have "(\<Sum>i\<in>S - {j}. F (r i) - F (l i)) \<le>
-              (\<Sum>i\<in>S. F (r i) - F (l i))"
-              apply (subgoal_tac "S = (S - {j}) Un {j}") 
-              apply (erule ssubst) back
-              apply (subst setsum_Un_disjoint)
-              using finS Sj by (auto simp add: field_simps intro: nondecF less_imp_le iSliri)
+              using hyp
+              apply (auto simp: subset_eq Ball_def)
+              apply (metis dual_order.strict_trans1 le_less_trans)
+              done
+            also have "(\<Sum>i\<in>S - {j}. F (r i) - F (l i)) \<le> (\<Sum>i\<in>S. F (r i) - F (l i))"
+              using finS Sj
+              by (subst setsum.remove[OF finS Sj])
+                 (auto simp add: field_simps intro: nondecF less_imp_le iSliri)
             finally show ?thesis .
           next 
             assume hyp: "~?R"
@@ -758,11 +755,8 @@ proof (rule countably_additiveI)
               apply (frule aux4)
               using S1sum S2sum by auto
             also have "... \<le> (\<Sum>i\<in>S. F (r i) - F (l i))"
-              apply (rule setsum_mono2)
-              using finS Sj apply (auto simp add: field_simps)
-              apply (rule nondecF)
-              apply (frule iSliri) back
-              by auto
+              using finS Sj 
+              by (intro setsum_mono2) (auto simp add: field_simps intro!: nondecF dest: iSliri)
             finally show ?thesis .
           qed
         qed
@@ -842,10 +836,7 @@ proof (rule countably_additiveI)
       by auto
     also have "... = (SUM i : S. F(right i) - F(left i)) + 
         (epsilon / 4) * (SUM i : S. (1 / 2)^i)" (is "_ = ?t + _")
-      apply (subst setsum_addf)
-      apply (rule arg_cong) back
-      apply (subst setsum_right_distrib)
-      by (auto simp add: field_simps power_divide)
+      by (subst setsum_addf) (simp add: field_simps setsum_right_distrib)
     also have "... \<le> ?t + (epsilon / 4) * (\<Sum> i < Suc n. (1 / 2)^i)"
       apply (rule add_left_mono)
       apply (rule mult_left_mono)
@@ -880,8 +871,7 @@ proof (rule countably_additiveI)
       also have "... = (\<Sum>i\<in>S. F (right i) - F (left i)) + epsilon"
         by auto
       also have "... = (\<Sum>i \<in> S. half_open_semiring_measure F (A i)) + epsilon"
-        apply (rule arg_cong) back
-        apply (rule setsum_cong, auto)
+        apply (intro arg_cong2[where f="op +"] refl setsum_cong)
         apply (subst Aieq)
         apply (rule half_open_semiring_measure_nonempty [symmetric])
         by (erule Sprop2)
@@ -1020,8 +1010,8 @@ proof
   have 1: "F = (\<lambda>x. G x + (F 0 - G 0))"
     apply (rule ext)
     using h1 by (subgoal_tac "x < 0 | x = 0 | x > 0", auto, force, force)
-  hence "(F ---> c + (F 0 - G 0)) at_bot"
-    apply (elim ssubst) back back
+  have "(F ---> c + (F 0 - G 0)) at_bot"
+    apply (subst 1)
     by (rule tendsto_add, rule h3, auto)
   with h2 have "c + (F 0 - G 0) = c"
     apply (intro tendsto_unique, auto)
@@ -1078,18 +1068,16 @@ proof -
     apply auto
     apply (subgoal_tac "(1 :: ereal) = ereal (1::real)")
     apply (erule ssubst)
-    apply (rule isCont_tendsto_compose) back
+    unfolding lim_ereal
     apply (auto simp add: one_ereal_def)
     apply (subgoal_tac "(1 :: real) = 1 - 0")
     apply (erule ssubst)
     apply (subst LIMSEQ_Suc_iff)
     apply (rule tendsto_diff)
     apply auto
-    apply (rule filterlim_compose) back
-    apply (rule lim_F_at_top)
+    apply (rule filterlim_compose[OF lim_F_at_top])
     apply (rule filterlim_real_sequentially)
-    apply (rule filterlim_compose) back
-    apply (rule lim_F_at_bot)
+    apply (rule filterlim_compose[OF lim_F_at_bot])
     apply (subst filterlim_uminus_at_top [symmetric])
     by (rule filterlim_real_sequentially)
   then interpret M: real_distribution ?M .

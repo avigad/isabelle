@@ -268,7 +268,7 @@ lemma ex_18_4_2_ubdd_integral:
   apply (rule tendsto_diff, auto)
   apply (subgoal_tac "1 = exp 0")
   apply (erule ssubst)
-  apply (rule tendsto_compose) back
+  apply (rule tendsto_compose[OF tendsto_exp])
   apply (subst isCont_def [symmetric], auto)
   apply (rule tendsto_minus_cancel, auto)
   apply (rule tendsto_mult_left_zero, rule tendsto_ident_at)
@@ -278,16 +278,15 @@ lemma ex_18_4_2_ubdd_integral:
   apply (erule ssubst)
   apply (rule tendsto_mult)+
   apply auto
-  apply (subgoal_tac "1 = 1 - 0")
-  apply (erule ssubst) back
-  apply (rule tendsto_diff, auto)
-  apply (rule filterlim_compose) back
-  apply (rule exp_at_bot)
-  apply (subst filterlim_uminus_at_top [symmetric])
+  apply (rule tendsto_eq_intros)
+  apply (rule tendsto_const)
+  apply (rule filterlim_compose[OF exp_at_bot])
+  unfolding filterlim_uminus_at_bot
+  apply simp
   apply (subst mult_commute)
-  apply (rule filterlim_tendsto_pos_mult_at_top [OF _ pos])
-  apply auto
-by (rule filterlim_ident)
+  apply (rule filterlim_tendsto_pos_mult_at_top[OF tendsto_const pos filterlim_ident])
+  apply simp
+  done
 
 lemma Billingsley_ex_17_5: 
   shows "set_integrable lborel (einterval (-\<infinity>) \<infinity>) (\<lambda>x. inverse (1 + x^2))"
@@ -568,9 +567,7 @@ proof -
       apply (rule interval_integral_substitution_nonneg [of "ereal 0" \<infinity>, OF _ 1])
       apply (auto simp add: ereal_tendsto_simps add_nonneg_eq_0_iff)
       apply (rule tendsto_mono [OF at_right_le_at])
-      apply (subgoal_tac "0 = 0 / t")
-      apply (erule ssubst) back back
-      apply (rule tendsto_divide_constant, auto intro!: tendsto_ident_at)
+      apply (auto intro!: tendsto_eq_intros) []
       apply (subst field_divide_inverse, subst mult_commute)
       apply (rule filterlim_tendsto_pos_mult_at_top)
       apply (rule tendsto_const, auto intro!: filterlim_ident)
@@ -585,8 +582,7 @@ proof -
     show "interval_lebesgue_integrable lborel 0 \<infinity>
        (\<lambda>x. exp (- (x * t)) * (x * sin t + cos t) / (1 + x\<^sup>2))"
       apply (subst interval_integrable_abs_iff [symmetric])
-      apply (subst power2_eq_square)
-      apply measurable  (* measurable should work with squaring, etc. *)
+      apply measurable
       by (subst *, rule aux4 [OF `t \<ge> 0`])
   } note aux5 = this
   {
@@ -767,11 +763,8 @@ proof -
     apply (rule always_eventually, clarify, rule sym)
     by (erule 5)
   show ?thesis
-    apply (rule Lim_transform_eventually [OF 6])
-    apply (subgoal_tac "pi / 2 = pi / 2 - 0")
-    apply (erule ssubst) back
-    apply (rule tendsto_diff, auto)
-    by (rule Si_at_top_lemma)
+    by (rule Lim_transform_eventually [OF 6])
+       (auto intro!: tendsto_eq_intros Si_at_top_lemma)
 qed
 
 lemma iSi_integrable: "interval_lebesgue_integrable lborel (ereal 0)

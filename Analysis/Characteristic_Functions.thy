@@ -213,7 +213,7 @@ proof -
     by (auto intro!: derivative_eq_intros simp del: power_Suc simp add: real_of_nat_def add_nonneg_eq_0_iff)
   show ?thesis
     apply (subst equation_26p2 [where n = "Suc n"])
-    apply (rule arg_cong) back
+    apply (rule arg_cong)
     apply (subst calc1)
     apply (subst calc2)
     apply (subgoal_tac
@@ -222,7 +222,7 @@ proof -
     apply (simp add: field_simps of_nat_mult)
     apply (erule ssubst)
     apply (subst mult_assoc)+
-    apply (rule arg_cong) back
+    apply (rule arg_cong)
     apply (unfold f_def)
     apply (subst equation_26p1 [where n = n])
     by auto

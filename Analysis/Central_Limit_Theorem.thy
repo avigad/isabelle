@@ -15,21 +15,19 @@ lemma (in prob_space) indep_vars_compose2:
   assumes "indep_vars M' X I"
   assumes rv: "\<And>i. i \<in> I \<Longrightarrow> Y i \<in> measurable (M' i) (N i)"
   shows "indep_vars N (\<lambda>i x. Y i (X i x)) I"
-using indep_vars_compose [OF assms] by (simp add: comp_def)
+  using indep_vars_compose [OF assms] by (simp add: comp_def)
 
 lemma (in prob_space) indep_vars_cmult:
-  shows "indep_vars (\<lambda>i. borel) X I \<Longrightarrow> indep_vars (\<lambda>i. borel) (\<lambda>i x. (c :: real) * X i x) I"
-  apply (rule indep_vars_compose2) back
-  apply assumption
-by auto
+  assumes "indep_vars (\<lambda>i. borel) X I" shows "indep_vars (\<lambda>i. borel) (\<lambda>i x. (c :: real) * X i x) I"
+  using assms by (rule indep_vars_compose2) measurable
 
 lemma (in prob_space) real_distribution_distr [intro, simp]: "random_variable borel X \<Longrightarrow> 
     real_distribution (distr M borel X)"
   unfolding real_distribution_def real_distribution_axioms_def apply auto
 by (rule prob_space_distr)  
 
-lemma (in prob_space) variance_mean_zero: "expectation X = 0 \<Longrightarrow>
-    variance X = expectation (\<lambda>x. (X x)^2)"
+lemma (in prob_space) variance_mean_zero:
+  "expectation X = 0 \<Longrightarrow> variance X = expectation (\<lambda>x. (X x)^2)"
 by auto
 
 lemma sqrt_at_top: "LIM x at_top. sqrt x :: real :> at_top"
@@ -43,8 +41,7 @@ lemma exp_limit:
   shows "((\<lambda>y.(1 + x * y) powr (1 / y)) ---> exp x) (at_right 0)"
 proof - 
   have "((\<lambda>y. ln (1 + x * y)) has_real_derivative 1 * x) (at 0)"
-    apply (rule DERIV_chain') back
-    by (auto intro!: derivative_eq_intros)
+    by (rule DERIV_chain'[where g=ln]) (auto intro!: derivative_eq_intros)
   hence 1: "((\<lambda>y. ln (1 + x * y) / y) ---> x) (at 0)"
     by (auto simp add: has_field_derivative_def field_has_derivative_at) 
   have 2: "(at_right 0) \<le> (at (0::real))"
