@@ -7,7 +7,7 @@ Properties of weak convergence of functions and measures, including the portmant
 
 theory Weak_Convergence
 
-imports Distribution_Functions Library_Misc Uncountable
+imports Distribution_Functions Library_Misc "~~/src/HOL/Library/ContNotDenum"
 
 begin
 
