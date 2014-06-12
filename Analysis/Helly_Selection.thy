@@ -410,7 +410,7 @@ proof auto
     proof (subst (asm) not_le)
       fix x assume x: "F x < 0"
       (* Should have made this a general lemma. *)
-      have "uncountable {x - 1<..<x}" using open_interval_uncountable by simp
+      have "uncountable {x - 1<..<x}" using uncountable_open_interval by simp
       hence "uncountable ({x - 1<..<x} - {x. \<not> isCont F x})"
         using uncountable_minus_countable mono_ctble_discont F unfolding rcont_inc_def by auto
       then obtain y where "y \<in> {x - 1<..<x} - {x. \<not> isCont F x}" unfolding uncountable_def by blast
@@ -426,13 +426,13 @@ proof auto
     fix \<epsilon>::real assume \<epsilon>: "\<epsilon> > 0"
     with \<mu> have "\<exists>a' b'. a' < b' \<and> (\<forall>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>)" unfolding tight_def by auto
     then obtain a' b' where a'b': "a' < b'" "\<And>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>" by auto
-    have "uncountable {a' - 1<..<a'}" using open_interval_uncountable by simp
+    have "uncountable {a' - 1<..<a'}" using uncountable_open_interval by simp
     hence "uncountable ({a' - 1<..<a'} - {x. \<not> isCont F x})"
       using uncountable_minus_countable mono_ctble_discont F unfolding rcont_inc_def by auto
     then obtain a where "a \<in> {a' - 1<..<a'} - {x. \<not> isCont F x}" unfolding uncountable_def by blast
     hence a: "a < a'" "isCont F a"
       using DiffD1 greaterThanLessThan_iff by (simp_all add: linorder_not_less)
-    have "uncountable {b'<..<b' + 1}" using open_interval_uncountable by simp
+    have "uncountable {b'<..<b' + 1}" using uncountable_open_interval by simp
     hence "uncountable ({b'<..<b' + 1} - {x. \<not> isCont F x})"
       using uncountable_minus_countable mono_ctble_discont F unfolding rcont_inc_def by auto
     then obtain b where "b \<in> ({b'<..<b' + 1} - {x. \<not> isCont F x})" unfolding uncountable_def by blast

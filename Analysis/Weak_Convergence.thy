@@ -616,7 +616,7 @@ proof -
         prefer 2 using B less_ereal.simps(4) apply auto
         proof -
           fix r :: real assume r: "r < Y \<omega>"
-          hence "uncountable {r<..<Y \<omega>}" using open_interval_uncountable by simp
+          hence "uncountable {r<..<Y \<omega>}" using uncountable_open_interval by simp
           with M.countable_atoms uncountable_minus_countable
           have "uncountable ({r<..<Y \<omega>} - {x. measure M {x} > 0})" by auto
           then obtain x where *: "x \<in> {r<..<Y \<omega>} - {x. measure M {x} > 0}"
@@ -638,7 +638,7 @@ proof -
     proof -
       { fix \<omega>' :: real assume \<omega>': "0 < \<omega>'" "\<omega>' < 1" "\<omega> < \<omega>'"
         { fix \<epsilon> :: real assume \<epsilon>: "\<epsilon> > 0"
-          hence "uncountable {Y \<omega>'<..<Y \<omega>' + \<epsilon>}" using open_interval_uncountable by simp
+          hence "uncountable {Y \<omega>'<..<Y \<omega>' + \<epsilon>}" using uncountable_open_interval by simp
           with M.countable_atoms uncountable_minus_countable
           have "uncountable ({Y \<omega>'<..<Y \<omega>' + \<epsilon>} - {x. measure M {x} > 0})" by auto
           then obtain y where *: "y \<in> {Y \<omega>'<..<Y \<omega>' + \<epsilon>} - {x. measure M {x} > 0}"

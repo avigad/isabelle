@@ -40,7 +40,7 @@ lemma real_interval_avoid_countable_set:
 proof -
   from `countable A` have "countable (A \<inter> {a<..<b})" by auto
   moreover with `a < b` have "\<not> countable {a<..<b}" 
-    by (simp add: uncountable_not_countable [symmetric] open_interval_uncountable) 
+    by (simp add: uncountable_open_interval)
   ultimately have "A \<inter> {a<..<b} \<noteq> {a<..<b}" by auto
   hence "A \<inter> {a<..<b} \<subset> {a<..<b}" 
     by (intro psubsetI, auto)

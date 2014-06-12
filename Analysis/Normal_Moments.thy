@@ -65,7 +65,7 @@ qed
   
 lemma tendsto_integral_at_top:
   fixes f :: "real \<Rightarrow> 'a::{banach, second_countable_topology}"
-  assumes M[simp]: "sets M = sets borel" and f[measurable]: "integrable M f"
+  assumes [simp]: "sets M = sets borel" and f[measurable]: "integrable M f"
   shows "((\<lambda>y. \<integral> x. indicator {.. y} x *\<^sub>R f x \<partial>M) ---> \<integral> x. f x \<partial>M) at_top"
 proof (rule tendsto_at_topI_sequentially)
   fix X :: "nat \<Rightarrow> real" assume "filterlim X at_top sequentially"
@@ -95,21 +95,22 @@ lemma integral_exp_neg_x_squared:
     "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2)::real)" and 
     "LBINT x:{0..}. exp (- x\<^sup>2) = sqrt pi / 2"
 proof -
-  have 1: "(\<integral>\<^sup>+xa. ereal (exp (- xa\<^sup>2)) * indicator {0..} xa \<partial>lborel) = ereal (sqrt pi) / ereal 2"
-    apply (subst nn_integral_ereal_indicator_mult)
-    apply (subst gaussian_integral_positive[symmetric])
-    apply (subst(2) nn_integral_even_function) 
+  have 1: "(\<integral>\<^sup>+xa. ereal (indicator {0..} xa * exp (- xa\<^sup>2)) \<partial>lborel) = ereal (sqrt pi) / 2"
+    apply (subst nn_integral_gaussian[symmetric])
+    apply (subst (2) nn_integral_even_function)
     apply (auto simp: field_simps)
-    by (cases "\<integral>\<^sup>+x. ereal (indicator {0..} x * exp (- x\<^sup>2)) \<partial>lborel") auto
+    apply (subst mult_commute)
+    apply (subst ereal_mult_indicator)
+    apply (auto simp: field_simps)
+    apply (cases "\<integral>\<^sup>+x. indicator {0..} x * ereal (exp (- x\<^sup>2)) \<partial>lborel")
+    apply auto
+    done
+
   (* TODO: refactor *)
   show "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2)::real)"
-    apply (rule integrable_if_nn_integral [of _ _ "sqrt pi / 2"])
-    using 1 apply (simp add: times_ereal.simps(1)[symmetric] ereal_indicator mult_ac del: times_ereal.simps)
-    by (auto split: split_indicator)
+    using 1 by (auto intro!: integrableI_nn_integral_finite)
   show "LBINT x:{0..}. exp (- x\<^sup>2) = sqrt pi / 2"
-    apply (rule lebesgue_integral_eq_nn_integral)
-    using 1 apply (simp add: times_ereal.simps(1)[symmetric] ereal_indicator mult_ac del: times_ereal.simps)
-    by (auto split:split_indicator)
+    using 1 by (subst integral_eq_nn_integral) auto
 qed
 
 (* rewrite this *)
@@ -118,16 +119,14 @@ lemma integral_x_exp_neg_x_squared:
     "set_integrable lborel {0..} (\<lambda>x. x * exp (- x\<^sup>2)::real)" and 
     "LBINT x:{0..}. x * exp (- x\<^sup>2) = (1 / 2::real)"
 proof -
-  have *: "(\<integral>\<^sup>+ x. ereal (indicator {0..} x *\<^sub>R (x * exp (- x\<^sup>2))) \<partial>lborel) =
-      ereal (1 / 2)"
+  have *: "(\<integral>\<^sup>+ x. ereal (indicator {0..} x *\<^sub>R (x * exp (- x\<^sup>2))) \<partial>lborel) = ereal (1 / 2)"
     using nn_integral_x_exp_x_square_indicator
     by (simp add: mult_ac times_ereal.simps(1) [symmetric] ereal_indicator del: times_ereal.simps)
+
   show "set_integrable lborel {0..} (\<lambda>x. x * exp (- x\<^sup>2)::real)"
-    apply (rule integrable_if_nn_integral, rule *)
-    by (rule AE_I2, auto split: split_indicator intro!: mult_nonneg_nonneg)
+    using * by (auto intro!: integrableI_nn_integral_finite AE_I2 split: split_indicator)
   show "LBINT x:{0..}. x * exp (- x\<^sup>2) = (1 / 2::real)"
-    apply (rule lebesgue_integral_eq_nn_integral, rule *)
-    by (rule AE_I2, auto split: split_indicator intro!: mult_nonneg_nonneg)
+    using * by (subst integral_eq_nn_integral) (auto intro!: AE_I2 split: split_indicator)
 qed
 
 lemma aux1:
@@ -347,7 +346,7 @@ proof -
            (\<lambda>x. indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * x ^ (2 * k)))"
     by (rule ext, auto split: split_indicator)
   have 4: "set_integrable lborel {..0} (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k)::real)"
-    by (subst integrable_affine [of "-1" _ 0]) (simp_all add: 1 3 del: real_scaleR_def)
+    by (subst lborel_integrable_real_affine_iff [symmetric, of "-1" _ 0]) (simp_all add: 1 3 del: real_scaleR_def)
   have 5: "(LBINT x:{..0}. exp (- x\<^sup>2) * (x ^ (2 * k))) = (sqrt pi / 2) * 
         (fact (2 * k) / (2^(2 * k) * fact k))"
     by (subst lborel_integral_real_affine [of "-1" _ 0]) (auto simp add: 2 3 simp del: real_scaleR_def)
@@ -388,7 +387,7 @@ proof -
            (\<lambda>x. indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * x ^ (2 * k + 1)))"
     by (rule ext, auto split: split_indicator)
   have 4: "set_integrable lborel {..0} (\<lambda>x :: real. exp (- x\<^sup>2) * x ^ (2 * k + 1))"
-    apply (subst integrable_affine [of "-1" _ 0], simp_all del: One_nat_def real_scaleR_def)
+    apply (subst lborel_integrable_real_affine_iff [symmetric, of "-1" _ 0], simp_all del: One_nat_def real_scaleR_def)
     by (subst 3, rule 1)
   have 5: "(LBINT x::real:{..0}. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) = 
            -(LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 1)))"
@@ -431,7 +430,7 @@ proof -
            (\<lambda>x. indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * abs x ^ (2 * k + 1)))"
     by (rule ext, auto split: split_indicator)
   have 4: "set_integrable lborel {..0} (\<lambda>x :: real. exp (- x\<^sup>2) * (abs x) ^ (2 * k + 1))"
-    apply (subst integrable_affine [of "-1" _ 0], simp_all del: One_nat_def real_scaleR_def)
+    apply (subst lborel_integrable_real_affine_iff [symmetric, of "-1" _ 0], simp_all del: One_nat_def real_scaleR_def)
     by (subst 3, rule 1)
   have 5: "(LBINT x::real:{..0}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) = 
            (LBINT x:{0..}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1)))"
@@ -476,7 +475,7 @@ proof -
   have **: "(2::real)^(2 * k) = 2^k * 2^k"
     by (simp add: power_add [symmetric])
   show "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2 / 2) * x ^ (2 * k))"
-    apply (subst integrable_affine [where t = 0 and c = "sqrt 2"], auto)
+    apply (subst lborel_integrable_real_affine_iff [symmetric, where t = 0 and c = "sqrt 2"], auto)
     by (subst *, rule integrable_mult_right, rule aux4_even)
   show 
     "(LBINT x::real. exp (- x\<^sup>2 / 2) * (x ^ (2 * k))) = 
@@ -498,7 +497,7 @@ proof -
     by (rule ext, simp add: power_mult_distrib power_mult)
 
   show "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2 / 2) * x ^ (2 * k + 1))"
-    apply (subst integrable_affine [where t = 0 and c = "sqrt 2"],
+    apply (subst lborel_integrable_real_affine_iff [symmetric, where t = 0 and c = "sqrt 2"],
       auto simp del: One_nat_def real_scaleR_def)
     by (subst *, rule integrable_mult_right, rule aux4_odd)
   show "(LBINT x::real. exp (- x\<^sup>2 / 2) * (x ^ (2 * k + 1))) = 0"
@@ -521,7 +520,7 @@ proof -
   have **: "(2::real)^(2 * k) = 2^k * 2^k"
     by (simp add: power_add [symmetric])
   show "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2 / 2) * abs x ^ (2 * k + 1))"
-    apply (subst integrable_affine [where t = 0 and c = "sqrt 2"])
+    apply (subst lborel_integrable_real_affine_iff [symmetric, where t = 0 and c = "sqrt 2"])
     apply (simp_all del: One_nat_def power_Suc add: divide_minus_left)
     by (subst *, rule integrable_mult_right, rule aux4_odd_abs)
   show 
@@ -542,20 +541,20 @@ lemma distributed_standard_normal_density:
   "distributed standard_normal_distribution lborel (\<lambda>x. x) standard_normal_density"
   unfolding distributed_def apply auto
   apply (subst density_distr [symmetric], auto)
-by (auto intro!: AE_I2 normal_non_negative)
+by (auto intro!: AE_I2 normal_nonneg)
 
 lemma standard_normal_distribution_even_moments:
   fixes k :: nat
   shows "integrable standard_normal_distribution (\<lambda>x. x ^ (2 * k)::real)"
     "LINT x::real | standard_normal_distribution. x ^ (2 * k) = (fact (2 * k) / (2^k * fact k))"
   apply (subst integrable_density)
-  apply (auto intro!: AE_I2 normal_non_negative) [4]
+  apply (auto intro!: AE_I2 normal_nonneg) [4]
   apply (subst standard_normal_density_def)
   apply (subst mult_assoc, rule integrable_mult_right) 
   apply (rule aux5_even) 
 
   apply (subst integral_density)
-  apply (auto intro!: AE_I2 normal_non_negative) [4]
+  apply (auto intro!: AE_I2 normal_nonneg) [4]
   apply (subst standard_normal_density_def)
   apply (subst mult_assoc, subst integral_mult_right)
   apply (rule aux5_even (1))
@@ -581,7 +580,7 @@ lemma standard_normal_distribution_odd_moments:
     "LINT x | standard_normal_distribution. x ^ (2 * k + 1) = 0"
 
   apply (subst integrable_density)
-  apply (auto intro!: AE_I2 normal_non_negative) [3]
+  apply (auto intro!: AE_I2 normal_nonneg) [3]
   apply (subst standard_normal_density_def)
   apply (subst scaleR_scaleR[symmetric])
   apply (rule integrable_scaleR_right)
@@ -589,7 +588,7 @@ lemma standard_normal_distribution_odd_moments:
   apply (rule aux5_odd) 
 
   apply (subst integral_density)
-  apply (auto intro!: AE_I2 normal_non_negative simp del: One_nat_def)
+  apply (auto intro!: AE_I2 normal_nonneg simp del: One_nat_def)
   unfolding standard_normal_density_def
   apply (subst mult_assoc, subst integral_mult_right)
   apply (rule aux5_odd (1))
@@ -602,7 +601,7 @@ lemma standard_normal_distribution_odd_moments_abs :
       fact k * (2 ^ (k + 1)) / sqrt (2 * pi)"
 
   apply (subst integrable_density)
-  apply (auto intro!: AE_I2 normal_non_negative) [3]
+  apply (auto intro!: AE_I2 normal_nonneg) [3]
   apply (subst standard_normal_density_def)
   apply (subst scaleR_scaleR[symmetric])
   apply (rule integrable_scaleR_right)
@@ -610,7 +609,7 @@ lemma standard_normal_distribution_odd_moments_abs :
   apply (rule aux5_odd_abs) 
 
   apply (subst integral_density)
-  apply (auto intro!: AE_I2 normal_non_negative simp del: One_nat_def)
+  apply (auto intro!: AE_I2 normal_nonneg simp del: One_nat_def)
   unfolding standard_normal_density_def
   apply (subst mult_assoc, subst integral_mult_right)
   apply (rule aux5_odd_abs (1))

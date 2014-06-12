@@ -7,7 +7,7 @@ Integral of sinc.
 
 theory Si
 
-imports Interval_Integral Auxiliary
+imports Interval_Integral
 
 begin
 
