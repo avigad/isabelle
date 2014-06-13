@@ -14,6 +14,8 @@ imports Normal_Distribution Interval_Integral
 
 begin
 
+
+
 lemma tendsto_at_topI_sequentially:
   fixes f :: "real \<Rightarrow> 'b::first_countable_topology"
   assumes *: "\<And>X. filterlim X at_top sequentially \<Longrightarrow> (\<lambda>n. f (X n)) ----> y"
@@ -89,6 +91,60 @@ proof (rule tendsto_at_topI_sequentially)
   qed
 qed
 
+lemma has_bochner_integral_discrete_difference:
+  fixes f :: "'a \<Rightarrow> 'b::{banach, second_countable_topology}"
+  assumes X: "countable X"
+  assumes null: "\<And>x. x \<in> X \<Longrightarrow> emeasure M {x} = 0" 
+  assumes sets: "\<And>x. x \<in> X \<Longrightarrow> {x} \<in> sets M"
+  assumes eq: "\<And>x. x \<in> space M \<Longrightarrow> x \<notin> X \<Longrightarrow> f x = g x"
+  shows "has_bochner_integral M f x \<longleftrightarrow> has_bochner_integral M g x"
+  using integrable_discrete_difference[of X M f g, OF assms]
+  using integral_discrete_difference[of X M f g, OF assms]
+  by (metis has_bochner_integral_iff)
+
+lemma has_bochner_integral_even_function:
+  fixes f :: "real \<Rightarrow> 'a :: {banach, second_countable_topology}"
+  assumes f: "has_bochner_integral lborel (\<lambda>x. indicator {0..} x *\<^sub>R f x) x"
+  assumes even: "\<And>x. f (- x) = f x"
+  shows "has_bochner_integral lborel f (2 *\<^sub>R x)"
+proof -
+  have indicator: "\<And>x::real. indicator {..0} (- x) = indicator {0..} x"
+    by (auto split: split_indicator)
+  have "has_bochner_integral lborel (\<lambda>x. indicator {.. 0} x *\<^sub>R f x) x"
+    by (subst lborel_has_bochner_integral_real_affine_iff[where c="-1" and t=0])
+       (auto simp: indicator even f)
+  with f have "has_bochner_integral lborel (\<lambda>x. indicator {0..} x *\<^sub>R f x + indicator {.. 0} x *\<^sub>R f x) (x + x)"
+    by (rule has_bochner_integral_add)
+  then have "has_bochner_integral lborel f (x + x)"
+    by (rule has_bochner_integral_discrete_difference[where X="{0}", THEN iffD1, rotated 4])
+       (auto split: split_indicator)
+  then show ?thesis
+    by (simp add: scaleR_2)
+qed
+
+lemma has_bochner_integral_odd_function:
+  fixes f :: "real \<Rightarrow> 'a :: {banach, second_countable_topology}"
+  assumes f: "has_bochner_integral lborel (\<lambda>x. indicator {0..} x *\<^sub>R f x) x"
+  assumes odd: "\<And>x. f (- x) = - f x"
+  shows "has_bochner_integral lborel f 0"
+proof -
+  have indicator: "\<And>x::real. indicator {..0} (- x) = indicator {0..} x"
+    by (auto split: split_indicator)
+  have "has_bochner_integral lborel (\<lambda>x. - indicator {.. 0} x *\<^sub>R f x) x"
+    by (subst lborel_has_bochner_integral_real_affine_iff[where c="-1" and t=0])
+       (auto simp: indicator odd f)
+  from has_bochner_integral_minus[OF this]
+  have "has_bochner_integral lborel (\<lambda>x. indicator {.. 0} x *\<^sub>R f x) (- x)"
+    by simp 
+  with f have "has_bochner_integral lborel (\<lambda>x. indicator {0..} x *\<^sub>R f x + indicator {.. 0} x *\<^sub>R f x) (x + - x)"
+    by (rule has_bochner_integral_add)
+  then have "has_bochner_integral lborel f (x + - x)"
+    by (rule has_bochner_integral_discrete_difference[where X="{0}", THEN iffD1, rotated 4])
+       (auto split: split_indicator)
+  then show ?thesis
+    by simp
+qed
+
 (* extracted from Normal_Distribution *)
 lemma integral_exp_neg_x_squared: 
   shows
@@ -129,512 +185,291 @@ proof -
     using * by (subst integral_eq_nn_integral) (auto intro!: AE_I2 split: split_indicator)
 qed
 
-lemma aux1:
-  fixes b :: real and k :: nat
-  assumes "0 \<le> b"
-  shows "(LBINT x:{0..b}. exp (- x\<^sup>2) * x ^ (k + 2)) =
-    (k + 1) / 2 * (LBINT x:{0..b}. exp (- x\<^sup>2) * x ^ k) - exp (- b\<^sup>2) * b ^ (k + 1) / 2"
-proof -
-  {
-    fix a b :: real and k :: nat
-    assume "a \<le> b"    let ?g = "\<lambda>x :: real. (k + 1) * x^k"
-    let ?G = "\<lambda>x :: real. x^(k + 1)"
-    let ?f = "\<lambda>x. - 2 * x * exp (- (x^2))"
-    let ?F = "\<lambda>x. exp (- (x^2))"
-    have "LBINT x:{a..b}. exp (- x\<^sup>2) * (real (k + 1) * x ^ k) =
-        exp (- b\<^sup>2) * b ^ (k + 1) - exp (- a\<^sup>2) * a ^ (k + 1) -
-        (LBINT x:{a..b}. - 2 * x * exp (- x\<^sup>2) * x ^ (k + 1))"
-      apply (rule integral_by_parts' [of a b ?f ?g ?F ?G])
-      using `a \<le> b` apply (auto intro!: derivative_eq_intros)
-      apply (case_tac "k = 0", auto)
-      apply (subst mult_assoc)
-      by (subst power_Suc2 [symmetric], simp add: real_of_nat_Suc field_simps
-        real_of_nat_def)
-  }
-  note this [of 0 b k]
-  also have "(LBINT x:{0..b}. exp (- x\<^sup>2) * (real (k + 1) * x ^ k)) = 
-      real (k + 1) * (LBINT x:{0..b}. exp (- x\<^sup>2) * x ^ k)"
-    by (subst set_integral_mult_right[symmetric])
-       (auto simp add: field_simps)
-  also have "(LBINT x:{0..b}. - 2 * x * exp (- x\<^sup>2) * x ^ (k + 1)) =
-       -2 * (LBINT x:{0..b}. exp (- x\<^sup>2) * x ^ (k + 2))"
-    apply (subst set_integral_mult_right [symmetric])
-    by (auto simp add: field_simps)
-  finally show ?thesis
-    by (simp add: field_simps assms)
-qed
+lemma filterlim_at_top_imp_at_infinity:
+  fixes f :: "_ \<Rightarrow> real"
+  shows "filterlim f at_top F \<Longrightarrow> filterlim f at_infinity F"
+  by (rule filterlim_mono[OF _ at_top_le_at_infinity order_refl])
 
-lemma aux2:
+lemma
   fixes k :: nat
-  assumes 
-    "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2) * x ^ k::real)"
-  shows
-    "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2) * x ^ (k + 2)::real)"
-  and 
-    "(LBINT x:{0..}. exp (- x\<^sup>2) * x ^ (k + 2)) = (k + 1) / 2 * (LBINT x:{0..}. exp (- x\<^sup>2) * x ^ k::real)"
+  shows gaussian_moment_even_pos:
+    "has_bochner_integral lborel (\<lambda>x. indicator {0..} x *\<^sub>R (exp (-x\<^sup>2)*x^(2 * k)))
+       ((sqrt pi / 2) * (fact (2 * k) / (2 ^ (2 * k) * fact k)))" (is "?even")
+    and gaussian_moment_odd_pos:
+      "has_bochner_integral lborel (\<lambda>x. indicator {0..} x *\<^sub>R (exp (-x\<^sup>2)*x^(2 * k + 1))) (fact k / 2)" (is "?odd")
 proof -
-  let ?f1 = "\<lambda>y::real. LBINT x:{0..y}. exp (- x\<^sup>2) * x ^ (k + 2)"
-  let ?f2 = "\<lambda>y::real. LBINT x:{0..y}. exp (- x\<^sup>2) * x ^ k"
-  let ?f2_lim = "LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ k)"
-  let ?f3 = "\<lambda>y::real. exp (- y\<^sup>2) * y ^ (k + 1) / 2"
-  let ?f4 = "\<lambda>y. (k + 1) / 2 * ?f2 y - ?f3 y" 
-  have 1: "eventually (\<lambda>y. ?f1 y = ?f4 y) at_top"
-    by (rule eventually_elim1 [OF eventually_ge_at_top [of 0]], rule aux1, auto)
-  have 2: "(?f2 ---> ?f2_lim) at_top"
-  proof -
-    have a: "?f2 = (\<lambda>y. LBINT x:{..y}. indicator {0..} x *\<^sub>R (exp(- x\<^sup>2) * (x ^ k)))"
-      by (rule ext, rule integral_cong, auto split: split_indicator)
-    have b: "(\<dots> ---> (LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ k)::real)) at_top"
-      by (intro tendsto_integral_at_top) (auto simp del: real_scaleR_def intro: assms)
-    show ?thesis by (subst a, rule b)
-  qed
-  have 3: "(?f3 ---> 0) at_top"
-  proof -
-    let ?f5 = "\<lambda>k :: nat. \<lambda>y :: real. (y^2)^(k + 1) / exp (y\<^sup>2)"
-    have *: "\<And>k. (?f5 k ---> 0) at_top"
-      using tendsto_power_div_exp_0 filterlim_power2_at_top by (rule filterlim_compose)
-    let ?f6 = "(\<lambda>y :: real. exp (- y\<^sup>2) * y ^ (k + 1))"
-    have **: "(?f6 ---> 0) at_top"
-    proof (cases "even k")
-      assume "even k"
-      hence "\<exists>k'. k = 2 * k'" by (subst (asm) even_mult_two_ex)
-      then obtain k' where **: "k = 2 * k'" ..     
-      have a: "?f6 = (\<lambda>y. ?f5 k' y * (1 / y))" 
-        by (subst **, rule ext) (simp add: field_simps power2_eq_square exp_minus inverse_eq_divide 
-          power_mult power_mult_distrib)
-      show ?thesis
-        apply (subst a, rule tendsto_mult_zero [OF *])
-        apply (rule tendsto_divide_0, auto)
-        by (rule filterlim_mono [OF _ at_top_le_at_infinity order_refl], rule filterlim_ident)
-    next 
-      assume "odd k"
-      hence "\<exists>k'. k = Suc (2 * k')" by (subst (asm) odd_Suc_mult_two_ex)
-      then obtain k' where **: "k = Suc (2 * k')" ..     
-      have a: "?f6 = ?f5 k'" 
-        by (subst **, rule ext) (simp add: field_simps power2_eq_square exp_minus inverse_eq_divide 
-          power_mult power_mult_distrib)
-      show ?thesis
-        by (subst a, rule *)
+  let ?M = "\<lambda>k x. exp (- x\<^sup>2) * x^k :: real"
+
+  have moment_0: "has_bochner_integral lborel (\<lambda>x. indicator {0..} x *\<^sub>R ?M 0 x) (sqrt pi / 2)"
+    unfolding has_bochner_integral_iff using integral_exp_neg_x_squared by simp
+
+  have moment_1: "has_bochner_integral lborel (\<lambda>x. indicator {0..} x *\<^sub>R ?M 1 x) (1 / 2)"
+    unfolding has_bochner_integral_iff using integral_x_exp_neg_x_squared by (simp add: field_simps)
+
+  { fix k I assume Mk: "has_bochner_integral lborel (\<lambda>x. indicator {0..} x *\<^sub>R ?M k x) I"
+    have "2 \<noteq> (0::real)"
+      by linarith
+    let ?f = "\<lambda>b. \<integral>x. indicator {0..} x *\<^sub>R ?M (k + 2) x * indicator {..b} x \<partial>lborel"
+    have "((\<lambda>b. (k + 1) / 2 * (LBINT x:{..b}. indicator {0..} x *\<^sub>R ?M k x) - ?M (k + 1) b / 2) --->
+        (k + 1) / 2 * (LBINT x:{0..}. ?M k x) - 0 / 2) at_top" (is ?tendsto)
+    proof (intro tendsto_intros `2 \<noteq> 0` tendsto_integral_at_top sets_lborel Mk[THEN integrable.intros])
+      show "(?M (k + 1) ---> 0) at_top"
+      proof cases
+        assume "even k"
+        have "((\<lambda>x. ((x\<^sup>2)^(k div 2 + 1) / exp (x\<^sup>2)) * (1 / x) :: real) ---> 0 * 0) at_top"
+          by (intro tendsto_intros tendsto_divide_0[OF tendsto_const] filterlim_compose[OF tendsto_power_div_exp_0]
+                   filterlim_at_top_imp_at_infinity filterlim_ident filterlim_power2_at_top)
+        also have "(\<lambda>x. ((x\<^sup>2)^(k div 2 + 1) / exp (x\<^sup>2)) * (1 / x) :: real) = ?M (k + 1)"
+          using `even k` by (auto simp: even_mult_two_ex fun_eq_iff exp_minus field_simps power2_eq_square power_mult)
+        finally show ?thesis by simp
+      next
+        assume "odd k"
+        have "((\<lambda>x. ((x\<^sup>2)^((k - 1) div 2 + 1) / exp (x\<^sup>2)) :: real) ---> 0) at_top"
+          by (intro filterlim_compose[OF tendsto_power_div_exp_0] filterlim_at_top_imp_at_infinity filterlim_ident filterlim_power2_at_top)
+        also have "(\<lambda>x. ((x\<^sup>2)^((k - 1) div 2 + 1) / exp (x\<^sup>2)) :: real) = ?M (k + 1)"
+          using `odd k` by (auto simp: odd_Suc_mult_two_ex fun_eq_iff exp_minus field_simps power2_eq_square power_mult)
+        finally show ?thesis by simp
+      qed
     qed
-    show ?thesis
-      by (subst divide_real_def, rule tendsto_mult_left_zero [OF **])
-  qed
-  have 4: "(?f1 ---> (k + 1) / 2 * ?f2_lim) at_top"
-    apply (subst filterlim_cong [OF refl refl 1])
-    apply (subgoal_tac "(k + 1) / 2 * ?f2_lim = (k + 1) / 2 * ?f2_lim - 0")
-    apply (erule ssubst)
-    apply (rule tendsto_diff [OF _ 3])
-    by (rule tendsto_mult [OF _ 2], auto)
-  let ?f7 = "(\<lambda>x. indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * x ^ (k + 2)) :: real)"
-  have 5: "(\<lambda>y. LBINT x. indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * x ^ (k + 2)) * indicator {..y} x) = ?f1"
-    by (rule ext, rule integral_cong) (auto split: split_indicator)
-
-  have 7: "\<And>y. integrable lborel
-          (\<lambda>x. indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * x ^ (k + 2)) * indicator {..y} x::real)"
-  proof -
-    fix y :: real
-    have *: "(\<lambda>x. indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * x ^ (k + 2)) * indicator {..y} x::real) =
-          (\<lambda>x. indicator {0..y} x *\<^sub>R (exp (- x\<^sup>2) * x ^ (k + 2)))"
-      by (rule ext, simp split: split_indicator)
-    show "integrable lborel (\<lambda>x. indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * x ^ (k + 2)) * indicator {..y} x::real)"
-      unfolding * by (rule borel_integrable_compact, auto intro!: continuous_intros)
-  qed
-  have 8: "((\<lambda>y. LBINT x. indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * x ^ (k + 2)) *
-                   indicator {..y} x) ---> (k + 1) / 2 * ?f2_lim) at_top"
-    by (subst 5, rule 4)
-  show "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2) * x ^(k + 2)::real)"
-    by (rule integrable_monotone_convergence_at_top[OF _ _ _ 7 8])
-       (auto split: split_indicator)
-  show "(LBINT x:{0..}. exp (- x\<^sup>2) * x ^ (k + 2)) = 
-      (k + 1) / 2 * (LBINT x:{0..}. exp (- x\<^sup>2) * x ^ k)"
-    by (rule integral_monotone_convergence_at_top [OF _ _ _ 7 8]) (auto split: split_indicator)
-qed
+    also have "?tendsto \<longleftrightarrow> ((?f ---> (k + 1) / 2 * (LBINT x:{0..}. ?M k x) - 0 / 2) at_top)"
+    proof (intro filterlim_cong refl eventually_at_top_linorder[THEN iffD2] exI[of _ 0] allI impI)
+      fix b :: real assume b: "0 \<le> b"
+      have "Suc k * (LBINT x:{0..b}. ?M k x) = (LBINT x:{0..b}. exp (- x\<^sup>2) * ((Suc k) * x ^ k))"
+        unfolding set_integral_mult_right[symmetric] by (intro integral_cong) auto
+      also have "\<dots> = exp (- b\<^sup>2) * b ^ (Suc k) - exp (- 0\<^sup>2) * 0 ^ (Suc k) -
+          (LBINT x:{0..b}. - 2 * x * exp (- x\<^sup>2) * x ^ (Suc k))"
+        by (rule integral_by_parts')
+           (auto intro!: derivative_eq_intros b
+                 simp: real_of_nat_def[symmetric] diff_Suc real_of_nat_Suc field_simps split: nat.split)
+      also have "(LBINT x:{0..b}. - 2 * x * exp (- x\<^sup>2) * x ^ (Suc k)) =
+        (LBINT x:{0..b}. - 2 * (exp (- x\<^sup>2) * x ^ (k + 2)))"
+        by (intro integral_cong) auto
+      finally have "Suc k * (LBINT x:{0..b}. ?M k x) =
+        exp (- b\<^sup>2) * b ^ (Suc k) + 2 * (LBINT x:{0..b}. ?M (k + 2) x)"
+        by (simp del: real_scaleR_def)
+      then show "(k + 1) / 2 * (LBINT x:{..b}. indicator {0..} x *\<^sub>R ?M k x) - exp (- b\<^sup>2) * b ^ (k + 1) / 2 = ?f b"
+        by (simp add: field_simps atLeastAtMost_def indicator_inter_arith)
+    qed
+    finally have int_M_at_top: "((?f ---> (k + 1) / 2 * (LBINT x:{0..}. ?M k x)) at_top)"
+      by simp
     
-lemma aux3_even:
+    have "has_bochner_integral lborel (\<lambda>x. indicator {0..} x *\<^sub>R ?M (k + 2) x) ((k + 1) / 2 * I)"
+    proof (rule has_bochner_integral_monotone_convergence_at_top)
+      fix y :: real
+      have *: "(\<lambda>x. indicator {0..} x *\<^sub>R ?M (k + 2) x * indicator {..y} x::real) =
+            (\<lambda>x. indicator {0..y} x *\<^sub>R ?M (k + 2) x)"
+        by rule (simp split: split_indicator)
+      show "integrable lborel (\<lambda>x. indicator {0..} x *\<^sub>R (?M (k + 2) x) * indicator {..y} x::real)"
+        unfolding * by (rule borel_integrable_compact) (auto intro!: continuous_intros)
+      show "((?f ---> (k + 1) / 2 * I) at_top)"
+        using int_M_at_top has_bochner_integral_integral_eq[OF Mk] by simp
+    qed (auto split: split_indicator) }
+  note step = this
+
+  show ?even
+  proof (induct k)
+    case (Suc k)
+    note step[OF this]
+    also have "(real (2 * k + 1) / 2 * (sqrt pi / 2 * (real (fact (2 * k)) / real (2 ^ (2 * k) * fact k)))) =
+      sqrt pi / 2 * (real (fact (2 * Suc k)) / real (2 ^ (2 * Suc k) * fact (Suc k)))"
+      by (simp add: field_simps real_of_nat_Suc divide_simps del: fact_Suc) (simp add: field_simps)
+    finally show ?case
+      by simp
+  qed (insert moment_0, simp)
+
+  show ?odd
+  proof (induct k)
+    case (Suc k)
+    note step[OF this]
+    also have "(real (2 * k + 1 + 1) / 2 * (real (fact k) / 2)) = real (fact (Suc k)) / 2"
+      by (simp add: field_simps real_of_nat_Suc divide_simps del: fact_Suc) (simp add: field_simps)
+    finally show ?case
+      by simp
+  qed (insert moment_1, simp)
+qed
+
+lemma std_normal_moment_even:
   fixes k :: nat
-  shows 
-    "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k) :: real)" (is "?P k")
-  and 
-    "(LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k))) = (sqrt pi / 2) * 
-        (fact (2 * k) / (2^(2 * k) * fact k))" (is "?Q k")
-proof (induct k)
-  show "?P 0"
-    by (auto intro: integral_exp_neg_x_squared simp del: real_scaleR_def)
-  show "?Q 0"
-    by (auto simp add: integral_exp_neg_x_squared simp del: real_scaleR_def)
-next
-  fix k
-  assume ihP: "?P k" and ihQ: "?Q k"
-  have *: "2 * Suc k = 2 * k + 2" by simp
-  show "?P (Suc k)"
-    by (subst *, rule aux2 [OF ihP])
-  have "(LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 2)))
-      = (2 * k + 1) / 2 * (LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k)))"
-    by (rule aux2 [OF ihP])
-  also have "\<dots> = (2 * k + 1) / 2 * ((sqrt pi / 2) * (fact (2 * k) / (2^(2 * k) * fact k)))"
-    by (subst ihQ, rule refl)
-  (* Q: could this calculation be done automatically? *)
-  also have "\<dots> = sqrt pi / 2 * ((2 * k + 1) / 2 * (fact (2 * k) / (2^(2 * k) * fact k)))"
-    by auto
-  also have "(2 * k + 1) / 2 * (fact (2 * k) / (2^(2 * k) * fact k)) = 
-      (2 * k + 1) * fact (2 * k) / (2^(2 * k + 1) * fact k)"
-    apply (subst times_divide_times_eq)
-    apply (subst real_of_nat_mult)+
+  shows "has_bochner_integral lborel
+    (\<lambda>x. std_normal_density x * x ^ (2 * k)) (fact (2 * k) / (2^k * fact k))"
+proof -
+  have "has_bochner_integral lborel (\<lambda>x. exp (-x\<^sup>2)*x^(2 * k))
+      (sqrt pi * (fact (2 * k) / (2 ^ (2 * k) * fact k)))"
+    using has_bochner_integral_even_function[OF gaussian_moment_even_pos[where k=k]] by simp
+  then have "has_bochner_integral lborel (\<lambda>x. (exp (-x\<^sup>2)*x^(2 * k)) * (2^k / sqrt (2 * pi)))
+      ((sqrt pi * (fact (2 * k) / (2 ^ (2 * k) * fact k))) * (2^k / sqrt (2 * pi)))"
+    by (rule has_bochner_integral_mult_left)
+  also have "(\<lambda>x. (exp (-x\<^sup>2)*x^(2 * k)) * (2^k / sqrt (2 * pi))) =
+    (\<lambda>x. exp (- ((sqrt 2 * x)\<^sup>2 / 2)) * (sqrt 2 * x) ^ (2 * k) / sqrt (2 * pi))"
+    by (auto simp: fun_eq_iff power_mult field_simps real_sqrt_power[symmetric])
+  also have "((sqrt pi * (fact (2 * k) / (2 ^ (2 * k) * fact k))) * (2^k / sqrt (2 * pi))) = 
+    (inverse (sqrt 2) * (real (fact (2 * k))) / (2 ^ k * real (fact k)))"
+    by (auto simp: fun_eq_iff power_mult field_simps real_sqrt_power[symmetric] real_sqrt_mult power2_eq_square)
+  finally show ?thesis
+    unfolding std_normal_density_def
+    by (subst lborel_has_bochner_integral_real_affine_iff[where c="sqrt 2" and t=0]) simp_all
+qed
+
+lemma std_normal_moment_abs_odd:
+  fixes k :: nat
+  shows "has_bochner_integral lborel
+    (\<lambda>x. std_normal_density x * \<bar>x\<bar>^(2 * k + 1)) (sqrt (2/pi) * 2^k * fact k)"
+proof -
+  have "has_bochner_integral lborel (\<lambda>x. indicator {0..} x *\<^sub>R (exp (-x\<^sup>2)*\<bar>x\<bar>^(2 * k + 1))) (fact k / 2)"
+    by (rule has_bochner_integral_cong[THEN iffD1, OF _ _ _ gaussian_moment_odd_pos[of k]]) auto
+  from has_bochner_integral_even_function[OF this]
+  have "has_bochner_integral lborel (\<lambda>x. exp (-x\<^sup>2)*\<bar>x\<bar>^(2 * k + 1)) (fact k)"
     by simp
-  also have "(2 * k + 1) * fact (2 * k) = fact (2 * k + 1)"
-    by auto
-  also have "fact (2 * k + 1) = fact (2 * k + 2) / (2 * k + 2)"
-    by (simp add: field_simps real_of_nat_Suc)
-  finally show "?Q (Suc k)" by (simp add: field_simps real_of_nat_Suc)
+  then have "has_bochner_integral lborel (\<lambda>x. (exp (-x\<^sup>2)*\<bar>x\<bar>^(2 * k + 1)) * (2^k / sqrt pi))
+      (fact k * (2^k / sqrt pi))"
+    by (rule has_bochner_integral_mult_left)
+  also have "(\<lambda>x. (exp (-x\<^sup>2)*\<bar>x\<bar>^(2 * k + 1)) * (2^k / sqrt pi)) =
+    (\<lambda>x. exp (- ((sqrt 2 * x)\<^sup>2 / 2)) * \<bar>sqrt 2 * x\<bar> ^ (2 * k + 1) / sqrt (2 * pi))"
+    unfolding real_sqrt_mult
+    by (simp add: field_simps abs_mult real_sqrt_power[symmetric] power_mult fun_eq_iff)
+  also have "(fact k * (2^k / sqrt pi)) = 
+    (inverse (sqrt 2) * (sqrt (2 / pi) * 2 ^ k * real (fact k)))"
+    by (auto simp: fun_eq_iff power_mult field_simps real_sqrt_power[symmetric] real_sqrt_divide
+                   power2_eq_square)
+  finally show ?thesis
+    unfolding std_normal_density_def
+    by (subst lborel_has_bochner_integral_real_affine_iff[where c="sqrt 2" and t=0]) simp_all
 qed
 
-lemma aux3_odd:
+lemma std_normal_moment_odd:
   fixes k :: nat
-  shows 
-    "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k + 1)::real)" (is "?P k")
-  and
-    "(LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) =  fact k / 2" (is "?Q k") 
-proof (induct k)
-  show "?P 0"
-    apply (simp del: real_scaleR_def, subst mult_commute)
-    by (rule integral_x_exp_neg_x_squared)
-  show "?Q 0"
-    apply (simp del: real_scaleR_def, subst mult_commute)
-    by (subst integral_x_exp_neg_x_squared, simp)
+  shows "has_bochner_integral lborel (\<lambda>x. std_normal_density x * x^(2 * k + 1)) 0"
+proof -
+  have "has_bochner_integral lborel (\<lambda>x. exp (- x\<^sup>2) * x^(2 * k + 1)::real) 0"
+    using gaussian_moment_odd_pos by (rule has_bochner_integral_odd_function) simp
+  then have "has_bochner_integral lborel (\<lambda>x. (exp (-x\<^sup>2)*x^(2 * k + 1)) * (2^k/sqrt pi))
+      (0 * (2^k/sqrt pi))"
+    by (rule has_bochner_integral_mult_left)
+  also have "(\<lambda>x. (exp (-x\<^sup>2)*x^(2 * k + 1)) * (2^k/sqrt pi)) =
+    (\<lambda>x. exp (- ((sqrt 2 * x)\<^sup>2 / 2)) * (sqrt 2 * x * (sqrt 2 * x) ^ (2 * k)) /
+          sqrt (2 * pi))"
+    unfolding real_sqrt_mult
+    by (simp add: field_simps abs_mult real_sqrt_power[symmetric] power_mult fun_eq_iff)
+  finally show ?thesis
+    unfolding std_normal_density_def
+    by (subst lborel_has_bochner_integral_real_affine_iff[where c="sqrt 2" and t=0]) simp_all
+qed
+
+lemma integrable_std_normal_moment: "integrable lborel (\<lambda>x. std_normal_density x * x^k)"
+proof cases
+  assume "even k" then show ?thesis
+    using integrable.intros[OF std_normal_moment_even] by (auto simp add: even_mult_two_ex)
 next
-  fix k
-  assume ihP: "?P k" and ihQ: "?Q k"
-  have *: "2 * Suc k + 1 = (2 * k + 1) + 2" by simp
-  show "?P (Suc k)"
-    by (subst *, rule aux2 [OF ihP])
-  have "(LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 1 + 2)))
-      = (2 * k + 1 + 1) / 2 * (LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 1)))"
-    by (rule aux2 [OF ihP])
-  also have "\<dots> = (2 * k + 1 + 1) / 2 * (fact k / 2)"
-    by (subst ihQ, rule refl)
-  also have "\<dots> = (k + 1) * fact k / 2" by (simp add: real_of_nat_Suc field_simps)
-  also have "\<dots> = fact (k + 1) / 2" by simp
-  finally show "?Q (Suc k)" by simp
+  assume "odd k" then show ?thesis
+    using integrable.intros[OF std_normal_moment_odd] by (auto simp add: odd_Suc_mult_two_ex)
 qed
 
-lemma aux3_odd_abs:
+lemma integrable_std_normal_moment_abs: "integrable lborel (\<lambda>x. std_normal_density x * \<bar>x\<bar>^k)"
+proof cases
+  assume "even k" then show ?thesis
+    using integrable.intros[OF std_normal_moment_even] by (auto simp add: even_mult_two_ex power_even_abs)
+next
+  assume "odd k" then show ?thesis
+    using integrable.intros[OF std_normal_moment_abs_odd] by (auto simp add: odd_Suc_mult_two_ex)
+qed
+
+lemma integral_std_normal_moment_even:
   fixes k :: nat
-  shows 
-    "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2) * (abs x) ^ (2 * k + 1)::real)"
-  and
-    "(LBINT x:{0..}. exp (- x\<^sup>2) * ((abs x) ^ (2 * k + 1))) =  fact k / 2"
-proof -
-  have *: "\<And>(x :: real) k. indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * (abs x) ^ (2 * k + 1)) = 
-          indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * x ^ (2 * k + 1))"
-    by (simp split: split_indicator)
-  show "set_integrable lborel {0..} (\<lambda>x. exp (- x\<^sup>2) * (abs x) ^ (2 * k + 1) :: real)"
-    by (subst *) (rule aux3_odd)
-  show "(LBINT x:{0..}. exp (- x\<^sup>2) * ((abs x) ^ (2 * k + 1)) :: real) = fact k / 2"
-    by (subst *) (rule aux3_odd)
-qed
+  shows "integral\<^sup>L lborel (\<lambda>x. std_normal_density x * x^(2*k)) = fact (2 * k) / (2^k * fact k)"
+  using std_normal_moment_even by (rule has_bochner_integral_integral_eq)
 
-lemma aux4_even:
+lemma integral_std_normal_moment_abs_odd:
   fixes k :: nat
-  shows 
-    "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2) * x ^ (2 * k))"
-  and 
-    "(LBINT x. exp (- x\<^sup>2) * (x ^ (2 * k))) = sqrt pi * (fact (2 * k) / (2^(2 * k) * fact k))"
-proof -
-  note 1 = aux3_even (1) [of k]
-  note 2 = aux3_even (2) [of k]
-  have 3: "(\<lambda>x :: real. indicator {..0} (- x) *\<^sub>R (exp (- x\<^sup>2) * x ^ (2 * k))) =
-           (\<lambda>x. indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * x ^ (2 * k)))"
-    by (rule ext, auto split: split_indicator)
-  have 4: "set_integrable lborel {..0} (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k)::real)"
-    by (subst lborel_integrable_real_affine_iff [symmetric, of "-1" _ 0]) (simp_all add: 1 3 del: real_scaleR_def)
-  have 5: "(LBINT x:{..0}. exp (- x\<^sup>2) * (x ^ (2 * k))) = (sqrt pi / 2) * 
-        (fact (2 * k) / (2^(2 * k) * fact k))"
-    by (subst lborel_integral_real_affine [of "-1" _ 0]) (auto simp add: 2 3 simp del: real_scaleR_def)
-  have 6: "set_integrable lborel {..<0} (\<lambda>x. exp (- x\<^sup>2) * x ^ (2 * k)::real)"
-    apply (subst integrable_cong_AE)
-    prefer 4 apply (rule 4)
-    by (auto intro!: AE_I [where N="{0}"] split: split_indicator)
-  have 7: "(LBINT x:{..<0}. exp (- x\<^sup>2) * (x ^ (2 * k))) = (sqrt pi / 2) * 
-        (fact (2 * k) / (2^(2 * k) * fact k))"
-    apply (subst 5 [symmetric])
-    apply (rule integral_cong_AE)
-    by (auto intro!: AE_I [where N="{0}"] split: split_indicator)
-  have 8: "(\<lambda>x::real. exp (- x\<^sup>2) * (x ^ (2 * k))) = 
-      (\<lambda>x. indicator {..<0} x *\<^sub>R (exp (- x\<^sup>2) * (x ^ (2 * k))) + 
-           indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * (x ^ (2 * k))))"
-    by (rule ext, auto split: split_indicator)
-  show "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2) * x ^ (2 * k))"
-    by (subst 8) (rule integrable_add [OF 6 1])
-  have "(LBINT x::real. exp (- x\<^sup>2) * (x ^ (2 * k))) =
-      (LBINT x:{..<0}. exp (- x\<^sup>2) * (x ^ (2 * k))) + (LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k)))"
-    apply (subst integral_add [symmetric, OF 6 1])
-    by (rule integral_cong, auto split: split_indicator)
-  also have "\<dots> = sqrt pi * (fact (2 * k) / (2^(2 * k) * fact k))"
-    by (simp add: 2 7 del: real_scaleR_def) 
-  finally show "(LBINT x. exp (- x\<^sup>2) * (x ^ (2 * k))) = sqrt pi * 
-        (fact (2 * k) / (2^(2 * k) * fact k))" .
-qed
+  shows "integral\<^sup>L lborel (\<lambda>x. std_normal_density x * \<bar>x\<bar>^(2 * k + 1)) = sqrt (2 / pi) * 2^k * fact k"
+  using std_normal_moment_abs_odd by (rule has_bochner_integral_integral_eq)
 
-lemma aux4_odd:
+lemma integral_std_normal_moment_odd:
   fixes k :: nat
-  shows 
-    "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2) * x ^ (2 * k + 1))"
-  and 
-    "(LBINT x::real. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) = 0"
-proof -
-  note 1 = aux3_odd (1) [of k]
-  have 3: "(\<lambda>x :: real. indicator {..0} (- x) *\<^sub>R (exp (- x\<^sup>2) * x ^ (2 * k + 1))) =
-           (\<lambda>x. indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * x ^ (2 * k + 1)))"
-    by (rule ext, auto split: split_indicator)
-  have 4: "set_integrable lborel {..0} (\<lambda>x :: real. exp (- x\<^sup>2) * x ^ (2 * k + 1))"
-    apply (subst lborel_integrable_real_affine_iff [symmetric, of "-1" _ 0], simp_all del: One_nat_def real_scaleR_def)
-    by (subst 3, rule 1)
-  have 5: "(LBINT x::real:{..0}. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) = 
-           -(LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 1)))"
-    apply (subst lborel_integral_real_affine [of "-1" _ 0], simp_all del: One_nat_def real_scaleR_def)
-    by (rule integral_cong, auto split: split_indicator)
-  have 6: "set_integrable lborel {..<0} (\<lambda>x::real. exp (- x\<^sup>2) * x ^ (2 * k+ 1))"
-    apply (subst integrable_cong_AE)
-    prefer 4 apply (rule 4)
-    by (auto intro!: AE_I [where N="{0}"] split: split_indicator)
-  have 7: "(LBINT x::real:{..<0}. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) = 
-           -(LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 1)))"
-    apply (subst 5 [symmetric])
-    apply (rule integral_cong_AE)
-    by (auto intro!: AE_I [where N="{0}"] split: split_indicator)
-  have 8: "(\<lambda>x::real. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) = 
-      (\<lambda>x. indicator {..<0} x *\<^sub>R (exp (- x\<^sup>2) * (x ^ (2 * k + 1))) + 
-           indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * (x ^ (2 * k + 1))))"
-    by (rule ext, auto split: split_indicator)
-  show "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2) * x ^ (2 * k + 1))"
-    by (subst 8, rule integrable_add [OF 6 1])
-  have "(LBINT x::real. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) =
-      (LBINT x:{..<0}. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) + 
-      (LBINT x:{0..}. exp (- x\<^sup>2) * (x ^ (2 * k + 1)))"
-    apply (subst integral_add [symmetric, OF 6 1])
-    by (rule integral_cong, auto split: split_indicator)
-  also have "\<dots> = 0"
-    by (simp only: 7) 
-  finally show "(LBINT x::real. exp (- x\<^sup>2) * (x ^ (2 * k + 1))) = 0" .
-qed
-
-lemma aux4_odd_abs:
-  fixes k :: nat
-  shows 
-    "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2) * abs x ^ (2 * k + 1))"
-  and 
-    "(LBINT x::real. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) = fact k"
-proof -
-  note 1 = aux3_odd_abs (1) [of k]
-  have 3: "(\<lambda>x :: real. indicator {..0} (- x) *\<^sub>R (exp (- x\<^sup>2) * abs x ^ (2 * k + 1))) =
-           (\<lambda>x. indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * abs x ^ (2 * k + 1)))"
-    by (rule ext, auto split: split_indicator)
-  have 4: "set_integrable lborel {..0} (\<lambda>x :: real. exp (- x\<^sup>2) * (abs x) ^ (2 * k + 1))"
-    apply (subst lborel_integrable_real_affine_iff [symmetric, of "-1" _ 0], simp_all del: One_nat_def real_scaleR_def)
-    by (subst 3, rule 1)
-  have 5: "(LBINT x::real:{..0}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) = 
-           (LBINT x:{0..}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1)))"
-    apply (subst lborel_integral_real_affine [of "-1" _ 0], simp_all del: One_nat_def real_scaleR_def)
-    by (rule integral_cong, auto split: split_indicator)
-  have 6: "set_integrable lborel {..<0} (\<lambda>x::real. exp (- x\<^sup>2) * abs x ^ (2 * k+ 1))"
-    apply (subst integrable_cong_AE)
-    prefer 4 apply (rule 4)
-    by (auto intro!: AE_I [where N="{0}"] split: split_indicator)
-  have 7: "(LBINT x::real:{..<0}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) = 
-           (LBINT x:{0..}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1)))"
-    apply (subst 5 [symmetric])
-    apply (rule integral_cong_AE)
-    by (auto intro!: AE_I [where N="{0}"] split: split_indicator)
-  have 8: "(\<lambda>x::real. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) = 
-      (\<lambda>x. indicator {..<0} x *\<^sub>R (exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) + 
-           indicator {0..} x *\<^sub>R (exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))))"
-    by (rule ext, auto split: split_indicator)
-  show "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2) * abs x ^ (2 * k + 1))"
-    by (subst 8, rule integrable_add [OF 6 1])
-  have "(LBINT x::real. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) =
-      (LBINT x:{..<0}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) + 
-      (LBINT x:{0..}. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1)))"
-    apply (subst integral_add [symmetric, OF 6 1])
-    by (rule integral_cong, auto split: split_indicator)
-  also have "\<dots> = fact k"
-    by (subst 7, subst aux3_odd_abs, subst aux3_odd_abs, simp)
-  finally show "(LBINT x::real. exp (- x\<^sup>2) * (abs x ^ (2 * k + 1))) = fact k" .
-qed
-
-lemma aux5_even:
-  fixes k :: nat
-  shows 
-    "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2 / 2) * x ^ (2 * k))"
-  and
-    "(LBINT x::real. exp (- x\<^sup>2 / 2) * (x ^ (2 * k))) = 
-      sqrt (2 * pi) * (fact (2 * k) / (2^k * fact k))"
-proof -
-  have *: "(\<lambda>x::real. exp (- ((sqrt 2 * x)\<^sup>2 / 2)) * (sqrt 2 * x) ^ (2 * k)) =
-        (\<lambda>x. 2^k * (exp (- x\<^sup>2) * x ^ (2 * k)))"
-    by (rule ext, simp add: power_mult_distrib power_mult)
-  have **: "(2::real)^(2 * k) = 2^k * 2^k"
-    by (simp add: power_add [symmetric])
-  show "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2 / 2) * x ^ (2 * k))"
-    apply (subst lborel_integrable_real_affine_iff [symmetric, where t = 0 and c = "sqrt 2"], auto)
-    by (subst *, rule integrable_mult_right, rule aux4_even)
-  show 
-    "(LBINT x::real. exp (- x\<^sup>2 / 2) * (x ^ (2 * k))) = 
-      sqrt (2 * pi) * (fact (2 * k) / (2^k * fact k))"
-    apply (subst lborel_integral_real_affine [where t = 0 and c = "sqrt 2"], auto)
-    apply (subst *, subst integral_mult_right_zero)
-    by (subst aux4_even, simp add: real_sqrt_mult **)
-qed
-
-lemma aux5_odd:
-  fixes k :: nat
-  shows 
-    "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2 / 2) * x ^ (2 * k + 1))" 
-  and   
-    "(LBINT x::real. exp (- x\<^sup>2 / 2) * (x ^ (2 * k + 1))) = 0"
-proof -
-  have *: "(\<lambda>x::real. exp (- ((sqrt 2 * x)\<^sup>2 / 2)) * (sqrt 2 * x) ^ (2 * k + 1)) =
-        (\<lambda>x. 2^k * sqrt 2 * (exp (- x\<^sup>2) * x ^ (2 * k + 1)))"
-    by (rule ext, simp add: power_mult_distrib power_mult)
-
-  show "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2 / 2) * x ^ (2 * k + 1))"
-    apply (subst lborel_integrable_real_affine_iff [symmetric, where t = 0 and c = "sqrt 2"],
-      auto simp del: One_nat_def real_scaleR_def)
-    by (subst *, rule integrable_mult_right, rule aux4_odd)
-  show "(LBINT x::real. exp (- x\<^sup>2 / 2) * (x ^ (2 * k + 1))) = 0"
-    apply (subst lborel_integral_real_affine [where t = 0 and c = "sqrt 2"])
-    apply (auto simp del: One_nat_def)
-    apply (subst *, subst integral_mult_right, rule aux4_odd)
-    by (subst aux4_odd, simp add: real_sqrt_mult)
-qed
-
-lemma aux5_odd_abs:
-  fixes k :: nat
-  shows 
-    "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2 / 2) * abs x ^ (2 * k + 1))"
-  and
-    "(LBINT x::real. exp (- x\<^sup>2 / 2) * (abs x ^ (2 * k + 1))) = fact k * (2 ^ (k + 1))"
-proof -
-  have *: "(\<lambda>x. exp (- ((sqrt 2 * x)\<^sup>2 / 2)) * abs (sqrt 2 * x) ^ (2 * k + 1)) =
-        (\<lambda>x. (sqrt 2)^(2 *k + 1) * (exp (- x\<^sup>2) * abs x ^ (2 * k + 1)))"
-    by (rule ext, simp add: power_mult_distrib abs_mult power_mult)
-  have **: "(2::real)^(2 * k) = 2^k * 2^k"
-    by (simp add: power_add [symmetric])
-  show "integrable lborel (\<lambda>x::real. exp (- x\<^sup>2 / 2) * abs x ^ (2 * k + 1))"
-    apply (subst lborel_integrable_real_affine_iff [symmetric, where t = 0 and c = "sqrt 2"])
-    apply (simp_all del: One_nat_def power_Suc add: divide_minus_left)
-    by (subst *, rule integrable_mult_right, rule aux4_odd_abs)
-  show 
-    "(LBINT x. exp (- x\<^sup>2 / 2) * (abs x ^ (2 * k + 1))) = fact k * (2 ^ (k + 1))"
-    apply (subst lborel_integral_real_affine [where t = 0 and c = "sqrt 2"])
-    apply (simp_all del: One_nat_def power_Suc)
-    apply (subst *, subst integral_mult_right, rule aux4_odd_abs)
-    apply (subst aux4_odd_abs, simp add: power_mult real_sqrt_mult)
-    done
-qed
+  shows "integral\<^sup>L lborel (\<lambda>x. std_normal_density x * x^(2 * k + 1)) = 0"
+  using std_normal_moment_odd by (rule has_bochner_integral_integral_eq)
 
 (* which is more convenient? *)
-abbreviation standard_normal_distribution where
-  "standard_normal_distribution \<equiv> density lborel standard_normal_density"
+abbreviation std_normal_distribution where
+  "std_normal_distribution \<equiv> density lborel std_normal_density"
 
 (* a reality check *)
-lemma distributed_standard_normal_density: 
-  "distributed standard_normal_distribution lborel (\<lambda>x. x) standard_normal_density"
+lemma distributed_std_normal_density: 
+  "distributed std_normal_distribution lborel (\<lambda>x. x) std_normal_density"
   unfolding distributed_def apply auto
   apply (subst density_distr [symmetric], auto)
-by (auto intro!: AE_I2 normal_nonneg)
+by (auto intro!: AE_I2 normal_density_nonneg)
 
-lemma standard_normal_distribution_even_moments:
+lemma std_normal_distribution_even_moments:
   fixes k :: nat
-  shows "integrable standard_normal_distribution (\<lambda>x. x ^ (2 * k)::real)"
-    "LINT x::real | standard_normal_distribution. x ^ (2 * k) = (fact (2 * k) / (2^k * fact k))"
-  apply (subst integrable_density)
-  apply (auto intro!: AE_I2 normal_nonneg) [4]
-  apply (subst standard_normal_density_def)
-  apply (subst mult_assoc, rule integrable_mult_right) 
-  apply (rule aux5_even) 
-
-  apply (subst integral_density)
-  apply (auto intro!: AE_I2 normal_nonneg) [4]
-  apply (subst standard_normal_density_def)
-  apply (subst mult_assoc, subst integral_mult_right)
-  apply (rule aux5_even (1))
-by (subst aux5_even (2), auto)
-
-lemma standard_normal_distribution_even_moments_abs:
-  fixes k :: nat
-  shows "integrable standard_normal_distribution (\<lambda>x. abs x ^ (2 * k))"
-    "LINT x | standard_normal_distribution. abs x ^ (2 * k) = (fact (2 * k) / (2^k * fact k))"
+  shows "integrable std_normal_distribution (\<lambda>x. x ^ (2 * k))" (is ?int)
+    and "LINT x | std_normal_distribution. x ^ (2 * k) = (fact (2 * k) / (2^k * fact k))" (is ?eq)
 proof -
-  have *: "\<And>(x :: real) k. abs x ^ (2 * k) = x ^ (2 * k)"
-    by (simp add: power_mult)
-  show "integrable standard_normal_distribution (\<lambda>x. abs x ^ (2 * k))"
-    by (subst *, rule standard_normal_distribution_even_moments)
-  show "LINT x | standard_normal_distribution. abs x ^ (2 * k) = 
-      (fact (2 * k) / (2^k * fact k))"
-    by (subst *, rule standard_normal_distribution_even_moments)
+  show ?int
+    by (simp add: integrable_density normal_density_nonneg integrable_std_normal_moment)
+
+  show ?eq
+    by (simp add: integral_density normal_density_nonneg integral_std_normal_moment_even power_even_abs)
 qed
 
-lemma standard_normal_distribution_odd_moments:
+lemma std_normal_distribution_even_moments_abs:
   fixes k :: nat
-  shows "integrable standard_normal_distribution (\<lambda>x. x ^ (2 * k + 1))"
-    "LINT x | standard_normal_distribution. x ^ (2 * k + 1) = 0"
+  shows "integrable std_normal_distribution (\<lambda>x. abs x ^ (2 * k))" (is ?int)
+    and "LINT x | std_normal_distribution. abs x ^ (2 * k) = (fact (2 * k) / (2^k * fact k))" (is ?eq)
+proof -
+  show ?int
+    by (simp add: integrable_density normal_density_nonneg integrable_std_normal_moment_abs)
 
-  apply (subst integrable_density)
-  apply (auto intro!: AE_I2 normal_nonneg) [3]
-  apply (subst standard_normal_density_def)
-  apply (subst scaleR_scaleR[symmetric])
-  apply (rule integrable_scaleR_right)
-  unfolding real_scaleR_def
-  apply (rule aux5_odd) 
+  show ?eq
+    by (simp add: integral_density normal_density_nonneg integral_std_normal_moment_even power_even_abs)
+qed
 
-  apply (subst integral_density)
-  apply (auto intro!: AE_I2 normal_nonneg simp del: One_nat_def)
-  unfolding standard_normal_density_def
-  apply (subst mult_assoc, subst integral_mult_right)
-  apply (rule aux5_odd (1))
-by (subst aux5_odd (2), auto)
-
-lemma standard_normal_distribution_odd_moments_abs :
+lemma std_normal_distribution_odd_moments:
   fixes k :: nat
-  shows "integrable standard_normal_distribution (\<lambda>x. abs x ^ (2 * k + 1))"
-    "LINT x | standard_normal_distribution. abs x ^ (2 * k + 1) = 
-      fact k * (2 ^ (k + 1)) / sqrt (2 * pi)"
+  shows "integrable std_normal_distribution (\<lambda>x. x ^ (2 * k + 1))" (is ?int)
+    and "LINT x | std_normal_distribution. x ^ (2 * k + 1) = 0" (is ?eq)
+proof -
+  show ?int
+    by (simp add: integrable_density normal_density_nonneg integrable_std_normal_moment 
+             del: One_nat_def)
 
-  apply (subst integrable_density)
-  apply (auto intro!: AE_I2 normal_nonneg) [3]
-  apply (subst standard_normal_density_def)
-  apply (subst scaleR_scaleR[symmetric])
-  apply (rule integrable_scaleR_right)
-  unfolding real_scaleR_def
-  apply (rule aux5_odd_abs) 
+  show ?eq
+    by (simp add: integral_density normal_density_nonneg integral_std_normal_moment_odd
+             del: One_nat_def)
+qed
 
-  apply (subst integral_density)
-  apply (auto intro!: AE_I2 normal_nonneg simp del: One_nat_def)
-  unfolding standard_normal_density_def
-  apply (subst mult_assoc, subst integral_mult_right)
-  apply (rule aux5_odd_abs (1))
-by (subst aux5_odd_abs (2), auto)
+lemma std_normal_distribution_odd_moments_abs:
+  fixes k :: nat
+  shows "integrable std_normal_distribution (\<lambda>x. abs x ^ (2 * k + 1))" (is ?int)
+    and "LINT x | std_normal_distribution. abs x ^ (2 * k + 1) =  fact k * (2 ^ (k + 1)) / sqrt (2 * pi)" (is ?eq)
+proof -
+  show ?int
+    by (simp add: integrable_density normal_density_nonneg integrable_std_normal_moment_abs 
+             del: One_nat_def)
 
+  show ?eq
+    by (simp add: integral_density normal_density_nonneg integral_std_normal_moment_abs_odd
+             del: One_nat_def)
+       (simp add: field_simps real_sqrt_divide real_sqrt_mult)
+qed
 
 (* I am uncertain as to which forms are better *)
 
 lemma (in prob_space) standard_normal_distributed_even_moments:
   fixes k :: nat
-  assumes D: "distributed M lborel X standard_normal_density"
+  assumes D: "distributed M lborel X std_normal_density"
   shows "expectation (\<lambda>x. (X x)^(2 * k)) = (fact (2 * k) / (2^k * fact k))"
-  apply (subst distributed_integral[OF D, of "\<lambda>x. x^(2 * k)", symmetric], auto)
-  unfolding standard_normal_density_def
-  apply (subst mult_assoc, subst integral_mult_right_zero)
-  by (subst aux5_even (2), auto)
+  apply (subst distributed_integral[OF D, symmetric])
+  apply simp
+  apply (rule integral_std_normal_moment_even)
+  done
 
 lemma (in prob_space) standard_normal_distributed_odd_moments:
   fixes k :: nat
-  assumes D: "distributed M lborel X standard_normal_density"
+  assumes D: "distributed M lborel X std_normal_density"
   shows "expectation (\<lambda>x. (X x)^(2 * k + 1)) = 0"
-  apply (subst distributed_integral[OF D, of "\<lambda>x. x^(2 * k + 1)", symmetric], force)
-  unfolding standard_normal_density_def
-  apply (subst mult_assoc, subst integral_mult_right_zero)
-  by (subst aux5_odd (2), auto)
-
+  apply (subst distributed_integral[OF D, symmetric])
+  apply simp
+  apply (rule integral_std_normal_moment_odd)
+  done
 
 end

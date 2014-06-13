@@ -599,7 +599,7 @@ qed
 (* Calculation of the characteristic function of the standard distribution *)
 
 (* TODO: should this be an instance statement? *)
-lemma real_dist_normal_dist: "real_distribution standard_normal_distribution"
+lemma real_dist_normal_dist: "real_distribution std_normal_distribution"
   unfolding real_distribution_def apply (rule conjI)
   apply (rule prob_space_normal_density, auto)
 unfolding real_distribution_axioms_def by auto
@@ -633,11 +633,11 @@ lemma limseq_even_odd_complex:
   apply (subst (asm) even_mult_two_ex, auto)
 by (subst (asm) odd_Suc_mult_two_ex, auto)
 
-theorem char_standard_normal_distribution:
-  "char standard_normal_distribution = (\<lambda>t. complex_of_real (exp (- (t^2) / 2)))"
+theorem char_std_normal_distribution:
+  "char std_normal_distribution = (\<lambda>t. complex_of_real (exp (- (t^2) / 2)))"
 proof
   fix t :: real
-  let ?f' = "\<lambda>k. (ii * t)^k / fact k * (LINT x | standard_normal_distribution. x^k)"
+  let ?f' = "\<lambda>k. (ii * t)^k / fact k * (LINT x | std_normal_distribution. x^k)"
   let ?f = "\<lambda>n. (\<Sum>k \<le> n. ?f' k)"
   (* This is an absolutely horrible calculation, with casts from nat to real to complex. *)
   (* This makes it a good target for automation. *)
@@ -648,9 +648,9 @@ proof
     let ?g = "\<lambda>n. \<Sum>k \<le> n. ?g' k"  
     show "?f (2 * n) = complex_of_real (?g n)"
     proof (induct n)
-      have "?f (2 * 0) = complex_of_real (LINT x | standard_normal_distribution. x^(2 * 0))" by simp
-      also have "\<dots> = complex_of_real 1" 
-        by (subst standard_normal_distribution_even_moments) auto
+      have "?f (2 * 0) = complex_of_real (LINT x | std_normal_distribution. x^(2 * 0))" by simp
+      also have "\<dots> = complex_of_real 1"
+        by (subst std_normal_distribution_even_moments) auto
       also have "\<dots> = ?g 0" by simp
       finally show "?f (2 * 0) = ?g 0" .
     next
@@ -658,10 +658,10 @@ proof
       assume ih: "?f (2 * n) = ?g n"
       have "?f (2 * (Suc n)) = ?f (2 * n) + ?f' (2 * n + 1) + ?f' (2 * (n + 1))" by simp
       also have "?f (2 * n) = ?g n" by (rule ih)
-      also have "?f' (2 * n + 1) = 0" by (subst standard_normal_distribution_odd_moments, simp)
+      also have "?f' (2 * n + 1) = 0" by (subst std_normal_distribution_odd_moments, simp)
       also have "?f' (2 * (n + 1)) = (ii * t)^(2 * (n + 1)) / fact (2 * (n + 1)) * 
          fact (2 * (n + 1)) / (2^(n + 1) * fact (n + 1))"
-        apply (subst standard_normal_distribution_even_moments)
+        apply (subst std_normal_distribution_even_moments)
         apply (simp add: real_of_nat_def)
         done
       also have "\<dots> = (ii * t)^(2 * (n + 1)) / (2^(n + 1) * fact (n + 1))"
@@ -697,7 +697,7 @@ proof
     fix n :: nat
     have "?f(2 * n + 1) = ?f(2 * n) + ?f'(2 * n + 1)" by simp
     also have "?f' (2 * n + 1) = 0"
-      by (subst standard_normal_distribution_odd_moments, simp)
+      by (subst std_normal_distribution_odd_moments, simp)
     finally show "?f(2 * n + 1) = ?f(2 * n)" by simp
   qed
   have *: "\<And>x y :: real. 1 / y * x = x /\<^sub>R y" by (simp add: inverse_eq_divide)
@@ -715,13 +715,13 @@ proof
     "\<And>x :: real. (\<lambda>n. x ^ n / fact n) ----> 0"
     by (auto simp add: inverse_eq_divide)
   have "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n) / real (fact (2 * n)) *
-          (LINT x|standard_normal_distribution. \<bar>x\<bar> ^ (2 * n))) =
+          (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n))) =
           (\<lambda>n. 2 * ((t^2 / 2)^n / fact n))"
     apply (rule ext)
-    apply (subst standard_normal_distribution_even_moments_abs)
+    apply (subst std_normal_distribution_even_moments_abs)
     by (simp add: power_mult power_divide)
   hence 5: "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n) / real (fact (2 * n)) *
-          (LINT x|standard_normal_distribution. \<bar>x\<bar> ^ (2 * n)))
+          (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n)))
         ----> 0"
     apply (elim ssubst)
     by (rule tendsto_mult_right_zero, rule **)
@@ -745,16 +745,16 @@ proof
     qed
   } note *** = this
   have  "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n + 1) / real (fact (2 * n + 1)) *
-          (LINT x|standard_normal_distribution. \<bar>x\<bar> ^ (2 * n + 1)))
+          (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n + 1)))
         = (\<lambda>n. (4 * abs t / sqrt (2 * pi)) * 
           ((2 * t^2)^n * fact n / fact (2 * n + 1)))"
-    apply (rule ext, subst standard_normal_distribution_odd_moments_abs)
+    apply (rule ext, subst std_normal_distribution_odd_moments_abs)
     apply (simp add: power_add power_mult power_mult_distrib)
     by (auto simp add: field_simps of_real_mult power_add power_mult
       power_mult_distrib abs_mult power2_eq_square)
   (* TODO: clean this up! *)
   hence 6: "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n + 1) / real (fact (2 * n + 1)) *
-          (LINT x|standard_normal_distribution. \<bar>x\<bar> ^ (2 * n + 1)))
+          (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n + 1)))
         ----> 0"
     apply (elim ssubst)
     apply (rule tendsto_mult_right_zero)
@@ -775,11 +775,11 @@ proof
     apply (rule order_trans)
     apply (rule ***)
     by auto
-  have 7: "?f ----> char standard_normal_distribution t"
+  have 7: "?f ----> char std_normal_distribution t"
     apply (subst Lim_null)
     apply (rule tendsto_norm_zero_cancel)
     apply (rule Lim_null_comparison [of _ "\<lambda>n. 2 * (abs t)^n / real(fact n) * 
-      (LINT x | standard_normal_distribution. abs (x)^n)"])
+      (LINT x | std_normal_distribution. abs (x)^n)"])
     apply (rule eventually_sequentiallyI)
     apply (subst real_norm_def, subst abs_of_nonneg, force)
     apply (subst norm_minus_commute, simp)
@@ -787,14 +787,14 @@ proof
       simplified])
     apply (case_tac "even k")
     apply (subst (asm) even_mult_two_ex, erule exE, simp)
-    apply (rule standard_normal_distribution_even_moments)
+    apply (rule std_normal_distribution_even_moments)
     apply (subst (asm) odd_Suc_mult_two_ex, erule exE, erule ssubst)
     apply (subgoal_tac "Suc (2 * m) = 2 * m + 1")
     apply (erule ssubst)
-    apply (rule standard_normal_distribution_odd_moments)
+    apply (rule std_normal_distribution_odd_moments)
     apply simp
     by (rule limseq_even_odd [OF 5 6])
-  show "char standard_normal_distribution t = complex_of_real (exp (-(t^2) / 2))"
+  show "char std_normal_distribution t = complex_of_real (exp (-(t^2) / 2))"
     by (rule LIMSEQ_unique [OF 7 4])
 qed
 

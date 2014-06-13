@@ -90,10 +90,10 @@ qed
 definition normal_density :: "real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real" where
   "normal_density \<mu> \<sigma> x = 1 / sqrt (2 * pi * \<sigma>\<^sup>2) * exp (-(x - \<mu>)\<^sup>2/ (2 * \<sigma>\<^sup>2))"
 
-abbreviation standard_normal_density :: "real \<Rightarrow> real" where
-  "standard_normal_density \<equiv> normal_density 0 1"
+abbreviation std_normal_density :: "real \<Rightarrow> real" where
+  "std_normal_density \<equiv> normal_density 0 1"
 
-lemma standard_normal_density_def: "standard_normal_density x = (1 / sqrt (2 * pi)) * exp (- x\<^sup>2 / 2)"
+lemma std_normal_density_def: "std_normal_density x = (1 / sqrt (2 * pi)) * exp (- x\<^sup>2 / 2)"
   unfolding normal_density_def by simp
 
 lemma borel_measurable_normal_density[measurable]: "normal_density \<mu> \<sigma> \<in> borel_measurable borel"
@@ -206,15 +206,15 @@ lemma nn_integral_normal_density: "(\<integral>\<^sup>+x. normal_density \<mu> \
   by (auto simp: power_mult_distrib nn_integral_gaussian real_sqrt_mult one_ereal_def)
 
 lemma 
-  shows normal_positive: "\<And>x. 0 < normal_density \<mu> \<sigma> x"
-  and normal_nonneg: "\<And>x. 0 \<le> normal_density \<mu> \<sigma> x" 
+  shows normal_density_pos: "\<And>x. 0 < normal_density \<mu> \<sigma> x"
+  and normal_density_nonneg: "\<And>x. 0 \<le> normal_density \<mu> \<sigma> x" 
   by (auto simp: normal_density_def)
 
 lemma integrable_normal[intro]: "integrable lborel (normal_density \<mu> \<sigma>)"
-  by (auto intro!: integrableI_nn_integral_finite simp: nn_integral_normal_density normal_nonneg)
+  by (auto intro!: integrableI_nn_integral_finite simp: nn_integral_normal_density normal_density_nonneg)
 
 lemma integral_normal_density[simp]: "(\<integral>x. normal_density \<mu> \<sigma> x \<partial>lborel) = 1"
-  by (simp add: integral_eq_nn_integral normal_nonneg nn_integral_normal_density)
+  by (simp add: integral_eq_nn_integral normal_density_nonneg nn_integral_normal_density)
 
 lemma prob_space_normal_density:
   "prob_space (density lborel (normal_density \<mu> \<sigma>))" (is "prob_space ?D")
@@ -237,16 +237,16 @@ qed
 
 lemma (in prob_space) normal_standard_normal_convert:
   assumes pos_var[simp, arith]: "0 < \<sigma>"
-  shows "distributed M lborel X (normal_density  \<mu> \<sigma>) = distributed M lborel (\<lambda>x. (X x - \<mu>) / \<sigma>) standard_normal_density"
+  shows "distributed M lborel X (normal_density  \<mu> \<sigma>) = distributed M lborel (\<lambda>x. (X x - \<mu>) / \<sigma>) std_normal_density"
 proof auto
   assume "distributed M lborel X (\<lambda>x. ereal (normal_density \<mu> \<sigma> x))"
   then have "distributed M lborel (\<lambda>x. -\<mu> / \<sigma> + (1/\<sigma>) * X x) (\<lambda>x. ereal (normal_density (-\<mu> / \<sigma> + (1/\<sigma>)* \<mu>) (\<bar>1/\<sigma>\<bar> * \<sigma>) x))"
     by(rule normal_density_affine) auto
   
-  then show "distributed M lborel (\<lambda>x. (X x - \<mu>) / \<sigma>) (\<lambda>x. ereal (standard_normal_density x))"
+  then show "distributed M lborel (\<lambda>x. (X x - \<mu>) / \<sigma>) (\<lambda>x. ereal (std_normal_density x))"
     by (simp add: diff_divide_distrib[symmetric] field_simps)
 next
-  assume *: "distributed M lborel (\<lambda>x. (X x - \<mu>) / \<sigma>) (\<lambda>x. ereal (standard_normal_density x))"
+  assume *: "distributed M lborel (\<lambda>x. (X x - \<mu>) / \<sigma>) (\<lambda>x. ereal (std_normal_density x))"
   have "distributed M lborel (\<lambda>x. \<mu> + \<sigma> * ((X x - \<mu>) / \<sigma>)) (\<lambda>x. ereal (normal_density \<mu> \<bar>\<sigma>\<bar> x))"
     using normal_density_affine[OF *, of \<sigma> \<mu>] by simp  
   then show "distributed M lborel X (\<lambda>x. ereal (normal_density \<mu> \<sigma> x))" by simp
@@ -283,8 +283,8 @@ proof -
   finally show ?thesis by fast
 qed
 
-lemma conv_standard_normal_density:
-  "(\<lambda>x. \<integral>\<^sup>+y. ereal (standard_normal_density (x - y) * standard_normal_density y) \<partial>lborel) =
+lemma conv_std_normal_density:
+  "(\<lambda>x. \<integral>\<^sup>+y. ereal (std_normal_density (x - y) * std_normal_density y) \<partial>lborel) =
   (normal_density 0 (sqrt 2))"
   by (subst conv_normal_density_zero_mean) simp_all
 
@@ -391,30 +391,30 @@ proof -
   show "(\<integral>\<^sup>+x. ereal (x * exp (- x\<^sup>2)) * indicator {0..} x \<partial>lborel) = ereal 1 / 2" using 1 by auto
 qed
 
-lemma borel_integral_x_times_standard_normal[intro]: "(\<integral>x. standard_normal_density x * x \<partial>lborel) = 0" 
-  and borel_integrable_x_times_standard_normal[intro]: "integrable lborel (\<lambda>x. standard_normal_density x * x)"
-  and borel_integral_x_times_standard_normal'[intro]: "(\<integral>x. x * standard_normal_density x \<partial>lborel) = 0" 
-  and borel_integrable_x_times_standard_normal'[intro]: "integrable lborel (\<lambda>x. x * standard_normal_density x)"
+lemma borel_integral_x_times_standard_normal[intro]: "(\<integral>x. std_normal_density x * x \<partial>lborel) = 0" 
+  and borel_integrable_x_times_standard_normal[intro]: "integrable lborel (\<lambda>x. std_normal_density x * x)"
+  and borel_integral_x_times_standard_normal'[intro]: "(\<integral>x. x * std_normal_density x \<partial>lborel) = 0" 
+  and borel_integrable_x_times_standard_normal'[intro]: "integrable lborel (\<lambda>x. x * std_normal_density x)"
 proof -    
-  have 0: "(\<integral>\<^sup>+x. ereal (x * standard_normal_density x) \<partial>lborel) = \<integral>\<^sup>+x. ereal (x * standard_normal_density x) * indicator {0..} x \<partial>lborel"
+  have 0: "(\<integral>\<^sup>+x. ereal (x * std_normal_density x) \<partial>lborel) = \<integral>\<^sup>+x. ereal (x * std_normal_density x) * indicator {0..} x \<partial>lborel"
     apply (subst nn_integral_max_0[symmetric]) 
-    unfolding max_def standard_normal_density_def
+    unfolding max_def std_normal_density_def
     apply (auto intro!: nn_integral_cong split:split_indicator simp: zero_le_divide_iff zero_le_mult_iff)
     apply (metis not_le pi_gt_zero)
     done
 
-  have 1: "(\<integral>\<^sup>+x. ereal (- (x * standard_normal_density x)) \<partial>lborel) = \<integral>\<^sup>+x. ereal (x * standard_normal_density x) * indicator {0..} x \<partial>lborel"
+  have 1: "(\<integral>\<^sup>+x. ereal (- (x * std_normal_density x)) \<partial>lborel) = \<integral>\<^sup>+x. ereal (x * std_normal_density x) * indicator {0..} x \<partial>lborel"
     apply (subst(2) nn_integral_real_affine[where c = "-1" and t = 0])
-    apply(auto simp: standard_normal_density_def split: split_indicator)
+    apply(auto simp: std_normal_density_def split: split_indicator)
     apply(subst nn_integral_max_0[symmetric]) 
-    unfolding max_def standard_normal_density_def
+    unfolding max_def std_normal_density_def
     apply (auto intro!: nn_integral_cong split: split_indicator
                 simp: divide_le_0_iff mult_le_0_iff one_ereal_def[symmetric])
     apply (metis not_le pi_gt_zero)
     done
 
-  have 2: "sqrt pi / sqrt 2 * (\<integral>\<^sup>+x. ereal (x * standard_normal_density x) * indicator {0..} x \<partial>lborel) = integral\<^sup>N lborel (\<lambda>x. ereal (x * exp (- x\<^sup>2)))"
-    unfolding standard_normal_density_def
+  have 2: "sqrt pi / sqrt 2 * (\<integral>\<^sup>+x. ereal (x * std_normal_density x) * indicator {0..} x \<partial>lborel) = integral\<^sup>N lborel (\<lambda>x. ereal (x * exp (- x\<^sup>2)))"
+    unfolding std_normal_density_def
     apply (subst nn_integral_real_affine[where c = "sqrt 2" and t = 0])
     apply (auto simp: power_mult_distrib split: split_indicator)
     apply (subst mult_assoc[symmetric])
@@ -424,22 +424,22 @@ proof -
     apply (auto intro!: nn_integral_cong split: split_indicator simp: max_def zero_le_mult_iff real_sqrt_mult)
     done
 
-  have *: "(\<integral>\<^sup>+x. ereal (x * standard_normal_density x) * indicator {0..} x \<partial>lborel) = sqrt 2 / sqrt pi *(integral\<^sup>N lborel (\<lambda>x. ereal (x * exp (- x\<^sup>2))))"
+  have *: "(\<integral>\<^sup>+x. ereal (x * std_normal_density x) * indicator {0..} x \<partial>lborel) = sqrt 2 / sqrt pi *(integral\<^sup>N lborel (\<lambda>x. ereal (x * exp (- x\<^sup>2))))"
     apply (subst 2[symmetric])
     apply (subst mult_assoc[symmetric])
     apply (auto simp: field_simps one_ereal_def[symmetric])
     done
     
-  show "(\<integral> x. x * standard_normal_density x \<partial>lborel) = 0" "integrable lborel (\<lambda>x. x * standard_normal_density x)"
+  show "(\<integral> x. x * std_normal_density x \<partial>lborel) = 0" "integrable lborel (\<lambda>x. x * std_normal_density x)"
     by (subst real_lebesgue_integral_def)
        (auto simp: 0 1 * nn_integral_x_exp_x_square real_integrable_def)
 
-  then show "(\<integral> x. standard_normal_density x * x \<partial>lborel) = 0" "integrable lborel (\<lambda>x. standard_normal_density x * x)"
+  then show "(\<integral> x. std_normal_density x * x \<partial>lborel) = 0" "integrable lborel (\<lambda>x. std_normal_density x * x)"
     by (simp_all add:mult_commute)
 qed
 
 lemma (in prob_space) standard_normal_distributed_expectation:
-  assumes D: "distributed M lborel X standard_normal_density "
+  assumes D: "distributed M lborel X std_normal_density "
   shows "expectation X = 0"
   by (auto simp: distributed_integral[OF D, of "\<lambda>x. x", symmetric])
 
@@ -449,7 +449,7 @@ lemma (in prob_space) normal_distributed_expectation:
   shows "expectation X = \<mu>"
 proof -
   def X' \<equiv> "\<lambda>x. (X x - \<mu>) / \<sigma>"
-  then have D1: "distributed M lborel X' standard_normal_density"
+  then have D1: "distributed M lborel X' std_normal_density"
     by (simp add: normal_standard_normal_convert[OF pos_var, of X \<mu>, symmetric] D)
   then have [simp]: "integrable M X'"
     by (rule distributed_integrable_var) auto
@@ -568,27 +568,27 @@ proof-
     by (intro integrableI_nn_integral_finite[OF _ _ ***]) auto
 qed
 
-lemma integral_xsquare_times_standard_normal[intro]: "(\<integral> x. standard_normal_density x * x\<^sup>2 \<partial>lborel) = 1"
-  and integrable_xsquare_times_standard_normal[intro]: "integrable lborel (\<lambda>x. standard_normal_density x * x\<^sup>2)"
+lemma integral_xsquare_times_standard_normal[intro]: "(\<integral> x. std_normal_density x * x\<^sup>2 \<partial>lborel) = 1"
+  and integrable_xsquare_times_standard_normal[intro]: "integrable lborel (\<lambda>x. std_normal_density x * x\<^sup>2)"
 proof -
   have [intro]:"integrable lborel (\<lambda>x. exp (- x\<^sup>2) * (2 * x\<^sup>2) / (sqrt 2 * sqrt pi))"
     apply (subst integrable_cong[where g ="(\<lambda>x. (2 * inverse (sqrt 2 * sqrt pi)) * (exp (- x\<^sup>2) * x\<^sup>2))"])
     by (auto intro!: integrable_xsquare_exp_xsquare simp: field_simps)
 
-  have "(\<integral> x. standard_normal_density x * x\<^sup>2 \<partial>lborel) = (2 / sqrt pi) * \<integral> x. x\<^sup>2 * exp (- x\<^sup>2) \<partial>lborel"
+  have "(\<integral> x. std_normal_density x * x\<^sup>2 \<partial>lborel) = (2 / sqrt pi) * \<integral> x. x\<^sup>2 * exp (- x\<^sup>2) \<partial>lborel"
     apply (subst integral_mult_right[symmetric])
     apply (rule integrable_xsquare_exp_xsquare)
-    unfolding standard_normal_density_def
+    unfolding std_normal_density_def
     apply (subst lborel_integral_real_affine[where c = "sqrt 2" and t=0], simp_all)
     unfolding integral_mult_right_zero[symmetric] integral_divide_zero[symmetric]
     apply (intro integral_cong)
     by (auto simp: power_mult_distrib real_sqrt_mult)
   also have "... = 1"
     by (subst integral_xsquare_exp_xsquare, auto)
-  finally show "(\<integral> x. standard_normal_density x * x\<^sup>2 \<partial>lborel) = 1" .
+  finally show "(\<integral> x. std_normal_density x * x\<^sup>2 \<partial>lborel) = 1" .
 
-  show "integrable lborel (\<lambda>x. standard_normal_density x * x\<^sup>2)"
-    unfolding standard_normal_density_def
+  show "integrable lborel (\<lambda>x. std_normal_density x * x\<^sup>2)"
+    unfolding std_normal_density_def
     apply (subst lborel_integrable_real_affine_iff[where c = "sqrt 2" and t=0, symmetric])
     by (auto simp: power_mult_distrib real_sqrt_mult)
 qed
@@ -598,7 +598,7 @@ lemma
   shows integral_xsquare_times_normal: "(\<integral> x. normal_density \<mu> \<sigma> x * (x - \<mu>)\<^sup>2 \<partial>lborel) = \<sigma>\<^sup>2"
   and integrable_xsquare_times_normal: "integrable lborel (\<lambda>x. normal_density \<mu> \<sigma> x * (x - \<mu>)\<^sup>2)"
 proof -
-  have "(\<integral> x. normal_density \<mu> \<sigma> x * (x - \<mu>)\<^sup>2 \<partial>lborel) = \<sigma> * \<sigma> * \<integral> x. standard_normal_density x * x\<^sup>2 \<partial>lborel"
+  have "(\<integral> x. normal_density \<mu> \<sigma> x * (x - \<mu>)\<^sup>2 \<partial>lborel) = \<sigma> * \<sigma> * \<integral> x. std_normal_density x * x\<^sup>2 \<partial>lborel"
     unfolding normal_density_def
     apply (subst lborel_integral_real_affine[ where c = \<sigma> and t = \<mu>])
     apply (auto simp: power_mult_distrib)
@@ -618,14 +618,14 @@ proof -
     apply (subst lborel_integrable_real_affine_iff[ where c = \<sigma> and t = \<mu>, symmetric])
     apply auto
     apply (auto simp: power_mult_distrib)
-    apply (subst integrable_cong[where g ="(\<lambda>x. \<sigma> * (standard_normal_density x * x\<^sup>2))"], auto)
-    unfolding standard_normal_density_def
+    apply (subst integrable_cong[where g ="(\<lambda>x. \<sigma> * (std_normal_density x * x\<^sup>2))"], auto)
+    unfolding std_normal_density_def
     by (auto simp: field_simps real_sqrt_mult power2_eq_square[symmetric])
 qed
   
 lemma (in prob_space) standard_normal_distributed_variance:
   fixes a b :: real
-  assumes D: "distributed M lborel X standard_normal_density"
+  assumes D: "distributed M lborel X std_normal_density"
   shows "variance X = 1"
   apply (subst distributed_integral[OF D, of "(\<lambda>x. (x - expectation X)\<^sup>2)", symmetric])
   by (auto simp: standard_normal_distributed_expectation[OF D])
@@ -636,7 +636,7 @@ lemma (in prob_space) normal_distributed_variance:
   assumes D: "distributed M lborel X (normal_density \<mu> \<sigma>)"
   shows "variance X = \<sigma>\<^sup>2"
 proof-  
-  have *[intro]: "distributed M lborel (\<lambda>x. (X x - \<mu>) / \<sigma>) (\<lambda>x. ereal (standard_normal_density x))"
+  have *[intro]: "distributed M lborel (\<lambda>x. (X x - \<mu>) / \<sigma>) (\<lambda>x. ereal (std_normal_density x))"
     by (subst normal_standard_normal_convert[OF assms(1) , symmetric]) fact
 
   have "variance X = variance  (\<lambda>x. \<mu> + \<sigma> * ((X x - \<mu>) / \<sigma>) )" by simp

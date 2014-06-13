@@ -248,7 +248,7 @@ theorem (in prob_space) central_limit_theorem:
     "S n \<equiv> \<lambda>x. \<Sum>i<n. X i x"
   shows
     "weak_conv_m (\<lambda>n. distr M borel (\<lambda>x. S n x / sqrt (n * \<sigma>\<^sup>2))) 
-        (density lborel standard_normal_density)"
+        (density lborel std_normal_density)"
 
 proof -
   def S' \<equiv> "\<lambda>n x. S n x / sqrt (n * \<sigma>\<^sup>2)"
@@ -331,7 +331,7 @@ proof -
 
   have S_rv [simp, measurable]: "\<And>n. random_variable borel (\<lambda>x. S n x / sqrt (n * \<sigma>\<^sup>2))"
     unfolding S_def by measurable
-  have "\<And>t. (\<lambda>n. \<phi> n t) ----> char standard_normal_distribution t"
+  have "\<And>t. (\<lambda>n. \<phi> n t) ----> char std_normal_distribution t"
   proof -
     fix t
     let ?t = "\<lambda>n. t / sqrt (\<sigma>\<^sup>2 * n)"
@@ -363,8 +363,8 @@ proof -
     hence "(\<lambda>n. \<phi> n t) ----> complex_of_real (exp (-(t^2) / 2))"
       apply (rule LIMSEQ_diff_approach_zero)
       by (rule Lim_null_comparison [OF main main2])
-    thus "(\<lambda>n. \<phi> n t) ----> char standard_normal_distribution t"
-      by (subst char_standard_normal_distribution)
+    thus "(\<lambda>n. \<phi> n t) ----> char std_normal_distribution t"
+      by (subst char_std_normal_distribution)
   qed
   thus ?thesis
     apply (intro levy_continuity)
