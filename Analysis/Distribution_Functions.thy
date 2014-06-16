@@ -245,9 +245,8 @@ lemma infinite_arbitrarily_large:
   fixes n :: nat 
   assumes "infinite A"
   shows "\<exists>B. finite B \<and> card B = n \<and> B \<subseteq> A"
-
 proof (induction n)
-  case 0 show ?case by auto
+  case 0 show ?case by (intro exI[of _ "{}"]) auto
 next 
   case (Suc n)
   fix n
@@ -312,7 +311,9 @@ proof -
 qed
 
 lemma cdf_lim_at_top: "(cdf M ---> measure M (space M)) at_top" 
-  by (rule tendsto_at_topI_sequentially) (simp_all add: mono_def cdf_nondecreasing cdf_lim_infty)
+  apply (rule Real_Vector_Spaces.tendsto_at_topI_sequentially)
+  apply (simp_all add: mono_def cdf_nondecreasing cdf_lim_infty)
+  done
 
 lemma cdf_lim_neg_infty: "((%i. cdf M (- real i)) ----> 0)" 
 proof -
@@ -327,7 +328,7 @@ qed
 lemma cdf_lim_at_bot: "(cdf M ---> 0) at_bot"
 proof - 
   have 1: "((%x :: real. - cdf M (- x)) ---> 0) at_top"
-    apply (rule tendsto_at_topI_sequentially) 
+    apply (rule Real_Vector_Spaces.tendsto_at_topI_sequentially) 
     apply (auto simp add: mono_def cdf_nondecreasing cdf_lim_neg_infty)
     using cdf_lim_neg_infty by (metis minus_zero tendsto_minus_cancel_left)
   from filterlim_compose [OF 1, OF filterlim_uminus_at_top_at_bot]

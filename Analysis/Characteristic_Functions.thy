@@ -5,7 +5,7 @@ Authors: Jeremy Avigad, Luke Serafin
 
 theory Characteristic_Functions
 
-imports Weak_Convergence Real_to_Complex Independent_Family Si Normal_Moments
+imports Weak_Convergence Real_to_Complex Si 
 
 begin
 
@@ -598,12 +598,6 @@ qed
 
 (* Calculation of the characteristic function of the standard distribution *)
 
-(* TODO: should this be an instance statement? *)
-lemma real_dist_normal_dist: "real_distribution std_normal_distribution"
-  unfolding real_distribution_def apply (rule conjI)
-  apply (rule prob_space_normal_density, auto)
-unfolding real_distribution_axioms_def by auto
-
 (* o.k., what is the nicer way to do this? *)
 lemma limseq_even_odd: 
   assumes "(\<lambda>n ::nat. f (2 * n)) ----> (l :: real)"
@@ -632,6 +626,46 @@ lemma limseq_even_odd_complex:
   apply (case_tac "even n")
   apply (subst (asm) even_mult_two_ex, auto)
 by (subst (asm) odd_Suc_mult_two_ex, auto)
+
+abbreviation
+  "std_normal_distribution \<equiv> density lborel std_normal_density"
+
+(* TODO: should this be an instance statement? *)
+lemma real_dist_normal_dist: "real_distribution std_normal_distribution"
+  unfolding real_distribution_def
+  apply (rule conjI)
+  apply (rule prob_space_normal_density, auto)
+unfolding real_distribution_axioms_def by auto
+
+lemma std_normal_distribution_even_moments:
+  fixes k :: nat
+  shows "(LINT x|std_normal_distribution. x^(2 * k)) = fact (2 * k) / (2^k * fact k)"
+    and "integrable std_normal_distribution (\<lambda>x. x^(2 * k))"
+  using integral_std_normal_moment_even[of k]
+  by (subst integral_density)
+     (auto simp: normal_density_nonneg integrable_density
+           intro: integrable.intros std_normal_moment_even)
+
+lemma std_normal_distribution_odd_moments:
+  fixes k :: nat
+  shows "(LINT x|std_normal_distribution. x^(2 * k + 1)) = 0"
+    and "integrable std_normal_distribution (\<lambda>x. x^(2 * k + 1))"
+  using integral_std_normal_moment_odd[of k]
+  by (subst integral_density)
+     (auto simp: normal_density_nonneg integrable_density simp del: One_nat_def
+           intro: integrable.intros std_normal_moment_odd)
+
+lemma std_normal_distribution_even_moments_abs:
+  fixes k :: nat
+  shows "(LINT x|std_normal_distribution. \<bar>x\<bar>^(2 * k)) = fact (2 * k) / (2^k * fact k)"
+  using integral_std_normal_moment_even[of k]
+  by (subst integral_density) (auto simp: normal_density_nonneg power_even_abs)
+
+lemma std_normal_distribution_odd_moments_abs:
+  fixes k :: nat
+  shows "(LINT x|std_normal_distribution. \<bar>x\<bar>^(2 * k + 1)) = sqrt (2 / pi) * 2 ^ k * real (fact k)"
+  using integral_std_normal_moment_abs_odd[of k]
+  by (subst integral_density) (auto simp: normal_density_nonneg)
 
 theorem char_std_normal_distribution:
   "char std_normal_distribution = (\<lambda>t. complex_of_real (exp (- (t^2) / 2)))"
@@ -676,7 +710,7 @@ proof
         apply (subst mult_commute)
         apply (subst power_mult_distrib)
         apply (subst (2) power_mult)
-        apply (simp add: power_mult_distrib field_simps)
+        apply (simp add: field_simps)
         apply (subst (4) mult_commute)
         apply (subst power_mult)
         by (case_tac "even n", auto simp add: power2_eq_square)
@@ -746,12 +780,10 @@ proof
   } note *** = this
   have  "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n + 1) / real (fact (2 * n + 1)) *
           (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n + 1)))
-        = (\<lambda>n. (4 * abs t / sqrt (2 * pi)) * 
-          ((2 * t^2)^n * fact n / fact (2 * n + 1)))"
-    apply (rule ext, subst std_normal_distribution_odd_moments_abs)
-    apply (simp add: power_add power_mult power_mult_distrib)
-    by (auto simp add: field_simps of_real_mult power_add power_mult
-      power_mult_distrib abs_mult power2_eq_square)
+        = (\<lambda>n. (2 * \<bar>t\<bar> * sqrt (2 / pi)) * ((2 * t^2)^n * fact n / fact (2 * n + 1)))"
+    apply (subst std_normal_distribution_odd_moments_abs)
+    apply (simp add: field_simps power_mult[symmetric] power_even_abs)
+    done
   (* TODO: clean this up! *)
   hence 6: "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n + 1) / real (fact (2 * n + 1)) *
           (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n + 1)))
