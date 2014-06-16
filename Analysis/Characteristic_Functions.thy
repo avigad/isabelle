@@ -5,9 +5,35 @@ Authors: Jeremy Avigad, Luke Serafin
 
 theory Characteristic_Functions
 
-imports Weak_Convergence Real_to_Complex Si 
+imports Weak_Convergence Si 
 
 begin
+
+(*
+  Application of the FTC: integrating e^ix
+*)
+
+abbreviation iexp :: "real \<Rightarrow> complex" where
+  "iexp \<equiv> (\<lambda>x. expi (\<i> * of_real x))"
+
+lemma isCont_iexp [simp]: "isCont iexp x"
+  by (intro continuous_intros)
+
+lemma cmod_iexp [simp]: "cmod (expi (\<i> * (x::real))) = 1"
+  by (simp add: expi_def )
+
+lemma iexp_alt: "iexp x = cos x + \<i> * sin x"
+  by (simp add: complex_eq_iff cis_conv_exp[symmetric])
+
+lemma has_vector_derivative_iexp[derivative_intros]:
+  "(iexp has_vector_derivative \<i> * iexp x) (at x within s)"
+  by (auto intro!: derivative_eq_intros simp add: iexp_alt has_vector_derivative_complex_iff)
+
+lemma interval_integral_iexp:
+  fixes a b :: real
+  shows "(CLBINT x=a..b. iexp x) = ii * iexp a - ii * iexp b"
+  by (subst interval_integral_FTC_finite [where F = "\<lambda>x. -ii * iexp x"])
+     (auto intro!: derivative_eq_intros continuous_intros)
 
 (*
   The characteristic function of a real measure.
@@ -100,14 +126,11 @@ qed (simp_all add: char_def integral_distr prob_space)
   Approximations to e^ix from Billingsley, page 343
 *)
 
-lemma fact1: "CDERIV (%s. complex_of_real(-((x - s) ^ (Suc n) / (Suc n))) * iexp s)
- s : A :> complex_of_real((x - s)^n) * iexp s + (ii * iexp s) * 
-      complex_of_real(-((x - s) ^ (Suc n) / (Suc n)))"
-  apply (rule CDERIV_mult)
-  apply (rule CDERIV_of_real)
-  apply (auto intro!: derivative_eq_intros CDERIV_iexp simp del: power_Suc 
-      simp add: add_nonneg_eq_0_iff real_of_nat_Suc real_of_nat_def)
-  done
+lemma fact1:
+  "((\<lambda>s. complex_of_real(-((x - s) ^ (Suc n) / (Suc n))) * iexp s)
+    has_vector_derivative complex_of_real((x - s)^n) * iexp s + (ii * iexp s) * complex_of_real(-((x - s) ^ (Suc n) / (Suc n))))
+    (at s within A)"
+  by (intro derivative_eq_intros) auto
 
 lemma equation_26p1:
   fixes x :: real and n :: nat
@@ -209,7 +232,7 @@ proof -
         "\<lambda>s. complex_of_real (-((x - s) ^ (Suc n) / real (Suc n)))"])
     apply (unfold f_def)
     apply (rule continuous_at_imp_continuous_on, force)
-    apply (rule CDERIV_of_real)
+    apply (rule has_vector_derivative_of_real)
     by (auto intro!: derivative_eq_intros simp del: power_Suc simp add: real_of_nat_def add_nonneg_eq_0_iff)
   show ?thesis
     apply (subst equation_26p2 [where n = "Suc n"])

@@ -3,36 +3,6 @@ imports Diagonal_Subsequence Weak_Convergence Library_Misc
 
 begin
 
-(* TODO: refactor *)
-lemma lim_close_limsup_liminf:
-  fixes a :: "nat \<Rightarrow> ereal" and L :: real
-  assumes "\<forall>(e::real)>0. \<bar>limsup a - L\<bar> < e \<and> \<bar>L - liminf a\<bar> < e"
-  shows "convergent a" and "lim a = L"
-proof -
-  have lsup: "limsup a = L" using ereal_dist_epsilon assms by auto
-  also have "L = liminf a"
-  proof -
-    have "\<And>n::nat. n > 0 \<Longrightarrow> \<bar>L - liminf a\<bar> < inverse n" using assms
-      by (metis inverse_positive_iff_positive real_of_nat_gt_zero_cancel_iff)
-    hence 1: "\<bar>L - liminf a\<bar> = 0"
-      using ereal_dist_epsilon by (metis abs_ereal_zero assms ereal_minus(7) zero_ereal_def)
-    show ?thesis
-    proof -
-      have "\<bar>liminf a\<bar> < \<infinity>" using 1
-        by (metis PInfty_neq_ereal(1) abs_eq_infinity_cases abs_ereal_uminus add_commute ereal_less_PInfty ereal_minus(3)
-            minus_ereal_def plus_ereal.simps(2) zero_ereal_def)  
-      then obtain linf where linf: "ereal linf = liminf a" by auto
-      hence "\<bar>L - linf\<bar> = 0" using 1 by (metis abs_ereal.simps(1) ereal_eq_0(2) ereal_minus(1))
-      hence "linf = L" by auto
-      thus ?thesis using linf by auto
-    qed
-  qed
-  finally have "limsup a = liminf a" by simp
-  thus "convergent a" using convergent_ereal by auto
-  hence "limsup a = lim a" using convergent_limsup_cl by auto
-  thus "lim a = L" using lsup by simp
-qed
-
 theorem Helly_selection:
   fixes f :: "nat \<Rightarrow> real \<Rightarrow> real"
   assumes rcont_inc: "\<And>n. rcont_inc (f n)"

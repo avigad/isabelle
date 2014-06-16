@@ -12,18 +12,8 @@ theory Set_Integral
 begin
 
 (* 
-    Notation 
+    Notation
 *)
-
-lemma integrable_mult_indicator:
-  fixes f :: "'a \<Rightarrow> 'b::{banach, second_countable_topology}"
-  shows "A \<in> sets M \<Longrightarrow> integrable M f \<Longrightarrow> integrable M (\<lambda>x. indicator A x *\<^sub>R f x)"
-  by (rule integrable_bound[of M f]) (auto split: split_indicator)
-
-lemma integrable_abs_iff:
-  fixes f :: "'a \<Rightarrow> real"
-  shows "f \<in> borel_measurable M \<Longrightarrow> integrable M (\<lambda>x. \<bar>f x\<bar>) \<longleftrightarrow> integrable M f"
-  by (auto intro: integrable_abs_cancel)
 
 syntax
 "_ascii_lebesgue_integral" :: "pttrn \<Rightarrow> 'a measure \<Rightarrow> real \<Rightarrow> real"
@@ -374,23 +364,6 @@ proof (rule AE_I2)
     done
 qed
 
-lemmas sums_scaleR_left = bounded_linear.sums[OF bounded_linear_scaleR_left]
-
-lemmas suminf_scaleR_left = bounded_linear.suminf[OF bounded_linear_scaleR_left]
-
-lemma indicator_sums: 
-  assumes "\<And>i j. i \<noteq> j \<Longrightarrow> A i \<inter> A j = {}"
-  shows "(\<lambda>i. indicator (A i) x::real) sums indicator (\<Union>i. A i) x"
-proof cases
-  assume "\<exists>i. x \<in> A i"
-  then obtain i where i: "x \<in> A i" ..
-  with assms have "(\<lambda>i. indicator (A i) x::real) sums (\<Sum>i\<in>{i}. indicator (A i) x)"
-    by (intro sums_finite) (auto split: split_indicator)
-  also have "(\<Sum>i\<in>{i}. indicator (A i) x) = indicator (\<Union>i. A i) x"
-    using i by (auto split: split_indicator)
-  finally show ?thesis .
-qed simp
-
 (* Proof from Royden Real Analysis, p. 91. *)
 lemma lebesgue_integral_countable_add:
   fixes f :: "_ \<Rightarrow> 'a :: {banach, second_countable_topology}"
@@ -496,6 +469,125 @@ proof-
   then show ?thesis using assms by simp
 qed
 
+
+abbreviation complex_integrable :: "'a measure \<Rightarrow> ('a \<Rightarrow> complex) \<Rightarrow> bool" where
+  "complex_integrable M f \<equiv> integrable M f"
+
+abbreviation complex_lebesgue_integral :: "'a measure \<Rightarrow> ('a \<Rightarrow> complex) \<Rightarrow> complex" ("integral\<^sup>C") where
+  "integral\<^sup>C M f == integral\<^sup>L M f"
+
+syntax
+  "_complex_lebesgue_integral" :: "pttrn \<Rightarrow> complex \<Rightarrow> 'a measure \<Rightarrow> complex"
+ ("\<integral>\<^sup>C _. _ \<partial>_" [60,61] 110)
+
+translations
+  "\<integral>\<^sup>Cx. f \<partial>M" == "CONST complex_lebesgue_integral M (\<lambda>x. f)"
+
+syntax
+  "_ascii_complex_lebesgue_integral" :: "pttrn \<Rightarrow> 'a measure \<Rightarrow> real \<Rightarrow> real"
+  ("(3CLINT _|_. _)" [0,110,60] 60)
+
+translations
+  "CLINT x|M. f" == "CONST complex_lebesgue_integral M (\<lambda>x. f)"
+
+lemma complex_integrable_cnj [simp]:
+  "complex_integrable M (\<lambda>x. cnj (f x)) \<longleftrightarrow> complex_integrable M f"
+proof
+  assume "complex_integrable M (\<lambda>x. cnj (f x))"
+  then have "complex_integrable M (\<lambda>x. cnj (cnj (f x)))"
+    by (rule integrable_cnj)
+  then show "complex_integrable M f"
+    by simp
+qed simp
+
+lemma complex_of_real_integrable_eq:
+  "complex_integrable M (\<lambda>x. complex_of_real (f x)) \<longleftrightarrow> integrable M f"
+proof
+  assume "complex_integrable M (\<lambda>x. complex_of_real (f x))"
+  then have "integrable M (\<lambda>x. Re (complex_of_real (f x)))"
+    by (rule integrable_Re)
+  then show "integrable M f"
+    by simp
+qed simp
+
+
+abbreviation complex_set_integrable :: "'a measure \<Rightarrow> 'a set \<Rightarrow> ('a \<Rightarrow> complex) \<Rightarrow> bool" where
+  "complex_set_integrable M A f \<equiv> set_integrable M A f"
+
+abbreviation complex_set_lebesgue_integral :: "'a measure \<Rightarrow> 'a set \<Rightarrow> ('a \<Rightarrow> complex) \<Rightarrow> complex" where
+  "complex_set_lebesgue_integral M A f \<equiv> set_lebesgue_integral M A f"
+
+syntax
+"_ascii_complex_set_lebesgue_integral" :: "pttrn \<Rightarrow> 'a set \<Rightarrow> 'a measure \<Rightarrow> real \<Rightarrow> real"
+("(4CLINT _:_|_. _)" [0,60,110,61] 60)
+
+translations
+"CLINT x:A|M. f" == "CONST complex_set_lebesgue_integral M A (\<lambda>x. f)"
+
+(*
+lemma cmod_mult: "cmod ((a :: real) * (x :: complex)) = abs a * cmod x"
+  apply (simp add: norm_mult)
+  by (subst norm_mult, auto)
+*)
+
+lemma borel_integrable_atLeastAtMost':
+  fixes f :: "real \<Rightarrow> 'a::{banach, second_countable_topology}"
+  assumes f: "continuous_on {a..b} f"
+  shows "set_integrable lborel {a..b} f" (is "integrable _ ?f")
+  by (intro borel_integrable_compact compact_Icc f)
+
+lemma integral_FTC_atLeastAtMost:
+  fixes f :: "real \<Rightarrow> 'a :: euclidean_space"
+  assumes "a \<le> b"
+    and F: "\<And>x. a \<le> x \<Longrightarrow> x \<le> b \<Longrightarrow> (F has_vector_derivative f x) (at x within {a .. b})"
+    and f: "continuous_on {a .. b} f"
+  shows "integral\<^sup>L lborel (\<lambda>x. indicator {a .. b} x *\<^sub>R f x) = F b - F a"
+proof -
+  let ?f = "\<lambda>x. indicator {a .. b} x *\<^sub>R f x"
+  have "(?f has_integral (\<integral>x. ?f x \<partial>lborel)) UNIV"
+    using borel_integrable_atLeastAtMost'[OF f] by (rule has_integral_lebesgue_integral)
+  moreover
+  have "(f has_integral F b - F a) {a .. b}"
+    by (intro fundamental_theorem_of_calculus ballI assms) auto
+  then have "(?f has_integral F b - F a) {a .. b}"
+    by (subst has_integral_eq_eq[where g=f]) auto
+  then have "(?f has_integral F b - F a) UNIV"
+    by (intro has_integral_on_superset[where t=UNIV and s="{a..b}"]) auto
+  ultimately show "integral\<^sup>L lborel ?f = F b - F a"
+    by (rule has_integral_unique)
+qed
+
+lemma set_borel_integral_eq_integral:
+  fixes f :: "real \<Rightarrow> 'a::euclidean_space"
+  assumes "set_integrable lborel S f"
+  shows "f integrable_on S" "LINT x : S | lborel. f x = integral S f"
+proof -
+  let ?f = "\<lambda>x. indicator S x *\<^sub>R f x"
+  have "(?f has_integral LINT x : S | lborel. f x) UNIV"
+    by (rule has_integral_lebesgue_integral) fact
+  hence 1: "(f has_integral (set_lebesgue_integral lborel S f)) S"
+    apply (subst has_integral_restrict_univ [symmetric])
+    apply (rule has_integral_eq)
+    by auto
+  thus "f integrable_on S"
+    by (auto simp add: integrable_on_def)
+  with 1 have "(f has_integral (integral S f)) S"
+    by (intro integrable_integral, auto simp add: integrable_on_def)
+  thus "LINT x : S | lborel. f x = integral S f"
+    by (intro has_integral_unique [OF 1])
+qed
+
+lemma set_borel_measurable_continuous:
+  fixes f :: "_ \<Rightarrow> _::real_normed_vector"
+  assumes "S \<in> sets borel" "continuous_on S f"
+  shows "set_borel_measurable borel S f"
+proof -
+  have "(\<lambda>x. if x \<in> S then f x else 0) \<in> borel_measurable borel"
+    by (intro assms borel_measurable_continuous_on_if continuous_on_const)
+  also have "(\<lambda>x. if x \<in> S then f x else 0) = (\<lambda>x. indicator S x *\<^sub>R f x)"
+    by auto
+  finally show ?thesis .
+qed
 
 end
 

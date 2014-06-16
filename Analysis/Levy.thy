@@ -11,85 +11,8 @@ imports Characteristic_Functions Helly_Selection
 
 begin
 
-(*
-  TODO: move elsewhere 
-*)
-
-lemma borel_measurable_sgn [measurable (raw)]:
-  fixes f :: "real \<Rightarrow> real"
-  assumes "f \<in> borel_measurable M"
-  shows "(\<lambda>x. sgn (f x)) \<in> borel_measurable M"
-proof -
-  have "(\<lambda>x. sgn (f x)) = (\<lambda>x. indicator {0<..} (f x) - indicator {..<0} (f x))"
-    unfolding indicator_def by auto
-  thus ?thesis
-    apply (elim ssubst) 
-    using assms by measurable
-qed
-
-lemma real_arbitrarily_close_eq:
-  fixes x y :: real
-  assumes "\<And>\<epsilon>. \<epsilon> > 0 \<Longrightarrow> abs (x - y) \<le> \<epsilon>"
-  shows "x = y"
-by (metis abs_le_zero_iff assms dense_ge eq_iff_diff_eq_0)
-
-lemma real_interval_avoid_countable_set:
-  fixes a b :: real and A :: "real set"
-  assumes "a < b" and "countable A"
-  shows "\<exists>x. x \<in> {a<..<b} \<and> x \<notin> A"
-proof -
-  from `countable A` have "countable (A \<inter> {a<..<b})" by auto
-  moreover with `a < b` have "\<not> countable {a<..<b}" 
-    by (simp add: uncountable_open_interval)
-  ultimately have "A \<inter> {a<..<b} \<noteq> {a<..<b}" by auto
-  hence "A \<inter> {a<..<b} \<subset> {a<..<b}" 
-    by (intro psubsetI, auto)
-  hence "\<exists>x. x \<in> {a<..<b} - A \<inter> {a<..<b}"
-    by (rule psubset_imp_ex_mem)
-  thus ?thesis by auto
-qed
-
-
-(* TODO: should this be a simp rule? *)
-lemma complex_of_real_indicator: "complex_of_real (indicator A x) = indicator A x"
-  by (simp split: split_indicator)
-
-(* TODO: should we have a library of facts like these? *)
-lemma integral_cos: "t \<noteq> 0 \<Longrightarrow> LBINT x=a..b. cos (t * x) = sin (t * b) / t - sin (t * a) / t"
-  apply (intro interval_integral_FTC_finite continuous_intros)
-  by (auto intro!: derivative_eq_intros simp: has_field_derivative_iff_has_vector_derivative[symmetric])
-
-lemma sin_x_le_x: "x \<ge> 0 \<Longrightarrow> sin x \<le> x"
-proof -
-  fix x :: real 
-  assume "x \<ge> 0"
-  let ?f = "\<lambda>x. x - sin x"
-  have "?f x \<ge> ?f 0"
-    apply (rule DERIV_nonneg_imp_nondecreasing [OF `x \<ge> 0`])
-    apply auto
-    apply (rule_tac x = "1 - cos x" in exI)
-    apply (auto intro!: derivative_intros)
-    by (simp add: field_simps)
-  thus "sin x \<le> x" by simp
-qed
-
-lemma sin_x_ge_neg_x: "x \<ge> 0 \<Longrightarrow> sin x \<ge> - x"
-proof -
-  fix x :: real 
-  assume "x \<ge> 0"
-  let ?f = "\<lambda>x. x + sin x"
-  have "?f x \<ge> ?f 0"
-    apply (rule DERIV_nonneg_imp_nondecreasing [OF `x \<ge> 0`])
-    apply auto
-    apply (rule_tac x = "1 + cos x" in exI)
-    apply (auto intro!: derivative_intros)
-    by (metis cos_ge_minus_one real_0_le_add_iff)
-  thus "sin x \<ge> -x" by simp
-qed
-
-lemma abs_sin_x_le_abs_x: "abs (sin x) \<le> abs x"
-  using sin_x_ge_neg_x [of x] sin_x_le_x [of x] sin_x_ge_neg_x [of "-x"] sin_x_le_x [of "-x"]
-  by (case_tac "x \<ge> 0", auto)
+(* TODO: what to do? this causes problems below, but elsewhere it is needed *)
+declare of_real_mult [simp del]
 
 (* 
   The Levy inversion theorem.
@@ -111,7 +34,7 @@ proof -
           (iexp (-(t * a)) - (1 + ii * -(t * a))) / (ii * t) - 
           (iexp (-(t * b)) - (1 + ii * -(t * b))) / (ii * t))"  
              (is "_ = cmod (?one / (ii * t) - ?two / (ii * t))")
-        using `t \<noteq> 0` by (intro arg_cong[where f=norm]) (simp add: field_simps)
+        using `t \<noteq> 0` by (intro arg_cong[where f=norm]) (simp add: field_simps of_real_mult)
       also have "\<dots> \<le> cmod (?one / (ii * t)) + cmod (?two / (ii * t))" 
         by (rule norm_triangle_ineq4)
       also have "cmod (?one / (ii * t)) = cmod ?one / abs t"
@@ -140,9 +63,6 @@ proof -
     done
 qed
 
-(* TODO: what to do? this causes problems below, but elsewhere it is needed *)
-declare of_real_mult [simp del]
-
 lemma Levy_Inversion_aux2:
   fixes a b t :: real
   assumes "a \<le> b" and "t \<noteq> 0"
@@ -164,30 +84,6 @@ proof -
     using assms by (auto simp add: abs_mult) 
   finally show ?thesis .
 qed
-
-lemma integrableI_bounded_set:
-  fixes f :: "'a \<Rightarrow> 'b::{banach, second_countable_topology}"
-  assumes [measurable]: "A \<in> sets M" "f \<in> borel_measurable M"
-  assumes finite: "emeasure M A < \<infinity>"
-    and bnd: "AE x in M. x \<in> A \<longrightarrow> norm (f x) \<le> B"
-    and null: "AE x in M. x \<notin> A \<longrightarrow> f x = 0"
-  shows "integrable M f"
-proof (rule integrableI_bounded)
-  { fix x :: 'b have "norm x \<le> B \<Longrightarrow> 0 \<le> B"
-      using norm_ge_zero[of x] by arith }
-  with bnd null have "(\<integral>\<^sup>+ x. ereal (norm (f x)) \<partial>M) \<le> (\<integral>\<^sup>+ x. ereal (max 0 B) * indicator A x \<partial>M)"
-    by (intro nn_integral_mono_AE) (auto split: split_indicator split_max)
-  also have "\<dots> < \<infinity>"
-    using finite by (subst nn_integral_cmult_indicator) (auto simp: max_def)
-  finally show "(\<integral>\<^sup>+ x. ereal (norm (f x)) \<partial>M) < \<infinity>" .
-qed simp
-
-lemma integrableI_bounded_set_indicator:
-  fixes f :: "'a \<Rightarrow> 'b::{banach, second_countable_topology}"
-  shows "A \<in> sets M \<Longrightarrow> f \<in> borel_measurable M \<Longrightarrow>
-    emeasure M A < \<infinity> \<Longrightarrow> (AE x in M. x \<in> A \<longrightarrow> norm (f x) \<le> B) \<Longrightarrow>
-    integrable M (\<lambda>x. indicator A x *\<^sub>R f x)"
-  by (rule integrableI_bounded_set[where A=A]) auto
 
 (* TODO: refactor! *)
 theorem Levy_Inversion:

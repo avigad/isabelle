@@ -7,7 +7,7 @@ Properties of weak convergence of functions and measures, including the portmant
 
 theory Weak_Convergence
 
-imports Distribution_Functions Library_Misc "~~/src/HOL/Library/ContNotDenum"
+imports Distribution_Functions
 
 begin
 
@@ -32,24 +32,6 @@ abbreviation (in prob_space)
 (* 
   general stuff - move elsewhere 
 *)
-
-lemma measure_restrict_space:
-    "\<Omega> \<in> sets M \<Longrightarrow> A \<subseteq> \<Omega> \<Longrightarrow> measure (restrict_space M \<Omega>) A = measure M A"
-  unfolding measure_def by (subst emeasure_restrict_space, auto)
-
-lemma lebesgue_measure_interval: "a \<le> b \<Longrightarrow> measure lborel {a..b} = b - a"
- unfolding measure_def by auto
-
-lemma distr_cong_AE:
-  assumes 1: "M = K" "sets N = sets L" and 
-    2: "(AE x in M. f x = g x)" and "f \<in> measurable M N" and "g \<in> measurable K L"
-  shows "distr M N f = distr K L g"
-proof (rule measure_eqI)
-  fix A assume "A \<in> sets (distr M N f)"
-  with assms show "emeasure (distr M N f) A = emeasure (distr K L g) A"
-    by (auto simp add: emeasure_distr intro!: emeasure_eq_AE measurable_sets)
-qed (insert 1, simp)
-
 
 definition mono_on :: "('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a set \<Rightarrow> bool" where
   "mono_on f A = (\<forall>x\<in>A. \<forall>y\<in>A. x \<le> y \<longrightarrow> f x \<le> f y)"
@@ -131,15 +113,6 @@ qed
 lemma "mono f = mono_on f UNIV"
   unfolding mono_def mono_on_def by auto
 
-lemma of_rat_dense:
-  fixes x y :: real
-  assumes "x < y"
-  shows "\<exists>q :: rat. x < of_rat q \<and> of_rat q < y"
-
-using Rats_dense_in_real [OF `x < y`]
-by (auto elim: Rats_cases)
-
-
 (* Show such a function is an ereal-valued measurable function times the indicator function of the
    complement of A. *)
 lemma mono_on_ctble_discont:
@@ -219,9 +192,6 @@ proof -
     by (rule countableI') 
 qed
 
-lemma continuous_within_open: "a \<in> A \<Longrightarrow> open A \<Longrightarrow> (continuous (at a within A) f) = isCont f a"
-  by (simp add: continuous_within, rule Lim_within_open)
-
 lemma mono_on_ctble_discont_open:
   fixes f :: "real \<Rightarrow> real"
   fixes A :: "real set"
@@ -240,152 +210,6 @@ lemma mono_ctble_discont:
   assumes "mono f"
   shows "countable {a. \<not> isCont f a}"
 using assms mono_on_ctble_discont [of f UNIV] unfolding mono_on_def mono_def by auto
-
-lemma emeasure_lborel_countable:
-  fixes A :: "real set"
-  assumes "countable A"
-  shows "emeasure lborel A = 0"
-proof -
-  have "A \<subseteq> (\<Union>i. {from_nat_into A i})" using from_nat_into_surj assms by force
-  moreover have "emeasure lborel (\<Union>i. {from_nat_into A i}) = 0"
-    by (rule emeasure_UN_eq_0) auto
-  ultimately have "emeasure lborel A \<le> 0" using emeasure_mono
-    by (metis assms bot.extremum_unique emeasure_empty image_eq_UN range_from_nat_into sets.empty_sets)
-  thus ?thesis by (auto simp add: emeasure_le_0_iff)
-qed
-
-lemma measurable_cong_countable_exceptions:
-  assumes X: "countable X"
-  assumes "g \<in> space M \<rightarrow> space N"
-  assumes "\<And>x. x \<in> space M \<Longrightarrow> x \<notin> X \<Longrightarrow> f x = g x"
-  assumes measurable_X: "\<And>x. x \<in> X \<Longrightarrow> {x} \<in> sets M"
-  assumes [measurable]: "f \<in> measurable M N"
-  shows "g \<in> measurable M N"
-  unfolding measurable_def
-proof (safe intro!: assms)
-  fix A assume [measurable]: "A \<in> sets N"
-  have [measurable]: "X \<in> sets M"
-    using measurable_X X by (rule lborel_countable)
-  have "((f -` A \<inter> space M) - X) \<union> (\<Union>x\<in>X. if g x \<in> A then {x} else {}) \<in> sets M"
-    apply measurable
-    apply (rule sets.countable_UN'[OF X])
-    apply (auto intro: measurable_X)
-    done
-  also have "((f -` A \<inter> space M) - X) \<union> (\<Union>x\<in>X. if g x \<in> A then {x} else {}) = g -` A \<inter> space M"
-    using measurable_X[THEN sets.sets_into_space]
-    by (force split: split_if_asm simp: assms)
-  finally show "g -` A \<inter> space M \<in> sets M" .
-qed
-
-lemma closed_Collect_imp: assumes "open {x. P x}" "closed {x. Q x}" shows "closed {x. P x \<longrightarrow> Q x}"
-proof -
-  have *: "{x. P x \<longrightarrow> Q x} = - {x. P x} \<union> {x. Q x}"
-    by auto
-  show ?thesis
-    unfolding * by (intro closed_Un closed_Compl assms)
-qed
-
-lemma open_Collect_conj: assumes "open {x. P x}" "open {x. Q x}" shows "open {x. P x \<and> Q x}"
-proof -
-  have *: "{x. P x \<and> Q x} = {x. P x} \<inter> {x. Q x}"
-    by auto
-  show ?thesis
-    unfolding * by (intro open_Int assms)
-qed
-
-lemma isCont_borel:
-  fixes f :: "'b::metric_space \<Rightarrow> 'a::metric_space"
-  shows "{x. isCont f x} \<in> sets borel"
-proof -
-  let ?I = "\<lambda>j. inverse(real (Suc j))"
-
-  { fix x
-    have "isCont f x = (\<forall>i. \<exists>j. \<forall>y z. dist x y < ?I j \<and> dist x z < ?I j \<longrightarrow> dist (f y) (f z) \<le> ?I i)"
-      unfolding continuous_at_eps_delta
-    proof safe
-      fix i assume "\<forall>e>0. \<exists>d>0. \<forall>y. dist y x < d \<longrightarrow> dist (f y) (f x) < e"
-      moreover have "0 < ?I i / 2"
-        by simp
-      ultimately obtain d where d: "0 < d" "\<And>y. dist x y < d \<Longrightarrow> dist (f y) (f x) < ?I i / 2"
-        by (metis dist_commute)
-      then obtain j where j: "?I j < d"
-        by (metis reals_Archimedean)
-
-      show "\<exists>j. \<forall>y z. dist x y < ?I j \<and> dist x z < ?I j \<longrightarrow> dist (f y) (f z) \<le> ?I i"
-      proof (safe intro!: exI[where x=j])
-        fix y z assume *: "dist x y < ?I j" "dist x z < ?I j"
-        have "dist (f y) (f z) \<le> dist (f y) (f x) + dist (f z) (f x)"
-          by (rule dist_triangle2)
-        also have "\<dots> < ?I i / 2 + ?I i / 2"
-          by (intro add_strict_mono d less_trans[OF _ j] *)
-        also have "\<dots> \<le> ?I i"
-          by (simp add: field_simps real_of_nat_Suc)
-        finally show "dist (f y) (f z) \<le> ?I i"
-          by simp
-      qed
-    next
-      fix e::real assume "0 < e"
-      then obtain n where n: "?I n < e"
-        by (metis reals_Archimedean)
-      assume "\<forall>i. \<exists>j. \<forall>y z. dist x y < ?I j \<and> dist x z < ?I j \<longrightarrow> dist (f y) (f z) \<le> ?I i"
-      from this[THEN spec, of "Suc n"]
-      obtain j where j: "\<And>y z. dist x y < ?I j \<Longrightarrow> dist x z < ?I j \<Longrightarrow> dist (f y) (f z) \<le> ?I (Suc n)"
-        by auto
-      
-      show "\<exists>d>0. \<forall>y. dist y x < d \<longrightarrow> dist (f y) (f x) < e"
-      proof (safe intro!: exI[of _ "?I j"])
-        fix y assume "dist y x < ?I j"
-        then have "dist (f y) (f x) \<le> ?I (Suc n)"
-          by (intro j) (auto simp: dist_commute)
-        also have "?I (Suc n) < ?I n"
-          by simp
-        also note n
-        finally show "dist (f y) (f x) < e" .
-      qed simp
-    qed }
-  note * = this
-
-  have **: "\<And>e y. open {x. dist x y < e}"
-    using open_ball by (simp_all add: ball_def dist_commute)
-
-  have "{x\<in>space borel. isCont f x } \<in> sets borel"
-    unfolding *
-    apply (intro sets.sets_Collect_countable_All sets.sets_Collect_countable_Ex)
-    apply (simp add: Collect_all_eq)
-    apply (intro borel_closed closed_INT ballI closed_Collect_imp open_Collect_conj **)
-    apply auto
-    done
-  then show ?thesis
-    by simp
-qed
-
-lemma isCont_indicator: 
-  fixes x :: "'a::{t2_space}"
-  shows "isCont (indicator A :: 'a \<Rightarrow> real) x = (x \<notin> frontier A)"
-proof -
-  have *: "!! A x. (indicator A x > (0 :: real)) = (x \<in> A)"
-    by (case_tac "x : A", auto)
-  have **: "!! A x. (indicator A x < (1 :: real)) = (x \<notin> A)"
-    by (case_tac "x : A", auto)
-  show ?thesis
-    apply (auto simp add: frontier_def)
-    (* calling auto here produces a strange error message *)
-    apply (subst (asm) continuous_at_open)
-    apply (case_tac "x \<in> A", simp_all)
-    apply (drule_tac x = "{0<..}" in spec, clarsimp simp add: *)
-    apply (erule interiorI, assumption, force)
-    apply (drule_tac x = "{..<1}" in spec, clarsimp simp add: **)
-    apply (subst (asm) closure_interior, auto, erule notE)
-    apply (erule interiorI, auto)
-    apply (subst (asm) closure_interior, simp)
-    apply (rule continuous_on_interior)
-    prefer 2 apply assumption
-    apply (rule continuous_on_eq [where f = "\<lambda>x. 0"], auto intro: continuous_on_const)
-    apply (rule continuous_on_interior)
-    prefer 2 apply assumption
-    by (rule continuous_on_eq [where f = "\<lambda>x. 1"], auto intro: continuous_on_const)
-qed
-
 
 (*
 
@@ -466,13 +290,6 @@ proof safe
     qed
   }
 qed
-
-lemma AE_lborel_singleton: "AE x in lborel. x \<noteq> c"
-  by (intro AE_I[where N="{c}"]) auto
-
-lemma emeasure_insert':
-  "A \<noteq> {} \<Longrightarrow> {x} \<in> sets M \<Longrightarrow> A \<in> sets M \<Longrightarrow> x \<notin> A \<Longrightarrow> emeasure M (insert x A) = emeasure M {x} + emeasure M A"
-    by (rule emeasure_insert) 
 
 (* state using obtains? *)
 theorem Skorohod:
@@ -736,14 +553,14 @@ proof -
     qed
   qed
   have [simp]: "\<And>n. Y_seq' n \<in> borel_measurable \<Omega>"
-    by (rule measurable_cong_countable_exceptions[OF D_countable _ _ _ Y_seq_meas])
-       (auto simp: Y_seq'_def \<Omega>_def sets_restrict_space)
+    using Y_seq_meas D_countable
+    by (rule measurable_discrete_difference) (auto simp: Y_seq'_def \<Omega>_def sets_restrict_space)
   moreover {fix n  have "distr \<Omega> borel (Y_seq' n) = \<mu> n" using Y_seq_distr [of n] 
       Y_seq'_AE [of n]
     by (subst distr_cong_AE[where f = "Y_seq' n" and g = "Y_seq n"], auto) }
   moreover have [simp]: "Y' \<in> borel_measurable \<Omega>"
-    by (rule measurable_cong_countable_exceptions[OF D_countable _ _ _ Y_meas])
-       (auto simp: Y'_def \<Omega>_def sets_restrict_space)
+    using Y_meas D_countable
+    by (rule measurable_discrete_difference) (auto simp: Y'_def \<Omega>_def sets_restrict_space)
   moreover have "distr \<Omega> borel Y' = M"
     apply (subst Y_distr [symmetric])
     apply (rule distr_cong_AE, auto)
@@ -860,40 +677,6 @@ proof -
     by simp
 qed
 
-(* the dual version is in Convex_Euclidean_Space.thy *)
-
-lemma interior_real_semiline2:
-  fixes a :: real
-  shows "interior {..a} = {..<a}"
-proof -
-  {
-    fix y
-    assume "a > y"
-    then have "y \<in> interior {..a}"
-      apply (simp add: mem_interior)
-      apply (rule_tac x="(a-y)" in exI)
-      apply (auto simp add: dist_norm)
-      done
-  }
-  moreover
-  {
-    fix y
-    assume "y \<in> interior {..a}"
-    then obtain e where e: "e > 0" "cball y e \<subseteq> {..a}"
-      using mem_interior_cball[of y "{..a}"] by auto
-    moreover from e have "y + e \<in> cball y e"
-      by (auto simp add: cball_def dist_norm)
-    ultimately have "a \<ge> y + e" by auto
-    then have "a > y" using e by auto
-  }
-  ultimately show ?thesis by auto
-qed
-
-lemma frontier_real_atMost:
-  fixes a :: real
-  shows "frontier {..a} = {a}"
-  unfolding frontier_def by (auto simp add: interior_real_semiline2)
-
 theorem continuity_set_conv_imp_weak_conv:
   fixes 
     M_seq :: "nat \<Rightarrow> real measure" and
@@ -997,46 +780,6 @@ next
     by (auto simp add: field_simps)
 qed
 
-(*** NOTE: The following three lemmata are solved directly by theorems in Library_Misc. ***)
-
-(* name clash with the version in Extended_Real_Limits *)
-lemma convergent_ereal': "convergent (X :: nat \<Rightarrow> real) \<Longrightarrow> convergent (\<lambda>n. ereal (X n))"
-  apply (drule convergentD, auto)
-  apply (rule convergentI)
-  by (subst lim_ereal, assumption)
-
-lemma lim_ereal': "convergent X \<Longrightarrow> lim (\<lambda>n. ereal (X n)) = ereal (lim X)"
-    by (rule limI, simp add: convergent_LIMSEQ_iff)
-
-(* complements liminf version in Extended_Real_Limits *)
-lemma convergent_liminf_cl:
-  fixes X :: "nat \<Rightarrow> 'a::{complete_linorder,linorder_topology}"
-  shows "convergent X \<Longrightarrow> liminf X = lim X"
-  by (auto simp: convergent_def limI lim_imp_Liminf)
-
-(**************************************************)
-
-lemma limsup_le_liminf_real:
-  fixes X :: "nat \<Rightarrow> real" and L :: real
-  assumes 1: "limsup X \<le> L" and 2: "L \<le> liminf X"
-  shows "X ----> L"
-proof -
-  from 1 2 have "limsup X \<le> liminf X" by auto
-  hence 3: "limsup X = liminf X"  
-    apply (subst eq_iff, rule conjI)
-    by (rule Liminf_le_Limsup, auto)
-  hence 4: "convergent (\<lambda>n. ereal (X n))"
-    by (subst convergent_ereal)
-  hence "limsup X = lim (\<lambda>n. ereal(X n))"
-    by (rule convergent_limsup_cl)
-  also from 1 2 3 have "limsup X = L" by auto
-  finally have "lim (\<lambda>n. ereal(X n)) = L" ..
-  hence "(\<lambda>n. ereal (X n)) ----> L"
-    apply (elim subst)
-    by (subst convergent_LIMSEQ_iff [symmetric], rule 4) 
-  thus ?thesis by simp
-qed
-
 theorem integral_cts_step_conv_imp_weak_conv:
   fixes 
     M_seq :: "nat \<Rightarrow> real measure" and
@@ -1067,9 +810,9 @@ proof (clarsimp)
       by (rule distr_M_seq, simp)
     also have "\<dots> = lim (\<lambda>n. ereal (integral\<^sup>L (M_seq n) (cts_step x y)))"
       apply (rule convergent_limsup_cl)
-      by (rule convergent_ereal', rule conv, simp)
+      by (rule convergent_real_imp_convergent_ereal, rule conv, simp)
     also have "\<dots> = integral\<^sup>L M (cts_step x y)"
-      apply (subst lim_ereal', rule conv, auto)
+      apply (subst convergent_real_imp_convergent_ereal, rule conv, auto)
       by (rule limI, rule integral_conv, simp)
     also have "\<dots> \<le> cdf M y"
       by (simp, rule real_distribution.cdf_cts_step, rule assms, simp)
@@ -1086,9 +829,9 @@ proof (clarsimp)
       by (rule distr_M_seq, simp)
     also have "?rhs = lim (\<lambda>n. ereal (integral\<^sup>L (M_seq n) (cts_step y x)))"
       apply (rule convergent_liminf_cl)
-      by (rule convergent_ereal', rule conv, simp)
+      by (rule convergent_real_imp_convergent_ereal, rule conv, simp)
     also have "\<dots> = integral\<^sup>L M (cts_step y x)"
-      apply (subst lim_ereal', rule conv, auto)
+      apply (subst convergent_real_imp_convergent_ereal, rule conv, auto)
       by (rule limI, rule integral_conv, simp)
     also have "\<dots> \<ge> cdf M y"
       by (simp, rule real_distribution.cdf_cts_step, rule assms, simp)
@@ -1143,6 +886,4 @@ theorem integral_bdd_continuous_conv_imp_weak_conv:
 unfolding cts_step_def by auto
 
 end
-
-
 
