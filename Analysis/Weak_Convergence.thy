@@ -523,7 +523,7 @@ proof -
     apply (subst \<Omega>_def, subst emeasure_restrict_space, force)
     apply force
     using D apply force
-    apply (rule lborel_countable)
+    apply (rule sets.countable)
     unfolding \<Omega>_def using D_countable by (subst sets_restrict_space, auto)
   def Y_seq' \<equiv> "\<lambda>n \<omega>. (case \<omega>\<in>?D of True => 0 | False => Y_seq n \<omega>)"
   have Y_seq'_AE: "\<And>n. AE \<omega> in \<Omega>. Y_seq' n \<omega> = Y_seq n \<omega>"
@@ -533,7 +533,7 @@ proof -
     apply (subst \<Omega>_def, subst emeasure_restrict_space, force)
     apply force
     using D apply force
-    apply (rule lborel_countable)
+    apply (rule sets.countable)
     unfolding \<Omega>_def using D_countable by (subst sets_restrict_space, auto)
   have Y'_cnv: "\<forall>\<omega>\<in>{0<..<1}. (\<lambda>n. Y_seq' n \<omega>) ----> Y' \<omega>"
   proof
@@ -845,9 +845,14 @@ proof (clarsimp)
     have 2: "((\<lambda>t. limsup (\<lambda>n. cdf (M_seq n) x)) ---> 
         limsup (\<lambda>n. cdf (M_seq n) x)) (at_right x)" by (rule tendsto_const)
     show ?thesis
-      apply (rule tendsto_le [OF _ 1 2], auto, subst eventually_at_right)
-      apply (rule exI [of _ "x+1"], auto)
-      by (rule *)
+      apply (rule tendsto_le [OF _ 1 2], auto)
+      apply (subst eventually_at_right[of _ "x + 1"])
+      apply simp
+      apply (rule exI [of _ "x+1"])
+      apply auto
+      apply (rule *)
+      apply assumption
+      done
   qed
   moreover have ge: "cdf M x \<le> liminf (\<lambda>n. cdf (M_seq n) x)"
   proof -
@@ -857,7 +862,10 @@ proof (clarsimp)
     have 2: "((\<lambda>t. liminf (\<lambda>n. cdf (M_seq n) x)) ---> 
         liminf (\<lambda>n. cdf (M_seq n) x)) (at_left x)" by (rule tendsto_const)
     show ?thesis
-      apply (rule tendsto_le [OF _ 2 1], auto, subst eventually_at_left)
+      apply (rule tendsto_le [OF _ 2 1])
+      apply auto
+      apply (subst eventually_at_left[of "x - 1"])
+      apply simp
       apply (rule exI [of _ "x - 1"], auto)
       by (rule **)
   qed

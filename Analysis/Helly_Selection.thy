@@ -1,7 +1,12 @@
 theory Helly_Selection
-imports Diagonal_Subsequence Weak_Convergence Library_Misc
-
+  imports Diagonal_Subsequence Weak_Convergence Library_Misc
 begin
+
+lemma ereal_dist_eq: "\<forall>e>0. \<bar>a - b\<bar> < ereal e \<Longrightarrow> a = b"
+  apply (cases a b rule: ereal2_cases)
+  apply (auto elim: allE[of _ 1])
+  apply (metis eq_iff_diff_eq_0 less_irrefl zero_less_abs_iff)
+  done
 
 theorem Helly_selection:
   fixes f :: "nat \<Rightarrow> real \<Rightarrow> real"
@@ -13,7 +18,7 @@ proof -
   obtain m :: "real \<Rightarrow> nat" where "bij_betw m \<rat> UNIV"
     apply (rule countableE_infinite)
     apply (rule countable_rat)
-    apply (rule real_rats_infinite)
+    apply (rule Rats_infinite)
     by auto
   then obtain r :: "nat \<Rightarrow> real" where bij: "bij_betw r UNIV \<rat>" using bij_betw_inv by blast
   let ?P = "\<lambda>n. \<lambda>s. convergent (\<lambda>k. f (s k) (r n))"
@@ -87,14 +92,16 @@ proof -
     thus "{lim (\<lambda>k. f (d k) (r n)) |n. x < r n} \<noteq> {}" by auto
   qed
   { fix x :: real
-    from rat_unbounded [of "x + 1"] guess q ..
-    with bij have "x < r (inv r q)" apply (subst f_inv_f_surj_on [of r])
-      unfolding bij_betw_def by (erule conjE, assumption, auto)
+    from Rats_unbounded [of "x + 1"] guess q ..
+    with bij have "x < r (inv r q)"
+      apply (subst f_inv_into_f[where f=r])
+      apply (simp_all add: bij_betw_def)
+      done
     hence "\<exists>n. x < r n" ..
   } note r_unbdd = this
   def F \<equiv> "\<lambda>x. Inf {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}"
   have "\<And>x. F x \<in> {-M..M}"
-    unfolding F_def apply (rule real_closed_subset_contains_Inf)
+    unfolding F_def apply (rule closed_subset_contains_Inf)
     using limset_bdd apply auto
     prefer 2 apply (rule bdd_below_mono)
     apply (rule bdd_below_Ici [of "-M"])
@@ -115,23 +122,17 @@ proof -
   moreover have "\<And>x. continuous (at_right x) F" 
     apply (unfold Topological_Spaces.continuous_def)
     apply (unfold tendsto_def, auto)
-    apply (subst eventually_at_right)
+    apply (subst eventually_at_right[OF less_add_one])
     proof -
       fix x::real fix S::"real set" assume openS: "open S"
       assume ntlim_inS: "F (netlimit (at_right x)) \<in> S"
       have "netlimit (at_right x) = x" by (auto intro: netlimit_within)
       with F_def have "F x \<in> S" using ntlim_inS by simp
       then obtain e where e_pos: "e > 0" and e: "ball (F x) e \<subseteq> S" using openE openS by auto
-      have "\<exists>y \<in> {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}. y < F x + e"
-      proof -
-        from e_pos have "F x < F x + e / 2" by simp
-        from nonempty bdd_below this real_Inf_greatest'[of "{lim (\<lambda>k. f (d k) (r n)) |n. x < r n}" "F x + e/2"]
-        have "\<exists>y\<in>{lim (\<lambda>k. f (d k) (r n)) |n. x < r n}. y \<le> F x + e / 2" by (auto simp add: F_def)
-        then guess y .. note y = this
-        hence "y < F x + e" using e_pos by auto
-        moreover have "y \<in> {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}" using y by auto
-        ultimately show ?thesis ..
-      qed
+      have "F x < F x + e"
+        using e_pos by simp
+      then have "\<exists>y \<in> {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}. y < F x + e"
+        unfolding F_def cInf_less_iff[OF nonempty bdd_below] by (auto simp add: field_simps)
       then guess y .. note y = this
       then obtain n where n: "y = lim (\<lambda>k. f (d k) (r n)) \<and> x < r n" by auto
       have "\<forall>z. x < z \<and> z < r n \<longrightarrow> F z \<in> S"
@@ -156,9 +157,9 @@ proof -
   proof auto
     fix x
     have "F x \<in> {-M..M}"
-      unfolding F_def apply (rule real_atLeastAtMost_subset_contains_Inf)
+      unfolding F_def
+      apply (rule atLeastAtMost_subset_contains_Inf)
       apply (rule nonempty)
-      apply (rule bdd_below)
       apply (simp add: M_nonneg)
       apply (rule limset_bdd)
       done
@@ -169,8 +170,8 @@ proof -
     fix x::real assume cts: "continuous (at x) F"
     show "(\<lambda>n. f (d n) x) ----> F x"
     proof -
-      have "\<forall>(e::real)>0. 
-        \<bar>limsup (\<lambda>n. ereal (f (d n) x)) - ereal (F x)\<bar> < e \<and> \<bar>ereal (F x) - liminf (\<lambda>n. ereal (f (d n) x))\<bar> < e"
+      have "\<forall>(e::real)>0. \<bar>limsup (\<lambda>n. ereal (f (d n) x)) - ereal (F x)\<bar> < e"
+        "\<forall>(e::real)>0. \<bar>ereal (F x) - liminf (\<lambda>n. ereal (f (d n) x))\<bar> < e"
       proof auto
         fix e::real assume e: "0 < e"
         have "F -- x --> F x" using cts continuous_at by auto
@@ -201,22 +202,9 @@ proof -
           unfolding F_def apply (rule cInf_lower)
           using bdd_below n by auto
         hence 2: "F x - e < lim (\<lambda>k. f (d k) (r n))" using 1 by auto
-        have "\<exists>m. x < r m \<and> lim (\<lambda>k. f (d k) (r m)) < F x + e"
-        proof - (* Contains duplication from proof of right-continuity--fix. *)
-          have "\<exists>z \<in> {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}. z < F x + e"
-          proof -
-            from e have "F x < F x + e / 2" by simp
-            from nonempty bdd_below this real_Inf_greatest'[of "{lim (\<lambda>k. f (d k) (r n)) |n. x < r n}" "F x + e/2"]
-            have z: "\<exists>z\<in>{lim (\<lambda>k. f (d k) (r n)) |n. x < r n}. z \<le> F x + e / 2" by (auto simp add: F_def)
-            then guess z .. note 1 = this
-            hence "z < F x + e" using e by auto
-            moreover have "z \<in> {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}" using 1 by auto
-            ultimately show ?thesis ..
-          qed
-          then guess z .. note z = this
-          then obtain m where m: "z = lim (\<lambda>k. f (d k) (r m)) \<and> x < r m" by auto
-          thus ?thesis using z by auto
-        qed
+        from e have "F x < F x + e" by simp
+        then have "\<exists>m. x < r m \<and> lim (\<lambda>k. f (d k) (r m)) < F x + e"
+          unfolding F_def cInf_less_iff[OF nonempty bdd_below] by (auto simp add: field_simps)
         then guess m .. note m = this
         from n m have nm: "r n < r m" by auto
         have 3: "lim (\<lambda>k. f (d k) (r n)) \<le> lim (\<lambda>k. f (d k) (r m))"
@@ -316,9 +304,12 @@ proof -
           by (auto intro: linf_e)
         thus "\<bar>F x - liminf (\<lambda>k. (f (d k) x))\<bar> < e"
           by (auto simp add: linf)
-     qed
+    qed
+    then have "limsup (\<lambda>n. ereal (f (d n) x)) = ereal (F x)"
+      "liminf (\<lambda>n. ereal (f (d n) x)) = ereal (F x)"
+      by (auto dest!: ereal_dist_eq)
     hence *: "lim (\<lambda>k. ereal (f (d k) x)) = F x" "convergent (\<lambda>k. ereal (f (d k) x))"
-      by (intro lim_close_limsup_liminf, auto)+
+      by (auto simp add: convergent_ereal convergent_limsup_cl[symmetric])
     have "(\<lambda>k. ereal (f (d k) x)) ----> F x"
       apply (subst *(1) [symmetric])
       apply (subst convergent_LIMSEQ_iff [symmetric])

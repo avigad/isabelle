@@ -246,10 +246,11 @@ theorem Levy_Inversion:
     apply (subst main_eq2, force)
     apply (subst of_real_mult [symmetric])
     apply (rule tendsto_of_real)
-    apply (rule tendsto_const_mult [of "2 * pi"])
+    apply (rule tendsto_eq_intros)
+    apply (rule tendsto_const)
+    apply (rule main3)
     apply auto
-    apply (subst right_diff_distrib [symmetric])
-    by (rule main3)
+    done
 qed
 
  
@@ -299,17 +300,17 @@ proof -
       hence "a \<le> x" "a \<le> a1" "a \<le> a2" "measure M1 {a} = 0" "measure M2 {a} = 0" by auto
 
       from `\<epsilon> > 0` `(cdf M1 ---> cdf M1 x) (at_right x)` 
-          have "eventually (\<lambda>y. abs (cdf M1 y - cdf M1 x) < \<epsilon> / 4) (at_right x)"
+      have "eventually (\<lambda>y. abs (cdf M1 y - cdf M1 x) < \<epsilon> / 4) (at_right x)"
         by (simp only: tendsto_iff dist_real_def)
       hence "\<exists>b. b > x \<and> (\<forall>z. x < z \<and> z < b \<longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4)"
-        by (simp add: eventually_at_right)
+        by (simp add: eventually_at_right[OF less_add_one])
       then obtain b1 where "b1 > x \<and> (\<forall>z. x < z \<and> z < b1 \<longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4)" ..
       hence "b1 > x" and b1: "\<And>z. x < z \<Longrightarrow> z < b1 \<Longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4" by auto
       from `\<epsilon> > 0` `(cdf M2 ---> cdf M2 x) (at_right x)` 
           have "eventually (\<lambda>y. abs (cdf M2 y - cdf M2 x) < \<epsilon> / 4) (at_right x)"
         by (simp only: tendsto_iff dist_real_def)
       hence "\<exists>b. b > x \<and> (\<forall>z. x < z \<and> z < b \<longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4)"
-        by (simp add: eventually_at_right)
+        by (simp add: eventually_at_right[OF less_add_one])
       then obtain b2 where "b2 > x \<and> (\<forall>z. x < z \<and> z < b2 \<longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4)" ..
       hence "b2 > x" and b2: "\<And>z. x < z \<Longrightarrow> z < b2 \<Longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4" by auto
       with `x < b1` `x < b2` have "\<exists>b. b \<in> {x<..<min b1 b2} \<and> 

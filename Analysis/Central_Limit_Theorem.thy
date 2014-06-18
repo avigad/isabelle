@@ -151,7 +151,7 @@ proof -
 
     have "cmod (\<phi> n t - (complex_of_real (1 + (-(t^2) / 2) / n))^n) \<le> 
          n * cmod (\<psi> n t - (complex_of_real (1 + (-(t^2) / 2) / n)))"
-      apply (subst 2, rule complex_power_diff)
+      apply (subst 2, rule norm_power_diff)
       unfolding \<psi>_def apply (rule \<mu>.cmod_char_le_1)
       apply (simp only: norm_of_real)
       apply (auto intro!: abs_leI)
@@ -192,7 +192,7 @@ proof -
     hence main2: "(\<lambda>n. t\<^sup>2 / (6 * \<sigma>\<^sup>2) * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t n\<bar> * \<bar>x\<bar> ^ 3))) ----> 0"
       by (rule tendsto_mult_right_zero)
     have **: "(\<lambda>n. (1 + (-(t^2) / 2) / n)^n) ----> exp (-(t^2) / 2)"
-      by (rule exp_limit'')
+      by (rule tendsto_exp_limit_sequentially)
     have "(\<lambda>n. complex_of_real ((1 + (-(t^2) / 2) / n)^n)) ----> 
         complex_of_real (exp (-(t^2) / 2))"
       by (rule isCont_tendsto_compose [OF _ **], auto)

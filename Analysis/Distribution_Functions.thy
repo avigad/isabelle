@@ -71,7 +71,7 @@ proof -
 qed
 
 lemma cdf_lim_at_top: "(cdf M ---> measure M (space M)) at_top" 
-  apply (rule Real_Vector_Spaces.tendsto_at_topI_sequentially)
+  apply (rule tendsto_at_topI_sequentially_real)
   apply (simp_all add: mono_def cdf_nondecreasing cdf_lim_infty)
   done
 
@@ -88,7 +88,7 @@ qed
 lemma cdf_lim_at_bot: "(cdf M ---> 0) at_bot"
 proof - 
   have 1: "((%x :: real. - cdf M (- x)) ---> 0) at_top"
-    apply (rule Real_Vector_Spaces.tendsto_at_topI_sequentially) 
+    apply (rule tendsto_at_topI_sequentially_real)
     apply (auto simp add: mono_def cdf_nondecreasing cdf_lim_neg_infty)
     using cdf_lim_neg_infty by (metis minus_zero tendsto_minus_cancel_left)
   from filterlim_compose [OF 1, OF filterlim_uminus_at_top_at_bot]
@@ -99,7 +99,7 @@ qed
 lemma cdf_is_right_cont: "continuous (at_right a) (cdf M)"
   apply (subst continuous_within)
   apply (rule decreasing_tendsto)
-  apply (auto simp add: eventually_at_right intro!: cdf_nondecreasing exI[of _ "a + 1"]) []
+  apply (auto simp add: eventually_at_right[OF less_add_one] intro!: cdf_nondecreasing exI[of _ "a + 1"]) []
   apply (rule_tac b="a + 1" in sequentially_imp_eventually_at_right)
   apply simp
 proof -
@@ -119,7 +119,8 @@ qed
 
 lemma cdf_at_left: "(cdf M ---> measure M {..<a}) (at_left a)"
   apply (rule increasing_tendsto)
-  apply (subst eventually_at_left)
+  apply (subst eventually_at_left[of "a - 1"])
+  apply simp
   apply (rule_tac exI[of _ "a - 1"], auto)
   apply (simp add: cdf_def)
   apply (rule finite_measure_mono, auto)
@@ -866,6 +867,4 @@ proof -
 qed
 
 end
-
-
 
