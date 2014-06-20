@@ -669,14 +669,13 @@ lemma std_normal_distribution_even_moments:
      (auto simp: normal_density_nonneg integrable_density
            intro: integrable.intros std_normal_moment_even)
 
-lemma std_normal_distribution_odd_moments:
-  fixes k :: nat
-  shows "(LINT x|std_normal_distribution. x^(2 * k + 1)) = 0"
-    and "integrable std_normal_distribution (\<lambda>x. x^(2 * k + 1))"
-  using integral_std_normal_moment_odd[of k]
-  by (subst integral_density)
-     (auto simp: normal_density_nonneg integrable_density simp del: One_nat_def
-           intro: integrable.intros std_normal_moment_odd)
+lemma integrable_std_normal_distribution_moment: "integrable std_normal_distribution (\<lambda>x. x^k)"
+  by (auto simp: normal_density_nonneg integrable_std_normal_moment integrable_density)
+
+lemma integral_std_normal_distribution_moment_odd:
+  "odd k \<Longrightarrow> integral\<^sup>L std_normal_distribution (\<lambda>x. x^k) = 0"
+  using integral_std_normal_moment_odd[of "(k - 1) div 2"]
+  by (auto simp: odd_Suc_mult_two_ex integral_density normal_density_nonneg)
 
 lemma std_normal_distribution_even_moments_abs:
   fixes k :: nat
@@ -704,57 +703,21 @@ proof
     let ?g' = "\<lambda>k :: nat. (1 / fact k) * (- (t^2) / 2)^k"
     let ?g = "\<lambda>n. \<Sum>k \<le> n. ?g' k"  
     show "?f (2 * n) = complex_of_real (?g n)"
-    proof (induct n)
-      have "?f (2 * 0) = complex_of_real (LINT x | std_normal_distribution. x^(2 * 0))" by simp
-      also have "\<dots> = complex_of_real 1"
-        by (subst std_normal_distribution_even_moments) auto
-      also have "\<dots> = ?g 0" by simp
-      finally show "?f (2 * 0) = ?g 0" .
-    next
-      fix n
-      assume ih: "?f (2 * n) = ?g n"
-      have "?f (2 * (Suc n)) = ?f (2 * n) + ?f' (2 * n + 1) + ?f' (2 * (n + 1))" by simp
-      also have "?f (2 * n) = ?g n" by (rule ih)
-      also have "?f' (2 * n + 1) = 0" by (subst std_normal_distribution_odd_moments, simp)
-      also have "?f' (2 * (n + 1)) = (ii * t)^(2 * (n + 1)) / fact (2 * (n + 1)) * 
-         fact (2 * (n + 1)) / (2^(n + 1) * fact (n + 1))"
-        apply (subst std_normal_distribution_even_moments)
-        apply (simp add: real_of_nat_def)
-        done
-      also have "\<dots> = (ii * t)^(2 * (n + 1)) / (2^(n + 1) * fact (n + 1))"
-        apply (subst times_divide_eq_left)
-        apply (subst (3) mult_commute)
-        apply (subst times_divide_eq_left [symmetric])
-        apply (subst divide_self)
-        (* ouch! how to avoid this? *)
-        apply (metis of_nat_fact_not_zero)
-        by simp
-      also have "(ii * t)^(2 * (n + 1)) = (- (t^2))^(n + 1)"
-        apply (subst mult_commute)
-        apply (subst power_mult_distrib)
-        apply (subst (2) power_mult)
-        apply (simp add: field_simps)
-        apply (subst (4) mult_commute)
-        apply (subst power_mult)
-        by (case_tac "even n", auto simp add: power2_eq_square)
-      finally have "?f (2 * Suc n) = ?g n + (- (t^2))^(n + 1) / (2^(n + 1) * fact (n + 1))"
-        by (simp add: real_of_nat_def)
-      also have "(- (t^2))^(n + 1) / (2^(n + 1) * fact (n + 1)) = 
-          (- (t^2 / 2))^(n + 1) / fact (n + 1)"
-        apply (subst real_of_nat_mult)
-        apply (subst divide_divide_eq_left [symmetric])
-        by (metis (hide_lams, no_types) minus_divide_left power_divide 
-          real_of_nat_numeral real_of_nat_power)
-      also have "\<dots> = ?g' (Suc n)" by simp
-      finally show "?f (2 * Suc n) = ?g (Suc n)" by simp
-    qed
+      unfolding of_real_setsum
+      apply (rule setsum.reindex_bij_witness_not_neutral[symmetric,
+          where i="\<lambda>n. n div 2" and j="\<lambda>n. 2 * n" and T'="{i. i \<le> 2 * n \<and> odd i}" and S'="{}"])
+      apply auto
+      apply (auto simp: even_mult_two_ex) []
+      apply (auto simp: integral_std_normal_distribution_moment_odd std_normal_distribution_even_moments)
+      apply (simp add: power_mult power_mult_distrib power_divide of_real_numeral neg_power_if)
+      done
   qed
   have 2: "\<And>n. ?f(2 * n + 1) = ?f(2 * n)"
   proof -
     fix n :: nat
     have "?f(2 * n + 1) = ?f(2 * n) + ?f'(2 * n + 1)" by simp
     also have "?f' (2 * n + 1) = 0"
-      by (subst std_normal_distribution_odd_moments, simp)
+      by (subst integral_std_normal_distribution_moment_odd) simp_all
     finally show "?f(2 * n + 1) = ?f(2 * n)" by simp
   qed
   have *: "\<And>x y :: real. 1 / y * x = x /\<^sub>R y" by (simp add: inverse_eq_divide)
@@ -762,7 +725,11 @@ proof
     apply (subst 1)
     apply (rule tendsto_of_real)
     apply (subst *)
-    by (subst sums_def2 [symmetric], rule exp_converges)
+    apply (subst lessThan_Suc_atMost [symmetric])
+    apply (rule LIMSEQ_Suc)
+    apply (subst sums_def [symmetric])
+    apply (rule exp_converges)
+    done
   have 4: "?f ----> exp (-(t^2) / 2)"
     apply (rule limseq_even_odd_complex)
     apply (rule 3)
@@ -846,7 +813,7 @@ proof
     apply (subst (asm) odd_Suc_mult_two_ex, erule exE, erule ssubst)
     apply (subgoal_tac "Suc (2 * m) = 2 * m + 1")
     apply (erule ssubst)
-    apply (rule std_normal_distribution_odd_moments)
+    apply (rule integrable_std_normal_distribution_moment)
     apply simp
     by (rule limseq_even_odd [OF 5 6])
   show "char std_normal_distribution t = complex_of_real (exp (-(t^2) / 2))"

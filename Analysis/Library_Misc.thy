@@ -2,6 +2,12 @@ theory Library_Misc
 imports Probability "~~/src/HOL/Library/ContNotDenum"
 begin
 
+lemma not_eventually_impI: "eventually P F \<Longrightarrow> \<not> eventually Q F \<Longrightarrow> \<not> eventually (\<lambda>x. P x \<longrightarrow> Q x) F"
+  by (auto intro: eventually_mp)
+
+lemma not_eventuallyD: "\<not> eventually P F \<Longrightarrow> \<exists>x. \<not> P x"
+  by (metis always_eventually)
+
 lemma sequentially_imp_eventually_at_right:
   fixes a :: "'a :: {dense_linorder, linorder_topology, first_countable_topology}"
   assumes b[simp]: "a < b"
@@ -11,30 +17,24 @@ proof (safe intro!: sequentially_imp_eventually_within)
   fix X assume X: "\<forall>n. X n \<in> {a <..} \<and> X n \<noteq> a" "X ----> a"
   show "eventually (\<lambda>n. P (X n)) sequentially"
   proof (rule ccontr)
-    assume "\<not> eventually (\<lambda>n. P (X n)) sequentially"
-    from not_eventually_sequentiallyD[OF this]
-    obtain r where "subseq r" "\<And>n. \<not> P (X (r n))"
-      by auto
-    with X have "(X \<circ> r) ----> a"
-      by (auto intro: LIMSEQ_subseq_LIMSEQ)
-    from order_tendstoD(2)[OF this] obtain s' where s': "\<And>b i. a < b \<Longrightarrow> s' b \<le> i \<Longrightarrow> X (r i) < b"
-      unfolding eventually_sequentially comp_def by metis
-    def s \<equiv> "rec_nat (s' b) (\<lambda>_ i. max (s' (X (r i))) (Suc i))"
-    then have [simp]: "s 0 = s' b" "\<And>n. s (Suc n) = max (s' (X (r (s n)))) (Suc (s n))"
-      by auto
-    have "eventually (\<lambda>n. P (((X \<circ> r) \<circ> s) n)) sequentially"
-    proof (rule *)
-      from X show dec: "decseq (X \<circ> r \<circ> s)"
-        unfolding decseq_Suc_iff comp_def by (intro allI s'[THEN less_imp_le]) auto
-      { fix n show "(X \<circ> r \<circ> s) n < b"
-          using dec[THEN decseqD, of 0 n] s'[OF b order_refl] by simp }
-      { fix n show "a < (X \<circ> r \<circ> s) n"
-          using X by simp }
-      from `(X \<circ> r) ----> a` show "(X \<circ> r \<circ> s) ----> a"
-        by (rule LIMSEQ_subseq_LIMSEQ) (auto simp: subseq_Suc_iff)
+    assume neg: "\<not> eventually (\<lambda>n. P (X n)) sequentially"
+    have "\<exists>s. \<forall>n. (\<not> P (X (s n)) \<and> X (s n) < b) \<and> (X (s (Suc n)) \<le> X (s n) \<and> Suc (s n) \<le> s (Suc n))"
+    proof (rule dependent_nat_choice)
+      have "\<not> eventually (\<lambda>n. X n < b \<longrightarrow> P (X n)) sequentially"
+        by (intro not_eventually_impI neg order_tendstoD(2) [OF X(2) b])
+      then show "\<exists>x. \<not> P (X x) \<and> X x < b"
+        by (auto dest!: not_eventuallyD)
+    next
+      fix x n
+      have "\<not> eventually (\<lambda>n. Suc x \<le> n \<longrightarrow> X n < b \<longrightarrow> X n < X x \<longrightarrow> P (X n)) sequentially"
+        using X by (intro not_eventually_impI order_tendstoD(2)[OF X(2)] eventually_ge_at_top neg) auto
+      then show "\<exists>n. (\<not> P (X n) \<and> X n < b) \<and> (X n \<le> X x \<and> Suc x \<le> n)"
+        by (auto dest!: not_eventuallyD)
     qed
-    with `\<And>n. \<not> P (X (r n))` show False
-      by auto
+    then guess s ..
+    then have "\<And>n. a < X (s n)" "\<And>n. X (s n) < b" "decseq (\<lambda>n. X (s n))" "(\<lambda>n. X (s n)) ----> a" "\<And>n. \<not> P (X (s n))"
+      using X by (auto simp: subseq_Suc_iff Suc_le_eq decseq_Suc_iff intro!: LIMSEQ_subseq_LIMSEQ[OF `X ----> a`, unfolded comp_def])
+    from *[OF this(1,2,3,4)] this(5) show False by auto
   qed
 qed
 

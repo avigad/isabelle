@@ -241,8 +241,7 @@ interpretation half_open_semiring: semiring_of_sets UNIV half_open_intervals
   apply clarsimp
 proof -
   fix a b c d :: real
-  show "\<exists>C \<subseteq> half_open_intervals. finite C \<and> disjoint C \<and> {a<..b} - {c<..d} = 
-    \<Union>C"
+  show "\<exists>C \<subseteq> half_open_intervals. finite C \<and> disjoint C \<and> {a<..b} - {c<..d} = \<Union>C"
   proof cases
     let ?C = "{{a<..b}}"
     assume "b < c | d \<le> a | d \<le> c"
