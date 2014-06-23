@@ -2,6 +2,16 @@ theory Library_Misc
 imports Probability "~~/src/HOL/Library/ContNotDenum"
 begin
 
+lemma distr_cong_AE:
+  assumes 1: "M = K" "sets N = sets L" and 
+    2: "(AE x in M. f x = g x)" and "f \<in> measurable M N" and "g \<in> measurable K L"
+  shows "distr M N f = distr K L g"
+proof (rule measure_eqI)
+  fix A assume "A \<in> sets (distr M N f)"
+  with assms show "emeasure (distr M N f) A = emeasure (distr K L g) A"
+    by (auto simp add: emeasure_distr intro!: emeasure_eq_AE measurable_sets)
+qed (insert 1, simp)
+
 lemma not_eventually_impI: "eventually P F \<Longrightarrow> \<not> eventually Q F \<Longrightarrow> \<not> eventually (\<lambda>x. P x \<longrightarrow> Q x) F"
   by (auto intro: eventually_mp)
 
@@ -194,56 +204,9 @@ proof -
     unfolding euclidean_representation .
 qed
 
-(* TODO: should this be a simp rule? *)
-lemma complex_of_real_indicator: "complex_of_real (indicator A x) = indicator A x"
-  by (simp split: split_indicator)
-
-lemma indicator_abs_eq[simp]:
-  "\<bar>indicator A x\<bar> = ((indicator A x)::'a::linordered_idom)"
-  by simp
-
-lemma indicator_disj_union:
-  "A \<inter> B = {} \<Longrightarrow> indicator (A \<union> B) x = (indicator A x + indicator B x :: 'a::ring_1)"
-  by (auto split: split_indicator)
-
-lemma indicator_disj_un_fun:
-  "A \<inter> B = {} \<Longrightarrow> indicator (A \<union> B) = (\<lambda>x. indicator A x + indicator B x :: 'a::ring_1)"
-  by (auto split: split_indicator simp: fun_eq_iff)
-
 lemma mult_indicator_subset:
   "A \<subseteq> B \<Longrightarrow> indicator A x * indicator B x = (indicator A x :: real)"
   by (auto split: split_indicator simp: fun_eq_iff)
-
-lemma LIMSEQ_indicator_INT:
-  "(\<lambda>k. indicator (\<Inter>i<k. A i) x) ----> (indicator (\<Inter>i. A i) x :: real)"
-proof cases
-  assume "\<exists>i. x \<notin> A i" then guess i .. note i = this
-  then have *: "\<And>n. (indicator (\<Inter>i<n + Suc i. A i) x :: real) = 0"
-    "(indicator (\<Inter>i. A i) x :: real) = 0" by (auto simp: indicator_def)
-  show ?thesis
-    apply (rule LIMSEQ_offset[of _ "Suc i"]) unfolding * by auto
-qed (auto simp: indicator_def)
-
-lemma indicator_cont_up:
-  assumes A: "incseq A"
-  shows "(\<lambda>i. indicator (A i) x::real) ----> indicator (\<Union>i. A i) x"
-proof -
-  have "\<And>k. (\<Union> i<Suc k. A i) = A k"
-    using incseqD[OF A] by (force simp: less_Suc_eq_le)
-  with LIMSEQ_indicator_UN[of A x, THEN LIMSEQ_Suc] show ?thesis
-    by simp
-qed
-
-lemma indicator_cont_down:
-  assumes A: "decseq A"
-  shows "(\<lambda>i. indicator (A i) x::real) ----> indicator (\<Inter>i. A i) x"
-proof -
-  have "\<And>k. (\<Inter>i<Suc k. A i) = A k"
-    using decseqD[OF A] by (force simp: less_Suc_eq_le)
-  with LIMSEQ_indicator_INT[of A x, THEN LIMSEQ_Suc]
-  show ?thesis
-    by simp
-qed
 
 lemma indicator_sums: 
   assumes "\<And>i j. i \<noteq> j \<Longrightarrow> A i \<inter> A j = {}"
@@ -456,26 +419,13 @@ lemma (in linorder) greaterThanAtMost_disjoint:
   shows "{a<..b} \<inter> {c<..d} = {} \<longleftrightarrow> b \<le> a \<or> d \<le> c \<or> b \<le> c \<or> d \<le> a"
   using assms by auto
 
-lemma AtMost_real_inter: "{..x} = (\<Inter> i. {..x + inverse (real (Suc i))})"
-  apply auto
-  apply (metis add_increasing2 inverse_nonnegative_iff_nonnegative 
-    real_of_nat_ge_zero)
-  apply (subst not_less [symmetric], rule notI)
-  apply (subgoal_tac "xa - x > 0", auto)
-  apply (drule reals_Archimedean, auto)
-  apply (drule_tac x = n in spec)
-  apply auto
-done
-
 lemma continuous_at_split: 
-  "continuous (at (x::'a::linorder_topology)) f = 
-    (continuous (at_left x) f \<and> continuous (at_right x) f)"
-by (simp add: continuous_within filterlim_at_split)
+  "continuous (at (x::'a::linorder_topology)) f = (continuous (at_left x) f \<and> continuous (at_right x) f)"
+  by (simp add: continuous_within filterlim_at_split)
 
 lemma continuous_at_right_real_increasing:
   assumes nondecF: "\<And> x y. x \<le> y \<Longrightarrow> f x \<le> ((f y) :: real)"
   shows "(continuous (at_right (a :: real)) f) = (\<forall>e > 0. \<exists>delta > 0. f (a + delta) - f a < e)"
-
   apply (auto simp add: continuous_within_eps_delta dist_real_def greaterThan_def)
   apply (drule_tac x = e in spec, auto)
   apply (drule_tac x = "a + d / 2" in spec)
@@ -494,7 +444,6 @@ by (rule nondecF, auto)
 lemma continuous_at_left_real_increasing:
   assumes nondecF: "\<And> x y. x \<le> y \<Longrightarrow> f x \<le> ((f y) :: real)"
   shows "(continuous (at_left (a :: real)) f) = (\<forall>e > 0. \<exists>delta > 0. f a - f (a - delta) < e)"
-
   apply (auto simp add: continuous_within_eps_delta dist_real_def lessThan_def)
   apply (drule_tac x = e in spec, auto)
   apply (drule_tac x = "a - d / 2" in spec)
@@ -543,17 +492,6 @@ lemma measure_restrict_space:
 
 lemma lebesgue_measure_interval: "a \<le> b \<Longrightarrow> measure lborel {a..b} = b - a"
  unfolding measure_def by auto
-
-lemma distr_cong_AE:
-  assumes 1: "M = K" "sets N = sets L" and 
-    2: "(AE x in M. f x = g x)" and "f \<in> measurable M N" and "g \<in> measurable K L"
-  shows "distr M N f = distr K L g"
-proof (rule measure_eqI)
-  fix A assume "A \<in> sets (distr M N f)"
-  with assms show "emeasure (distr M N f) A = emeasure (distr K L g) A"
-    by (auto simp add: emeasure_distr intro!: emeasure_eq_AE measurable_sets)
-qed (insert 1, simp)
-
 
 lemma of_rat_dense:
   fixes x y :: real
@@ -687,7 +625,7 @@ lemma emeasure_insert':
 
 (* the dual version is in Convex_Euclidean_Space.thy *)
 
-lemma interior_real_semiline2:
+lemma interior_real_Iic:
   fixes a :: real
   shows "interior {..a} = {..<a}"
 proof -
@@ -714,10 +652,10 @@ proof -
   ultimately show ?thesis by auto
 qed
 
-lemma frontier_real_atMost:
+lemma frontier_real_Iic:
   fixes a :: real
   shows "frontier {..a} = {a}"
-  unfolding frontier_def by (auto simp add: interior_real_semiline2)
+  unfolding frontier_def by (auto simp add: interior_real_Iic)
 
 (**************************************************)
 
@@ -742,5 +680,414 @@ proof -
   thus ?thesis by simp
 qed
 
+
+lemma (in dense_linorder) Ioc_inject:
+  "{a <.. b} = {c <.. d} \<longleftrightarrow> (b \<le> a \<and> d \<le> c) \<or> a = c \<and> b = d"
+proof -
+  { fix a b c d :: 'a assume *: "{a<..b} = {c<..d}" "c < d" "a < b"
+    have "a \<le> c"
+    proof (rule dense_ge_bounded[OF `c < d`])
+      fix w assume "c < w" "w < d"
+      then have "w \<in> {c <.. d}"
+        by auto
+      then have "w \<in> {a<..b}"
+        unfolding * by auto
+      then show "a \<le> w"
+        by auto
+    qed }
+  from this[of a b c d] this[of c d a b] show ?thesis
+    by (cases "b \<le> a" "d \<le> c" rule: bool.exhaust[case_product bool.exhaust])
+       (auto intro!: antisym)
+qed
+
+lemma cInf_Ioc[simp]:
+  fixes a b :: "'a::{conditionally_complete_linorder, dense_linorder}"
+  shows "a < b \<Longrightarrow> Inf {a <.. b} = a"
+  by (auto intro!: cInf_eq_non_empty intro: dense_ge_bounded)
+
+lemma (in conditionally_complete_lattice) cInf_le_cSup:
+  "A \<noteq> {} \<Longrightarrow> bdd_above A \<Longrightarrow> bdd_below A \<Longrightarrow> Inf A \<le> Sup A"
+  by (auto intro!: cSup_upper2[of "SOME a. a \<in> A"] intro: someI cInf_lower)
+
+lemma disjoint_family_onD: "disjoint_family_on A I \<Longrightarrow> i \<in> I \<Longrightarrow> j \<in> I \<Longrightarrow> i \<noteq> j \<Longrightarrow> A i \<inter> A j = {}"
+  by (auto simp: disjoint_family_on_def)
+
+lemma extend_measure_caratheodory:
+  fixes G :: "'i \<Rightarrow> 'a set"
+  assumes M: "M = extend_measure \<Omega> I G \<mu>"
+  assumes "i \<in> I"
+  assumes "semiring_of_sets \<Omega> (G ` I)"
+  assumes empty: "\<And>i. i \<in> I \<Longrightarrow> G i = {} \<Longrightarrow> \<mu> i = 0"
+  assumes inj: "\<And>i j. i \<in> I \<Longrightarrow> j \<in> I \<Longrightarrow> G i = G j \<Longrightarrow> \<mu> i = \<mu> j"
+  assumes nonneg: "\<And>i. i \<in> I \<Longrightarrow> 0 \<le> \<mu> i"
+  assumes add: "\<And>A::nat \<Rightarrow> 'i. \<And>j. A \<in> UNIV \<rightarrow> I \<Longrightarrow> j \<in> I \<Longrightarrow> disjoint_family (G \<circ> A) \<Longrightarrow>
+    (\<Union>i. G (A i)) = G j \<Longrightarrow> (\<Sum>n. \<mu> (A n)) = \<mu> j"
+  shows "emeasure M (G i) = \<mu> i"
+proof -
+  interpret semiring_of_sets \<Omega> "G ` I"
+    by fact
+  have "\<forall>g\<in>G`I. \<exists>i\<in>I. g = G i"
+    by auto
+  then obtain sel where sel: "\<And>g. g \<in> G ` I \<Longrightarrow> sel g \<in> I" "\<And>g. g \<in> G ` I \<Longrightarrow> G (sel g) = g"
+    by metis
+
+  have "\<exists>\<mu>'. (\<forall>s\<in>G ` I. \<mu>' s = \<mu> (sel s)) \<and> measure_space \<Omega> (sigma_sets \<Omega> (G ` I)) \<mu>'"
+  proof (rule caratheodory)
+    show "positive (G ` I) (\<lambda>s. \<mu> (sel s))"
+      by (auto simp: positive_def intro!: empty sel nonneg)
+    show "countably_additive (G ` I) (\<lambda>s. \<mu> (sel s))"
+    proof (rule countably_additiveI)
+      fix A :: "nat \<Rightarrow> 'a set" assume "range A \<subseteq> G ` I" "disjoint_family A" "(\<Union>i. A i) \<in> G ` I"
+      then show "(\<Sum>i. \<mu> (sel (A i))) = \<mu> (sel (\<Union>i. A i))"
+        by (intro add) (auto simp: sel image_subset_iff_funcset comp_def Pi_iff intro!: sel)
+    qed
+  qed
+  then obtain \<mu>' where \<mu>': "\<forall>s\<in>G ` I. \<mu>' s = \<mu> (sel s)" "measure_space \<Omega> (sigma_sets \<Omega> (G ` I)) \<mu>'"
+    by metis
+
+  show ?thesis
+  proof (rule emeasure_extend_measure[OF M])
+    { fix i assume "i \<in> I" then show "\<mu>' (G i) = \<mu> i"
+      using \<mu>' by (auto intro!: inj sel) }
+    show "G ` I \<subseteq> Pow \<Omega>"
+      by fact
+    then show "positive (sets M) \<mu>'" "countably_additive (sets M) \<mu>'"
+      using \<mu>' by (simp_all add: M sets_extend_measure measure_space_def)
+  qed fact
+qed
+  
+lemma extend_measure_caratheodory_pair:
+  fixes G :: "'i \<Rightarrow> 'j \<Rightarrow> 'a set"
+  assumes M: "M = extend_measure \<Omega> {(a, b). P a b} (\<lambda>(a, b). G a b) (\<lambda>(a, b). \<mu> a b)"
+  assumes "P i j"
+  assumes semiring: "semiring_of_sets \<Omega> {G a b | a b. P a b}"
+  assumes empty: "\<And>i j. P i j \<Longrightarrow> G i j = {} \<Longrightarrow> \<mu> i j = 0"
+  assumes inj: "\<And>i j k l. P i j \<Longrightarrow> P k l \<Longrightarrow> G i j = G k l \<Longrightarrow> \<mu> i j = \<mu> k l"
+  assumes nonneg: "\<And>i j. P i j \<Longrightarrow> 0 \<le> \<mu> i j"
+  assumes add: "\<And>A::nat \<Rightarrow> 'i. \<And>B::nat \<Rightarrow> 'j. \<And>j k.
+    (\<And>n. P (A n) (B n)) \<Longrightarrow> P j k \<Longrightarrow> disjoint_family (\<lambda>n. G (A n) (B n)) \<Longrightarrow>
+    (\<Union>i. G (A i) (B i)) = G j k \<Longrightarrow> (\<Sum>n. \<mu> (A n) (B n)) = \<mu> j k"
+  shows "emeasure M (G i j) = \<mu> i j"
+proof -
+  have "emeasure M ((\<lambda>(a, b). G a b) (i, j)) = (\<lambda>(a, b). \<mu> a b) (i, j)"
+  proof (rule extend_measure_caratheodory[OF M])
+    show "semiring_of_sets \<Omega> ((\<lambda>(a, b). G a b) ` {(a, b). P a b})"
+      using semiring by (simp add: image_def conj_commute)
+  next
+    fix A :: "nat \<Rightarrow> ('i \<times> 'j)" and j assume "A \<in> UNIV \<rightarrow> {(a, b). P a b}" "j \<in> {(a, b). P a b}"
+      "disjoint_family ((\<lambda>(a, b). G a b) \<circ> A)"
+      "(\<Union>i. case A i of (a, b) \<Rightarrow> G a b) = (case j of (a, b) \<Rightarrow> G a b)"
+    then show "(\<Sum>n. case A n of (a, b) \<Rightarrow> \<mu> a b) = (case j of (a, b) \<Rightarrow> \<mu> a b)"
+      using add[of "\<lambda>i. fst (A i)" "\<lambda>i. snd (A i)" "fst j" "snd j"]
+      by (simp add: split_beta' comp_def Pi_iff)
+  qed (auto split: prod.splits intro: assms)
+  then show ?thesis by simp
+qed
+
+subsection {* Every right continuous and nondecreasing function gives rise to a measure *}
+
+definition interval_measure :: "(real \<Rightarrow> real) \<Rightarrow> real measure" where
+  "interval_measure F = extend_measure UNIV {(a, b). a \<le> b} (\<lambda>(a, b). {a <.. b}) (\<lambda>(a, b). ereal (F b - F a))"
+
+lemma emeasure_interval_measure:
+  assumes "a \<le> b"
+  assumes mono_F: "\<And>x y. x \<le> y \<Longrightarrow> F x \<le> F y"
+  assumes right_cont_F : "\<And>a. continuous (at_right a) F" 
+  shows "emeasure (interval_measure F) {a <.. b} = F b - F a"
+proof (rule extend_measure_caratheodory_pair[OF interval_measure_def `a \<le> b`])
+  show "semiring_of_sets UNIV {{a<..b} |a b :: real. a \<le> b}"
+  proof (unfold_locales, safe)
+    fix a b c d :: real assume *: "a \<le> b" "c \<le> d"
+    then show "\<exists>C\<subseteq>{{a<..b} |a b. a \<le> b}. finite C \<and> disjoint C \<and> {a<..b} - {c<..d} = \<Union>C"
+    proof cases
+      let ?C = "{{a<..b}}"
+      assume "b < c \<or> d \<le> a \<or> d \<le> c"
+      with * have "?C \<subseteq> {{a<..b} |a b. a \<le> b} \<and> finite ?C \<and> disjoint ?C \<and> {a<..b} - {c<..d} = \<Union>?C"
+        by (auto simp add: disjoint_def)
+      thus ?thesis ..
+    next
+      let ?C = "{{a<..c}, {d<..b}}"
+      assume "\<not> (b < c \<or> d \<le> a \<or> d \<le> c)"
+      with * have "?C \<subseteq> {{a<..b} |a b. a \<le> b} \<and> finite ?C \<and> disjoint ?C \<and> {a<..b} - {c<..d} = \<Union>?C"
+        by (auto simp add: disjoint_def Ioc_inject) (metis linear)+
+      thus ?thesis ..
+    qed
+  qed (auto simp: Ioc_inject, metis linear)
+next
+  fix l r :: "nat \<Rightarrow> real" and a b :: real
+  assume l_r[simp]: "\<And>n. l n \<le> r n" and "a \<le> b" and disj: "disjoint_family (\<lambda>n. {l n<..r n})" 
+  assume lr_eq_ab: "(\<Union>i. {l i<..r i}) = {a<..b}"
+
+  have [intro, simp]: "\<And>a b. a \<le> b \<Longrightarrow> 0 \<le> F b - F a"
+    by (auto intro!: l_r mono_F simp: diff_le_iff)
+
+  { fix S :: "nat set" assume "finite S"
+    moreover note `a \<le> b`
+    moreover have "\<And>i. i \<in> S \<Longrightarrow> {l i <.. r i} \<subseteq> {a <.. b}"
+      unfolding lr_eq_ab[symmetric] by auto
+    ultimately have "(\<Sum>i\<in>S. F (r i) - F (l i)) \<le> F b - F a"
+    proof (induction S arbitrary: a rule: finite_psubset_induct)
+      case (psubset S)
+      show ?case
+      proof cases
+        assume "\<exists>i\<in>S. l i < r i"
+        with `finite S` have "Min (l ` {i\<in>S. l i < r i}) \<in> l ` {i\<in>S. l i < r i}"
+          by (intro Min_in) auto
+        then obtain m where m: "m \<in> S" "l m < r m" "l m = Min (l ` {i\<in>S. l i < r i})"
+          by fastforce
+
+        have "(\<Sum>i\<in>S. F (r i) - F (l i)) = (F (r m) - F (l m)) + (\<Sum>i\<in>S - {m}. F (r i) - F (l i))"
+          using m psubset by (intro setsum.remove) auto
+        also have "(\<Sum>i\<in>S - {m}. F (r i) - F (l i)) \<le> F b - F (r m)"
+        proof (intro psubset.IH)
+          show "S - {m} \<subset> S"
+            using `m\<in>S` by auto
+          show "r m \<le> b"
+            using psubset.prems(2)[OF `m\<in>S`] `l m < r m` by auto
+        next
+          fix i assume "i \<in> S - {m}"
+          then have i: "i \<in> S" "i \<noteq> m" by auto
+          { assume i': "l i < r i" "l i < r m"
+            moreover with `finite S` i m have "l m \<le> l i"
+              by auto
+            ultimately have "{l i <.. r i} \<inter> {l m <.. r m} \<noteq> {}"
+              by auto
+            then have False
+              using disjoint_family_onD[OF disj, of i m] i by auto }
+          then have "l i \<noteq> r i \<Longrightarrow> r m \<le> l i"
+            unfolding not_less[symmetric] using l_r[of i] by auto
+          then show "{l i <.. r i} \<subseteq> {r m <.. b}"
+            using psubset.prems(2)[OF `i\<in>S`] by auto
+        qed
+        also have "F (r m) - F (l m) \<le> F (r m) - F a"
+          using psubset.prems(2)[OF `m \<in> S`] `l m < r m` by (auto simp add: greaterThanAtMost_subset_iff intro!: mono_F)
+        finally show ?case
+          by (auto intro: add_mono)
+      qed (simp add: `a \<le> b` less_le)
+    qed }
+  note claim1 = this
+
+  (* second key induction: a lower bound on the measures of any finite collection of Ai's
+     that cover an interval {u..v} *)
+
+  { fix S u v and l r :: "nat \<Rightarrow> real"
+    assume "finite S" "\<And>i. i\<in>S \<Longrightarrow> l i < r i" "{u..v} \<subseteq> (\<Union>i\<in>S. {l i<..< r i})"
+    then have "F v - F u \<le> (\<Sum>i\<in>S. F (r i) - F (l i))"
+    proof (induction arbitrary: v u rule: finite_psubset_induct)
+      case (psubset S)
+      show ?case
+      proof cases
+        assume "S = {}" then show ?case
+          using psubset by (simp add: mono_F)
+      next
+        assume "S \<noteq> {}"
+        then obtain j where "j \<in> S"
+          by auto
+
+        let ?R = "r j < u \<or> l j > v \<or> (\<exists>i\<in>S-{j}. l i \<le> l j \<and> r j \<le> r i)"
+        show ?case
+        proof cases
+          assume "?R"
+          with `j \<in> S` psubset.prems have "{u..v} \<subseteq> (\<Union>i\<in>S-{j}. {l i<..< r i})"
+            apply (auto simp: subset_eq Ball_def)
+            apply (metis Diff_iff less_le_trans leD linear singletonD)
+            apply (metis Diff_iff less_le_trans leD linear singletonD)
+            apply (metis order_trans less_le_not_le linear)
+            done
+          with `j \<in> S` have "F v - F u \<le> (\<Sum>i\<in>S - {j}. F (r i) - F (l i))"
+            by (intro psubset) auto
+          also have "\<dots> \<le> (\<Sum>i\<in>S. F (r i) - F (l i))"
+            using psubset.prems
+            by (intro setsum_mono2 psubset) (auto intro: less_imp_le)
+          finally show ?thesis .
+        next
+          assume "\<not> ?R"
+          then have j: "u \<le> r j" "l j \<le> v" "\<And>i. i \<in> S - {j} \<Longrightarrow> r i < r j \<or> l i > l j"
+            by (auto simp: not_less)
+          let ?S1 = "{i \<in> S. l i < l j}"
+          let ?S2 = "{i \<in> S. r i > r j}"
+
+          have "(\<Sum>i\<in>S. F (r i) - F (l i)) \<ge> (\<Sum>i\<in>?S1 \<union> ?S2 \<union> {j}. F (r i) - F (l i))"
+            using `j \<in> S` `finite S` psubset.prems j
+            by (intro setsum_mono2) (auto intro: less_imp_le)
+          also have "(\<Sum>i\<in>?S1 \<union> ?S2 \<union> {j}. F (r i) - F (l i)) =
+            (\<Sum>i\<in>?S1. F (r i) - F (l i)) + (\<Sum>i\<in>?S2 . F (r i) - F (l i)) + (F (r j) - F (l j))"
+            using psubset(1) psubset.prems(1) j
+            apply (subst setsum_Un_disjoint)
+            apply simp_all
+            apply (subst setsum_Un_disjoint)
+            apply auto
+            apply (metis less_le_not_le)
+            done
+          also (xtrans) have "(\<Sum>i\<in>?S1. F (r i) - F (l i)) \<ge> F (l j) - F u"
+            using `j \<in> S` `finite S` psubset.prems j
+            apply (intro psubset.IH psubset)
+            apply (auto simp: subset_eq Ball_def)
+            apply (metis less_le_trans not_le)
+            done
+          also (xtrans) have "(\<Sum>i\<in>?S2. F (r i) - F (l i)) \<ge> F v - F (r j)"
+            using `j \<in> S` `finite S` psubset.prems j
+            apply (intro psubset.IH psubset)
+            apply (auto simp: subset_eq Ball_def)
+            apply (metis le_less_trans not_le)
+            done
+          finally (xtrans) show ?case
+            by (auto simp: add_mono)
+        qed
+      qed
+    qed }
+  note claim2 = this
+
+  (* now prove the inequality going the other way *)
+
+  { fix epsilon :: real assume egt0: "epsilon > 0"
+    have "\<forall>i. \<exists>d. d > 0 &  F (r i + d) < F (r i) + epsilon / 2^(i+2)"
+    proof 
+      fix i
+      note right_cont_F [of "r i"]
+      thus "\<exists>d. d > 0 \<and> F (r i + d) < F (r i) + epsilon / 2^(i+2)"
+        apply -
+        apply (subst (asm) continuous_at_right_real_increasing)
+        apply (rule mono_F, assumption)
+        apply (drule_tac x = "epsilon / 2 ^ (i + 2)" in spec)
+        apply (erule impE)
+        using egt0 by (auto simp add: field_simps)
+    qed
+    then obtain delta where 
+        deltai_gt0: "\<And>i. delta i > 0" and
+        deltai_prop: "\<And>i. F (r i + delta i) < F (r i) + epsilon / 2^(i+2)"
+      by metis
+    have "\<exists>a' > a. F a' - F a < epsilon / 2"
+      apply (insert right_cont_F [of a])
+      apply (subst (asm) continuous_at_right_real_increasing)
+      using mono_F apply force
+      apply (drule_tac x = "epsilon / 2" in spec)
+      using egt0 apply (auto simp add: field_simps)
+      by (metis add_less_cancel_left comm_monoid_add_class.add.right_neutral 
+        comm_semiring_1_class.normalizing_semiring_rules(24) mult_2 mult_2_right)
+    then obtain a' where a'lea [arith]: "a' > a" and 
+      a_prop: "F a' - F a < epsilon / 2"
+      by auto
+    def S' \<equiv> "{i. l i < r i}"
+    obtain S :: "nat set" where 
+      "S \<subseteq> S'" and finS: "finite S" and 
+      Sprop: "{a'..b} \<subseteq> (\<Union>i \<in> S. {l i<..<r i + delta i})"
+    proof (rule compactE_image)
+      show "compact {a'..b}"
+        by (rule compact_Icc)
+      show "\<forall>i \<in> S'. open ({l i<..<r i + delta i})" by auto
+      have "{a'..b} \<subseteq> {a <.. b}"
+        by auto
+      also have "{a <.. b} = (\<Union>i\<in>S'. {l i<..r i})"
+        unfolding lr_eq_ab[symmetric] by (fastforce simp add: S'_def intro: less_le_trans)
+      also have "\<dots> \<subseteq> (\<Union>i \<in> S'. {l i<..<r i + delta i})"
+        apply (intro UN_mono)
+        apply (auto simp: S'_def)
+        apply (cut_tac i=i in deltai_gt0)
+        apply simp
+        done
+      finally show "{a'..b} \<subseteq> (\<Union>i \<in> S'. {l i<..<r i + delta i})" .
+    qed
+    with S'_def have Sprop2: "\<And>i. i \<in> S \<Longrightarrow> l i < r i" by auto
+    from finS have "\<exists>n. \<forall>i \<in> S. i \<le> n" 
+      by (subst finite_nat_set_iff_bounded_le [symmetric])
+    then obtain n where Sbound [rule_format]: "\<forall>i \<in> S. i \<le> n" ..
+    have "F b - F a' \<le> (\<Sum>i\<in>S. F (r i + delta i) - F (l i))"
+      apply (rule claim2 [rule_format])
+      using finS Sprop apply auto
+      apply (frule Sprop2)
+      apply (subgoal_tac "delta i > 0")
+      apply arith
+      by (rule deltai_gt0)
+    also have "... \<le> (SUM i : S. F(r i) - F(l i) + epsilon / 2^(i+2))"
+      apply (rule setsum_mono)
+      apply simp
+      apply (rule order_trans)
+      apply (rule less_imp_le)
+      apply (rule deltai_prop)
+      by auto
+    also have "... = (SUM i : S. F(r i) - F(l i)) + 
+        (epsilon / 4) * (SUM i : S. (1 / 2)^i)" (is "_ = ?t + _")
+      by (subst setsum_addf) (simp add: field_simps setsum_right_distrib)
+    also have "... \<le> ?t + (epsilon / 4) * (\<Sum> i < Suc n. (1 / 2)^i)"
+      apply (rule add_left_mono)
+      apply (rule mult_left_mono)
+      apply (rule setsum_mono2)
+      using egt0 apply auto 
+      by (frule Sbound, auto)
+    also have "... \<le> ?t + (epsilon / 2)"
+      apply (rule add_left_mono)
+      apply (subst geometric_sum)
+      apply auto
+      apply (rule mult_left_mono)
+      using egt0 apply auto
+      done
+    finally have aux2: "F b - F a' \<le> (\<Sum>i\<in>S. F (r i) - F (l i)) + epsilon / 2"
+      by simp
+
+    have "F b - F a = (F b - F a') + (F a' - F a)"
+      by auto
+    also have "... \<le> (F b - F a') + epsilon / 2"
+      using a_prop by (intro add_left_mono) simp
+    also have "... \<le> (\<Sum>i\<in>S. F (r i) - F (l i)) + epsilon / 2 + epsilon / 2"
+      apply (intro add_right_mono)
+      apply (rule aux2)
+      done
+    also have "... = (\<Sum>i\<in>S. F (r i) - F (l i)) + epsilon"
+      by auto
+    also have "... \<le> (\<Sum>i\<le>n. F (r i) - F (l i)) + epsilon"
+      using finS Sbound Sprop by (auto intro!: add_right_mono setsum_mono3)
+    finally have "ereal (F b - F a) \<le> (\<Sum>i\<le>n. ereal (F (r i) - F (l i))) + epsilon"
+      by simp
+    then have "ereal (F b - F a) \<le> (\<Sum>i. ereal (F (r i) - F (l i))) + (epsilon :: real)"
+      apply (rule_tac order_trans)
+      prefer 2
+      apply (rule add_mono[where c="ereal epsilon"])
+      apply (rule suminf_upper[of _ "Suc n"])
+      apply (auto simp add: lessThan_Suc_atMost)
+      done }
+  hence "ereal (F b - F a) \<le> (\<Sum>i. ereal (F (r i) - F (l i)))"
+    by (auto intro: ereal_le_epsilon2)
+  moreover
+  have "(\<Sum>i. ereal (F (r i) - F (l i))) \<le> ereal (F b - F a)"
+    by (auto simp add: claim1 intro!: suminf_bound)
+  ultimately show "(\<Sum>n. ereal (F (r n) - F (l n))) = ereal (F b - F a)"
+    by simp
+qed (auto simp: Ioc_inject diff_le_iff mono_F)
+
+lemma measure_interval_measure:
+  assumes "a \<le> b"
+  assumes mono_F: "\<And>x y. x \<le> y \<Longrightarrow> F x \<le> F y"
+  assumes right_cont_F : "\<And>a. continuous (at_right a) F" 
+  shows "measure (interval_measure F) {a <.. b} = F b - F a"
+  unfolding measure_def
+  apply (subst emeasure_interval_measure)
+  apply fact+
+  apply simp
+  done
+
+lemma Int_stable_Ioc: "Int_stable (range (\<lambda>(a, b). {a <.. b::real}))"
+  by (rule Int_stableI) force
+
+lemma borel_sigma_sets_Ioc: "borel = sigma UNIV (range (\<lambda>(a, b). {a <.. b::real}))"
+proof (rule borel_eq_sigmaI5[OF borel_eq_atMost])
+  fix i :: real
+  have "{..i} = (\<Union>j::nat. {-j <.. i})"
+    by (auto simp: minus_less_iff reals_Archimedean2)
+  also have "\<dots> \<in> sets (sigma UNIV (range (\<lambda>(i, j). {i<..j})))"
+    by (intro sets.countable_nat_UN) auto 
+  finally show "{..i} \<in> sets (sigma UNIV (range (\<lambda>(i, j). {i<..j})))" .
+qed simp
+
+lemma sets_interval_measure [simp]: "sets (interval_measure F) = sets borel"
+  apply (simp add: sets_extend_measure interval_measure_def borel_sigma_sets_Ioc)
+  apply (rule sigma_sets_eqI)
+  apply auto
+  apply (case_tac "a \<le> ba")
+  apply (auto intro: sigma_sets.Empty)
+  done
+
+lemma space_interval_measure [simp]: "space (interval_measure F) = UNIV"
+  by (simp add: interval_measure_def space_extend_measure)
 
 end

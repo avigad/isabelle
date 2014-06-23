@@ -693,7 +693,7 @@ proof -
   interpret real_distribution M by simp
   show ?thesis
    unfolding weak_conv_m_def weak_conv_def cdf_def2 apply auto
-   by (rule *, auto simp add: frontier_real_atMost isCont_cdf emeasure_eq_measure)
+   by (rule *, auto simp add: frontier_real_Iic isCont_cdf emeasure_eq_measure)
 qed
 
 definition

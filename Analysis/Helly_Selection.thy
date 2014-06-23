@@ -509,11 +509,11 @@ proof auto
       thus "\<exists>N. \<forall>n\<le>N. F n \<in> S" by auto
     qed
   qed
-  with F have "\<exists>M. real_distribution M \<and> cdf M = F" using cdf_to_real_distribution
-    unfolding rcont_inc_def mono_def by auto
-  then guess M .. note M = this
+  with F have M: "real_distribution (interval_measure F)" "cdf (interval_measure F) = F"
+    by (auto intro!: real_distribution_interval_measure cdf_interval_measure
+             simp: rcont_inc_def mono_def)
   with F have "weak_conv (f \<circ> r) F" unfolding weak_conv_def f_def using lim_subseq by auto
-  hence "weak_conv_m (\<mu> \<circ> s \<circ> r) M" using M unfolding weak_conv_m_def f_def o_def by auto
+  hence "weak_conv_m (\<mu> \<circ> s \<circ> r) (interval_measure F)" using M unfolding weak_conv_m_def f_def o_def by auto
   hence "\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M" using M by auto
   thus "\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" using F by auto
 qed
