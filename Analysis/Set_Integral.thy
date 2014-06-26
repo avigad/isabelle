@@ -545,7 +545,7 @@ lemma integral_FTC_atLeastAtMost:
 proof -
   let ?f = "\<lambda>x. indicator {a .. b} x *\<^sub>R f x"
   have "(?f has_integral (\<integral>x. ?f x \<partial>lborel)) UNIV"
-    using borel_integrable_atLeastAtMost'[OF f] by (rule has_integral_lebesgue_integral)
+    using borel_integrable_atLeastAtMost'[OF f] by (rule has_integral_integral_lborel)
   moreover
   have "(f has_integral F b - F a) {a .. b}"
     by (intro fundamental_theorem_of_calculus ballI assms) auto
@@ -564,7 +564,7 @@ lemma set_borel_integral_eq_integral:
 proof -
   let ?f = "\<lambda>x. indicator S x *\<^sub>R f x"
   have "(?f has_integral LINT x : S | lborel. f x) UNIV"
-    by (rule has_integral_lebesgue_integral) fact
+    by (rule has_integral_integral_lborel) fact
   hence 1: "(f has_integral (set_lebesgue_integral lborel S f)) S"
     apply (subst has_integral_restrict_univ [symmetric])
     apply (rule has_integral_eq)

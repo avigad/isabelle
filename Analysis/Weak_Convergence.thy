@@ -330,7 +330,7 @@ proof -
     by (subst emeasure_restrict_space, auto)
   def Y_seq \<equiv> "\<lambda>n \<omega>. Inf {x. \<omega> \<le> f n x}"
   def Y \<equiv> "\<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
-  have f_meas: "\<And>n. f n \<in> borel_measurable borel" using f_inc borel_measurable_mono_fnc by auto
+  have f_meas: "\<And>n. f n \<in> borel_measurable borel" using f_inc borel_measurable_mono by auto
   have Y_seq_le_iff: "\<And>n. \<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> f n x) = (Y_seq n \<omega> \<le> x)"
   proof -
     fix n :: nat
@@ -364,11 +364,11 @@ proof -
       prefer 2
       using Y_seq_le_iff apply auto [1]
       apply (subst measure_restrict_space, simp)
-      apply (auto simp del: measure_lborel)
+      apply (auto simp del: measure_lborel_Ioc)
       apply (subgoal_tac "Sigma_Algebra.measure (\<mu> n) {..x} =
          measure lborel {0..Sigma_Algebra.measure (\<mu> n) {..x}}")
       prefer 2
-      apply (subst lebesgue_measure_interval)
+      apply (subst measure_lborel_Icc)
       apply (rule measure_nonneg)
       apply simp
       apply (erule ssubst)
@@ -381,7 +381,8 @@ proof -
       apply auto []
       apply (subst order_less_le, simp)
       apply (erule order_trans, auto)
-      by (metis lmeasure_eq_0 negligible_insert negligible_sing)
+      apply (simp add: emeasure_insert_ne)
+      done
     qed
   hence Y_seq_distr: "\<And>n. distr \<Omega> borel (Y_seq n) = \<mu> n"
     apply (intro cdf_unique, auto simp add: assms)
@@ -389,7 +390,7 @@ proof -
     unfolding prob_space_def apply auto
     unfolding prob_space_axioms_def real_distribution_axioms_def apply auto
     by (rule finite_measureI, auto simp add: Y_seq_emeasure_distr_\<Omega>)
-  have F_meas: "F \<in> borel_measurable borel" using F_inc borel_measurable_mono_fnc by auto
+  have F_meas: "F \<in> borel_measurable borel" using F_inc borel_measurable_mono by auto
   have Y_le_iff: "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
     unfolding Y_def apply (rule bdd_rcont_inc_pseudoinverse[of 0 1 F])
     unfolding rcont_inc_def using F_inc F_right_cts F_at_top F_at_bot by auto
@@ -408,11 +409,11 @@ proof -
     also have "(Y -` {..x} \<inter> space \<Omega>) = ({.. F x} \<inter> {0 <..< 1})"
       using Y_le_iff by (auto simp: Ball_def \<Omega>_def space_restrict_space)
     also have "measure \<Omega> ({.. F x} \<inter> {0 <..< 1}) = measure lborel ({.. F x} \<inter> {0 <..< 1})"
-      by (simp add: \<Omega>_def measure_restrict_space del: measure_lborel)
+      by (simp add: \<Omega>_def measure_restrict_space)
     also have "\<dots> = measure lborel {0 .. F x}"
       unfolding measure_def using M.cdf_bounded_prob[of x]
       by (intro arg_cong[where f=real] emeasure_eq_AE)
-         (auto intro!: AE_I[where N="{0, 1}"] simp: emeasure_insert' less_le F_def)
+         (auto intro!: AE_I[where N="{0, 1}"] simp: emeasure_insert_ne less_le F_def)
     also have "\<dots> = cdf M x"
       using M.cdf_nonneg[of x] by (simp add: measure_def F_def)
     finally have "cdf (distr \<Omega> borel Y) x = cdf M x" . }

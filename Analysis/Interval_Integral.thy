@@ -38,6 +38,9 @@ lemma borel_einterval[measurable]: "einterval a b \<in> sets borel"
     Approximating a (possibly infinite) interval
 *)
 
+lemma filterlim_sup1: "(LIM x F. f x :> G1) \<Longrightarrow> (LIM x F. f x :> (sup G1 G2))"
+ unfolding filterlim_def by (auto intro: le_supI1)
+
 lemma ereal_incseq_approx:
   fixes a b :: ereal
   assumes "a < b"
@@ -618,6 +621,7 @@ proof -
     apply (subst FTCi)
     apply (intro tendsto_intros)
     using B approx unfolding tendsto_at_iff_sequentially comp_def
+    using tendsto_at_iff_sequentially[where 'a=real]
     apply (elim allE[of _ "\<lambda>i. ereal (u i)"], auto)
     using A approx unfolding tendsto_at_iff_sequentially comp_def
     by (elim allE[of _ "\<lambda>i. ereal (l i)"], auto)

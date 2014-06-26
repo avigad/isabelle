@@ -242,7 +242,7 @@ lemma cdf_unique:
   assumes "real_distribution M1" and "real_distribution M2"
   assumes "cdf M1 = cdf M2"
   shows "M1 = M2"
-proof (rule measure_eqI_generator_eq[OF Int_stable_Ioc, where \<Omega>=UNIV])
+proof (rule measure_eqI_generator_eq[where \<Omega>=UNIV])
   fix X assume "X \<in> range (\<lambda>(a, b). {a<..b::real})"
   then obtain a b where Xeq: "X = {a<..b}" by auto
   then show "emeasure M1 X = emeasure M2 X"
@@ -252,7 +252,8 @@ next
   show "(\<Union>i. {- real (i::nat)<..real i}) = UNIV"
     by (rule UN_Ioc_eq_UNIV)
 qed (auto simp: real_distribution.emeasure_Ioc[OF assms(1)]
-  assms(1,2)[THEN real_distribution.events_eq_borel] borel_sigma_sets_Ioc)
+  assms(1,2)[THEN real_distribution.events_eq_borel] borel_sigma_sets_Ioc
+  Int_stable_def)
 
 lemma real_distribution_interval_measure:
   fixes F :: "real \<Rightarrow> real"
@@ -272,7 +273,7 @@ proof -
          filterlim_uminus_at_top[THEN iffD1])
          (auto simp: incseq_def intro!: diff_mono nondecF)
     also have "\<dots> = (SUP i::nat. emeasure ?F {- real i<..real i})"
-      by (subst emeasure_interval_measure) (simp_all add: nondecF right_cont_F)
+      by (subst emeasure_interval_measure_Ioc) (simp_all add: nondecF right_cont_F)
     also have "\<dots> = emeasure ?F (\<Union>i::nat. {- real i<..real i})"
       by (rule SUP_emeasure_incseq) (auto simp: incseq_def)
     also have "(\<Union>i. {- real (i::nat)<..real i}) = space ?F"
@@ -304,7 +305,7 @@ proof (intro ext)
     then show "(\<lambda>i. measure (interval_measure F) {- real i<..x}) ----> F x - 0"
       apply (rule filterlim_cong[OF refl refl, THEN iffD1, rotated])
       apply (rule eventually_sequentiallyI[where c="natceiling (- x)"])
-      apply (simp add: measure_interval_measure right_cont_F nondecF  natceiling_le_eq)
+      apply (simp add: measure_interval_measure_Ioc right_cont_F nondecF  natceiling_le_eq)
       done
   qed (auto simp: incseq_def)
   also have "(\<Union>i::nat. {-real i <.. x}) = {..x}"

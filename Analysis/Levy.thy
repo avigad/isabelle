@@ -182,7 +182,7 @@ theorem Levy_Inversion:
         apply (rule integrableI_bounded_set [where A="{- T<..<T} \<times> space M" and B="b - a"])
         apply simp
         apply simp
-        apply (subst M.emeasure_pair_measure_Times, auto) []
+        apply (subst M.emeasure_pair_measure_Times, insert `0 \<le> T`, auto) []
         apply (rule AE_I [of _ _ "{0} \<times> UNIV"])
         apply auto
         apply (rule ccontr, erule notE)
@@ -440,6 +440,7 @@ proof -
       by (rule Mn.integrable_const_bound [where B = 1], auto)
     have Mn3: "set_integrable (M n \<Otimes>\<^sub>M lborel) (UNIV \<times> {- u..u}) (\<lambda>a. 1 - expi (\<i> * complex_of_real (snd a * fst a)))"
       apply (rule integrableI_bounded_set_indicator [where B="2"])
+      using `0 < u`
       apply (auto simp: lborel.emeasure_pair_measure_Times)
       apply (auto intro!: AE_I2 split: split_indicator)
       by (rule order_trans [OF norm_triangle_ineq4], auto)
@@ -504,7 +505,7 @@ proof -
     have 1: "\<And>x. cmod (1 - char M' x) \<le> 2"
       by (rule order_trans [OF norm_triangle_ineq4], auto simp add: M'.cmod_char_le_1)
     then have 2: "\<And>u v. complex_set_integrable lborel {u..v} (\<lambda>x. 1 - char M' x)"
-      by (intro integrableI_bounded_set_indicator[where B=2]) auto
+      by (intro integrableI_bounded_set_indicator[where B=2]) (auto simp: emeasure_lborel_Icc_eq)
     have 3: "\<And>u v. set_integrable lborel {u..v} (\<lambda>x. cmod (1 - char M' x))"
       by (intro borel_integrable_compact[OF compact_Icc] continuous_at_imp_continuous_on
                 continuous_intros ballI M'.isCont_char continuous_intros)
@@ -512,14 +513,14 @@ proof -
       using integral_norm_bound[OF 2] by simp
     also have "\<dots> \<le> LBINT t:{-d/2..d/2}. \<epsilon> / 4"
       apply (rule integral_mono [OF 3])
-      apply simp
+      apply (simp add: emeasure_lborel_Icc_eq)
       apply (case_tac "x \<in> {-d/2..d/2}", auto)
       apply (subst norm_minus_commute)
       apply (rule less_imp_le)
       apply (rule d1 [simplified])
       using d0 by auto
     also with d0 have "\<dots> = d * \<epsilon> / 4"
-      by (simp del: measure_lborel add: lebesgue_measure_interval)
+      by simp
     finally have bound: "cmod (CLBINT t:{-d/2..d/2}. 1 - char M' t) \<le> d * \<epsilon> / 4" .
     { fix n x
       have "cmod (1 - char (M n) x) \<le> 2"
@@ -528,7 +529,9 @@ proof -
     have "(\<lambda>n. CLBINT t:{-d/2..d/2}. 1 - char (M n) t) ----> (CLBINT t:{-d/2..d/2}. 1 - char M' t)"
       using bd1
       apply (intro integral_dominated_convergence[where w="\<lambda>x. indicator {-d/2..d/2} x *\<^sub>R 2"])
-      apply (auto intro!: AE_I2 char_conv tendsto_intros split: split_indicator)
+      apply (auto intro!: AE_I2 char_conv tendsto_intros 
+                  simp: emeasure_lborel_Icc_eq
+                  split: split_indicator)
       done
     hence "eventually (\<lambda>n. cmod ((CLBINT t:{-d/2..d/2}. 1 - char (M n) t) -
         (CLBINT t:{-d/2..d/2}. 1 - char M' t)) < d * \<epsilon> / 4) sequentially"

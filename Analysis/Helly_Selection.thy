@@ -92,7 +92,7 @@ proof -
     thus "{lim (\<lambda>k. f (d k) (r n)) |n. x < r n} \<noteq> {}" by auto
   qed
   { fix x :: real
-    from Rats_unbounded [of "x + 1"] guess q ..
+    from Rats_no_top_le [of "x + 1"] guess q ..
     with bij have "x < r (inv r q)"
       apply (subst f_inv_into_f[where f=r])
       apply (simp_all add: bij_betw_def)

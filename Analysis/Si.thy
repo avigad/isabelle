@@ -704,9 +704,8 @@ proof -
     by (simp add: indicator_times mult_ac abs_mult)
 
   { have *: "AE x in lborel. indicator {0<..<t} x *\<^sub>R (\<bar>sin x\<bar> / x) = indicator {0..t} x *\<^sub>R abs (sinc x)"
-      apply (rule AE_I [where N = "{0, t}"])
-      apply (auto split: split_indicator)
-      by (metis lmeasure_eq_0 negligible_insert negligible_sing)
+      by (rule AE_I [where N = "{0, t}"])
+         (auto split: split_indicator simp add: emeasure_lborel_countable)
     have "set_integrable lborel {0<..<t} (\<lambda>x. \<bar>sin x\<bar> / x)"
       by (subst integrable_cong_AE [OF _ _ *])
          (auto intro!: borel_integrable_compact continuous_intros simp del: real_scaleR_def)
