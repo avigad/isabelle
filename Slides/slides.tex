@@ -1,13 +1,49 @@
 \documentclass[usepdftitle=false]{beamer}
 
-\setbeamertemplate{navigation symbols}{}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{isabelle,isabellesym}
 
 \useoutertheme{infolines}
 \setbeamertemplate{headline}[default]
-\usepackage[utf8]{inputenc}
+\setbeamertemplate{navigation symbols}{}
 
-\title{A formally verified proof of the\\ Central Limit Theorem\\(preliminary report)}
+\newcommand{\Nat}{\mathbb{N}}
+\newcommand{\Real}{\mathbb{R}}
+
+\title[Central Limit Theorem]{A formally verified proof of the\\ Central Limit Theorem\\(preliminary report)}
 \author{Jeremy Avigad, Johannes H\"olzl, and Luke Serafin}
+
+\author[Avigad (CMU), H\"olzl (TUM), Serafin (CMU)]{%
+  \begin{tabular}[t]{@{}c@{}}
+    Jeremy Avigad
+    \\[2ex]
+    \usebeamerfont{institute}
+    Carnegie Mellon University
+  \end{tabular}
+  \quad
+  \and
+  \quad
+  \begin{tabular}[t]{@{}c@{}}
+    Johannes H\"olzl
+    \\[2ex]
+    \usebeamerfont{institute}
+    TU M\"unchen
+  \end{tabular}
+  \and
+  \quad
+  \begin{tabular}[t]{@{}c@{}}
+    Luke Serafin
+    \\[2ex]
+    \usebeamerfont{institute}
+    Carnegie Mellon University
+  \end{tabular}
+  \vspace{-3ex}
+}
+\date[Isabelle Workshop 2014]{\small Isabelle Workshop 2014}
+
+
 
 % PDF settings
 \hypersetup{%
@@ -18,8 +54,84 @@
 
 \begin{document}
 
+\begingroup
+\setbeamertemplate{footline}{} % supress info footline on title page
 \begin{frame}
   \maketitle
 \end{frame}
+\endgroup
+
+\begin{frame}{Central Limit Theorem}
+
+\begin{center}
+\begin{tikzpicture}
+  \begin{axis}[width=10cm,
+      xmin = -3,
+      xmax = 3,
+      ymin = 0,
+      ymax = 0.5,
+      ticks = none,
+      ybar, bar shift = {0cm},
+      bar width = 2pt]
+    
+    \only<5,6>{\addplot[fill=red!10] table {binomial-512.dat};}
+    \only<4>{\addplot[fill=red!30] table {binomial-128.dat};}
+    \only<3>{\addplot[fill=red!50] table {binomial-32.dat};}
+    \only<2>{\addplot[fill=red!70] table {binomial-8.dat};}
+    \only<1>{\addplot[fill=red!90] table {binomial-2.dat};}
+    
+    \only<6>{\addplot[color=blue, line width = 2pt, smooth] {1 / sqrt (2 * pi) * exp(-(x ^ 2) / 2)};}
+    
+  \end{axis}
+\end{tikzpicture}
+\end{center}
+
+\end{frame}
+
+\begin{frame}{Central Limit Theorem}
+
+\begin{itemize}
+
+\item Sequence of random variables: $X : \Nat \to \Omega \to \Real$
+
+\item They are i.i.d.\ (independent and identically distributed)
+
+\item Expectation: $\mathbb{E}[X_i] = 0$ and variance: $\mathbb{V}[X_i] = \sigma^2$ (for all $i$)
+
+\end{itemize}
+
+\[ \frac{1}{\sqrt{n \sigma^2}} \sum_{i < n} X_i \xrightarrow{\quad n \to \infty \quad} \mathcal{N}(0, 1) \]
+
+\end{frame}
+
+\begin{frame}{Central Limit Theorem in Isabelle/HOL}
+
+\begin{isabellebody}
+\isacommand{theorem}\isamarkupfalse%
+\ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ central{\isacharunderscore}limit{\isacharunderscore}theorem{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ \isanewline
+\ \ \ \ X\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ {\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ D\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ {\isasymsigma}\ {\isacharcolon}{\isacharcolon}\ real\isanewline
+\ \ \isakeyword{assumes}\isanewline
+\ \ \ \ X{\isacharunderscore}indep{\isacharcolon}\ {\isachardoublequoteopen}indep{\isacharunderscore}vars\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ borel{\isacharparenright}\ X\ UNIV{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}distrib{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ D{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}integrable{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}X\ n{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}mean{\isacharunderscore}{\isadigit{0}}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ expectation\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ {\isasymsigma}{\isacharunderscore}pos{\isacharcolon}\ {\isachardoublequoteopen}{\isasymsigma}\ {\isachargreater}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}square{\isacharunderscore}integrable{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isacharparenleft}X\ n\ x{\isacharparenright}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}variance{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ variance\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\isanewline
+\ \ \ \ {\isachardoublequoteopen}weak{\isacharunderscore}conv{\isacharunderscore}m\ \isanewline
+\ \ \ \ \ \ \ \ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isasymSum}i{\isacharless}n{\isachardot}\ X\ i\ x\ {\isacharslash}\ sqrt\ {\isacharparenleft}n\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ \ \ \ \ {\isacharparenleft}density\ lborel\ standard{\isacharunderscore}normal{\isacharunderscore}density{\isacharparenright}{\isachardoublequoteclose}
+\end{isabellebody}
+
+\end{frame}
+
+\begin{frame}
+
+\end{frame}
+
 
 \end{document}
