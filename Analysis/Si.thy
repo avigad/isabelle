@@ -33,14 +33,14 @@ proof (rule integrable_monotone_convergence)
       by (subst integral_diff[symmetric])
          (auto intro!: borel_integrable_atLeastAtMost integral_cong split: split_indicator)
     also have "\<dots> = (\<integral>x. indicator {0 .. b} x *\<^sub>R (exp (-x) - x * exp (-x)) \<partial>lborel)"
-      by (simp add: mult_ac)
+      by (simp add: ac_simps)
     also have "\<dots> = b * exp (-b) - 0 * exp (- 0)"
       by (rule integral_FTC_atLeastAtMost)
          (auto intro!: derivative_eq_intros continuous_intros
                simp: has_field_derivative_iff_has_vector_derivative[symmetric])
     also have "(\<integral>x. exp (-x) * indicator {0 .. b} x \<partial>lborel) =
       (\<integral>x. indicator {0 .. b} x *\<^sub>R (exp (-x)) \<partial>lborel)"
-      by (simp add: mult_ac)
+      by (simp add: ac_simps)
     also have "\<dots> = - exp (- b) - - exp (- 0)"
       apply (rule integral_FTC_atLeastAtMost)
       apply (auto intro!: derivative_eq_intros continuous_intros
@@ -186,7 +186,7 @@ proof -
     apply (rule filterlim_compose[of exp _ at_bot])
     apply (rule exp_at_bot)
     apply (subst filterlim_uminus_at_top [symmetric])
-    apply (subst mult_commute)
+    apply (subst mult.commute)
     apply (rule filterlim_tendsto_pos_mult_at_top [OF _ pos])
     apply auto
     by (rule filterlim_ident)
@@ -283,7 +283,7 @@ lemma ex_18_4_2_ubdd_integral:
   apply (rule filterlim_compose[OF exp_at_bot])
   unfolding filterlim_uminus_at_bot
   apply simp
-  apply (subst mult_commute)
+  apply (subst mult.commute)
   apply (rule filterlim_tendsto_pos_mult_at_top[OF tendsto_const pos filterlim_ident])
   apply simp
   done
@@ -568,7 +568,7 @@ proof -
       apply (auto simp add: ereal_tendsto_simps add_nonneg_eq_0_iff)
       apply (rule tendsto_mono [OF at_right_le_at])
       apply (auto intro!: tendsto_eq_intros) []
-      apply (subst field_divide_inverse, subst mult_commute)
+      apply (subst field_divide_inverse, subst mult.commute)
       apply (rule filterlim_tendsto_pos_mult_at_top)
       apply (rule tendsto_const, auto intro!: filterlim_ident)
       by (rule aux3, simp)
@@ -610,7 +610,7 @@ proof -
     have "AE x in lborel. norm (indicator {0<..} x *\<^sub>R (exp (- (x * t)) * (x * sin t + cos t) / (1 + x\<^sup>2)))
          \<le> indicator {0<..} x *\<^sub>R (exp (- x) * x + exp (- x))"
        unfolding real_norm_def real_scaleR_def
-       apply (subst (1 5) mult_commute)
+       apply (subst (1 5) mult.commute)
        apply (rule AE_I2)
        apply (case_tac "x > 0")
        apply (rule order_trans [OF aux6])
@@ -660,7 +660,7 @@ proof -
   } note aux8 = this
   have aux9: "set_integrable lborel {0<..} (\<lambda>x. exp (- x) * x + exp (- x) :: real)"
     apply (rule set_integral_add)
-    apply (subst mult_commute)
+    apply (subst mult.commute)
     apply (subst integrable_cong_AE)
     prefer 4 apply (rule borel_integrable_x_exp)
     apply auto [2]
@@ -695,13 +695,13 @@ proof -
     apply (rule ext)
     apply (case_tac "x > 0")
     apply (subst integral_expneg_alpha_atLeast0 (2) [symmetric])
-    apply (auto simp add: interval_lebesgue_integral_def zero_ereal_def mult_ac)
+    apply (auto simp add: interval_lebesgue_integral_def zero_ereal_def ac_simps)
     done
   also have "\<dots> = (\<lambda>x. \<bar>sin x\<bar> / x * indicator {0<..<t} x)" by (simp add: field_simps)
   finally have 
     2: "(\<lambda>x. LBINT y. \<bar>indicator ({0<..} \<times> {0<..<t}) (y, x) *\<^sub>R (sin x * exp (- (y * x)))\<bar>) =
         (\<lambda>x. indicator {0<..<t} x *\<^sub>R (\<bar>sin x\<bar> / x))" 
-    by (simp add: indicator_times mult_ac abs_mult)
+    by (simp add: indicator_times ac_simps abs_mult)
 
   { have *: "AE x in lborel. indicator {0<..<t} x *\<^sub>R (\<bar>sin x\<bar> / x) = indicator {0..t} x *\<^sub>R abs (sinc x)"
       by (rule AE_I [where N = "{0, t}"])
@@ -716,9 +716,9 @@ proof -
     by (intro interval_integral_discrete_difference[where X="{0}"])
        (auto simp: integral_expneg_alpha_atLeast0)
   also have "\<dots> = LBINT x. (LBINT u=0..\<infinity>. indicator {0 <..< t} x *\<^sub>R sin x * exp (-(u * x)))"
-    using `0 \<le> t` by (simp add: interval_integral_Ioo zero_ereal_def mult_ac)
+    using `0 \<le> t` by (simp add: interval_integral_Ioo zero_ereal_def ac_simps)
   also have "\<dots> = LBINT x. (LBINT u. indicator ({0<..} \<times> {0 <..< t}) (u, x) *\<^sub>R (sin x * exp (-(u * x))))"
-    by (subst interval_integral_Ioi) (simp_all add: indicator_times mult_ac)
+    by (subst interval_integral_Ioi) (simp_all add: indicator_times ac_simps)
   also have "\<dots> = LBINT u. (LBINT x. indicator ({0<..} \<times> {0 <..< t}) (u, x) *\<^sub>R (sin x * exp (-(u * x))))"
   proof (intro lborel_pair.Fubini_integral[symmetric] lborel_pair.Fubini_integrable)
     show "(\<lambda>(x, y). indicator ({0<..} \<times> {0<..<t}) (y, x) *\<^sub>R (sin x * exp (- (y * x))))
@@ -734,12 +734,12 @@ proof -
       by (intro AE_I2) (auto simp: indicator_times split: split_indicator)
   qed
   also have "\<dots> = (LBINT u. (LBINT x. sin x * exp (-u * x) * 
-      indicator {0<..} u * indicator {0<..<t} x))" by (simp add: indicator_times mult_ac)
+      indicator {0<..} u * indicator {0<..<t} x))" by (simp add: indicator_times ac_simps)
   also have "... = LBINT u=0..\<infinity>. (LBINT x=0..t. sin x * exp (-(u * x)))"
     using `t >= 0` apply (auto simp add: interval_lebesgue_integral_def zero_ereal_def)
-    by (rule integral_cong, auto simp: mult_ac split: split_indicator)
+    by (rule integral_cong, auto simp: ac_simps split: split_indicator)
   also have "\<dots> = LBINT u=0..\<infinity>. 1 / (1 + u\<^sup>2) - 1 / (1 + u\<^sup>2) * (exp (- (u * t)) * (u * sin t + cos t))"
-    apply (subst mult_commute)
+    apply (subst mult.commute)
     apply (subst ex_18_4_1 [OF `t >= 0`])
     apply (rule interval_integral_cong)
     by (subst right_diff_distrib, simp)
@@ -790,7 +790,7 @@ proof -
       by (rule interval_integral_discrete_difference[of "{0}"]) auto
     also have "\<dots> = (LBINT t=ereal (0 * \<theta>)..T * \<theta>. sinc t)"
       apply (rule interval_integral_substitution_finite [OF assms])
-      apply (subst mult_commute, rule DERIV_subset)
+      apply (subst mult.commute, rule DERIV_subset)
       by (auto intro!: derivative_intros continuous_at_imp_continuous_on isCont_sinc)
     also have "\<dots> = (LBINT t=ereal (0 * \<theta>)..T * \<theta>. sin t / t)"
       by (rule interval_integral_discrete_difference[of "{0}"]) auto
@@ -799,17 +799,17 @@ proof -
     hence "LBINT x. indicator {0<..<T} x * sin (x * \<theta>) / x =
         LBINT x. indicator {0<..<T * \<theta>} x * sin x / x"
       using assms `0 < \<theta>` unfolding interval_lebesgue_integral_def einterval_eq zero_ereal_def 
-        by (auto simp: mult_ac)
+        by (auto simp: ac_simps)
   } note aux1 = this
   { assume "0 > \<theta>"
     have [simp]: "integrable lborel (\<lambda>x. sin (x * \<theta>) * indicator {0<..<T} x / x)"
       using iSi_integrable [of T \<theta>] assms 
-      by (simp add: interval_lebesgue_integrable_def mult_ac)
+      by (simp add: interval_lebesgue_integrable_def ac_simps)
     have "(LBINT t=ereal 0..T. sin (t * -\<theta>) / t) = (LBINT t=ereal 0..T. -\<theta> *\<^sub>R sinc (t * -\<theta>))"
       by (rule interval_integral_discrete_difference[of "{0}"]) auto
     also have "\<dots> = (LBINT t=ereal (0 * -\<theta>)..T * -\<theta>. sinc t)"
       apply (rule interval_integral_substitution_finite [OF assms])
-      apply (subst mult_commute, rule DERIV_subset)
+      apply (subst mult.commute, rule DERIV_subset)
       by (auto intro!: derivative_intros continuous_at_imp_continuous_on isCont_sinc)
     also have "\<dots> = (LBINT t=ereal (0 * -\<theta>)..T * -\<theta>. sin t / t)"
       by (rule interval_integral_discrete_difference[of "{0}"]) auto

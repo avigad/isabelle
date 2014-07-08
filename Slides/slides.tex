@@ -1,5 +1,5 @@
 \documentclass[usepdftitle=false]{beamer}
-
+% {{{ setup
 \usepackage[utf8]{inputenc}
 \usepackage{tikz}
 \usepackage{pgfplots}
@@ -12,10 +12,11 @@
 \newcommand{\Nat}{\mathbb{N}}
 \newcommand{\Real}{\mathbb{R}}
 
-\title[Central Limit Theorem]{A formally verified proof of the\\ Central Limit Theorem\\(preliminary report)}
-\author{Jeremy Avigad, Johannes H\"olzl, and Luke Serafin}
+% }}}
 
-\author[Avigad (CMU), H\"olzl (TUM), Serafin (CMU)]{%
+% {{{ metadata
+\title[Central Limit Theorem]{A formally verified proof of the\\ Central Limit Theorem\\(preliminary report)}
+\author[Avigad (CMU), \underline{H\"olzl (TUM)}, Serafin (CMU)]{%
   \begin{tabular}[t]{@{}c@{}}
     Jeremy Avigad
     \\[2ex]
@@ -26,7 +27,7 @@
   \and
   \quad
   \begin{tabular}[t]{@{}c@{}}
-    Johannes H\"olzl
+    \underline{Johannes H\"olzl}
     \\[2ex]
     \usebeamerfont{institute}
     TU M\"unchen
@@ -43,26 +44,23 @@
 }
 \date[Isabelle Workshop 2014]{\small Isabelle Workshop 2014}
 
-
-
 % PDF settings
 \hypersetup{%
   pdftitle={A formally verified proof of the\\ Central Limit Theorem\\(preliminary report)},
   pdfauthor={Jeremy Avigad, Johannes H\"olzl, and Luke Serafin}%
 }
-
+% }}}
 
 \begin{document}
 
-\begingroup
+\begingroup % {{{ titlepage
 \setbeamertemplate{footline}{} % supress info footline on title page
 \begin{frame}
   \maketitle
 \end{frame}
-\endgroup
+\endgroup % }}}
 
-\begin{frame}{Central Limit Theorem}
-
+\begin{frame}{Central Limit Theorem -- informal} % {{{
 \begin{center}
 \begin{tikzpicture}
   \begin{axis}[width=10cm,
@@ -85,10 +83,9 @@
   \end{axis}
 \end{tikzpicture}
 \end{center}
+\end{frame} % }}}
 
-\end{frame}
-
-\begin{frame}{Central Limit Theorem}
+\begin{frame}{Central Limit Theorem -- formal} % {{{
 
 \begin{itemize}
 
@@ -102,13 +99,13 @@
 
 \[ \frac{1}{\sqrt{n \sigma^2}} \sum_{i < n} X_i \xrightarrow{\quad n \to \infty \quad} \mathcal{N}(0, 1) \]
 
-\end{frame}
+\end{frame} % }}}
 
-\begin{frame}{Central Limit Theorem in Isabelle/HOL}
+\begin{frame}{Central Limit Theorem -- in Isabelle/HOL} % {{{
 
 \begin{isabellebody}
 \isacommand{theorem}\isamarkupfalse%
-\ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ central{\isacharunderscore}limit{\isacharunderscore}theorem{\isacharcolon}\isanewline
+\ {\isacharparenleft}\,\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ central{\isacharunderscore}limit{\isacharunderscore}theorem{\isacharcolon}\isanewline
 \ \ \isakeyword{fixes}\ \isanewline
 \ \ \ \ X\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ {\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
 \ \ \ \ D\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
@@ -127,11 +124,48 @@
 \ \ \ \ \ \ \ \ {\isacharparenleft}density\ lborel\ standard{\isacharunderscore}normal{\isacharunderscore}density{\isacharparenright}{\isachardoublequoteclose}
 \end{isabellebody}
 
+\end{frame} % }}}
+
+\begin{frame}{Required concepts}
+
+\begin{itemize}
+
+\item Independence, integrals, density, and distributions are already formalized
+
+\item Central limit theorem proof requires:
+\end{itemize}
+%
+\begin{definition}[Weak convergence]%
+\vspace{-1em}
+\[ \begin{array}{l}
+  F_\mu~x := \mu~(-\infty, x]\\
+  \text{weak{\_}conv{\_}m}~\nu~\mu :\Leftrightarrow \\
+  \qquad     (\forall t.~ F_\mu~\text{continuous at}~ t \implies
+         (F_{\nu\,n}~t) \xrightarrow{n \to \infty} F_\mu~t)
+\end{array} \]
+\end{definition}
+
+\begin{definition}[Characteristic functions]%
+\vspace{-1em}
+\[ \phi_\mu~t = \int_{-\infty}^{\infty} e^{itx} \mu(dx). \]
+\end{definition}
+
+\begin{itemize}
+  \item \emph{Portmanteau Theorem}: Equal characterizations of weak convergence
+  \item \emph{Levy Uniqueness Theorem}: $\phi_{\mu_1} = \phi_{\mu_2} \implies \mu_1 = \mu_2$
+  \item \emph{Levy Continuity Theorem}: $\text{weak{\_}conv{\_}m}~\nu~\mu \longleftrightarrow
+     (\forall t.\ \phi_{\nu_n}~t \xrightarrow{n \to \infty} \phi_\mu~t)$
+  \item the characteristic function of the std. normal distribution $\mathcal{N}(0, 1)$
+\end{itemize}
+
 \end{frame}
 
 \begin{frame}
 
-\end{frame}
+\begin{itemize}{Going through the proof} 
+  \item 
+\end{itemize}
 
+\end{frame}
 
 \end{document}

@@ -55,7 +55,7 @@ proof (cases b)
   moreover have "\<And>r. (\<lambda>x. ereal (r + real (Suc x))) ----> \<infinity>"
     apply (subst LIMSEQ_Suc_iff)
     apply (subst Lim_PInfty)
-    apply (metis add_commute diff_le_eq natceiling_le_eq ereal_less_eq(3))
+    apply (metis add.commute diff_le_eq natceiling_le_eq ereal_less_eq(3))
     done
   ultimately show thesis
     by (intro that[of "\<lambda>i. real a + Suc i"])
@@ -414,7 +414,7 @@ proof -
   } note 1 = this
   { fix a b c :: ereal assume "interval_lebesgue_integrable lborel a c f" "a \<le> b" "b \<le> c"
     from 1[OF this] have "?I b c + ?I a b = ?I a c"
-      by (metis add_commute)
+      by (metis add.commute)
   } note 2 = this
   have 3: "\<And>a b. b \<le> a \<Longrightarrow> (LBINT x=a..b. f x) = - (LBINT x=b..a. f x)"
     by (rule interval_integral_endpoints_reverse)
@@ -971,7 +971,7 @@ proof -
         apply (rule continuous_at_imp_continuous_on, auto, rule contf, auto)
         by (rule continuous_at_imp_continuous_on, auto, rule contg', auto)
      then have "(LBINT x=l i.. u i. (f (g x) * g' x)) = (LBINT y=g (l i)..g (u i). f y)"
-       by (simp add: mult_ac)
+       by (simp add: ac_simps)
   } note eq1 = this
   have "(\<lambda>i. LBINT x=l i..u i. f (g x) * g' x)
       ----> (LBINT x=a..b. f (g x) * g' x)"
@@ -1010,10 +1010,10 @@ proof -
   have "(LBINT x=A..B. f x) = (LBINT x=a..b. g' x *\<^sub>R f (g x))"
   proof (rule interval_integral_substitution_integrable)
     show "set_integrable lborel (einterval a b) (\<lambda>x. g' x *\<^sub>R f (g x))"
-      using integrable_fg by (simp add: mult_ac)
+      using integrable_fg by (simp add: ac_simps)
   qed fact+
   then show "(LBINT x=A..B. f x) = (LBINT x=a..b. (f (g x) * g' x))"
-    by (simp add: mult_ac)
+    by (simp add: ac_simps)
 qed
 
 

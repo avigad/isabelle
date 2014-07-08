@@ -229,7 +229,7 @@ theorem Levy_Inversion:
               filterlim_tendsto_pos_mult_at_top[OF tendsto_const] filterlim_real_sequentially)
              auto
         also have "(\<lambda>n. 2 * (sgn (x - a) * Si (\<bar>x - a\<bar> * n) - sgn (x - b) * Si (\<bar>x - b\<bar> * n))) = (\<lambda>n. 2 * ?S n x)"
-          by (auto simp: mult_ac)
+          by (auto simp: ac_simps)
         also have "2 * (sgn (x - a) * (pi / 2) - sgn (x - b) * (pi / 2)) = 2 * pi * indicator {a<..b} x"
           using x `a \<le> b` by (auto split: split_indicator)
         finally show "(\<lambda>n. 2 * ?S n x) ----> 2 * pi * indicator {a<..b} x" .
@@ -302,16 +302,16 @@ proof -
       from `\<epsilon> > 0` `(cdf M1 ---> cdf M1 x) (at_right x)` 
       have "eventually (\<lambda>y. abs (cdf M1 y - cdf M1 x) < \<epsilon> / 4) (at_right x)"
         by (simp only: tendsto_iff dist_real_def)
-      hence "\<exists>b. b > x \<and> (\<forall>z. x < z \<and> z < b \<longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4)"
+      hence "\<exists>b. b > x \<and> (\<forall>z>x. z < b \<longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4)"
         by (simp add: eventually_at_right[OF less_add_one])
-      then obtain b1 where "b1 > x \<and> (\<forall>z. x < z \<and> z < b1 \<longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4)" ..
+      then obtain b1 where "b1 > x \<and> (\<forall>z>x. z < b1 \<longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4)" ..
       hence "b1 > x" and b1: "\<And>z. x < z \<Longrightarrow> z < b1 \<Longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4" by auto
       from `\<epsilon> > 0` `(cdf M2 ---> cdf M2 x) (at_right x)` 
           have "eventually (\<lambda>y. abs (cdf M2 y - cdf M2 x) < \<epsilon> / 4) (at_right x)"
         by (simp only: tendsto_iff dist_real_def)
-      hence "\<exists>b. b > x \<and> (\<forall>z. x < z \<and> z < b \<longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4)"
+      hence "\<exists>b. b > x \<and> (\<forall>z>x. z < b \<longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4)"
         by (simp add: eventually_at_right[OF less_add_one])
-      then obtain b2 where "b2 > x \<and> (\<forall>z. x < z \<and> z < b2 \<longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4)" ..
+      then obtain b2 where "b2 > x \<and> (\<forall>z>x. z < b2 \<longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4)" ..
       hence "b2 > x" and b2: "\<And>z. x < z \<Longrightarrow> z < b2 \<Longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4" by auto
       with `x < b1` `x < b2` have "\<exists>b. b \<in> {x<..<min b1 b2} \<and> 
           b \<notin> {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}"
@@ -421,8 +421,8 @@ proof -
       apply simp
       apply (subst interval_lebesgue_integral_diff)
       apply (auto intro!: interval_integrable_isCont simp: interval_lebesgue_integral_of_real)
-      apply (subst (2) mult_commute)
-      by (subst integral_cos [OF `x \<noteq> 0`], simp add: mult_commute)
+      apply (subst (2) mult.commute)
+      by (subst integral_cos [OF `x \<noteq> 0`], simp add: mult.commute)
     finally show "(CLBINT t:{-u..u}. 1 - iexp (t * x)) = 2 * (u  - sin (u * x) / x)"
       by (simp add: field_simps)
   qed

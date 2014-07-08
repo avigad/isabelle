@@ -119,7 +119,7 @@ lemma (in prob_space) char_distr_setsum:
     char (distr M borel (\<lambda>\<omega>. \<Sum>i\<in>A. X i \<omega>)) t = (\<Prod>i\<in>A. char (distr M borel (X i)) t)"
 proof (induct A rule: infinite_finite_induct)
   case (insert x F) with indep_vars_subset[of "\<lambda>_. borel" X "insert x F" F] show ?case
-    by (auto simp add: setsum_insert setprod_insert char_distr_sum indep_vars_setsum)
+    by (auto simp add: char_distr_sum indep_vars_setsum)
 qed (simp_all add: char_def integral_distr prob_space)
 
 (*
@@ -244,7 +244,7 @@ proof -
     prefer 2
     apply (simp add: field_simps of_nat_mult)
     apply (erule ssubst)
-    apply (subst mult_assoc)+
+    apply (subst mult.assoc)+
     apply (rule arg_cong)
     apply (unfold f_def)
     apply (subst equation_26p1 [where n = n])
@@ -373,7 +373,7 @@ proof -
     apply simp
     apply (rule mult_left_mono, auto)
     apply (rule order_trans [OF norm_triangle_ineq4], simp)
-    apply (subst mult_commute)
+    apply (subst mult.commute)
     apply (subst zero_ereal_def)
     apply (rule interval_integrable_isCont, auto)
     apply (subst zero_ereal_def)
@@ -458,7 +458,7 @@ proof -
     by (rule integrable_diff [OF _ 2], auto)
   have "?t1 = (CLINT x | M. (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
     apply (subst integral_setsum [OF 1], simp)
-    apply (rule setsum_cong, force)
+    apply (rule setsum.cong, force)
     apply (subst *, subst of_real_power [symmetric], subst integral_mult_right, rule **, simp)
     by (simp add: field_simps del: of_real_power)
   hence "char M t - ?t1 = (CLINT x | M. iexp (t * x) - (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
@@ -475,7 +475,7 @@ proof -
     apply (rule integrable_mult_right, subst power_abs [symmetric])
     apply (rule integrable_abs, rule integrable_moments, simp)
     apply (rule order_trans)
-    apply (subst mult_assoc, subst of_real_mult [symmetric])
+    apply (subst mult.assoc, subst of_real_mult [symmetric])
     by (rule equation_26p4b, auto simp add: abs_mult power_mult_distrib field_simps)
   also have "\<dots> = (2 * (abs t)^n / fact n) * expectation (\<lambda>x. (abs x)^n)"
     apply (rule integral_mult_right, subst power_abs [symmetric])
@@ -532,7 +532,7 @@ proof -
     by (simp add: field_simps abs_mult del: fact_Suc)
   have "?t1 = (CLINT x | M. (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
     apply (subst integral_setsum [OF 1], simp)
-    apply (rule setsum_cong, force)
+    apply (rule setsum.cong, force)
     apply (subst *, subst of_real_power [symmetric], subst integral_mult_right, rule **, simp)
     by (simp add: field_simps integral_of_real real_of_nat_def del: of_real_power)
   hence "char M t - ?t1 = (CLINT x | M. iexp (t * x) - (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
@@ -549,8 +549,8 @@ proof -
     apply (rule integrable_norm [OF 3])
     apply (rule 4)
     apply (rule min.boundedI)
-    apply (rule order_trans [OF _ equation_26p4b], simp add: mult_assoc)
-    by (rule order_trans [OF _ equation_26p4a], simp add: mult_assoc)
+    apply (rule order_trans [OF _ equation_26p4b], simp add: mult.assoc)
+    by (rule order_trans [OF _ equation_26p4a], simp add: mult.assoc)
   also have "\<dots> = ((abs t)^n / fact (Suc n)) * 
             expectation (\<lambda>x. min (2 * (abs x)^n * (Suc n)) (abs t * (abs x)^(Suc n)))"
     apply (subst 6)
@@ -592,7 +592,7 @@ proof -
     by (rule integrable_diff [OF _ 2], auto)
   have "?t1 = (CLINT x | M. (\<Sum>k \<le> n. (ii * t * X x)^k / fact k))"
     apply (subst integral_setsum [OF 1], simp)
-    apply (rule setsum_cong, force)
+    apply (rule setsum.cong, force)
     apply (subst *, subst integral_mult_right, rule **, simp)
     by (simp add: field_simps integral_of_real del: of_real_power)
   hence "char \<mu> t - ?t1 = (CLINT x | M. iexp (t * X x) - (\<Sum>k \<le> n. (ii * t * X x)^k / fact k))"
@@ -611,7 +611,7 @@ proof -
     apply (rule integrable_mult_right, subst power_abs [symmetric])
     apply (rule integrable_abs, rule integrable_moments, simp)
     apply (rule order_trans)
-    apply (subst mult_assoc, subst of_real_mult [symmetric])
+    apply (subst mult.assoc, subst of_real_mult [symmetric])
     by (rule equation_26p4b, auto simp add: abs_mult power_mult_distrib field_simps)
   also have "\<dots> = (2 * (abs t)^n / fact n) * expectation (\<lambda>x. abs (X x)^n)"
     apply (rule integral_mult_right, subst power_abs [symmetric])
@@ -790,7 +790,7 @@ proof
     apply (subst times_divide_eq_left)
     apply (rule mult_imp_le_div_pos)
     apply (simp del: One_nat_def)
-    apply (subst mult_assoc)
+    apply (subst mult.assoc)
     apply (rule mult_left_mono)
     apply (subst real_of_nat_mult [symmetric])
     apply (subst real_of_nat_le_iff)

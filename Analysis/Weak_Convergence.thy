@@ -33,6 +33,10 @@ abbreviation (in prob_space)
   general stuff - move elsewhere 
 *)
 
+lemma restrict_space_sets_cong:
+  "A = B \<Longrightarrow> sets M = sets N \<Longrightarrow> sets (restrict_space M A) = sets (restrict_space N B)"
+  by (auto simp: sets_restrict_space)
+
 definition mono_on :: "('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a set \<Rightarrow> bool" where
   "mono_on f A = (\<forall>x\<in>A. \<forall>y\<in>A. x \<le> y \<longrightarrow> f x \<le> f y)"
 
@@ -40,12 +44,12 @@ lemma mono_onD: "mono_on f A \<Longrightarrow> x \<in> A \<Longrightarrow> y \<i
   unfolding mono_on_def by auto
 
 lemma borel_measurable_mono_on_fnc:
-  fixes f :: "real \<Rightarrow> real" and  A :: "real set"
-  assumes "mono_on f A" and [measurable]: "A \<in> sets borel"
-  shows "f \<in> borel_measurable (restrict_space lborel A)"
+  fixes f :: "real \<Rightarrow> real" and A :: "real set"
+  assumes "mono_on f A"
+  shows "f \<in> borel_measurable (restrict_space borel A)"
 proof -
   { fix x def X \<equiv> "{a \<in> A. x \<le> f a}" def I \<equiv> "Inf X"
-    have "X \<in> sets borel"
+    have "X \<in> sets (restrict_space borel A)"
     proof cases
       assume X: "bdd_below X \<and> X \<noteq> {}"
       then have X_le: "X \<subseteq> {I ..} \<inter> A"
@@ -58,10 +62,10 @@ proof -
         with mono_onD[OF `mono_on f A`, of b a] `a\<in>A` show "a \<in> X"
           by (auto simp: X_def)
       qed
-      ultimately have "X = {I ..} \<inter> A \<or> X = {I <..} \<inter> A"
+      ultimately have "X = A \<inter> {I ..} \<or> X = A \<inter> {I <..}"
         by (cases "I \<in> X") (auto simp add: ivl_disj_un(1)[symmetric])
       then show ?thesis
-        by auto
+        by (subst sets_restrict_space) (blast intro: atLeast_borel greaterThan_borel)
     next
       assume "\<not> (bdd_below X \<and> X \<noteq> {})"
       moreover
@@ -74,10 +78,10 @@ proof -
         then have "X = A"
           by (auto simp: X_def) }
       ultimately show ?thesis
-        by auto
+        by (auto simp: sets_restrict_space)
     qed }
   then show ?thesis
-    by (simp add: sets_restrict_space_iff space_restrict_space borel_measurable_iff_ge)
+    by (auto simp add: space_restrict_space borel_measurable_iff_ge)
 qed
 
 (* TODO: turn this into an iff by weakening the hypothesis *)
@@ -342,7 +346,7 @@ proof -
     using Y_seq_le_iff by (metis order.trans order_refl)
   hence Y_seq_meas [measurable]: "\<And>n. (Y_seq n) \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc 
       unfolding \<Omega>_def
-    by simp
+    by (simp cong: measurable_cong_sets restrict_space_sets_cong)
   have Y_seq_emeasure_distr_\<Omega>: "\<And>n. emeasure (distr \<Omega> borel (Y_seq n)) UNIV = 1"
      apply (subst emeasure_distr)
      using Y_seq_meas unfolding \<Omega>_def 
@@ -397,7 +401,7 @@ proof -
   have Y_mono_on: "mono_on Y {0<..<1}" unfolding mono_on_def
     using Y_le_iff by (metis order.trans order_refl)
   hence Y_meas[measurable]: "Y \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc unfolding \<Omega>_def
-    by simp
+    by (simp cong: measurable_cong_sets restrict_space_sets_cong)
   have Y_emeasure_distr_\<Omega>: "emeasure (distr \<Omega> borel Y) UNIV = 1"
      apply (subst emeasure_distr)
      using Y_meas unfolding \<Omega>_def 

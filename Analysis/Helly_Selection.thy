@@ -53,7 +53,7 @@ proof -
         using convergentD by auto
       have 4: "(\<lambda>k. f (d (k + (Suc n))) (r n)) =
       (\<lambda>k. f ((d \<circ> (op + (Suc n))) k) (r n))"
-        by (auto simp: add_commute)
+        by (auto simp: add.commute)
       have "(\<lambda>k. f (d k) (r n)) ----> L" 
         apply (rule LIMSEQ_offset[of _ "Suc n"])
         by (subst 4) (rule 3)
@@ -150,7 +150,7 @@ proof -
         hence "F z \<in> ball (F x) e" unfolding ball_def dist_real_def using 1 by auto
         thus "F z \<in> S" using e by auto
       qed
-      thus "\<exists>b>x. \<forall>z. x < z \<and> z < b \<longrightarrow> F z \<in> S" using n by auto
+      thus "\<exists>b>x. \<forall>z>x. z < b \<longrightarrow> F z \<in> S" using n by auto
     qed
   ultimately have rcont_inc_lim: "rcont_inc F" unfolding rcont_inc_def by auto
   moreover have bdd: "\<forall>x. \<bar>F x\<bar> \<le> M"
@@ -257,7 +257,7 @@ proof -
         hence "\<bar>limsup (\<lambda>k. f (d k) x)\<bar> \<noteq> \<infinity>" by auto
         then obtain lsup where lsup: "limsup (\<lambda>n. f (d n) x) = ereal lsup" by auto
         have lsup_e: "lsup - F x < e" using 7
-          by (smt lsup add_commute diff_less_eq less_ereal.simps(1))
+          by (smt lsup add.commute diff_less_eq less_ereal.simps(1))
         have 8: "F x - e < liminf (\<lambda>k. f (d k) x)"
         proof -
           from 5 have ineq: "liminf (\<lambda>k. f (d k) (r n)) \<le> liminf (\<lambda>k. f (d k) x)" using Liminf_mono
@@ -288,7 +288,7 @@ proof -
         hence "\<bar>liminf (\<lambda>k. f (d k) x)\<bar> \<noteq> \<infinity>" by auto
         then obtain linf where linf: "liminf (\<lambda>k. f (d k) x) = ereal linf" by auto
         have linf_e: "F x - linf < e" using 8
-          by (smt linf add_commute diff_less_eq less_ereal.simps(1))
+          by (smt linf add.commute diff_less_eq less_ereal.simps(1))
         have "ereal linf \<le> ereal lsup"
           apply (subst linf [symmetric], subst lsup [symmetric])
           by (auto intro: Liminf_le_Limsup)
