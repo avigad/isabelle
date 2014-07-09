@@ -126,7 +126,7 @@
 
 \end{frame} % }}}
 
-\begin{frame}{Required concepts}
+\begin{frame}{Required concepts} % {{{
 
 \begin{itemize}
 
@@ -151,21 +151,42 @@
 \end{definition}
 
 \begin{itemize}
-  \item \emph{Portmanteau Theorem}: Equal characterizations of weak convergence
+  \item \emph{Portmanteau Theorem}: Equivalent characterizations of weak convergence
   \item \emph{Levy Uniqueness Theorem}: $\phi_{\mu_1} = \phi_{\mu_2} \implies \mu_1 = \mu_2$
   \item \emph{Levy Continuity Theorem}: $\text{weak{\_}conv{\_}m}~\nu~\mu \longleftrightarrow
      (\forall t.\ \phi_{\nu_n}~t \xrightarrow{n \to \infty} \phi_\mu~t)$
   \item the characteristic function of the std. normal distribution $\mathcal{N}(0, 1)$
 \end{itemize}
 
-\end{frame}
+\end{frame} % }}}
 
-\begin{frame}
-
-\begin{itemize}{Going through the proof} 
-  \item 
+\begin{frame}{Going through the proof} % {{{
+\begin{itemize}
+  \item We show that: $\phi_{\mathcal{D}(S n)}$ approaches $\phi_{\mathcal{N}(0, \sigma)}$,
+    (\emph{Levy Continuity Theorem}) \\
+    where $S\ n := \frac{1}{\sqrt{n \sigma^2}} \sum_{i < n} X_i$
+    
+  \item We show $\phi_{\mathcal{N}(0, \sigma)}~t = e^{-t^2\sigma^2/2}$
+  
+  \item $\phi_{S\ n}~t = (\phi_D~t)^n$ 
+  
+  \item Finishing the proof uses a power series approximation of the exponential function
+  
+  \item Size of the final CLT proof: 120 lines of theory
 \end{itemize}
+\end{frame} % }}}
 
-\end{frame}
+\begin{frame}{Statistics} % {{{
+\begin{itemize}
+\item set and interval integral: ~ 1670
+\item cumulative distribution function: ~ 320
+\item weak convergence: ~ 900
+\item characteristic functions:  ~ 1700
+\item Levy (uniqueness + continuity): ~ 1240
+\item A lot of stuff already generalized and moved to the Isabelle repository \\
+  (the paper mentions 13,000 lines)
+\end{itemize}
+\end{frame} % }}}
+
 
 \end{document}
