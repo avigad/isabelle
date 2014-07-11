@@ -74,12 +74,12 @@
 \end{center}
 \begin{center} Why is the normal distribution interesting? \end{center}
 
+\pause
+
 \begin{center}
 \Large
-  The \emph{Central Limit Theorem} tells us: \\
-  it is the average of infinitely many errors.
+  The \emph{Central Limit Theorem} says, in a sense, that the behavior of random or chaotic events becomes highly predictable when averaged over the long term.
 \end{center}
-
 
 \end{frame} % }}}
 
@@ -120,7 +120,7 @@
 
 \end{itemize}
 
-\[ \frac{1}{\sqrt{n \sigma^2}} \sum_{i < n} X_i \xrightarrow{\quad n \to \infty \quad} \mathcal{N}(0, 1) \]
+\[ \frac{1}{\sqrt{n \sigma^2}} \sum_{i < n} X_i ~~{\longrightarrow}_w~~ \mathcal{N}(0, 1) \]
 
 \end{frame} % }}}
 
@@ -136,7 +136,7 @@
 \pause
 \ \ \isakeyword{assumes}\isanewline
 \ \ \ \ {\isachardoublequoteopen}indep{\isacharunderscore}vars\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ borel{\isacharparenright}\ X\ UNIV{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
-\ \ \ \ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ D{\isachardoublequoteclose}
+\ \ \ \ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ \alert<6>{distr}\ M\ borel\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ D{\isachardoublequoteclose}
 \pause\ \isakeyword{and}\isanewline
 \ \ \ \ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}X\ n{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
 \ \ \ \ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ expectation\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isadigit{0}}{\isachardoublequoteclose}
@@ -144,11 +144,33 @@
 \ \ \ \ {\isachardoublequoteopen}{\isasymsigma}\ {\isachargreater}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
 \ \ \ \ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isacharparenleft}X\ n\ x{\isacharparenright}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
 \ \ \ \ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ variance\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\pause
 \ \ \isakeyword{shows}\isanewline
 \ \ \ \ {\isachardoublequoteopen}weak{\isacharunderscore}conv{\isacharunderscore}m\ \isanewline
-\ \ \ \ \ \ \ \ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isasymSum}i{\isacharless}n{\isachardot}\ X\ i\ x\ {\isacharslash}\ sqrt\ {\isacharparenleft}n\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
-\ \ \ \ \ \ \ \ {\isacharparenleft}density\ lborel\ standard{\isacharunderscore}normal{\isacharunderscore}density{\isacharparenright}{\isachardoublequoteclose}
+\ \ \ \ \ \ \ \ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ \alert<6>{distr}\ M\ \alert<6>{borel}\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isasymSum}i{\isacharless}n{\isachardot}\ X\ i\ x\ {\isacharslash}\ sqrt\ {\isacharparenleft}n\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ \ \ \ \ {\isacharparenleft}\alert<6>{density}\ \alert<6>{lborel}\ standard{\isacharunderscore}normal{\isacharunderscore}density{\isacharparenright}{\isachardoublequoteclose}
 \end{isabellebody}
+
+\begin{visibleenv}<6->
+\begin{tikzpicture}[remember picture, overlay, draw]
+
+\node at (current page.north) [yshift=-3em, anchor=north, minimum height=5\baselineskip,
+      minimum width=0.8\textwidth, fill=white, draw=red,
+      thick, align=left ] {
+   \texttt{distr} ::
+     $\alpha\;\textit{measure} \to \beta\;\textit{measure} \to (\alpha \to \beta) \to
+       \beta\;\textit{measure} $ \\
+     $\texttt{distr}~\mu~\nu~f~A = \mu~\{ x \mid f\;x \in A \} $ \\[1ex]
+   \texttt{density} ::
+     $\alpha\;\textit{measure} \to (\alpha \to \overline{\mathbb{R}}) \to
+      \alpha\;\textit{measure} $ \\
+     $\texttt{density}~\mu~f~A = \int_A f\; d\mu $ \\[1ex]
+   \texttt{borel} :: $\mathbb{R}~\textit{measure}$
+     
+     } ; 
+
+\end{tikzpicture}
+\end{visibleenv}
 
 \end{frame} % }}}
 
@@ -177,7 +199,7 @@
 \pause
 
   \node[thy] at ( 3, 1) { Characteristic Functions \\ {\tiny $\displaystyle
-    \phi_\mu(t) = \int_{-\infty}^{\infty} e^{itx} \mu(dx) $ } } ;
+    \phi_\mu(t) = \int_{-\infty}^{\infty} e^{itx} d\mu(x) $ } } ;
 
   \node[thm] at ( 3, 2) { Levy's Uniqueness Thm \\[-1ex] {\tiny $
     \phi_\mu = \phi_\nu ~~ \Leftrightarrow ~~ \mu = \nu $ }} ;
@@ -201,30 +223,37 @@
 \begin{frame}{Weak convergence of measures} % {{{
 
 \begin{definition}[Cumulative Distribution Function]%
-\vspace{-1ex}
+\vspace{-2ex}
 \begin{center}%
 $ F_\mu~x := \mu~(-\infty, x] $
 \end{center}
+{($\approx 320$ lines of thy, uniqueness, char. and right-cont. monotone func.)}
 \end{definition}
 
+\pause
+
 \begin{definition}[Weak convergence]
+\vspace{-2ex}
 \begin{center} 
 $ \begin{array}{l} \nu_n ~{\longrightarrow}_w~ \mu :\Leftrightarrow \\
 \qquad
   (\forall t.~ F_\mu~\text{continuous at}~ t \implies
-       (F_{\nu\,n}~t) \longrightarrow F_\mu~t)
+       F_{\nu\,n}~t \longrightarrow F_\mu~t)
   \end{array} $
 \end{center}
-{\small (In Isabelle/HOL written as: \texttt{weak{\_}conv{\_}m})}
 \end{definition}
+
+\pause
 
 \begin{theorem}[Portmanteau Theorem]
 Equivalent characterizations of $\nu_n ~{\longrightarrow}_w~ \mu$:
 \begin{itemize}
- \item $\int f \; d\nu_n~{\longrightarrow}_w~\int f \; d\mu$ ~~ for every bounded, continuous $f$
- \item $\nu_n~A ~ {\longrightarrow}_w ~ \mu_n~A$ ~~ for all Borel sets $A$, with $\mu(\partial A) = 0$
+ \item $\int f \; d\nu_n \longrightarrow \int f \; d\mu$ ~~ for every bounded, continuous $f$
+ \item $\nu_n~A \longrightarrow \mu_n~A$ ~~ for all Borel sets $A$, with $\mu(\partial A) = 0$
 \end{itemize}
 \end{theorem}
+
+($\approx 900$ lines of thy)
 
 \end{frame} % }}}
 
@@ -233,60 +262,126 @@ Equivalent characterizations of $\nu_n ~{\longrightarrow}_w~ \mu$:
 
 \begin{definition}[Characteristic functions]%
 \vspace{-1em}
-\begin{center} $ \displaystyle \phi_\mu~t = \int_{-\infty}^{\infty} e^{itx} \mu(dx) $ \end{center}
+\begin{center} $ \displaystyle \phi_\mu~t = \int_{-\infty}^{\infty} e^{itx} d\mu(x) $ \end{center}
 \end{definition}
+
+\pause
 
 \begin{theorem}[Levy Uniqueness Theorem]
 \vspace{-1em}
 \begin{center} $ \phi_{\mu_1} = \phi_{\mu_2} \Leftrightarrow \mu_1 = \mu_2 $ \end{center} 
 \end{theorem}
 
+\pause
+
 \begin{theorem}[Levy Continuity Theorem]
 \vspace{-1em}
 \begin{center} $ \nu_n ~{\longrightarrow}_w~ \mu \Leftrightarrow
-  (\forall t.\ \phi_{\nu_n}~t \xrightarrow{n \to \infty} \phi_\mu~t) $ \end{center}
+  (\forall t.\ \phi_{\nu_n}~t \longrightarrow \phi_\mu~t) $ \end{center}
 \end{theorem}
+
+\pause
 
 Also the characteristic function of the std. normal distribution:
 \[ \phi_{\mathcal{N}(0, 1)}~t = e^{-t^2/2}\]
 
+($\approx 3000$ lines of thy)
 \end{frame} % }}}
 
 \begin{frame}{Central Limit Theorem -- the proof} % {{{
-\begin{itemize}
+\begin{itemize}[<+->]
 
-  \item Show $\phi_{\sqrt{1/n} \sum_{i < n} X_i}$ approaches $\phi_{\mathcal{N}(0, 1)}$
+  \item Show: $S_n ~{\longrightarrow}_w~ \mathcal{N}(0, 1)$ where $S_n = \frac{1}{\sqrt{n\cdot \sigma^2}} \sum_{i < n} X_i$
+
+  \item With Levy's Continuity Theorem:
+    $\phi_{S_n}~t \longrightarrow \phi_{\mathcal{N}(0, 1)}~t$
     
   \item We have $\phi_{\mathcal{N}(0, 1)}~t = e^{-t^2/2}$
   
-  \item We have $\phi_{\sum_{i < n} X_i}~t = (\phi_D~t)^n$ 
+  \item We have $\phi_{S_n}~t \approx
+    (1 + \frac{- t^2 / 2}{n})^n$
   
-  \item Finishing using power series approximation of the exponential function
-  
-  \item Size of the final CLT proof: 120 lines of theory
+  \item Power series approximation of the exponential function:
+    $(1 + \frac{- t^2 / 2}{n})^n \longrightarrow e^{-t^2/2}$
+    
+  \item[$\qed$]
 \end{itemize}
+
+\uncover<7>{
+\begin{center}
+  Size of the final CLT proof: 120 lines of theory
+\end{center}}
 \end{frame} % }}}
 
-\begin{frame}{Summary} % {{{
+\begin{frame}
+
+What was missing?
+
 \begin{itemize}
-\item Current size: $\approx 6,250$ lines of thy
-\item Paper mentions $\approx 13,000$ lines\\
-  some clean up some stuff moved to the repository
+\item Lebesgue integration slightly insufficent: \\
+  No support set ($\int_A f\;d\mu$); only $\mathbb{R}$-valued functions
+\pause
+\item Complex analysis (characterisitic function of the normal distribution)
+\pause
+
+\item Various smaller theorems about limits of transcendental functions
+\pause
+
+\item Interval integral, i.e. to deal with: $\int_{a}^b f\; d\mu, \int_{a}^\infty f\; d\mu, \int_{\infty}^b f\; d\mu, \ldots$
+
+\end{itemize}
+
+\pause
+
+Stuff already moved to / changed in Isabelle/HOL:
+
 \begin{itemize}
 
-\item Generalized Lebesgue integration to Bochner integration: \\
-  $\int {f}\; d\!\mu :: \mathbb{R}$ to $\int {f}\; d\!\mu :: \mathbb{R}^n$ and separable $\mathbb{R}$-normed vector spaces \\
-  (unifies $\mathbb{R}$ and $\mathbb{C}$)
+\item Introduce Bochner integration (unifies integration of $\mathbb{R}$ and $\mathbb{C}$): \\
+  From $\int {f}\; d\!\mu :: \mathbb{R}$ to $\int {f}\; d\!\mu :: \mathbb{R}^n$
+
+\pause
 
 \item Definition of the Lebesgue-Stieltjes measure: \\ 
   $\mathcal{L}_F~[a, b] = F~b - F~a$
+
+\pause
+
+\item Moments of the normal distribution ($\mathbb{E}[X^n]$)
+
+\pause
+
+\item A lot of small theorems about limits, uncountable sets, $\dots$
+
+\pause
+
+\item Set based integral $\int_A f\;d\mu$, and interval integral not moved yet
+
 \end{itemize}
 
-\item CLT fundamental to contemporary probability theory\\
-  but also the necessary machinery!
+\end{frame}
+
+\begin{frame}{Summary} % {{{
+\begin{itemize}
+
+\item Current size: $\approx 6,250$ lines of thy\\
+  (After cleanup etc., paper mentions $\approx 13,000$ lines)
+
+\pause
+
+\item CLT fundamental to contemporary probability theory
+
+\pause
+
+\item The necessary machinery (characterisitic functions, weak convergence) is in itself important
+
+\item The proofs can be found online at \url{https://github.com/avigad/isabelle}
 
 \end{itemize}
+
+
+\begin{center} \LARGE Questions? \end{center}
+
 \end{frame} % }}}
-
 
 \end{document}
