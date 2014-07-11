@@ -5,6 +5,8 @@
 \usepackage{pgfplots}
 \usepackage{isabelle,isabellesym}
 
+\usetikzlibrary{snakes}
+
 \useoutertheme{infolines}
 \setbeamertemplate{headline}[default]
 \setbeamertemplate{navigation symbols}{}
@@ -78,7 +80,7 @@
 
 \begin{center}
 \Large
-  The \emph{Central Limit Theorem} says, in a sense, that the behavior of random or chaotic events becomes highly predictable when averaged over the long term.
+  The \emph{Central Limit Theorem} says, in a sense, that the behavior of random or chaotic events becomes highly predictable when averaged over the long term. 
 \end{center}
 
 \end{frame} % }}}
@@ -220,7 +222,79 @@
 \end{tikzpicture}
 \end{frame} % }}}
 
-\begin{frame}{Weak convergence of measures} % {{{
+\begin{frame}{Weak convergence of measures (I)} % {{{
+
+\begin{center}
+\begin{tikzpicture}
+
+\begin{scope}[yshift=1cm]
+  \draw (-1.2, 0) -- (1.2, 0) ;
+  \draw[blue] (-1, 0.1) -- (-0.5, 0.25) -- (0, 0.5) -- (0.5, 0.25) -- (1, 0.1) ;
+\end{scope}     
+
+\begin{scope}[yshift=2cm]
+  \draw (-1.2, 0) -- (1.2, 0) ;
+  \draw[blue] (-1, 0.1) -- (-0.5, 0.20) -- (0, 0.4) -- (0.5, 0.20) -- (1, 0.1) ;
+\end{scope}
+
+\begin{scope}[yshift=3cm]
+  \draw (-1.2, 0) -- (1.2, 0) ;
+  \draw[blue] (-1, 0.1) -- (-0.5, 0.15) -- (0, 0.3) -- (0.5, 0.15) -- (1, 0.1) ;
+\end{scope}
+
+\begin{scope}[yshift=4cm]
+  \draw (-1.2, 0) -- (1.2, 0) ;
+  \draw[blue] (-1, 0.1) -- (-0.5, 0.15) -- (0, 0.2) -- (0.5, 0.15) -- (1, 0.1) ;
+\end{scope}
+
+\begin{scope}[yshift=6cm]
+  \draw (-1.2, 0) -- (1.2, 0) ;
+  \draw[blue] (-1, 0.1) -- (-0.5, 0.10) -- (0, 0.1) -- (0.5, 0.10) -- (1, 0.1) ;
+\end{scope}
+
+\draw [->] (0, 4.7) -- (0, 5.5) ;
+
+\begin{scope}[yshift=1cm, xshift=4cm]
+  \draw (-1.2, 0) -- (1.2, 0) ;
+  \draw[blue] (-0.5, 0.0) -- (-0.5, 0.5) ;
+\end{scope}     
+
+\begin{scope}[yshift=2cm, xshift=4cm]
+  \draw (-1.2, 0) -- (1.2, 0) ;
+  \draw[blue] (-0.2, 0.0) -- (-0.2, 0.5) ;
+\end{scope}
+
+\begin{scope}[yshift=3cm, xshift=4cm]
+  \draw (-1.2, 0) -- (1.2, 0) ;
+  \draw[blue] (-0.1, 0.0) -- (-0.1, 0.5) ;
+\end{scope}
+
+\begin{scope}[yshift=4cm, xshift=4cm]
+  \draw (-1.2, 0) -- (1.2, 0) ;
+  \draw[blue] (-0.05, 0.0) -- (-0.05, 0.5) ;
+\end{scope}
+
+\begin{scope}[yshift=6cm, xshift=4cm]
+  \draw (-1.2, 0) -- (1.2, 0) ;
+  \draw[blue] (0, 0.0) -- (0, 0.5) ;
+\end{scope}
+
+\draw [->] (4, 4.7) -- (4, 5.5) ;
+
+\draw[snake=brace] (1, 0.3) -- (-1, 0.3) ;
+
+\node at (0, 0) { strong convergence } ;
+
+\draw[snake=brace] (5, -0.7) -- (-1, -0.7) ;
+
+\node at (2, -1) { weak convergence } ;
+
+\end{tikzpicture}
+\end{center}
+
+\end{frame}
+
+\begin{frame}{Weak convergence of measures (II)} % {{{
 
 \begin{definition}[Cumulative Distribution Function]%
 \vspace{-2ex}
