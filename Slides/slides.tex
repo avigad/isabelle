@@ -80,33 +80,42 @@
 
 \begin{center}
 \Large
-  The \emph{Central Limit Theorem} says, in a sense, that the behavior of random or chaotic events becomes highly predictable when averaged over the long term. 
+  The \emph{Central Limit Theorem} says that the behavior of random or chaotic events 
+  becomes normal distributed when averaged over the long term. 
 \end{center}
 
 \end{frame} % }}}
 
 \begin{frame}{Central Limit Theorem -- informal} % {{{
+\begin{center} \begin{small}
+$ \Pr(X_i = -1)= \frac{1}{2} \qquad \Pr(X_i = +1)= \frac{1}{2} \qquad \Pr(\sum_{i < n} X_i / \sqrt{n}) = ? $
+\end{small} \end{center}
+
 \begin{center}
 \begin{tikzpicture}
-  \begin{axis}[width=10cm,
-      xmin = -3,
-      xmax = 3,
+  \begin{axis}[width=10cm, height=5cm,
+      xmin = -5,
+      xmax = 5,
       ymin = 0,
       ymax = 0.5,
-      ticks = none,
+      ytick = \empty,
       ybar, bar shift = {0cm},
       bar width = 2pt]
     
-    \only<5,6>{\addplot[fill=red!10] table {binomial-512.dat};}
-    \only<4>{\addplot[fill=red!30] table {binomial-128.dat};}
+    \only<4,5>{\addplot[fill=red!30] table {binomial-128.dat};}
     \only<3>{\addplot[fill=red!50] table {binomial-32.dat};}
     \only<2>{\addplot[fill=red!70] table {binomial-8.dat};}
-    \only<1>{\addplot[fill=red!90] table {binomial-2.dat};}
+    \only<1>{
+      \addplot[fill=red!90] table {binomial-2.dat};
+    }
     
-    \only<6>{\addplot[color=blue, line width = 2pt, smooth] {1 / sqrt (2 * pi) * exp(-(x ^ 2) / 2)};}
-    
+    \only<5>{\addplot[color=blue, line width = 2pt, smooth] {1 / sqrt (2 * pi) * exp(-(x ^ 2) / 2)};}
   \end{axis}
 \end{tikzpicture}
+\end{center}
+
+\begin{center}
+\only<1>{$n = 4$} \only<2>{$n = 16$} \only<3>{$n = 64$} \only<4>{$n = 256$} \only<5>{$n = \infty$}
 \end{center}
 \end{frame} % }}}
 
@@ -116,7 +125,7 @@
 
 \item Sequence of random variables: $X : \Nat \to \Omega \to \Real$
 
-\item They are i.i.d.\ (independent and identically distributed)
+\item $X$ are independent and identically distributed
 
 \item Expectation: $\mathbb{E}[X_i] = 0$ and variance: $\mathbb{V}[X_i] = \sigma^2$ (for all $i$)
 
@@ -208,7 +217,7 @@
 
 \pause
 
-  \node[thm] at ( 3, 3) { Helly's selection Thm \\[-1ex] { \tiny
+  \node[thm] at ( 3, 3) { Helly's Selection Thm \\[-1ex] { \tiny
     Set of CDFs $F_\mu$ is compact }} ;
 
   \node[thm] at ( 0, 4) { Levy's Continuity Thm \\[-1ex] {\tiny $
@@ -227,6 +236,7 @@
 \begin{center}
 \begin{tikzpicture}
 
+\onslide<1->{
 \begin{scope}[yshift=1cm]
   \draw (-1.2, 0) -- (1.2, 0) ;
   \draw[blue] (-1, 0.1) -- (-0.5, 0.25) -- (0, 0.5) -- (0.5, 0.25) -- (1, 0.1) ;
@@ -254,6 +264,12 @@
 
 \draw [->] (0, 4.7) -- (0, 5.5) ;
 
+\draw[snake=brace] (1, 0.3) -- (-1, 0.3) ;
+
+\node at (0, 0) { strong convergence } ;
+}
+
+\onslide<2->{
 \begin{scope}[yshift=1cm, xshift=4cm]
   \draw (-1.2, 0) -- (1.2, 0) ;
   \draw[blue] (-0.5, 0.0) -- (-0.5, 0.5) ;
@@ -281,13 +297,12 @@
 
 \draw [->] (4, 4.7) -- (4, 5.5) ;
 
-\draw[snake=brace] (1, 0.3) -- (-1, 0.3) ;
+}
 
-\node at (0, 0) { strong convergence } ;
-
+\onslide<3->{
 \draw[snake=brace] (5, -0.7) -- (-1, -0.7) ;
-
 \node at (2, -1) { weak convergence } ;
+}
 
 \end{tikzpicture}
 \end{center}
@@ -359,7 +374,7 @@ Equivalent characterizations of $\nu_n ~{\longrightarrow}_w~ \mu$:
 Also the characteristic function of the std. normal distribution:
 \[ \phi_{\mathcal{N}(0, 1)}~t = e^{-t^2/2}\]
 
-($\approx 3000$ lines of thy)
+($\approx 3\,000$ lines of thy)
 \end{frame} % }}}
 
 \begin{frame}{Central Limit Theorem -- the proof} % {{{
@@ -376,9 +391,9 @@ Also the characteristic function of the std. normal distribution:
     (1 + \frac{- t^2 / 2}{n})^n$
   
   \item Power series approximation of the exponential function:
-    $(1 + \frac{- t^2 / 2}{n})^n \longrightarrow e^{-t^2/2}$
-    
-  \item[$\qed$]
+    $(1 + \frac{- t^2 / 2}{n})^n \longrightarrow e^{-t^2/2}$ \\
+
+  \onslide<6->{\qed}
 \end{itemize}
 
 \uncover<7>{
@@ -407,7 +422,7 @@ What was missing?
 
 \pause
 
-Stuff already moved to / changed in Isabelle/HOL:
+Material already moved to or changed in Isabelle/HOL:
 
 \begin{itemize}
 
@@ -438,8 +453,8 @@ Stuff already moved to / changed in Isabelle/HOL:
 \begin{frame}{Summary} % {{{
 \begin{itemize}
 
-\item Current size: $\approx 6,250$ lines of thy\\
-  (After cleanup etc., paper mentions $\approx 13,000$ lines)
+\item Current size: $\approx 6\,250$ lines of thy\\
+  (After cleanup etc., paper mentions $\approx 13\,000$ lines)
 
 \pause
 

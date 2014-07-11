@@ -15,7 +15,7 @@ def write_binomial(name, N, p = 0.5):
     for n in range(0, N + 1):
       print >> f, "%0.4f  %0.5f" % ((float(n) - float(N) / 2) / sigma, Binomial(N, p, n) * sigma)
 
-for N in [2, 8, 32, 128, 512]:
-  write_binomial("binomial-%i.dat" % N, N)
+for N in [4, 16, 64, 256, 1024]:
+  write_binomial("binomial-%i.dat" % (N / 2), N)
 
 
