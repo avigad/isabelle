@@ -199,7 +199,7 @@ qed
 end
 
 locale real_distribution = prob_space M for M :: "real measure" +
-  assumes events_eq_borel [simp]: "sets M = sets borel" and space_eq_univ [simp]: "space M = UNIV"
+  assumes events_eq_borel [simp, measurable_cong]: "sets M = sets borel" and space_eq_univ [simp]: "space M = UNIV"
 begin
 
 sublocale finite_borel_measure M

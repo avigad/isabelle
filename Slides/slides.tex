@@ -212,6 +212,8 @@ $ \Pr(X_i = -1)= \frac{1}{2} \qquad \Pr(X_i = +1)= \frac{1}{2} \qquad \Pr(\sum_{
   \node[thy] at ( 3, 1) { Characteristic Functions \\ {\tiny $\displaystyle
     \phi_\mu(t) = \int_{-\infty}^{\infty} e^{itx} d\mu(x) $ } } ;
 
+\pause
+
   \node[thm] at ( 3, 2) { Levy's Uniqueness Thm \\[-1ex] {\tiny $
     \phi_\mu = \phi_\nu ~~ \Leftrightarrow ~~ \mu = \nu $ }} ;
 
@@ -382,7 +384,7 @@ Also the characteristic function of the std. normal distribution:
 
   \item Show: $S_n ~{\longrightarrow}_w~ \mathcal{N}(0, 1)$ where $S_n = \frac{1}{\sqrt{n\cdot \sigma^2}} \sum_{i < n} X_i$
 
-  \item With Levy's Continuity Theorem:
+  \item With Levy's Continuity Theorem, suffices to show:
     $\phi_{S_n}~t \longrightarrow \phi_{\mathcal{N}(0, 1)}~t$
     
   \item We have $\phi_{\mathcal{N}(0, 1)}~t = e^{-t^2/2}$
@@ -462,7 +464,7 @@ Material already moved to or changed in Isabelle/HOL:
 
 \pause
 
-\item The necessary machinery (characteristic functions, weak convergence) is in itself important
+\item The necessary machinery (characteristic functions, weak convergence, and 'Fourier analysis') is very powerful, and also fundamental.
 
 \item The proofs can be found online at \url{https://github.com/avigad/isabelle}
 

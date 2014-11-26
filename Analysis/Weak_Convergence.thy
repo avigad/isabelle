@@ -500,8 +500,7 @@ proof -
           def d \<equiv> "min \<delta> ((1 - \<omega>)/2)"
           def \<omega>' \<equiv> "\<omega> + d"
           have \<omega>': "\<omega>' \<in> {0<..<1}" unfolding \<omega>'_def d_def using \<omega>(1) \<delta>
-            by (smt divide_cancel_left divide_numeral_1 greaterThanLessThan_iff less_divide_eq_1
-              real_average_minus_second zero_less_divide_iff)
+            by (auto split: split_min simp: field_simps)
           moreover have "\<omega> < \<omega>'" unfolding \<omega>'_def d_def using \<delta> \<omega>(1) by auto
           moreover with \<omega>' have "Y \<omega>' \<le> Y \<omega> + \<epsilon>"
             using Y_mono_on \<omega>(1) \<delta> unfolding mono_on_def \<omega>'_def d_def by smt

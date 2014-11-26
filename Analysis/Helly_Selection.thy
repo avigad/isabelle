@@ -180,13 +180,7 @@ proof -
         then obtain d' where d: "d' > 0" and cts': "\<forall>y. y \<noteq> x \<and> norm (y - x) < d' \<longrightarrow> norm (F y - F x) < e"
           by auto
         have "\<exists>y<x. norm (y - x) < d'"
-        proof -
-          have "\<bar>(x - d'/2) - x\<bar> < d'"
-            by (metis abs_divide abs_minus_commute abs_numeral abs_of_pos add_diff_cancel comm_monoid_add_class.add.left_neutral d diff_add_cancel
-                linordered_field_class.sign_simps(16) real_gt_half_sum)
-          moreover have "x - d'/2 < x" using d by simp
-          ultimately show ?thesis using exI[of _ "x - d'/2"] by auto
-        qed
+          using d by (auto intro: exI[of _ "x - d'/2"])
         then guess y .. note y = this
         then have "norm (F y - F x) < e" using cts' by auto
         hence 1: "F x - e < F y" using y mono by auto
