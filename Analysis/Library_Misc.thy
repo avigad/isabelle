@@ -58,8 +58,8 @@ lemma borel_measurable_mono:
   shows "f \<in> borel_measurable borel"
 proof (subst borel_measurable_iff_ge, auto simp add:)
   fix a :: real
-  have "is_interval {w. a \<le> f w}" using is_interval_1 assms(1) order.trans unfolding mono_def
-    by (auto simp add:,  metis)
+  have "is_interval {w. a \<le> f w}"
+    unfolding is_interval_1 using assms by (auto dest: monoD intro: order.trans)
   thus "{w. a \<le> f w} \<in> sets borel" using real_interval_borel_measurable by auto  
 qed
 

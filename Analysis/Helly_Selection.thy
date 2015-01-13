@@ -477,12 +477,9 @@ proof auto
         unfolding ball_def dist_real_def apply auto
         apply (subgoal_tac "\<bar>F n\<bar> = F n")
         apply (erule ssubst)
-        using F_nonneg F abs_of_nonneg apply auto
-        apply (subgoal_tac "\<bar>1 - F n\<bar> = 1 - F n")
-        apply (erule ssubst)
-        apply (erule_tac x=n in allE)
-        apply simp
-        by (metis abs_of_nonneg diff_le_iff(1))
+        using F_nonneg F abs_of_nonneg
+        apply (auto simp: field_simps)
+        done
       hence "\<forall>n\<ge>b. F n \<in> S" using \<epsilon> by auto
       thus "\<exists>N. \<forall>n\<ge>N. F n \<in> S" by auto
     qed
