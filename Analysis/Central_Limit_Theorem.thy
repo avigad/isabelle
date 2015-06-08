@@ -33,12 +33,12 @@ proof -
   } note 1 = this
   note equation_26p5b_stronger
   note 2 = equation_26p5b_stronger [of 2 t, OF 1, simplified]
-  have "cmod (char M t - (\<Sum>k\<le>2. (\<i> * t) ^ k * (expectation (\<lambda>x. x ^ k)) / (real (fact k))))
-      \<le> t\<^sup>2 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3)) / real (fact (3::nat))"
+  have "cmod (char M t - (\<Sum>k\<le>2. (\<i> * t) ^ k * (expectation (\<lambda>x. x ^ k)) / (fact k)))
+      \<le> t\<^sup>2 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3)) / fact (3::nat)"
       using equation_26p5b_stronger [of 2 t, OF 1] by simp
-  also have "(\<Sum>k\<le>2. (\<i> * t) ^ k * expectation (\<lambda>x. x ^ k) / (real (fact k))) = 1 - t^2 * \<sigma>2 / 2"
+  also have "(\<Sum>k\<le>2. (\<i> * t) ^ k * expectation (\<lambda>x. x ^ k) / (fact k)) = 1 - t^2 * \<sigma>2 / 2"
     by (simp add: complex_eq_iff numeral_eq_Suc integral_1 Re_divide Im_divide)
-  also have "real (fact (3::nat)) = 6" by (simp add: eval_nat_numeral)
+  also have "fact 3 = 6" by (simp add: eval_nat_numeral)
   also have "t\<^sup>2 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3)) / 6 = 
      t\<^sup>2 / 6 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3))" by (simp add: field_simps)
   finally show ?thesis .
@@ -114,8 +114,8 @@ proof -
       sequentially"
   proof (rule eventually_sequentiallyI)
     fix n :: nat and t :: real
-    assume "n \<ge> natceiling (t^2 / 4)"
-    hence n: "n \<ge> t^2 / 4" by (subst natceiling_le_eq [symmetric])
+    assume "n \<ge> nat (ceiling (t^2 / 4))"
+    hence n: "n \<ge> t^2 / 4" by (subst nat_ceiling_le_eq [symmetric])
     let ?t = "t / sqrt (\<sigma>\<^sup>2 * n)"
 
     def \<psi>' \<equiv> "\<lambda>n i. char (distr M borel (\<lambda>x. X i x / sqrt (\<sigma>\<^sup>2 * n)))"
@@ -197,7 +197,7 @@ proof -
         complex_of_real (exp (-(t^2) / 2))"
       by (rule isCont_tendsto_compose [OF _ **], auto)
     hence "(\<lambda>n. \<phi> n t) ----> complex_of_real (exp (-(t^2) / 2))"
-      apply (rule LIMSEQ_diff_approach_zero)
+      apply (rule Lim_transform)
       by (rule Lim_null_comparison [OF main main2])
     thus "(\<lambda>n. \<phi> n t) ----> char std_normal_distribution t"
       by (subst char_std_normal_distribution)
@@ -211,4 +211,3 @@ proof -
 qed
 
 end
-

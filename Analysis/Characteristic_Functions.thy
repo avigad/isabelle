@@ -14,20 +14,20 @@ begin
 *)
 
 abbreviation iexp :: "real \<Rightarrow> complex" where
-  "iexp \<equiv> (\<lambda>x. expi (\<i> * of_real x))"
+  "iexp \<equiv> (\<lambda>x. Exp (\<i> * complex_of_real x))"
 
 lemma isCont_iexp [simp]: "isCont iexp x"
   by (intro continuous_intros)
 
-lemma cmod_iexp [simp]: "cmod (expi (\<i> * (x::real))) = 1"
-  by (simp add: expi_def )
+lemma cmod_iexp [simp]: "cmod (Exp (\<i> * (x::real))) = 1"
+  by simp
 
 lemma iexp_alt: "iexp x = cos x + \<i> * sin x"
-  by (simp add: complex_eq_iff cis_conv_exp[symmetric])
+  by (simp add: complex_eq_iff cis_conv_exp[symmetric] cos_of_real sin_of_real)
 
 lemma has_vector_derivative_iexp[derivative_intros]:
   "(iexp has_vector_derivative \<i> * iexp x) (at x within s)"
-  by (auto intro!: derivative_eq_intros simp add: iexp_alt has_vector_derivative_complex_iff)
+  by (auto intro!: derivative_eq_intros simp: Re_exp Im_exp has_vector_derivative_complex_iff)
 
 lemma interval_integral_iexp:
   fixes a b :: real
@@ -49,11 +49,11 @@ lemma (in real_distribution) char_zero: "char M 0 = 1"
 
 lemma (in prob_space) integrable_iexp: 
   assumes f: "f \<in> borel_measurable M" "\<And>x. Im (f x) = 0"
-  shows "integrable M (\<lambda>x. expi (ii * (f x)))"
+  shows "integrable M (\<lambda>x. Exp (ii * (f x)))"
 proof (intro integrable_const_bound [of _ 1])
   from f have "\<And>x. of_real (Re (f x)) = f x"
     by (simp add: complex_eq_iff)
-  then show "AE x in M. cmod (expi (\<i> * f x)) \<le> 1"
+  then show "AE x in M. cmod (Exp (\<i> * f x)) \<le> 1"
     using cmod_iexp[of "Re (f x)" for x] by simp
 qed (insert f, simp)
 
@@ -193,12 +193,11 @@ proof (induction n)
 next
   fix n assume ih: "?P n"
   def y \<equiv> "\<Sum>k\<le>n. (\<i> * complex_of_real x) ^ k / of_nat (fact k)"
-  def x \<equiv> "CLBINT s=0..ereal x. complex_of_real ((x - s) ^ Suc n) * expi (\<i> * complex_of_real s)"
+  def x \<equiv> "CLBINT s=0..ereal x. complex_of_real ((x - s) ^ Suc n) * Exp (\<i> * complex_of_real s)"
   have of_nat_eq_minus_of_nat: "\<And>x y. of_nat x = - (of_nat y::real) \<longleftrightarrow> (x = 0 \<and> y = 0)"
     by linarith
   have *: "of_nat n * of_nat (fact n) \<noteq> - (of_nat (fact n)::complex)"
-    by (simp add: complex_eq_iff of_nat_mult[symmetric] of_nat_eq_minus_of_nat)
-    
+    by (simp add: complex_eq_iff of_nat_mult[symmetric] of_nat_eq_minus_of_nat del: of_nat_fact)
   show "?P (Suc n)"
     apply (subst setsum_atMost_Suc)
     apply (subst ih)
@@ -260,22 +259,22 @@ declare i_complex_of_real [simp del]
 *)
 
 lemma equation_26p4a: "cmod (iexp x - (\<Sum>k \<le> n. (ii * x)^k / fact k)) \<le>
-    (abs x)^(Suc n) / fact (Suc n)"
+    (abs x)^(Suc n) / (fact (Suc n)::real)"
 proof -
   have "iexp x - (\<Sum>k \<le> n. (ii * x)^k / fact k) = 
          ((ii ^ (Suc n)) / (fact n)) * (CLBINT s=0..x. (x - s)^n * (iexp s))" (is "?t1 = ?t2")
     by (subst equation_26p2 [of _ n], simp add: field_simps)
   hence "cmod (?t1) = cmod (?t2)" by simp
-  also have "\<dots> =  (1 / (fact n)) * cmod (CLBINT s=0..x. (x - s)^n * (iexp s))"
+  also have "\<dots> =  (1 / of_nat (fact n)) * cmod (CLBINT s=0..x. (x - s)^n * (iexp s))"
     by (simp add: norm_mult norm_divide norm_power real_of_nat_def)
-  also have "\<dots> \<le> (1 / (fact n)) * abs (LBINT s=0..x. cmod ((x - s)^n * (iexp s)))"
+  also have "\<dots> \<le> (1 / of_nat (fact n)) * abs (LBINT s=0..x. cmod ((x - s)^n * (iexp s)))"
     apply (rule mult_left_mono)
     apply (rule interval_integral_norm2)
     apply auto
     apply (subst zero_ereal_def)
     apply (rule interval_integrable_isCont)
     by auto
-  also have "\<dots> \<le> (1 / (fact n)) * abs (LBINT s=0..x. abs ((x - s)^n))"
+  also have "\<dots> \<le> (1 / of_nat (fact n)) * abs (LBINT s=0..x. abs ((x - s)^n))"
     by (simp add: norm_mult del: of_real_diff of_real_power)
   also have "abs (LBINT s=0..x. abs ((x - s)^n)) = abs (LBINT s=0..x. (x - s)^n)"
     proof (cases "0 \<le> x | even n")
@@ -310,11 +309,11 @@ proof -
     also have "\<dots> = x ^ (Suc n) / (Suc n)" by simp
     finally show ?thesis .
   qed
-  also have "1 / real (fact n) * \<bar>x ^ Suc n / real (Suc n)\<bar> = 
-      \<bar>x\<bar> ^ Suc n / real (fact (Suc n))"
+  also have "1 / real_of_nat (fact n::nat) * \<bar>x ^ Suc n / real (Suc n)\<bar> = 
+      \<bar>x\<bar> ^ Suc n / fact (Suc n)"
     apply (subst abs_divide, subst power_abs, subst (2) abs_of_nonneg, simp)
     by (simp add: field_simps real_of_nat_Suc)
-  finally show ?thesis .
+  finally show ?thesis by (simp add: )
 qed
 
 lemma equation_26p4b: "cmod (iexp x - (\<Sum>k \<le> n. (ii * x)^k / fact k)) \<le>
@@ -418,10 +417,10 @@ proof -
     also have "\<dots> = x ^ (Suc n) / (Suc n)" by simp
     finally show ?thesis .
   qed
-  also have "2 / real (fact n) * \<bar>x ^ Suc n / real (Suc n)\<bar> = 
-      2 * \<bar>x\<bar> ^ Suc n / real (fact (Suc n))"
+  also have "2 / fact n * \<bar>x ^ Suc n / real (Suc n)\<bar> = 
+      2 * \<bar>x\<bar> ^ Suc n / (fact (Suc n))"
     apply (subst abs_divide, subst power_abs, subst (2) abs_of_nonneg, simp)
-    by (simp add: field_simps real_of_nat_Suc)
+    by (simp add: field_simps real_of_nat_Suc real_of_nat_def[symmetric])
   finally show ?thesis .
 qed
 qed
@@ -491,7 +490,7 @@ lemma (in real_distribution) equation_26p5b_stronger:
   assumes 
     integrable_moments : "\<And>k. k \<le> n \<Longrightarrow> integrable M (\<lambda>x :: real. x ^ k)"
   shows 
-    "cmod (char M t - (\<Sum>k \<le> n. ((ii * t)^k / (real (fact k))) * expectation (\<lambda>x. x^k)))
+    "cmod (char M t - (\<Sum>k \<le> n. ((ii * t)^k / (fact k)) * expectation (\<lambda>x. x^k)))
       \<le>  ((abs t)^n / fact (Suc n)) * 
             expectation (\<lambda>x. min (2 * (abs x)^n * (Suc n)) (abs t * (abs x)^(Suc n)))"
       (is "cmod (char M t - ?t1) \<le> _")
@@ -517,9 +516,9 @@ proof -
     by (rule integrable_moments, simp)
   have 3: "complex_integrable M (\<lambda>x. iexp (t * x) - (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
     by (rule integrable_diff [OF _ 2], auto)
-  have 4: "integrable M (\<lambda>x. min (2 * \<bar>t * x\<bar> ^ n / real (fact n))
-            (\<bar>t * x\<bar> ^ Suc n / real (fact (Suc n))))"
-    by (rule integrable_bound[where f="\<lambda>x. 2 * \<bar>t * x\<bar> ^ n / real (fact n)"])
+  have 4: "integrable M (\<lambda>x. min (2 * \<bar>t * x\<bar> ^ n / fact n)
+            (\<bar>t * x\<bar> ^ Suc n / fact (Suc n)))"
+    by (rule integrable_bound[where f="\<lambda>x. 2 * \<bar>t * x\<bar> ^ n / fact n"])
        (auto simp: integrable_moments power_abs[symmetric] power_mult_distrib)
   have 5: "integrable M (\<lambda>x. min (2 * \<bar>x\<bar> ^ n * real (Suc n)) (\<bar>t\<bar> * \<bar>x\<bar> ^ Suc n))"
     by (rule integrable_bound[where f="\<lambda>x. 2 * \<bar>x\<bar> ^ n * real (Suc n)"])
@@ -685,14 +684,14 @@ lemma std_normal_distribution_even_moments_abs:
 
 lemma std_normal_distribution_odd_moments_abs:
   fixes k :: nat
-  shows "(LINT x|std_normal_distribution. \<bar>x\<bar>^(2 * k + 1)) = sqrt (2 / pi) * 2 ^ k * real (fact k)"
+  shows "(LINT x|std_normal_distribution. \<bar>x\<bar>^(2 * k + 1)) = sqrt (2 / pi) * 2 ^ k * fact k"
   using integral_std_normal_moment_abs_odd[of k]
   by (subst integral_density) (auto simp: normal_density_nonneg)
 
 lemma (in comm_ring_1) uminus_power_if: "(- x) ^ n = (if even n then x^n else - (x ^ n))"
   by auto
 
-lemma square_fact_le_2_fact: "(fact n) * (fact n) \<le> fact (2 * n::nat)"
+lemma square_fact_le_2_fact: "(fact n) * (fact n::nat) \<le> fact (2 * n)"
 proof (induct n)
   case 0 then show ?case by simp
 next
@@ -757,26 +756,26 @@ proof
   from summable_LIMSEQ_zero [OF summable_exp] have **: 
     "\<And>x :: real. (\<lambda>n. x ^ n / fact n) ----> 0"
     by (auto simp add: inverse_eq_divide)
-  have "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n) / real (fact (2 * n)) *
+  have "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n) / fact (2 * n) *
           (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n))) =
           (\<lambda>n. 2 * ((t^2 / 2)^n / fact n))"
     apply (rule ext)
     apply (subst std_normal_distribution_even_moments_abs)
     by (simp add: power_mult power_divide)
-  hence 5: "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n) / real (fact (2 * n)) *
+  hence 5: "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n) / fact (2 * n) *
           (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n)))
         ----> 0"
     apply (elim ssubst)
     by (rule tendsto_mult_right_zero, rule **)
-  have  "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n + 1) / real (fact (2 * n + 1)) *
+  have  "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n + 1) / fact (2 * n + 1) *
           (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n + 1)))
         = (\<lambda>n. (2 * \<bar>t\<bar> * sqrt (2 / pi)) * ((2 * t^2)^n * fact n / fact (2 * n + 1)))"
     apply (subst std_normal_distribution_odd_moments_abs)
     apply (simp add: field_simps power_mult[symmetric] power_even_abs)
     done
   (* TODO: clean this up! *)
-  hence 6: "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n + 1) / real (fact (2 * n + 1)) *
-          (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n + 1)))
+  hence 6: "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n + 1) / fact (2 * n + 1) *
+        (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n + 1)))
         ----> 0"
     apply (elim ssubst)
     apply (rule tendsto_mult_right_zero)
@@ -792,6 +791,7 @@ proof
     apply (simp del: One_nat_def)
     apply (subst mult.assoc)
     apply (rule mult_left_mono)
+    unfolding of_nat_fact[symmetric, where 'a=real] real_of_nat_def[symmetric]
     apply (subst real_of_nat_mult [symmetric])
     apply (subst real_of_nat_le_iff)
     apply (rule order_trans)
@@ -800,7 +800,7 @@ proof
   have 7: "?f ----> char std_normal_distribution t"
     apply (subst Lim_null)
     apply (rule tendsto_norm_zero_cancel)
-    apply (rule Lim_null_comparison [of _ "\<lambda>n. 2 * (abs t)^n / real(fact n) * 
+    apply (rule Lim_null_comparison [of _ "\<lambda>n. 2 * (abs t)^n / fact n * 
       (LINT x | std_normal_distribution. abs (x)^n)"])
     apply (rule eventually_sequentiallyI)
     apply (subst real_norm_def, subst abs_of_nonneg, force)
@@ -813,4 +813,3 @@ proof
 qed
 
 end
-

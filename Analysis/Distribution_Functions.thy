@@ -66,7 +66,7 @@ proof -
   have "(%i. cdf M (real i)) ----> measure M (\<Union> i::nat. {..real i})"
     unfolding cdf_def by (rule finite_Lim_measure_incseq) (auto simp: incseq_def)
   also have "(\<Union> i::nat. {..real i}) = space M"
-    by (auto simp: borel_UNIV intro: real_natceiling_ge)
+    by (auto simp: borel_UNIV intro: real_arch_simple)
   finally show ?thesis .
 qed
 
@@ -154,6 +154,9 @@ lemma isCont_cdf:
   apply (subst finite_measure_Union)
 by auto
 
+lemma ceiling_nonneg: "0 \<le> x \<Longrightarrow> 0 \<le> \<lceil>x\<rceil>"
+  by simp
+
 lemma countable_atoms: "countable {x. measure M {x} > 0}"
 proof -
   { fix B i
@@ -168,10 +171,10 @@ proof -
       by (simp add: real_of_nat_def)
     finally have "measure M B \<ge> card B * inverse (real (Suc i))" .
   } note * = this
-  have "measure M (space M) < real (Suc(natceiling (measure M (space M))))"
-    apply (auto simp add: real_of_nat_Suc)
-    apply (rule order_le_less_trans)
-    by (rule real_natceiling_ge, auto)
+  have "measure M (space M) < real (Suc (nat (ceiling (measure M (space M)))))"
+    by (auto simp del: zero_le_ceiling
+                simp add: real_of_nat_Suc measure_nonneg ceiling_nonneg intro!: less_add_one)
+       linarith
   then obtain X :: nat where X: "measure M (space M) < X" ..
   (* it would be nice if this next calculation were automatic, with X replaced the particular
      value above *)
@@ -234,7 +237,7 @@ qed
 
 lemma UN_Ioc_eq_UNIV: "(\<Union>i. {- real (i::nat)<..real i}) = UNIV"
   by auto
-     (metis le_less_trans minus_minus neg_less_iff_less not_le real_natceiling_ge
+     (metis le_less_trans minus_minus neg_less_iff_less not_le real_arch_simple
             real_of_nat_ge_zero reals_Archimedean2)
 
 lemma cdf_unique:
@@ -304,8 +307,8 @@ proof (intro ext)
                 filterlim_uminus_at_top[THEN iffD1])
     then show "(\<lambda>i. measure (interval_measure F) {- real i<..x}) ----> F x - 0"
       apply (rule filterlim_cong[OF refl refl, THEN iffD1, rotated])
-      apply (rule eventually_sequentiallyI[where c="natceiling (- x)"])
-      apply (simp add: measure_interval_measure_Ioc right_cont_F nondecF  natceiling_le_eq)
+      apply (rule eventually_sequentiallyI[where c="nat (ceiling (- x))"])
+      apply (simp add: measure_interval_measure_Ioc right_cont_F nondecF nat_ceiling_le_eq)
       done
   qed (auto simp: incseq_def)
   also have "(\<Union>i::nat. {-real i <.. x}) = {..x}"

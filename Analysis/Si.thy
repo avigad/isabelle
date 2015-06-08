@@ -63,8 +63,9 @@ proof (rule integrable_monotone_convergence)
     by (rule borel_integrable_atLeastAtMost) auto
   show "AE x in lborel. (\<lambda>i. x * exp (- x) * indicator {0..real i} x) ----> indicator {0..} x *\<^sub>R (x * exp (- x))"
     apply (intro AE_I2 Lim_eventually )
-    apply (rule_tac c="natfloor x + 1" in eventually_sequentiallyI)
-    apply (auto simp add: not_le dest!: ge_natfloor_plus_one_imp_gt[simplified] split: split_indicator)
+    apply (rule_tac c="nat (floor x) + 1" in eventually_sequentiallyI)
+    apply (auto simp add: Suc_le_eq not_le split: split_indicator)
+    apply linarith
     done
 qed (auto intro!: borel_measurable_times borel_measurable_exp)
 
@@ -147,8 +148,7 @@ lemma at_right_le_at: "(at_right (x::'a::linorder_topology)) \<le> (at x)"
 
 (* can this be generalized? *)
 lemma tendsto_divide_constant: "(f ---> (l :: real)) F \<Longrightarrow> ((\<lambda>x. f x / t) ---> (l / t)) F"
-  apply (auto simp add: field_divide_inverse)
-  by (auto intro: tendsto_intros)
+  by (auto simp add: divide_inverse intro: tendsto_intros)
 
 
 (*
@@ -223,9 +223,8 @@ lemma ex_18_4_1:
 by (simp_all add: power2_eq_square field_simps add_nonneg_eq_0_iff)
 
 lemma ex_18_4_2_deriv:
-  "DERIV (\<lambda>u. 1/x * (1 - exp (-u * x)) * \<bar>sin x\<bar>) u :> \<bar>exp (-u * x) * sin x\<bar>"
-  apply (auto simp only: intro!: derivative_eq_intros)
-  by (simp add: abs_mult)
+  "DERIV (\<lambda>u. 1/x * (1 - exp (-u * x)) * \<bar>sin x\<bar>) u :> \<bar>exp (-u * x) * sin x :: real\<bar>"
+  by (auto simp only: intro!: derivative_eq_intros) (simp add: abs_mult)
 
 (*** not needed **)
 lemma ex_18_4_2_bdd_integral:
@@ -332,7 +331,7 @@ lemma Billingsley_ex_17_5':
 proof -
   have "(tan ---> tan 0) (at 0)"
     by (rule tendsto_tan, auto intro: tendsto_ident_at)
-  hence [intro]: "(tan ---> 0) (at_right 0)"
+  hence [intro]: "(tan ---> 0) (at_right (0::real))"
     by (rule filterlim_mono, auto simp add: at_eq_sup_left_right)
   have 1: "\<And>x. 0 < x \<Longrightarrow> x * 2 < pi \<Longrightarrow> (tan has_real_derivative 1 + (tan x)\<^sup>2) (at x)"
     apply (subst tan_sec)
@@ -375,7 +374,7 @@ qed
 abbreviation sinc :: "real \<Rightarrow> real" where
   "sinc \<equiv> (\<lambda>x. if x = 0 then 1 else sin x / x)"
 
-lemma sinc_at_0: "((\<lambda>x. sin x / x) ---> 1) (at 0)"
+lemma sinc_at_0: "((\<lambda>x. sin x / x::real) ---> 1) (at 0)"
 using DERIV_sin [of 0] by (auto simp add: has_field_derivative_def field_has_derivative_at)
 
 lemma isCont_sinc: "isCont sinc x"
@@ -390,10 +389,10 @@ lemma continuous_on_sinc[continuous_intros]:
   using continuous_on_compose[of S f sinc, OF _ continuous_at_imp_continuous_on]
   by (auto simp: isCont_sinc)
 
-lemma borel_measurable_sin[measurable]: "sin \<in> borel_measurable borel"
+lemma borel_measurable_sin[measurable]: "(sin::real \<Rightarrow> real) \<in> borel_measurable borel"
   by (intro borel_measurable_continuous_on1 continuous_intros)
 
-lemma borel_measurable_cos[measurable]: "cos \<in> borel_measurable borel"
+lemma borel_measurable_cos[measurable]: "(cos::real \<Rightarrow> real) \<in> borel_measurable borel"
   by (intro borel_measurable_continuous_on1 continuous_intros)
 
 lemma borel_measurable_sinc[measurable]: "sinc \<in> borel_measurable borel"
@@ -529,7 +528,7 @@ proof -
       apply (rule set_integrable_divide)
       apply (subst distrib_left)
       apply (rule set_integral_add)
-      apply (subst times_divide_eq)
+      apply (subst times_divide_eq_right)
       apply (rule set_integrable_divide)
       apply (rule int1)
       apply (rule set_integrable_mult_left)
@@ -568,7 +567,7 @@ proof -
       apply (auto simp add: ereal_tendsto_simps add_nonneg_eq_0_iff)
       apply (rule tendsto_mono [OF at_right_le_at])
       apply (auto intro!: tendsto_eq_intros) []
-      apply (subst field_divide_inverse, subst mult.commute)
+      apply (subst divide_inverse, subst mult.commute)
       apply (rule filterlim_tendsto_pos_mult_at_top)
       apply (rule tendsto_const, auto intro!: filterlim_ident)
       by (rule aux3, simp)

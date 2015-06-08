@@ -150,7 +150,7 @@ theorem Levy_Inversion:
             2 * (sin (t * (x - a)) / t) - 2 * (sin (t * (x - b)) / t)))"
           apply (rule interval_integral_cong)
           using `T \<ge> 0`
-          apply (simp add: field_simps cis.ctr Im_divide Re_divide expi_def complex_eq_iff)
+          apply (simp add: field_simps cis.ctr Im_divide Re_divide Im_exp Re_exp complex_eq_iff)
           unfolding minus_diff_eq[symmetric, of "y * x" "y * a" for y a] sin_minus cos_minus
           apply (simp add: field_simps power2_eq_square)
           done
@@ -412,17 +412,20 @@ proof -
     also have "\<dots> = (CLBINT t=ereal 0..u. 1 - iexp (t * -x)) + (CLBINT t=ereal 0..u. 1 - iexp (t * x))"
       apply (subgoal_tac "0 = ereal 0", erule ssubst)
       by (subst interval_integral_reflect, auto)
-    also have "\<dots> = (CLBINT t=ereal 0..u. 2 + -2 * cos (t * x))"
+    also have "\<dots> = (LBINT t=ereal 0..u. 2 + -2 * cos (t * x))"
       apply (subst interval_lebesgue_integral_add (2) [symmetric])
-      apply (rule interval_integrable_isCont, auto)+
-      (* TODO: shouldn't of_real_numeral be a simplifier rule? *)
-      by (auto simp add: expi_def cis.ctr of_real_numeral of_real_mult)
+      apply ((rule interval_integrable_isCont, auto)+) [2]
+      unfolding iexp_alt cos_of_real
+      apply (simp add: of_real_mult interval_lebesgue_integral_of_real[symmetric])
+      done
     also have "\<dots> = 2 * u - 2 * sin (u * x) / x"
       apply simp
       apply (subst interval_lebesgue_integral_diff)
       apply (auto intro!: interval_integrable_isCont simp: interval_lebesgue_integral_of_real)
       apply (subst (2) mult.commute)
-      by (subst integral_cos [OF `x \<noteq> 0`], simp add: mult.commute)
+      apply (subst integral_cos [OF `x \<noteq> 0`])
+      apply (simp add: mult.commute)
+      done
     finally show "(CLBINT t:{-u..u}. 1 - iexp (t * x)) = 2 * (u  - sin (u * x) / x)"
       by (simp add: field_simps)
   qed
@@ -436,9 +439,9 @@ proof -
     (* TODO: put this in the real_distribution locale as a simp rule? *)
     have Mn1 [simp]: "measure (M n) UNIV = 1" by (metis Mn.prob_space Mn.space_eq_univ)
     (* TODO: make this automatic somehow? *)
-    have Mn2 [simp]: "\<And>x. complex_integrable (M n) (\<lambda>t. expi (\<i> * complex_of_real (x * t)))"
+    have Mn2 [simp]: "\<And>x. complex_integrable (M n) (\<lambda>t. Exp (\<i> * complex_of_real (x * t)))"
       by (rule Mn.integrable_const_bound [where B = 1], auto)
-    have Mn3: "set_integrable (M n \<Otimes>\<^sub>M lborel) (UNIV \<times> {- u..u}) (\<lambda>a. 1 - expi (\<i> * complex_of_real (snd a * fst a)))"
+    have Mn3: "set_integrable (M n \<Otimes>\<^sub>M lborel) (UNIV \<times> {- u..u}) (\<lambda>a. 1 - Exp (\<i> * complex_of_real (snd a * fst a)))"
       apply (rule integrableI_bounded_set_indicator [where B="2"])
       using `0 < u`
       apply (auto simp: lborel.emeasure_pair_measure_Times)

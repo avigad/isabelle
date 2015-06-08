@@ -42,81 +42,6 @@ definition mono_on :: "('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a set 
 
 lemma mono_onD: "mono_on f A \<Longrightarrow> x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> x \<le> y \<Longrightarrow> f x \<le> f y"
   unfolding mono_on_def by auto
-
-lemma borel_measurable_mono_on_fnc:
-  fixes f :: "real \<Rightarrow> real" and A :: "real set"
-  assumes "mono_on f A"
-  shows "f \<in> borel_measurable (restrict_space borel A)"
-proof -
-  { fix x def X \<equiv> "{a \<in> A. x \<le> f a}" def I \<equiv> "Inf X"
-    have "X \<in> sets (restrict_space borel A)"
-    proof cases
-      assume X: "bdd_below X \<and> X \<noteq> {}"
-      then have X_le: "X \<subseteq> {I ..} \<inter> A"
-        by (auto simp: X_def I_def intro!: cInf_lower)
-      moreover have le_X: "{I <..} \<inter> A \<subseteq> X"
-      proof safe
-        fix a assume "a \<in> A" "I < a"
-        with X obtain b where "b \<in> X" "b < a"
-          using cInf_less_iff[of X a] by (auto simp: I_def)
-        with mono_onD[OF `mono_on f A`, of b a] `a\<in>A` show "a \<in> X"
-          by (auto simp: X_def)
-      qed
-      ultimately have "X = A \<inter> {I ..} \<or> X = A \<inter> {I <..}"
-        by (cases "I \<in> X") (auto simp add: ivl_disj_un(1)[symmetric])
-      then show ?thesis
-        by (subst sets_restrict_space) (blast intro: atLeast_borel greaterThan_borel)
-    next
-      assume "\<not> (bdd_below X \<and> X \<noteq> {})"
-      moreover
-      { assume "\<not> bdd_below X"
-        { fix a assume "a \<in> A"
-          from `\<not> bdd_below X` obtain b where "b \<in> X" "b \<le> a"
-            by (auto simp: bdd_below_def not_le intro: less_imp_le)
-          with mono_onD[OF `mono_on f A`, of b a] `a\<in>A` have "a \<in> X"
-            by (auto simp: X_def) }
-        then have "X = A"
-          by (auto simp: X_def) }
-      ultimately show ?thesis
-        by (auto simp: sets_restrict_space)
-    qed }
-  then show ?thesis
-    by (auto simp add: space_restrict_space borel_measurable_iff_ge)
-qed
-
-(* TODO: turn this into an iff by weakening the hypothesis *)
-(* compare to continuous_at_right_real_mono *)
-lemma continuous_at_right_real_mono_on_open:
-  fixes f :: "real \<Rightarrow> real" and U a
-  assumes "open U" "a \<in> U" and mono: "mono_on f U"
-  shows "continuous (at_right a) f \<Longrightarrow> (\<forall>\<epsilon>>0. \<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>)"
-proof (auto simp add: continuous_within_eps_delta dist_real_def greaterThan_def)
-  from mono have nondec: "\<And>x y. x \<in> U \<Longrightarrow> y \<in> U \<Longrightarrow> x \<le> y \<Longrightarrow> f x \<le> ((f y) :: real)"
-    unfolding mono_on_def by auto
-  from `a \<in> U` `open U` have "\<exists>e>0. \<forall>x'. \<bar>x' - a\<bar> < e \<longrightarrow> x' \<in> U"
-    by (auto simp add: open_real_def dist_real_def)
-  then obtain d' where "d' > 0 \<and> (\<forall>x'. \<bar>x' - a\<bar> < d' \<longrightarrow> x' \<in> U)" ..
-  hence "d' > 0" and d': "\<And>x'. \<bar>x' - a\<bar> < d' \<Longrightarrow> x' \<in> U" by auto
-  {
-    fix \<epsilon> :: real
-    assume "\<epsilon> > 0" and
-      hyp: "\<forall>e>0. \<exists>d>0. \<forall>x'>a. x' - a < d \<longrightarrow> \<bar>f x' - f a\<bar> < e"
-    hence "\<exists>d>0. \<forall>x'>a. x' - a < d \<longrightarrow> \<bar>f x' - f a\<bar> < \<epsilon>" by auto
-    then obtain d where "d > 0 \<and> (\<forall>x'>a. x' - a < d \<longrightarrow> \<bar>f x' - f a\<bar> < \<epsilon>)" ..
-    hence "d > 0" and d: "\<And>x'. x'>a \<Longrightarrow> x' - a < d \<Longrightarrow> \<bar>f x' - f a\<bar> < \<epsilon>" by auto
-    let ?delta = "min (d / 2) (d' / 2)"
-    from `d > 0` `d' > 0` have "?delta >0 \<and> a + ?delta \<in> U \<and> f (a + ?delta) - f a < \<epsilon>"
-      apply (auto intro: d')
-      by (rule order_le_less_trans [OF abs_ge_self d], auto)
-    thus "\<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>" ..
-  }
-
-qed
-
-(* TODO: make mono_on primitive, and define mono f to be an abbreviation for mono_on f UNIV? *)
-lemma "mono f = mono_on f UNIV"
-  unfolding mono_def mono_on_def by auto
-
 (* Show such a function is an ereal-valued measurable function times the indicator function of the
    complement of A. *)
 lemma mono_on_ctble_discont:
@@ -196,6 +121,51 @@ proof -
     by (rule countableI') 
 qed
 
+lemma borel_measurable_mono_on_fnc:
+  fixes f :: "real \<Rightarrow> real" and A :: "real set"
+  assumes "mono_on f A"
+  shows "f \<in> borel_measurable (restrict_space borel A)"
+  apply (rule measurable_restrict_countable[OF mono_on_ctble_discont[OF assms]])
+  apply (auto intro!: image_eqI[where x="{x}" for x] simp: sets_restrict_space)
+  apply (auto simp add: sets_restrict_restrict_space continuous_on_eq_continuous_within
+              cong: measurable_cong_sets 
+              intro!: borel_measurable_continuous_on_restrict intro: continuous_within_subset)
+  done
+
+(* TODO: turn this into an iff by weakening the hypothesis *)
+(* compare to continuous_at_right_real_mono *)
+lemma continuous_at_right_real_mono_on_open:
+  fixes f :: "real \<Rightarrow> real" and U a
+  assumes "open U" "a \<in> U" and mono: "mono_on f U"
+  shows "continuous (at_right a) f \<Longrightarrow> (\<forall>\<epsilon>>0. \<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>)"
+proof (auto simp add: continuous_within_eps_delta dist_real_def greaterThan_def)
+  from mono have nondec: "\<And>x y. x \<in> U \<Longrightarrow> y \<in> U \<Longrightarrow> x \<le> y \<Longrightarrow> f x \<le> ((f y) :: real)"
+    unfolding mono_on_def by auto
+  from `a \<in> U` `open U` have "\<exists>e>0. \<forall>x'. \<bar>x' - a\<bar> < e \<longrightarrow> x' \<in> U"
+    by (auto simp add: open_real_def dist_real_def)
+  then obtain d' where "d' > 0 \<and> (\<forall>x'. \<bar>x' - a\<bar> < d' \<longrightarrow> x' \<in> U)" ..
+  hence "d' > 0" and d': "\<And>x'. \<bar>x' - a\<bar> < d' \<Longrightarrow> x' \<in> U" by auto
+  {
+    fix \<epsilon> :: real
+    assume "\<epsilon> > 0" and
+      hyp: "\<forall>e>0. \<exists>d>0. \<forall>x'>a. x' - a < d \<longrightarrow> \<bar>f x' - f a\<bar> < e"
+    hence "\<exists>d>0. \<forall>x'>a. x' - a < d \<longrightarrow> \<bar>f x' - f a\<bar> < \<epsilon>" by auto
+    then obtain d where "d > 0 \<and> (\<forall>x'>a. x' - a < d \<longrightarrow> \<bar>f x' - f a\<bar> < \<epsilon>)" ..
+    hence "d > 0" and d: "\<And>x'. x'>a \<Longrightarrow> x' - a < d \<Longrightarrow> \<bar>f x' - f a\<bar> < \<epsilon>" by auto
+    let ?delta = "min (d / 2) (d' / 2)"
+    from `d > 0` `d' > 0` have "?delta >0 \<and> a + ?delta \<in> U \<and> f (a + ?delta) - f a < \<epsilon>"
+      apply (auto intro: d')
+      by (rule order_le_less_trans [OF abs_ge_self d], auto)
+    thus "\<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>" ..
+  }
+
+qed
+
+(* TODO: make mono_on primitive, and define mono f to be an abbreviation for mono_on f UNIV? *)
+lemma "mono f = mono_on f UNIV"
+  unfolding mono_def mono_on_def by auto
+
+
 lemma mono_on_ctble_discont_open:
   fixes f :: "real \<Rightarrow> real"
   fixes A :: "real set"
@@ -262,22 +232,16 @@ proof safe
         hence "F y < \<omega>" by simp
         hence le: "\<And>z. z \<le> y \<Longrightarrow> F z < \<omega>" using rcont_inc le_less_trans unfolding rcont_inc_def mono_def by metis
         have "y \<le> Inf {x. \<omega> \<le> F x}"
-          apply (rule cInf_greatest)
-          prefer 2 using le
-          apply (metis (lifting) Int_Collect inf_sup_aci(1) le_cases max.semilattice_strict_iff_order not_less_iff_gr_or_eq)
-          apply (subgoal_tac "(\<lambda>k::nat. F (real k)) ----> b")
-          apply (drule LIMSEQ_D[of _ _ "b - \<omega>"])
-          using interval(1) apply (metis diff_less_iff(1) greaterThanLessThan_iff)
-          prefer 2
-          using F_at_top rcont_inc tendsto_at_topI_sequentially assms unfolding rcont_inc_def mono_def
-            apply (metis filterlim_compose filterlim_real_sequentially)      
-          proof -
-            assume 1: "\<exists>no::nat. \<forall>k\<ge>no. norm (F (real k) - b) < b - \<omega>"
-            then guess no .. note no = this
-            hence "norm (F (real no) - b) < b - \<omega>" by simp
-            hence "\<omega> \<le> F (real no)" by auto
-            thus "{x. \<omega> \<le> F x} \<noteq> {}" by auto
-          qed
+        proof (rule cInf_greatest)
+          have "(\<lambda>k::nat. F (real k)) ----> b"
+            by (metis F_at_top rcont_inc assms filterlim_compose filterlim_real_sequentially)
+          then have "\<exists>no::nat. \<forall>k\<ge>no. norm (F (real k) - b) < b - \<omega>"
+            by (rule LIMSEQ_D) (insert interval, simp)
+          then guess no .. note no = this
+          hence "norm (F (real no) - b) < b - \<omega>" by simp
+          hence "\<omega> \<le> F (real no)" by auto
+          thus "{x. \<omega> \<le> F x} \<noteq> {}" by auto
+        qed (meson le_cases mem_Collect_eq not_le le)
         hence "y \<le> x" using x by simp
         thus False using y by simp
       qed
