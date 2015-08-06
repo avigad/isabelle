@@ -1,7 +1,12 @@
 theory Helly_Selection
-imports Diagonal_Subsequence Weak_Convergence Library_Misc
-
+  imports Diagonal_Subsequence Weak_Convergence Library_Misc
 begin
+
+lemma ereal_dist_eq: "\<forall>e>0. \<bar>a - b\<bar> < ereal e \<Longrightarrow> a = b"
+  apply (cases a b rule: ereal2_cases)
+  apply (auto elim: allE[of _ 1])
+  apply (metis eq_iff_diff_eq_0 less_irrefl zero_less_abs_iff)
+  done
 
 theorem Helly_selection:
   fixes f :: "nat \<Rightarrow> real \<Rightarrow> real"
@@ -13,7 +18,7 @@ proof -
   obtain m :: "real \<Rightarrow> nat" where "bij_betw m \<rat> UNIV"
     apply (rule countableE_infinite)
     apply (rule countable_rat)
-    apply (rule real_rats_infinite)
+    apply (rule Rats_infinite)
     by auto
   then obtain r :: "nat \<Rightarrow> real" where bij: "bij_betw r UNIV \<rat>" using bij_betw_inv by blast
   let ?P = "\<lambda>n. \<lambda>s. convergent (\<lambda>k. f (s k) (r n))"
@@ -48,7 +53,7 @@ proof -
         using convergentD by auto
       have 4: "(\<lambda>k. f (d (k + (Suc n))) (r n)) =
       (\<lambda>k. f ((d \<circ> (op + (Suc n))) k) (r n))"
-        by (auto simp: add_commute)
+        by (auto simp: add.commute)
       have "(\<lambda>k. f (d k) (r n)) ----> L" 
         apply (rule LIMSEQ_offset[of _ "Suc n"])
         by (subst 4) (rule 3)
@@ -87,14 +92,16 @@ proof -
     thus "{lim (\<lambda>k. f (d k) (r n)) |n. x < r n} \<noteq> {}" by auto
   qed
   { fix x :: real
-    from rat_unbounded [of "x + 1"] guess q ..
-    with bij have "x < r (inv r q)" apply (subst f_inv_f_surj_on [of r])
-      unfolding bij_betw_def by (erule conjE, assumption, auto)
+    from Rats_no_top_le [of "x + 1"] guess q ..
+    with bij have "x < r (inv r q)"
+      apply (subst f_inv_into_f[where f=r])
+      apply (simp_all add: bij_betw_def)
+      done
     hence "\<exists>n. x < r n" ..
   } note r_unbdd = this
   def F \<equiv> "\<lambda>x. Inf {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}"
   have "\<And>x. F x \<in> {-M..M}"
-    unfolding F_def apply (rule real_closed_subset_contains_Inf)
+    unfolding F_def apply (rule closed_subset_contains_Inf)
     using limset_bdd apply auto
     prefer 2 apply (rule bdd_below_mono)
     apply (rule bdd_below_Ici [of "-M"])
@@ -115,23 +122,17 @@ proof -
   moreover have "\<And>x. continuous (at_right x) F" 
     apply (unfold Topological_Spaces.continuous_def)
     apply (unfold tendsto_def, auto)
-    apply (subst eventually_at_right)
+    apply (subst eventually_at_right[OF less_add_one])
     proof -
       fix x::real fix S::"real set" assume openS: "open S"
       assume ntlim_inS: "F (netlimit (at_right x)) \<in> S"
       have "netlimit (at_right x) = x" by (auto intro: netlimit_within)
       with F_def have "F x \<in> S" using ntlim_inS by simp
       then obtain e where e_pos: "e > 0" and e: "ball (F x) e \<subseteq> S" using openE openS by auto
-      have "\<exists>y \<in> {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}. y < F x + e"
-      proof -
-        from e_pos have "F x < F x + e / 2" by simp
-        from nonempty bdd_below this real_Inf_greatest'[of "{lim (\<lambda>k. f (d k) (r n)) |n. x < r n}" "F x + e/2"]
-        have "\<exists>y\<in>{lim (\<lambda>k. f (d k) (r n)) |n. x < r n}. y \<le> F x + e / 2" by (auto simp add: F_def)
-        then guess y .. note y = this
-        hence "y < F x + e" using e_pos by auto
-        moreover have "y \<in> {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}" using y by auto
-        ultimately show ?thesis ..
-      qed
+      have "F x < F x + e"
+        using e_pos by simp
+      then have "\<exists>y \<in> {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}. y < F x + e"
+        unfolding F_def cInf_less_iff[OF nonempty bdd_below] by (auto simp add: field_simps)
       then guess y .. note y = this
       then obtain n where n: "y = lim (\<lambda>k. f (d k) (r n)) \<and> x < r n" by auto
       have "\<forall>z. x < z \<and> z < r n \<longrightarrow> F z \<in> S"
@@ -149,16 +150,16 @@ proof -
         hence "F z \<in> ball (F x) e" unfolding ball_def dist_real_def using 1 by auto
         thus "F z \<in> S" using e by auto
       qed
-      thus "\<exists>b>x. \<forall>z. x < z \<and> z < b \<longrightarrow> F z \<in> S" using n by auto
+      thus "\<exists>b>x. \<forall>z>x. z < b \<longrightarrow> F z \<in> S" using n by auto
     qed
   ultimately have rcont_inc_lim: "rcont_inc F" unfolding rcont_inc_def by auto
   moreover have bdd: "\<forall>x. \<bar>F x\<bar> \<le> M"
   proof auto
     fix x
     have "F x \<in> {-M..M}"
-      unfolding F_def apply (rule real_atLeastAtMost_subset_contains_Inf)
+      unfolding F_def
+      apply (rule atLeastAtMost_subset_contains_Inf)
       apply (rule nonempty)
-      apply (rule bdd_below)
       apply (simp add: M_nonneg)
       apply (rule limset_bdd)
       done
@@ -169,8 +170,8 @@ proof -
     fix x::real assume cts: "continuous (at x) F"
     show "(\<lambda>n. f (d n) x) ----> F x"
     proof -
-      have "\<forall>(e::real)>0. 
-        \<bar>limsup (\<lambda>n. ereal (f (d n) x)) - ereal (F x)\<bar> < e \<and> \<bar>ereal (F x) - liminf (\<lambda>n. ereal (f (d n) x))\<bar> < e"
+      have "\<forall>(e::real)>0. \<bar>limsup (\<lambda>n. ereal (f (d n) x)) - ereal (F x)\<bar> < e"
+        "\<forall>(e::real)>0. \<bar>ereal (F x) - liminf (\<lambda>n. ereal (f (d n) x))\<bar> < e"
       proof auto
         fix e::real assume e: "0 < e"
         have "F -- x --> F x" using cts continuous_at by auto
@@ -179,13 +180,7 @@ proof -
         then obtain d' where d: "d' > 0" and cts': "\<forall>y. y \<noteq> x \<and> norm (y - x) < d' \<longrightarrow> norm (F y - F x) < e"
           by auto
         have "\<exists>y<x. norm (y - x) < d'"
-        proof -
-          have "\<bar>(x - d'/2) - x\<bar> < d'"
-            by (metis abs_divide abs_minus_commute abs_numeral abs_of_pos add_diff_cancel comm_monoid_add_class.add.left_neutral d diff_add_cancel
-                linordered_field_class.sign_simps(16) real_gt_half_sum)
-          moreover have "x - d'/2 < x" using d by simp
-          ultimately show ?thesis using exI[of _ "x - d'/2"] by auto
-        qed
+          using d by (auto intro: exI[of _ "x - d'/2"])
         then guess y .. note y = this
         then have "norm (F y - F x) < e" using cts' by auto
         hence 1: "F x - e < F y" using y mono by auto
@@ -201,22 +196,9 @@ proof -
           unfolding F_def apply (rule cInf_lower)
           using bdd_below n by auto
         hence 2: "F x - e < lim (\<lambda>k. f (d k) (r n))" using 1 by auto
-        have "\<exists>m. x < r m \<and> lim (\<lambda>k. f (d k) (r m)) < F x + e"
-        proof - (* Contains duplication from proof of right-continuity--fix. *)
-          have "\<exists>z \<in> {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}. z < F x + e"
-          proof -
-            from e have "F x < F x + e / 2" by simp
-            from nonempty bdd_below this real_Inf_greatest'[of "{lim (\<lambda>k. f (d k) (r n)) |n. x < r n}" "F x + e/2"]
-            have z: "\<exists>z\<in>{lim (\<lambda>k. f (d k) (r n)) |n. x < r n}. z \<le> F x + e / 2" by (auto simp add: F_def)
-            then guess z .. note 1 = this
-            hence "z < F x + e" using e by auto
-            moreover have "z \<in> {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}" using 1 by auto
-            ultimately show ?thesis ..
-          qed
-          then guess z .. note z = this
-          then obtain m where m: "z = lim (\<lambda>k. f (d k) (r m)) \<and> x < r m" by auto
-          thus ?thesis using z by auto
-        qed
+        from e have "F x < F x + e" by simp
+        then have "\<exists>m. x < r m \<and> lim (\<lambda>k. f (d k) (r m)) < F x + e"
+          unfolding F_def cInf_less_iff[OF nonempty bdd_below] by (auto simp add: field_simps)
         then guess m .. note m = this
         from n m have nm: "r n < r m" by auto
         have 3: "lim (\<lambda>k. f (d k) (r n)) \<le> lim (\<lambda>k. f (d k) (r m))"
@@ -269,7 +251,7 @@ proof -
         hence "\<bar>limsup (\<lambda>k. f (d k) x)\<bar> \<noteq> \<infinity>" by auto
         then obtain lsup where lsup: "limsup (\<lambda>n. f (d n) x) = ereal lsup" by auto
         have lsup_e: "lsup - F x < e" using 7
-          by (smt lsup add_commute diff_less_eq less_ereal.simps(1))
+          by (smt lsup add.commute diff_less_eq less_ereal.simps(1))
         have 8: "F x - e < liminf (\<lambda>k. f (d k) x)"
         proof -
           from 5 have ineq: "liminf (\<lambda>k. f (d k) (r n)) \<le> liminf (\<lambda>k. f (d k) x)" using Liminf_mono
@@ -300,7 +282,7 @@ proof -
         hence "\<bar>liminf (\<lambda>k. f (d k) x)\<bar> \<noteq> \<infinity>" by auto
         then obtain linf where linf: "liminf (\<lambda>k. f (d k) x) = ereal linf" by auto
         have linf_e: "F x - linf < e" using 8
-          by (smt linf add_commute diff_less_eq less_ereal.simps(1))
+          by (smt linf add.commute diff_less_eq less_ereal.simps(1))
         have "ereal linf \<le> ereal lsup"
           apply (subst linf [symmetric], subst lsup [symmetric])
           by (auto intro: Liminf_le_Limsup)
@@ -316,9 +298,12 @@ proof -
           by (auto intro: linf_e)
         thus "\<bar>F x - liminf (\<lambda>k. (f (d k) x))\<bar> < e"
           by (auto simp add: linf)
-     qed
+    qed
+    then have "limsup (\<lambda>n. ereal (f (d n) x)) = ereal (F x)"
+      "liminf (\<lambda>n. ereal (f (d n) x)) = ereal (F x)"
+      by (auto dest!: ereal_dist_eq)
     hence *: "lim (\<lambda>k. ereal (f (d k) x)) = F x" "convergent (\<lambda>k. ereal (f (d k) x))"
-      by (intro lim_close_limsup_liminf, auto)+
+      by (auto simp add: convergent_ereal convergent_limsup_cl[symmetric])
     have "(\<lambda>k. ereal (f (d k) x)) ----> F x"
       apply (subst *(1) [symmetric])
       apply (subst convergent_LIMSEQ_iff [symmetric])
@@ -382,7 +367,7 @@ proof auto
     proof (subst (asm) not_le)
       fix x assume x: "F x < 0"
       (* Should have made this a general lemma. *)
-      have "uncountable {x - 1<..<x}" using open_interval_uncountable by simp
+      have "uncountable {x - 1<..<x}" using uncountable_open_interval by simp
       hence "uncountable ({x - 1<..<x} - {x. \<not> isCont F x})"
         using uncountable_minus_countable mono_ctble_discont F unfolding rcont_inc_def by auto
       then obtain y where "y \<in> {x - 1<..<x} - {x. \<not> isCont F x}" unfolding uncountable_def by blast
@@ -398,13 +383,13 @@ proof auto
     fix \<epsilon>::real assume \<epsilon>: "\<epsilon> > 0"
     with \<mu> have "\<exists>a' b'. a' < b' \<and> (\<forall>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>)" unfolding tight_def by auto
     then obtain a' b' where a'b': "a' < b'" "\<And>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>" by auto
-    have "uncountable {a' - 1<..<a'}" using open_interval_uncountable by simp
+    have "uncountable {a' - 1<..<a'}" using uncountable_open_interval by simp
     hence "uncountable ({a' - 1<..<a'} - {x. \<not> isCont F x})"
       using uncountable_minus_countable mono_ctble_discont F unfolding rcont_inc_def by auto
     then obtain a where "a \<in> {a' - 1<..<a'} - {x. \<not> isCont F x}" unfolding uncountable_def by blast
     hence a: "a < a'" "isCont F a"
       using DiffD1 greaterThanLessThan_iff by (simp_all add: linorder_not_less)
-    have "uncountable {b'<..<b' + 1}" using open_interval_uncountable by simp
+    have "uncountable {b'<..<b' + 1}" using uncountable_open_interval by simp
     hence "uncountable ({b'<..<b' + 1} - {x. \<not> isCont F x})"
       using uncountable_minus_countable mono_ctble_discont F unfolding rcont_inc_def by auto
     then obtain b where "b \<in> ({b'<..<b' + 1} - {x. \<not> isCont F x})" unfolding uncountable_def by blast
@@ -494,12 +479,9 @@ proof auto
         unfolding ball_def dist_real_def apply auto
         apply (subgoal_tac "\<bar>F n\<bar> = F n")
         apply (erule ssubst)
-        using F_nonneg F abs_of_nonneg apply auto
-        apply (subgoal_tac "\<bar>1 - F n\<bar> = 1 - F n")
-        apply (erule ssubst)
-        apply (erule_tac x=n in allE)
-        apply simp
-        by (metis abs_of_nonneg diff_le_iff(1))
+        using F_nonneg F abs_of_nonneg
+        apply (auto simp: field_simps)
+        done
       hence "\<forall>n\<ge>b. F n \<in> S" using \<epsilon> by auto
       thus "\<exists>N. \<forall>n\<ge>N. F n \<in> S" by auto
     qed
@@ -520,11 +502,11 @@ proof auto
       thus "\<exists>N. \<forall>n\<le>N. F n \<in> S" by auto
     qed
   qed
-  with F have "\<exists>M. real_distribution M \<and> cdf M = F" using cdf_to_real_distribution
-    unfolding rcont_inc_def mono_def by auto
-  then guess M .. note M = this
+  with F have M: "real_distribution (interval_measure F)" "cdf (interval_measure F) = F"
+    by (auto intro!: real_distribution_interval_measure cdf_interval_measure
+             simp: rcont_inc_def mono_def)
   with F have "weak_conv (f \<circ> r) F" unfolding weak_conv_def f_def using lim_subseq by auto
-  hence "weak_conv_m (\<mu> \<circ> s \<circ> r) M" using M unfolding weak_conv_m_def f_def o_def by auto
+  hence "weak_conv_m (\<mu> \<circ> s \<circ> r) (interval_measure F)" using M unfolding weak_conv_m_def f_def o_def by auto
   hence "\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M" using M by auto
   thus "\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" using F by auto
 next
