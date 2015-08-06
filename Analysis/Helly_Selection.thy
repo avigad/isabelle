@@ -335,10 +335,12 @@ definition tight :: "(nat \<Rightarrow> real measure) \<Rightarrow> bool"
 where "tight \<mu> \<equiv> (\<forall>n. real_distribution (\<mu> n)) \<and> (\<forall>(\<epsilon>::real)>0. \<exists>a b::real. a < b \<and> (\<forall>n. measure (\<mu> n) {a<..b} > 1 - \<epsilon>))"
 
 (* Can strengthen to equivalence. *)
-theorem tight_imp_convergent_subsubsequence:
-  "\<And>\<mu>. tight \<mu> \<Longrightarrow> (\<forall>s. subseq s \<longrightarrow> (\<exists>r. \<exists>M.  subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M))"
+theorem tight_iff_convergent_subsubsequence:
+  fixes \<mu>
+  assumes "\<And>n. real_distribution (\<mu> n)"
+  shows "tight \<mu> = (\<forall>s. subseq s \<longrightarrow> (\<exists>r. \<exists>M.  subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M))"
 proof auto
-  fix \<mu> :: "nat \<Rightarrow> real measure" assume \<mu>: "tight \<mu>"
+  assume \<mu>: "tight \<mu>"
   fix s assume s: "subseq s"
   def f \<equiv> "\<lambda>k. cdf (\<mu> (s k))"
   {  fix k
@@ -525,6 +527,52 @@ proof auto
   hence "weak_conv_m (\<mu> \<circ> s \<circ> r) M" using M unfolding weak_conv_m_def f_def o_def by auto
   hence "\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M" using M by auto
   thus "\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" using F by auto
+next
+  assume sseq: "\<forall>s. subseq s \<longrightarrow> (\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M))"
+  show "tight \<mu>" unfolding tight_def
+  proof (rule ccontr, auto simp add: assms not_less)
+    fix \<epsilon> :: real assume \<epsilon>: "\<epsilon> > 0"
+    assume ntight: "\<forall>a b. b \<le> a \<or> (\<exists>n. Sigma_Algebra.measure (\<mu> n) {a<..b} \<le> 1 - \<epsilon>)"
+    show False
+    proof (cases "\<epsilon> \<le> 1")
+      assume \<epsilon>1: "\<epsilon> \<le> 1"
+      have "\<forall>k :: nat. \<exists>n. Sigma_Algebra.measure (\<mu> n) {-real k<..real k} \<le> 1 - \<epsilon>"
+      proof
+        fix k :: nat
+        show "\<exists>n. Sigma_Algebra.measure (\<mu> n) {- real k<..real k} \<le> 1 - \<epsilon>"
+        proof (cases "k = 0")
+          assume "k = 0"
+          hence "{-k<..k} = {}" by simp
+          thus ?thesis using \<epsilon>1 by auto
+        next
+          assume "k \<noteq> 0"
+          hence "\<not>real k \<le> - real k" by simp
+          thus ?thesis using ntight by blast
+        qed
+      qed
+      hence "\<exists>s. subseq s \<and> (\<forall>k::nat. measure (\<mu> (s k)) {-real k<..k} \<le> 1 - \<epsilon>)"
+        using choice[of "\<lambda>k n::nat. measure (\<mu> n) {-real k<..k} \<le> 1 - \<epsilon>"] sorry
+      then guess s .. note s = this
+      with sseq have "\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" by auto
+      then guess r .. note r = this
+      hence "\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M" by auto
+      then guess M .. note M = this
+      hence "\<exists>a b. measure M {a} = 0 \<and> measure M {b} = 0 \<and> measure M {a<..b} > 1 - \<epsilon>" sorry
+      then obtain a b where "measure M {a} = 0 \<and> measure M {b} = 0 \<and> measure M {a<..b} > 1 - \<epsilon>" by auto
+      hence cnv: "(\<lambda>k. measure (\<mu> (s (r k))) {a<..b}) ----> measure M {a<..b}" using M sorry
+      have "\<exists>j. {a<..b} \<subseteq> {-real (r j)..r j}" sorry
+      then guess j .. note j = this
+      hence "measure (\<mu> (s (r j))) {a<..b} \<le> measure (\<mu> (s (r j))) {-real (r j)..r j}"
+        using finite_measure.finite_measure_mono sorry
+      also have "measure (\<mu> (s (r j))) {-real (r j)..r j} \<le> 1 - \<epsilon>" sorry
+      thus False sorry
+    next
+      assume "\<not>\<epsilon>\<le>1"
+      hence "1 - \<epsilon> < 0" by simp
+      thus False using ntight[rule_format,where a = 0 and b = 1] measure_nonneg
+        by (metis dual_order.strict_trans2 less_le_not_le not_one_le_zero)
+    qed
+  qed
 qed
 
 corollary tight_subseq_weak_converge:
@@ -533,9 +581,9 @@ corollary tight_subseq_weak_converge:
     subseq: "\<And>s \<nu>. subseq s \<Longrightarrow> real_distribution \<nu> \<Longrightarrow> weak_conv_m (\<mu> \<circ> s) \<nu> \<Longrightarrow> weak_conv_m (\<mu> \<circ> s) M"
   shows "weak_conv_m \<mu> M"
 proof (rule ccontr)
-  from tight tight_imp_convergent_subsubsequence
+  from tight tight_iff_convergent_subsubsequence
   have subsubseq: "\<forall>s. subseq s \<longrightarrow> (\<exists>r M. subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)"
-    by simp
+    using assms by simp
   {
     fix s assume s: "subseq s"
     with subsubseq subseq have "\<exists>r M. subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M"
