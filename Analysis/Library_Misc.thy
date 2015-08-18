@@ -2,35 +2,75 @@ theory Library_Misc
 imports Probability "~~/src/HOL/Library/ContNotDenum"
 begin
 
-(* TODO: Move and merge with has_integral_lebesgue_integral *)
+abbreviation exterior :: "'a::{topological_space} set \<Rightarrow> 'a set" where
+  "exterior A \<equiv> interior (-A)"
 
-lemma isCont_indicator: 
-  fixes x :: "'a::{t2_space}"
-  shows "isCont (indicator A :: 'a \<Rightarrow> real) x = (x \<notin> frontier A)"
-proof -
-  have *: "!! A x. (indicator A x > (0 :: real)) = (x \<in> A)"
-    by (case_tac "x : A", auto)
-  have **: "!! A x. (indicator A x < (1 :: real)) = (x \<notin> A)"
-    by (case_tac "x : A", auto)
-  show ?thesis
-    apply (auto simp add: frontier_def)
-    (* calling auto here produces a strange error message *)
-    apply (subst (asm) continuous_at_open)
-    apply (case_tac "x \<in> A", simp_all)
-    apply (drule_tac x = "{0<..}" in spec, clarsimp simp add: *)
-    apply (erule interiorI, assumption, force)
-    apply (drule_tac x = "{..<1}" in spec, clarsimp simp add: **)
-    apply (subst (asm) closure_interior, auto, erule notE)
-    apply (erule interiorI, auto)
-    apply (subst (asm) closure_interior, simp)
-    apply (rule continuous_on_interior)
-    prefer 2 apply assumption
-    apply (rule continuous_on_eq [where f = "\<lambda>x. 0"], auto intro: continuous_on_const)
-    apply (rule continuous_on_interior)
-    prefer 2 apply assumption
-    by (rule continuous_on_eq [where f = "\<lambda>x. 1"], auto intro: continuous_on_const)
+lemma partition_interior_frontier_exterior:
+  fixes X :: "'a::{topological_space}"
+    and A :: "'a set"
+  shows "UNIV = interior A \<union> frontier A \<union> exterior A"
+proof auto
+  fix x
+  assume ext: "x \<notin> exterior A" and fr: "x \<notin> frontier A"
+  show "x \<in> interior A"
+  proof -
+    from ext closure_interior have "x \<in> closure A" by auto
+    thus ?thesis using fr unfolding frontier_def by auto
+  qed
 qed
 
+lemma isCont_indicator: 
+  fixes x :: "'a::t2_space"
+  shows "isCont (indicator A :: 'a \<Rightarrow> real) x = (x \<notin> frontier A)"
+proof auto
+  fix x
+  assume cts_at: "isCont (indicator A :: 'a \<Rightarrow> real) x" and fr: "x \<in> frontier A"
+  with continuous_at_open have 1: "\<forall>V::real set. open V \<and> indicator A x \<in> V \<longrightarrow>
+    (\<exists>U::'a set. open U \<and> x \<in> U \<and> (\<forall>y\<in>U. indicator A y \<in> V))" by auto
+  show False
+  proof (cases "x \<in> A")
+    assume x: "x \<in> A"
+    hence "indicator A x \<in> ({0<..<2} :: real set)" by simp
+    hence "\<exists>U. open U \<and> x \<in> U \<and> (\<forall>y\<in>U. indicator A y \<in> ({0<..<2} :: real set))"
+      using 1 open_greaterThanLessThan by blast
+    then guess U .. note U = this
+    hence "\<forall>y\<in>U. indicator A y > (0::real)"
+      unfolding greaterThanLessThan_def by auto
+    hence "U \<subseteq> A" using indicator_eq_0_iff by force
+    hence "x \<in> interior A" using U interiorI by auto
+    thus ?thesis using fr unfolding frontier_def by simp
+  next
+    assume x: "x \<notin> A"
+    hence "indicator A x \<in> ({-1<..<1} :: real set)" by simp
+    hence "\<exists>U. open U \<and> x \<in> U \<and> (\<forall>y\<in>U. indicator A y \<in> ({-1<..<1} :: real set))"
+      using 1 open_greaterThanLessThan by blast
+    then guess U .. note U = this
+    hence "\<forall>y\<in>U. indicator A y < (1::real)"
+      unfolding greaterThanLessThan_def by auto
+    hence "U \<subseteq> -A" by auto
+    hence "x \<in> exterior A" using U interiorI by auto
+    thus ?thesis using fr interior_complement unfolding frontier_def by auto
+  qed
+next
+  assume nfr: "x \<notin> frontier A"
+  hence "x \<in> interior A \<or> x \<in> exterior A" using partition_interior_frontier_exterior by auto
+  thus "isCont ((indicator A)::'a \<Rightarrow> real) x"
+  proof
+    assume int: "x \<in> interior A"
+    hence "\<exists>U. open U \<and> x \<in> U \<and> U \<subseteq> A" unfolding interior_def by auto
+    then guess U .. note U = this
+    hence "\<forall>y\<in>U. indicator A y = (1::real)" unfolding indicator_def by auto
+    hence "continuous_on U (indicator A)" by (simp add: continuous_on_const indicator_eq_1_iff)
+    thus ?thesis using U continuous_on_eq_continuous_at by auto
+  next
+    assume ext: "x \<in> exterior A"
+    hence "\<exists>U. open U \<and> x \<in> U \<and> U \<subseteq> -A" unfolding interior_def by auto
+    then guess U .. note U = this
+    hence "\<forall>y\<in>U. indicator A y = (0::real)" unfolding indicator_def by auto
+    hence "continuous_on U (indicator A)" by (smt U continuous_on_topological indicator_def)
+    thus ?thesis using U continuous_on_eq_continuous_at by auto
+  qed
+qed
 
 (* Should work for more general types than reals? *)
 
