@@ -17,6 +17,7 @@ lemma has_field_derivative_within_open: "a \<in> s \<Longrightarrow> open s \<Lo
     (f has_field_derivative f') (at a within s) = (f has_field_derivative f') (at a)"
   unfolding has_field_derivative_def by (rule has_derivative_within_open)
 
+
 (* copied from Distributions.borel_integral_x_exp -- only the conclusion has changed! *)
 (* this shows the integral and integrability should be combined *)
 lemma borel_integrable_x_exp:
@@ -103,38 +104,7 @@ qed fact
 
 (* more useful stuff *)
 
-(* This is useful to apply the dominated convergence theorem. Are there better ways of
-   formulating this, or other facts we should have?
-*)
-
-lemma tendsto_at_top_imp_sequentially:
-  fixes f :: "real => real"
-  assumes *: "\<And>Y. (\<forall>n. Y n > 0) \<Longrightarrow> filterlim Y at_top sequentially \<Longrightarrow> (\<lambda>n. f (Y n)) ----> a"
-  shows "((f ---> a) at_top)"
-
-  apply (subst filterlim_at_top_to_right)
-  apply (subst tendsto_at_iff_sequentially)
-  unfolding comp_def apply auto
-  apply (rule *, auto)
-  by (erule filterlim_inverse_at_top, auto)
-
-lemma tendsto_at_top_imp_sequentially':
-  fixes f :: "real => real"
-  assumes *: "\<And>Y. (\<forall>n. Y n \<ge> B) \<Longrightarrow> filterlim Y at_top sequentially \<Longrightarrow> (\<lambda>n. f (Y n)) ----> a"
-  shows "((f ---> a) at_top)"
-proof (rule tendsto_at_top_imp_sequentially)
-  fix Y :: "nat \<Rightarrow> real"
-  assume 2: "filterlim Y at_top sequentially"
-  hence 3: "eventually (\<lambda>n. Y n \<ge> B) sequentially" by (simp add: filterlim_at_top)
-  hence "\<exists>N. \<forall>n \<ge> N. Y n \<ge> B" by (simp add: eventually_sequentially)
-  then obtain N where N: "\<forall>n \<ge> N. Y n \<ge> B" ..
-  let ?Y' = "\<lambda>n. Y (n + N)"
-  from N have 4: "(\<forall>n. ?Y' n \<ge> B)" by auto
-  from 2 have 5: "filterlim ?Y' at_top sequentially" apply (simp add: filterlim_at_top)
-    by (auto intro!: sequentially_offset)
-  have "(\<lambda>n. f (?Y' n)) ----> a" by (rule * [OF 4 5])
-  thus "(\<lambda>n. f (Y n)) ----> a" by (rule LIMSEQ_offset)
-qed
+(* teondsto_at_top_imp_sequentially subsumed by Real_Vector_Spaces.tendsto_at_topI_sequentially. *)
 
 lemma interval_integral_to_infinity_eq: "(LINT x=ereal a..\<infinity> | M. f x) = (LINT x : {a<..} | M. f x)"
   unfolding interval_lebesgue_integral_def by auto
@@ -147,9 +117,9 @@ lemma at_right_le_at: "(at_right (x::'a::linorder_topology)) \<le> (at x)"
   by (simp add: at_eq_sup_left_right)
 
 (* can this be generalized? *)
+(* TODO: Eliminate duplicate intro problem in proof automation. *)
 lemma tendsto_divide_constant: "(f ---> (l :: real)) F \<Longrightarrow> ((\<lambda>x. f x / t) ---> (l / t)) F"
   by (auto simp add: divide_inverse intro: tendsto_intros)
-
 
 (*
   Calculations of various integrals.
@@ -157,28 +127,15 @@ lemma tendsto_divide_constant: "(f ---> (l :: real)) F \<Longrightarrow> ((\<lam
   TODO: clean these up.
 *)
 
-(* TODO: better name? *)
-lemma integral_expneg_alpha_atLeast0:
+lemma scaled_inverse_exp_integral_over_nonneg:
   fixes u :: real
   assumes pos: "0 < u"
   shows
     "set_integrable lborel {0<..} (\<lambda>x. exp (-(x * u)))" 
     "LBINT x=0..\<infinity>. exp (-(x * u)) = 1/u"
 proof -
-  have 1: "0 < u \<Longrightarrow> (((\<lambda>x. - (exp (- (x * u)) / u)) \<circ> real) ---> - (1 / u)) (at_right (0::ereal))"
-    apply (subgoal_tac "(((\<lambda>x. - (exp (- (x * u)) / u)) \<circ> real) ---> - (1 / u)) (at 0)")
-    apply (subst (asm) filterlim_at_split, force)
-    apply (subst zero_ereal_def)
-    apply (subst filterlim_at_split)
-    apply (simp_all add: ereal_tendsto_simps)
-    apply (subst filterlim_at_split[symmetric])
-    apply (auto intro!: tendsto_intros)
-    apply (subst exp_zero[symmetric])
-    apply (rule tendsto_compose[of exp])
-    using isCont_exp unfolding isCont_def apply metis
-    apply (subst tendsto_minus_cancel_left[symmetric], simp)
-  by (rule tendsto_mult_left_zero, rule tendsto_ident_at)
-  have 2: "0 < u \<Longrightarrow> (((\<lambda>x. - (exp (- (x * u)) / u)) \<circ> real) ---> 0) (at_left (\<infinity>::ereal))"
+  
+  have "(((\<lambda>x. - (exp (- (x * u)) / u)) \<circ> real) ---> 0) (at_left (\<infinity>::ereal))"
     apply (simp add: ereal_tendsto_simps)
     apply (subst divide_inverse, subst minus_mult_left)
     apply (rule tendsto_mult_left_zero)
@@ -190,22 +147,32 @@ proof -
     apply (rule filterlim_tendsto_pos_mult_at_top [OF _ pos])
     apply auto
     by (rule filterlim_ident)
-  show "LBINT x=0..\<infinity>. exp (-(x * u)) = 1/u"
-    apply (subst interval_integral_FTC_nonneg[of _ _ "\<lambda>x. -(1/u) * exp (-x * u)" _ "-(1/u)" 0])
-    using pos apply (auto intro!: derivative_eq_intros)
-    by (erule 1, erule 2)
+  have 1: "(((\<lambda>x. - (exp (- (x * u)) / u)) \<circ> real) ---> - (1 / u)) (at_right (0::ereal))"
+  proof -
+    have "(\<lambda>x. - (exp (- (x * u)) / u)) -- 0 --> - (1 / u)"
+       apply (auto intro!: tendsto_intros)
+       apply (subst exp_zero[symmetric])
+       apply (rule tendsto_compose[of exp])
+       using isCont_exp unfolding isCont_def apply metis
+       apply (subst tendsto_minus_cancel_left[symmetric], simp)
+       using pos tendsto_mult_left_zero tendsto_ident_at by auto
+    thus ?thesis by (simp add: ereal_tendsto_simps1(2) filterlim_at_split zero_ereal_def)
+  qed
+  have 2: "(((\<lambda>x. - (exp (- (x * u)) / u)) \<circ> real) ---> 0) (at_left \<infinity>)"
+  proof -
+    have "((\<lambda>x. exp (- (x * u))) ---> 0) at_top"
+      sorry
+    show ?thesis using ereal_tendsto_simps divide_inverse minus_mult_left tendsto_mult_left_zero tendsto_minus_cancel_left sorry
+  qed
   have "set_integrable lborel (einterval 0 \<infinity>) (\<lambda>x. exp (-x * u))"
-    apply (subst interval_integral_FTC_nonneg[of _ _ "\<lambda>x. -(1/u) * exp (-x * u)" _ "-(1/u)" 0])
-    using pos apply (auto intro!: derivative_eq_intros)
-    by (erule 1, erule 2)
+    using pos 1 2 by (subst interval_integral_FTC_nonneg[of _ _ "\<lambda>x. -(1/u) * exp (-x * u)" _ "-(1/u)" 0])
+        (auto intro!: derivative_eq_intros)
   thus "set_integrable lborel {0<..} (\<lambda>x. exp (-(x * u)))"
     by (auto simp add: zero_ereal_def)
+  show "LBINT x=0..\<infinity>. exp (-(x * u)) = 1/u"
+    using pos 1 2 by (subst interval_integral_FTC_nonneg[of _ _ "\<lambda>x. -(1/u) * exp (-x * u)" _ "-(1/u)" 0])
+        (auto intro!: derivative_eq_intros)
 qed
-
-(*
-lemma Collect_eq_Icc: "{r. t \<le> r \<and> r \<le> b} = {t .. b}"
-  by auto
-*)
 
 (* From Billingsley section 18. *)
 lemma ex_18_4_1:
@@ -225,21 +192,6 @@ by (simp_all add: power2_eq_square field_simps add_nonneg_eq_0_iff)
 lemma ex_18_4_2_deriv:
   "DERIV (\<lambda>u. 1/x * (1 - exp (-u * x)) * \<bar>sin x\<bar>) u :> \<bar>exp (-u * x) * sin x :: real\<bar>"
   by (auto simp only: intro!: derivative_eq_intros) (simp add: abs_mult)
-
-(*** not needed **)
-lemma ex_18_4_2_bdd_integral:
-  assumes "s \<ge> 0"
-  shows "LBINT u=0..s. \<bar>exp (-u * x) * sin x\<bar> =
-  1/x * (1 - exp (-s * x)) * \<bar>sin x\<bar>"
-
-  apply (subst zero_ereal_def)
-  apply (subst interval_integral_FTC_finite 
-      [where F = "\<lambda>u. 1/x * (1 - exp (-u * x)) * \<bar>sin x\<bar>"])
-  apply (auto intro: continuous_at_imp_continuous_on) [1]
-  unfolding has_field_derivative_iff_has_vector_derivative[symmetric]
-  apply (rule DERIV_subset)
-  apply (rule ex_18_4_2_deriv)
-by auto
 
 (* clean this up! it should be shorter *)
 lemma ex_18_4_2_ubdd_integral:
@@ -389,12 +341,6 @@ lemma continuous_on_sinc[continuous_intros]:
   using continuous_on_compose[of S f sinc, OF _ continuous_at_imp_continuous_on]
   by (auto simp: isCont_sinc)
 
-lemma borel_measurable_sin[measurable]: "(sin::real \<Rightarrow> real) \<in> borel_measurable borel"
-  by (intro borel_measurable_continuous_on1 continuous_intros)
-
-lemma borel_measurable_cos[measurable]: "(cos::real \<Rightarrow> real) \<in> borel_measurable borel"
-  by (intro borel_measurable_continuous_on1 continuous_intros)
-
 lemma borel_measurable_sinc[measurable]: "sinc \<in> borel_measurable borel"
   by (intro borel_measurable_continuous_on1 continuous_at_imp_continuous_on ballI isCont_sinc)
 
@@ -453,39 +399,6 @@ qed
 lemma borel_measurable_iSi[measurable]: "Si \<in> borel_measurable borel"
   by (auto intro: iSi_isCont continuous_at_imp_continuous_on borel_measurable_continuous_on1)
 
-(** Add to main Lebesgue integration library; does not require integrability as hypothesis, which in
-my experience greatly increases usability. **)
-(** JDA: this is probably not needed if we keep track of integrability hypotheses
-lemma nn_integral_eq_integral_measurable:
-  assumes f: "f \<in> borel_measurable M" and I: "integral\<^sup>L M f \<noteq> 0"
-  assumes nonneg: "AE x in M. 0 \<le> f x" 
-  shows "(\<integral>\<^sup>+ x. ereal (f x) \<partial>M) = ereal (integral\<^sup>L M f)"
-proof -
-  have "(\<integral>\<^sup>+ x. ereal (- f x) \<partial>M) = (\<integral>\<^sup>+ x. max 0 (ereal (- f x)) \<partial>M)"
-    using nn_integral_max_0 by metis
-  also have "... = (\<integral>\<^sup>+ x. 0 \<partial>M)"
-    using nonneg by (intro nn_integral_cong_AE) (auto split: split_max)
-  also have "... = 0" by (subst zero_ereal_def) (subst nn_integral_eq_integral, auto)
-  finally have "real (\<integral>\<^sup>+ x. ereal (f x) \<partial>M) = integral\<^sup>L M f"
-    using real_of_ereal_0 unfolding lebesgue_integral_def by auto
-  thus ?thesis
-    apply (subst (asm) ereal.inject[symmetric])
-    apply (subst (asm) ereal_real)
-    using I ereal_eq_0 by metis
-qed
-*)
-
-
-(*
-lemma  interval_Fubini_integral:
-  fixes f :: "real \<times> real \<Rightarrow> real"
-  fixes a b c d :: ereal
-  assumes ab: "a < b" and dc: "c < d" (* Interesting: cd is a reserved word. *)
-    and M1: "sigma_finite_measure M1" and M2: "sigma_finite_measure M2"
-    and f: "integrable (M1 \<Otimes>\<^sub>M M2) f" (* add indicators *)
-  shows "LINT y=a..b|M2. (LINT x=c..d|M1. f (x, y)) = LINT x=c..d|M1. (LINT y=a..b|M2. f (x, y))"
-*)
-
 lemma Si_at_top_lemma:
   shows "\<And>t. t \<ge> 0 \<Longrightarrow> interval_lebesgue_integrable lborel 0 \<infinity>
      (\<lambda>x. exp (- (x * t)) * (x * sin t + cos t) / (1 + x\<^sup>2))"
@@ -500,7 +413,7 @@ proof -
     apply (rule AE_I [where N = "{0}"])
     by (auto split: split_indicator)
   have int2: "set_integrable lborel {0<..} (\<lambda>x. exp (- x) :: real)"
-    using integral_expneg_alpha_atLeast0 [of 1] by auto
+    using scaled_inverse_exp_integral_over_nonneg [of 1] by auto
   {
     fix t x :: real
     assume "t > 0"
@@ -666,7 +579,7 @@ proof -
     apply (rule AE_I' [where N = "{0}"])
     apply auto [2]
     apply (case_tac "x > 0", force, force)
-    using integral_expneg_alpha_atLeast0 [of 1] by simp
+    using scaled_inverse_exp_integral_over_nonneg [of 1] by simp
   show "((\<lambda>t. (LBINT x=0..\<infinity>. exp (-(x * t)) * (x * sin t + cos t) / (1 + x^2))) ---> 0) at_top"
     apply (rule tendsto_at_top_imp_sequentially' [of 1])
     apply (subst zero_ereal_def)
@@ -693,7 +606,7 @@ proof -
   also have "\<dots> = (\<lambda>x. \<bar>sin x\<bar> * indicator {0<..<t} x * (1 / x))"
     apply (rule ext)
     apply (case_tac "x > 0")
-    apply (subst integral_expneg_alpha_atLeast0 (2) [symmetric])
+    apply (subst scaled_inverse_exp_integral_over_nonneg (2) [symmetric])
     apply (auto simp add: interval_lebesgue_integral_def zero_ereal_def ac_simps)
     done
   also have "\<dots> = (\<lambda>x. \<bar>sin x\<bar> / x * indicator {0<..<t} x)" by (simp add: field_simps)
@@ -713,7 +626,7 @@ proof -
   have "Si t = LBINT x=0..t. sin x * (LBINT u=0..\<infinity>. exp (-(u * x)))" unfolding Si_def
     using `0 \<le> t`
     by (intro interval_integral_discrete_difference[where X="{0}"])
-       (auto simp: integral_expneg_alpha_atLeast0)
+       (auto simp: scaled_inverse_exp_integral_over_nonneg)
   also have "\<dots> = LBINT x. (LBINT u=0..\<infinity>. indicator {0 <..< t} x *\<^sub>R sin x * exp (-(u * x)))"
     using `0 \<le> t` by (simp add: interval_integral_Ioo zero_ereal_def ac_simps)
   also have "\<dots> = LBINT x. (LBINT u. indicator ({0<..} \<times> {0 <..< t}) (u, x) *\<^sub>R (sin x * exp (-(u * x))))"
@@ -728,7 +641,7 @@ proof -
 
     { fix x :: real assume "0 < x"
       have "set_integrable lborel {0<..} (\<lambda>y. sin x * exp (- (y * x)))"
-        by (intro set_integrable_mult_right, rule integral_expneg_alpha_atLeast0[OF `0 < x`])
+        by (intro set_integrable_mult_right, rule scaled_inverse_exp_integral_over_nonneg[OF `0 < x`])
     } then show "AE x in lborel. integrable lborel (\<lambda>y. ?f (x, y))"
       by (intro AE_I2) (auto simp: indicator_times split: split_indicator)
   qed
