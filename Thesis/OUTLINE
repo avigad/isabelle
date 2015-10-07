@@ -1,0 +1,90 @@
+History and Overview of Automated and Interactive Deduction
+  Logics for automated deduction
+    FOL
+    HOL
+      Conservative extension
+      Hyperexponentially shorter proofs
+    Constructive logics
+    Dependent type theories
+  Techniques
+    Unification
+      First-order
+      Higher-order
+    Simplification
+  Summary of interactive deduction systems
+    TPS
+    Mizar
+    Coq
+    HOL and HOL-Light
+    Isabelle
+    Lean
+History of the Central Limit Theorem and Overview of its Proof
+  History
+    Of the result
+    Of the proof
+  Measure spaces
+  Random variables
+    Independence
+  Distribution functions
+    Weak convergence
+      Helly selection theorem
+        Diagonal method
+        Tightness of sequences of measures
+      Skorohod's theorem
+      Portmanteau theorem
+  Characteristic functions
+    Lévy inversion theorem
+    Continuity theorem
+  Lindberg central limit theorem
+Analysis in Isabelle
+  Overview of Isabelle
+    Isar
+    Proof automation tools
+      simp
+      auto
+      force
+      blast
+      metis and smt
+      sledgehammer
+    Locales
+  Number Systems
+    Natural numbers
+    Rationals
+    Reals
+    Extended reals
+      Challenges casting between these and reals
+    Complex numbers
+  Limits and continuity
+    Conditionally complete lattices
+    Limsup and liminf
+  Differentiation
+  Measure theory
+    π-λ theorem
+    Carathéodory theorem
+    Lebesgue measure
+  Bochner and Lebesgue Integration
+    Integrability
+      Tradeoff between has_integral style and integral_A f = _, integrable_A f
+    Integration over intervals
+      Tradeoff between uniformity of integral_a^b f and difficulty of using a case-based definition
+    Integration in product spaces
+      Fubini's theorem
+    Integration of complex-valued functions
+    Computing integrals
+      Integral of sinc
+  Probability theory
+    Weak convergence
+      Helly selection theorem
+        Diagonal subsequences
+        Tightness of sequences of measures
+      Skorohod's theorem
+      Portmanteau theorem
+    Characteristic functions
+      Lévy inversion theorem
+      Continuity theorem
+Proof of the Central Limit Theorem
+  Description of formalization process
+    Opportunities for improvement
+  Related results and opportunities for generalization
+Conclusion
+  Reflections on state and direction of interactive and automated deduction

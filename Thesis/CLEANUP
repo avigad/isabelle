@@ -1,0 +1,39 @@
+Library_Misc:
+
+-Rename this file, and perhaps break it into different pieces for different libraries.
+
+-Determine whether results are useful.
+
+-Determine whether theorem statements work well with established style, and change as needed.
+
+-Consider whether proof is readable.
+
+-Think about theorem names and where theorems should be placed.
+
+Si:
+
+-Rewrite tactical proofs more declaratively.
+
+-Look in integration library for tools to improve proofs.
+
+-Give calculation lemmata more descriptive names.
+
+Distribution_Functions:
+
+-Look over proofs and rewrite tactical parts more declaritively.
+
+Helly_Selection: Same
+
+Weak_Convergence: Same, and put pieces which should be put into library into Library_Misc
+
+Levy: Same, refactor proof of inversion theorem especially.
+
+Characteristic_Functions:
+
+-Same as above.
+
+-Consider how proofs could be improved with new integration library.
+
+-Give theorems more descriptive names.
+
+Central_Limit_Theorem: Same as for Distribution_Functions.

@@ -349,6 +349,8 @@ lemma sinc_AE: "AE x in lborel. sin x / x = sinc x"
 
 definition Si :: "real \<Rightarrow> real" where "Si t \<equiv> LBINT x=0..t. sin x / x"
 
+(* TODO: Determine whether this can reasonably be eliminated by redefining Si. *)
+
 lemma Si_alt_def : "Si t = LBINT x=0..t. sinc x"
   apply (case_tac "0 \<le> t")
   unfolding Si_def apply (rule interval_lebesgue_integral_cong_AE, auto)

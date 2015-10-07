@@ -188,47 +188,9 @@ proof -
   thus ?thesis by auto
 qed
 
-
-(* TODO: move this somewhere else *)
-
-lemma continuous_on_vector_derivative:
-  "(\<And>x. x \<in> S \<Longrightarrow> (f has_vector_derivative f' x) (at x within S)) \<Longrightarrow> continuous_on S f"
-  by (auto simp: continuous_on_eq_continuous_within intro!: has_vector_derivative_continuous)
-
-(* the dual version is in Convex_Euclidean_Space.thy *)
-
-lemma interior_real_Iic:
-  fixes a :: real
-  shows "interior {..a} = {..<a}"
-proof -
-  {
-    fix y
-    assume "a > y"
-    then have "y \<in> interior {..a}"
-      apply (simp add: mem_interior)
-      apply (rule_tac x="(a-y)" in exI)
-      apply (auto simp add: dist_norm)
-      done
-  }
-  moreover
-  {
-    fix y
-    assume "y \<in> interior {..a}"
-    then obtain e where e: "e > 0" "cball y e \<subseteq> {..a}"
-      using mem_interior_cball[of y "{..a}"] by auto
-    moreover from e have "y + e \<in> cball y e"
-      by (auto simp add: cball_def dist_norm)
-    ultimately have "a \<ge> y + e" by auto
-    then have "a > y" using e by auto
-  }
-  ultimately show ?thesis by auto
-qed
-
 lemma frontier_real_Iic:
   fixes a :: real
   shows "frontier {..a} = {a}"
-  unfolding frontier_def by (auto simp add: interior_real_Iic)
-
-(**************************************************)
+  unfolding frontier_def by (auto simp add: interior_real_semiline')
 
 end

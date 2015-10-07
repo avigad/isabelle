@@ -1,0 +1,21 @@
+9  October - Submit first draft of overview of CLT and supporting theory.
+             Eliminate sorry's in Si.thy, give theorems more descriptive names, and rewrite two proofs from tactical to declarative style.
+12 October - Submit first draft of overview of automated and interactive deduction.
+             Rewrite two more proofs from tactical to declarative style, and examine proofs in Distribution_Functions.thy.
+14 October - Submit first draft of overview of Isabelle and number systems in Isabelle.
+             Rewrite two more proofs from tactical to declarative style, and examine proofs in Weak_Convergence.thy.
+16 October - Submit first draft of limits and continuity, differentiation, and measure theory in Isabelle.
+             Refactor proof of Lévy inversion theorem.
+19 October - Submit first draft of integration theory in Isabelle.
+             Rewrite four proofs from tactical to declarative style.
+21 October - Submit first draft of weak convergence in Isabelle.
+             Rewrite two proofs from tactical to declarative style.
+23 October - Submit first draft of characteristic functions in Isabelle.
+             Rewrite two proofs from tactical to declarative style.
+26 October - Submit first draft of proof of CLT in Isabelle.
+             Rewrite four proofs from tactical to declarative style.
+28 October - Submit first draft of conclusion of paper.
+             Rewrite two proofs from tactical to declarative style.
+30 October - Submit complete first draft of thesis and plan for revising it.
+             Submit plan for remaining cleanup of proof scripts
+             Revise a proof from tactical to declarative style.
