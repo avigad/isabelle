@@ -1,0 +1,85 @@
+\documentclass{amsart}
+\usepackage{amsmath,amssymb}
+\usepackage{seraf}
+\usepackage{tikz}
+\usepackage{todonotes}\presetkeys{todonotes}{color=blue!20}{}
+\usepackage{bbm}
+\usepackage{enumerate}
+
+\title{A Formally Verified Proof of the Central Limit Theorem}
+\author{Luke Serafin}
+%\date{\today}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem*{conjecture*}{Conjecture}
+\newtheorem*{theorem*}{Theorem}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+\newtheorem{example}[theorem]{Example}
+\newtheorem*{claim}{Claim}
+
+\newcommand{\bldset}[2]{\{{#1}\mid{#2}\}}
+\newcommand{\bldseq}[2]{\langle{#1}\mid{#2}\rangle}
+\newcommand{\fim}[2]{{#1}[[{#2}]]}
+
+\begin{document}
+
+\begin{abstract}
+We present a formalization of the central limit theorem in the interactive proof assisstant Isabelle.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+
+Some worked examples--iterated Bernoulli trials, iterated uniform random selection from (0,1), waiting times in a Poisson process.
+
+Simplified statement of the central limit theorem.
+
+\subsection{History and Overview of Automated and Interactive Deduction}
+
+Developments in logic and computer science leading toward automated deduction.
+
+Davis's implementation of Presburger's decidability procedure.
+
+Newell-Shaw-Simon Logic Theory Machine.
+
+Wang's complete propositional procedure.
+
+Gelernter's geometry machine.
+
+\subsection{History of the Central Limit Theorem and Overview of its Proof}
+
+Ideas leading to formulation of CLT. [Brief history of the normal distribution.]
+
+Initial proof by De Moivre.
+
+Generalizations by Laplace, Cauchy, and others.
+
+Fully general form proved by Lyapunov in 1901.
+
+Modern generalizations and refinements.
+
+Brief history of applications of the CLT. [Quote by Sir Francis Galton.]
+
+\section{Analysis in the Isabelle Interactive Proof Assisstant}
+
+
+
+\section{Proof of the Central Limit Theorem}
+
+
+
+\section{Conclusion}
+
+
+
+\bibliographystyle{plain}
+\bibliography{math}
+
+\end{document}
