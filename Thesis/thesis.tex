@@ -55,6 +55,8 @@ Gelernter's geometry machine.
 
 \subsection{History of the Central Limit Theorem and Overview of its Proof}
 
+%%% HISTORY
+
 Ideas leading to formulation of CLT. [Brief history of the normal distribution.]
 
 Initial proof by De Moivre.
@@ -67,19 +69,139 @@ Modern generalizations and refinements.
 
 Brief history of applications of the CLT. [Quote by Sir Francis Galton.]
 
+%%% OVERVIEW OF PROOF
+
+Measure spaces -- History of use in probability, definition and basic properties, measurable functions.
+
+Almost sure convergence (convergence almost everywhere).
+
+Random variables (as measurable functions). Examples.
+
+Independence of random variables.
+
+Distribution functions -- definition and basic properties.
+
+Weak convergence of distribution functions and of measures (weak* convergence in sense of functional analysis).
+
+Helly selection theorem.
+
+Diagonal method.
+
+Tightness of sequences of measures.
+
+Skorohod's theorem.
+
+Portmanteau theorem.
+
+Characteristic functions (Fourier transforms).
+
+Inversion and continuity theorems (connect to harmonic analysis).
+
+Lindberg CLT.
+
+Lyapounov condition.
+
 \section{Analysis in the Isabelle Interactive Proof Assisstant}
 
+\subsection{Overview of Isabelle}
 
+\subsubsection{Isar}
+
+\subsubsection{Proof Automation Tools}
+
+Auto, simp, force, blast, smt, metis, sledgehammer.
+
+\subsection{Isabelle Locales}
+
+\subsection{Number Systems in Isabelle}
+
+Natural numbers (an inductive type).
+
+Rational numbers.
+
+Real numbers.
+
+Extended real numbers.
+
+Complex numbers.
+
+\subsection{Limits and Continuity}
+
+Conceptual overview of relation between filters, nets, and limits.
+
+Definition and basic properties of filter limits.
+
+Definition and basic properties of continuity.
+
+Overview of limsup and liminf.
+
+Conditionally complete lattices.
+
+Implementation of limsup and liminf.
+
+Supporting automation for limits and continuity.
+
+\subsection{Differentiation}
+
+Fr\'echet differentiation.
+
+\texttt{has\_derivative} / \texttt{f'} dilemma and resolution in Isabelle.
+
+\texttt{has\_derivative at \_ within \_}
+
+Supporting automation for differentiation.
+
+\subsection{Measure Theory}
+
+Implementation of measure spaces (as record types).
+
+$\pi$-$\lambda$ theorem.
+
+Carath\'eodory extension theorem (semirings, rings, and premeasures).
+
+Construction of Lebesgue measure.
+
+Product spaces.
+
+\subsection{Bochner and Lebesgue Integration}
+
+Background on integration theory.
+
+Construction of Bochner and Lebesgue integrals.
+
+\texttt{has\_integral} vs \texttt{integral f = \_} and \texttt{integrable f} tradeoff; resolution in Isabelle (cf. similar dilemma encountered when discussing differentiation).
+
+Lemmata concerning integrability.
+
+Monotone convergence theorem.
+
+Integration over sets and intervals; indicator functions; comparison to differentiation for decision as to whether integral over a set should be fundamental; usefulness and cumbersomeness of $\int_b^a = - \int_a^b$.
+
+Fundamental theorem of calculus.
+
+Fubini's theorem.
+
+Integration of complex-valued functions.
+
+Supporting automation for integration.
+
+Computation of integrals -- sinc in particular.
 
 \section{Proof of the Central Limit Theorem}
 
+The formalization process.
 
+Opportunities for improving process of formalizing mathematical results (in Isabelle in particular).
+
+Opportunities for generalization.
+
+Related projects.
 
 \section{Conclusion}
 
-
+Situating result in general programme of formal verification of mathematical proofs.
 
 \bibliographystyle{plain}
-\bibliography{math}
+\bibliography{itp}
 
 \end{document}
