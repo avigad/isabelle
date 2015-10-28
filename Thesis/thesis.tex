@@ -7,7 +7,7 @@
 \usepackage{enumerate}
 
 \title{A Formally Verified Proof of the Central Limit Theorem}
-\author{Luke Serafin}
+\author{Jeremy Avigad \and Luke Serafin}
 %\date{\today}
 
 \newtheorem{theorem}{Theorem}[section]
@@ -25,7 +25,7 @@
 
 \newcommand{\bldset}[2]{\{{#1}\mid{#2}\}}
 \newcommand{\bldseq}[2]{\langle{#1}\mid{#2}\rangle}
-\newcommand{\fim}[2]{{#1}[[{#2}]]}
+\renewcommand{\E}{\mathbb E}
 
 \begin{document}
 
@@ -37,11 +37,32 @@ We present a formalization of the central limit theorem in the interactive proof
 
 \section{Introduction}
 
-Some worked examples--iterated Bernoulli trials, iterated uniform random selection from (0,1), waiting times in a Poisson process.
+Consider a toss of a fair coin. If we treat a result of tails as having value zero and a result of heads as having a result of one, we may treat the coin toss as a random variable, say $X$. Thus $X$ is supported on $\{0,1\}$, and $\P[X = 0] = \P[X = 1] = \frac{1}{2}$. Hence the expected value of $X$ is
 
-Simplified statement of the central limit theorem.
+\[ \E[X] = 0 \cdot \P[X = 0] + 1 \cdot \P[X = 1] = \frac{1}{2}. \]
 
-\subsection{History and Overview of Automated and Interactive Deduction}
+Now suppose we toss the coin repeatedly, thus generating an infinite sequence $\bldseq{X_n}{n \in \N}$ of random variables which are pairwise independent and have the same distribution as $X$. By the strong law of large numbers, the mean $\overline X_n = \frac{1}{n} \sum_{i \le n} X_i$ converges almost surely to $\E[X] = \frac{1}{2}$. But clearly after a finite number of trials there is a nonzero probability that the value of $\overline X_n$ will differe from $\E[X]$. In fact, for $n$ odd the probability of deviation is $1$, because in this case it is impossible for $\frac{1}{n} \sum{i \le n} X_i$ to have the value $\frac{1}{2}$ at any element of the sample space. Nevertheless $|\overline X_n - \E[X]|$ must converge to zero, and so the probability of large deviations of the mean $\overline X_n$ from the expected value $\E[X]$ is small. Exactly how small is made precise by De Moivre's central limit theorem.
+
+In 1733 De Moivre privately circulated a proof which, in modern terminology, shows that $n^{-1/2} \overline X_n$ converges to a normal distribution. This material was later published in the 1738 second edition of his book {\em The Doctrine of Chances,} the first edition of which was first published in 1712 and is widely regarded as the first textbook on probability theory. De Moivre also considered the case of what we might call a biased coin (an event which has value one with probability $p$ and zero with probability $1-p$, for some $p \in [0,1]$), and realized that his convergence result continues to hold in this case.
+
+De Moivre's result was generalized by Laplace in the period between about 1776 and 1812 to sums of random variables with various other distributions. For example, in 1776 Laplace proved that $n^{-1/2} \overline X_n$ converges to a normal distribution in the case where the $X_n$'s are uniformly distributed. The particular problem Laplace considered in that paper was finding the distribution of the average inclination of a random sample of comets, the distribution for a single comet being assumed uniform between $0^\circ$ and $90^\circ$. Over the next three decades Laplace developed the conceptual and analytical tools to extend this convergence theorem to sums of independent identically distributed random variables with ever more general distributions, and this work culminated in his treatise {\em Th\'eorie analytique des probabilit\'es}. This included the development of the method of characteristic functions to study the convergence of sums of random variables, a move which firmly established the usefulness of analytic methods in probability theory (in particular Fourier analysis, the characteristic function of a random variable being exactly the Fourier transform of that variable).
+
+Laplace's theorem, which later became known as the central limit theorem (a designation due to P\'olya and stemming from its importance both in the theory and applications of probability), states in modern terms that the normalized sum of a sequence of independent and identically distributed random variables converges to a normal distribution, provided the distribution of the random variables being summed guarantees they have a high probability of being small. All of this imprecise language will be made precise later on. In the work of Laplace all the main ingredients of the proof of the central limit theorem are present, though of course the theorem was refined and extended as probability underwent the radical changes necessitated by its move to measure-theoretic foundations in the first half of the twentieth century.
+
+Gauss was one of the first to recognize the importance of the normal distribution to the estimation of measurement errors, and it is notable that the usefulness of the normal distribution in this context is largely a consequence of the central limit theorem, for errors occurring in practice are frequently the result of many independent factors which sum to an overall error in a way which can be regarded as approximated by a sum of independent and identically distributed random variables. The normal distribution also arose with surprising frequency in a wide variety of empirical contexts: from the heights of men and women to the velocities of molecules in a gas. This gave the central limit theorem the character of a natural law, as seen in the following poetic quote from Sir Francis Galton in 1889:
+\begin{quote}
+ I know of scarcely anything so apt to impress the imagination as the wonderful form of cosmic order expressed by the ``Law of Frequency of Error.'' The law would have been personified by the Greeks and deified, if they had known of it. It reigns with serenity and in complete self-effacement, amidst the wildest confusion. The huger the mob, and the greater the apparent anarchy, the more perfect is its sway. It is the supreme law of Unreason. Whenever a large sample of chaotic elements are taken in hand and marshaled in the order of their magnitude, an unsuspected and most beautiful form of regularity proves to have been latent all along.
+\end{quote}
+
+Standards of rigour have evloved a great deal over the course of the history of the central limit theorem, and around the turn of the twentieth century a completely precise notion of proof, developed by Frege, Russell, and many others, finally became available to mathematicians. Actually writing proofs which conform to the precise requirements of this notion did not become the new norm of mathematical practice, however, largely because it is impractical for human mathematicians to work at that level of formal detail. The burden of writing an entirely precise proof in first-order logic (say) simply does not offer sufficient gain for a human mathematician to undertake it. However, advances in automated computing technology around the middle of the twentieth century quickly progressed to the point where a computer could be programmed to take on the cumbersome burden of verifying all the details of a proof which a human outlined at a high level. This is the domain of interactive theorem proving.
+
+%TODO: Insert a little background on interactive theorem proving and mention Professor Avigad's work on the prime number theorem.
+
+A theorem which both played a fundamental role in the development of modern probability theory and has far-reaching applications seemed to us a perfect candidate for formalization, especially because the measure-theoretic libraries of Isabelle are still under active development and we saw and opportunity to contribute to them by formalizing the characteristic function arguments used to prove the CLT. The formalization was completed between 2011 and 2013, and improvements to the proof scripts are ongoing.
+
+This paper is structured as follows: Section \ref{CLT} outlines the history of the CLT and gives an overview of the various forms of this theorem and the analytical techniques used in its proof. Section \ref{AutoDed} outlines the history of automated and interactive deduction and gives an overview of the techniques and systems used in this field. Section \ref{Isa} gives an overview of the Isabelle interactive theorem proving system and how proofs in mathematical analysis are achieved in that system, including a large number of proofs formalized by the authors. Section \ref{Proof} gives an overview of the proof of the central limit theorem in Isabelle and reflects on the formalization process and opportunities for improvement. Section \ref{End} situates this formalization in the broader project of interactive and automated deduction.
+
+\subsection{History and Overview of Automated and Interactive Deduction} \label{AutoDed}
 
 Developments in logic and computer science leading toward automated deduction.
 
@@ -53,19 +74,27 @@ Wang's complete propositional procedure.
 
 Gelernter's geometry machine.
 
-\subsection{History of the Central Limit Theorem and Overview of its Proof}
+\subsection{History of the Central Limit Theorem and Overview of its Proof} \label{CLT}
 
 %%% HISTORY
+
+%TODO: Decide whether history in introduction is sufficient.
 
 Ideas leading to formulation of CLT. [Brief history of the normal distribution.]
 
 Initial proof by De Moivre.
 
-Generalizations by Laplace, Cauchy, and others.
+Generalizations by Laplace, Cauchy, Chebychev, von Mises, Bernshtein, L\'evy, Lindeberg, Markov, etc.
 
 Fully general form proved by Lyapunov in 1901.
 
+Name ``central limit theorem'' likely due to P\'olya.
+
 Modern generalizations and refinements.
+
+Stable and infinitely divisible distributions (Gnedenko and Kolmogorov {\em Limit Distributions for Sums of Independent Random Variables}).
+
+Martingales and other stochastic process generalizations.
 
 Brief history of applications of the CLT. [Quote by Sir Francis Galton.]
 
@@ -101,7 +130,7 @@ Lindberg CLT.
 
 Lyapounov condition.
 
-\section{Analysis in the Isabelle Interactive Proof Assisstant}
+\section{Analysis in the Isabelle Interactive Proof Assisstant} \label{Isa}
 
 \subsection{Overview of Isabelle}
 
@@ -187,7 +216,7 @@ Supporting automation for integration.
 
 Computation of integrals -- sinc in particular.
 
-\section{Proof of the Central Limit Theorem}
+\section{Proof of the Central Limit Theorem} \label{Proof}
 
 The formalization process.
 
@@ -197,7 +226,7 @@ Opportunities for generalization.
 
 Related projects.
 
-\section{Conclusion}
+\section{Conclusion} \label{End}
 
 Situating result in general programme of formal verification of mathematical proofs.
 
