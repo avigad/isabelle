@@ -349,6 +349,17 @@ Complex numbers.
 
 Conceptual overview of relation between filters, nets, and limits.
 
+To give a unified account of limits, the Isabelle library formalizes limits using filters. Since this is different than the standard account of limits found in expositions of analysis, it is worthwhile to examine this concept in more detail.
+
+\begin{definition}
+A {\em filter} $\mathcal F$ over a set $X$ is a collection of subsets of $X$ satisfying
+\begin{enumerate}
+\item If $A \in \mathcal F$ and $A \subseteq B$, then $B \in \mathcal F$.
+\item If $A, B \in \mathcal F$ then $A \cap B \in \mathcal F$.
+\item $\emptyset \notin \mathcal F$.
+\end{enumerate}
+\end{definition}
+
 Definition and basic properties of filter limits.
 
 Definition and basic properties of continuity.
@@ -391,11 +402,27 @@ Construction of Bochner and Lebesgue integrals.
 
 \texttt{has\_integral} vs \texttt{integral f = \_} and \texttt{integrable f} tradeoff; resolution in Isabelle (cf. similar dilemma encountered when discussing differentiation).
 
+Original proof used library which included Lebesgue integration implemented with an integral operator and integrability predicate, most lemmata requiring an integrability assumption. This resulted in much frustration when one attempted to show something was integrable by computing its integral (e.g. with the fundamental theorem of calculus).
+
+Johannes H\"olzl has since reimplemented the integration library using Bochner integration and a \texttt{has\_integral} predicate. The integral operator is defined by
+
+\[ \texttt{integral$^\texttt{L}$ M f = (if $\exists x.$ has\_bochner\_integral M f x then THE x. has\_bochner\_integral M f x else 0). \]
+
 Lemmata concerning integrability.
 
 Monotone convergence theorem.
 
+Dominated convergence theorem.
+
 Integration over sets and intervals; indicator functions; comparison to differentiation for decision as to whether integral over a set should be fundamental; usefulness and cumbersomeness of $\int_b^a = - \int_a^b$.
+
+Can have $\int f \, d\mu$ fundamental and define $\int_A f \, d\mu = \int f \mathbbm 1_A \, d\mu$, or can take $\int_A f \, d\mu$ as fundamental and define $\int f \, d\mu$ as $\int_X f \, d\mu$.
+
+For $a \le b$, $\int_a^b f \, d\mu = \int_{[a,b]} f \, d\mu$. Some results are most naturally stated using the convention that for $b < a$, $\int_a^b f \, d\mu = - \int_b^a f \, d\mu$. An example of such a result is the antiderivative form of the fundamental theorem of calculus, which states that
+
+\[ \frac{d}{dx} \int_a^x f(t) \mu(dt) = f(x). \]
+
+Note that the convention is required for this to make sense for $x < a$.
 
 Fundamental theorem of calculus.
 
@@ -411,11 +438,23 @@ Computation of integrals -- sinc in particular.
 
 The formalization process.
 
+Began formalization in Summer 2012, with aid of departmental LSEC grant.
+
+Continued formalization the following summer with REU grant [give grant number.]
+
 Opportunities for improving process of formalizing mathematical results (in Isabelle in particular).
 
 Opportunities for generalization.
 
+Weakly dependent sums.
+
+Infinitely divisible distributions.
+
 Related projects.
+
+Formalization of measure theory [Three chapters of measure theory.]
+
+
 
 \section{Conclusion} \label{End}
 
