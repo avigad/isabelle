@@ -1,0 +1,506 @@
+\documentclass{amsart}
+\usepackage{amsmath,amssymb}
+\usepackage{seraf}
+\usepackage{tikz}
+\usepackage{todonotes}\presetkeys{todonotes}{color=blue!20}{}
+\usepackage{bbm}
+\usepackage{enumerate}
+
+\title{A Formally Verified Proof of the Central Limit Theorem}
+\author{Jeremy Avigad \and Luke Serafin}
+%\date{\today}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem*{conjecture*}{Conjecture}
+\newtheorem*{theorem*}{Theorem}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+\newtheorem{example}[theorem]{Example}
+\newtheorem*{claim}{Claim}
+
+\newcommand{\bldset}[2]{\{{#1}\mid{#2}\}}
+\newcommand{\bldseq}[2]{\langle{#1}\mid{#2}\rangle}
+\renewcommand{\E}{\mathbb E}
+\newcommand\indep{\protect\mathpalette{\protect\independenT}{\perp}}
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+\newcommand\Si{\text{Si}}
+
+\begin{document}
+
+\begin{abstract}
+We present a formalization of the central limit theorem in the interactive proof assisstant Isabelle.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+
+Consider a toss of a fair coin. If we treat a result of tails as having value zero and a result of heads as having a result of one, we may treat the coin toss as a random variable, say $X$. Thus $X$ is supported on $\{0,1\}$, and $\P[X = 0] = \P[X = 1] = \frac{1}{2}$. Hence the expected value of $X$ is
+
+\[ \E[X] = 0 \cdot \P[X = 0] + 1 \cdot \P[X = 1] = \frac{1}{2}. \]
+
+Now suppose we toss the coin repeatedly, thus generating an infinite sequence $\bldseq{X_n}{n \in \N}$ of random variables which are pairwise independent and have the same distribution as $X$. By the strong law of large numbers, the mean $\overline X_n = \frac{1}{n} \sum_{i \le n} X_i$ converges almost surely to $\E[X] = \frac{1}{2}$. But clearly after a finite number of trials there is a nonzero probability that the value of $\overline X_n$ will differe from $\E[X]$. In fact, for $n$ odd the probability of deviation is $1$, because in this case it is impossible for $\frac{1}{n} \sum{i \le n} X_i$ to have the value $\frac{1}{2}$ at any element of the sample space. Nevertheless $|\overline X_n - \E[X]|$ must converge to zero, and so the probability of large deviations of the mean $\overline X_n$ from the expected value $\E[X]$ is small. Exactly how small is made precise by De Moivre's central limit theorem.
+
+In 1733 De Moivre privately circulated a proof which, in modern terminology, shows that $n^{-1/2} \overline X_n$ converges to a normal distribution. This material was later published in the 1738 second edition of his book {\em The Doctrine of Chances,} the first edition of which was first published in 1712 and is widely regarded as the first textbook on probability theory. De Moivre also considered the case of what we might call a biased coin (an event which has value one with probability $p$ and zero with probability $1-p$, for some $p \in [0,1]$), and realized that his convergence result continues to hold in this case.
+
+De Moivre's result was generalized by Laplace in the period between about 1776 and 1812 to sums of random variables with various other distributions. For example, in 1776 Laplace proved that $n^{-1/2} \overline X_n$ converges to a normal distribution in the case where the $X_n$'s are uniformly distributed. The particular problem Laplace considered in that paper was finding the distribution of the average inclination of a random sample of comets, the distribution for a single comet being assumed uniform between $0^\circ$ and $90^\circ$. Over the next three decades Laplace developed the conceptual and analytical tools to extend this convergence theorem to sums of independent identically distributed random variables with ever more general distributions, and this work culminated in his treatise {\em Th\'eorie analytique des probabilit\'es}. This included the development of the method of characteristic functions to study the convergence of sums of random variables, a move which firmly established the usefulness of analytic methods in probability theory (in particular Fourier analysis, the characteristic function of a random variable being exactly the Fourier transform of that variable).
+
+Laplace's theorem, which later became known as the central limit theorem (a designation due to P\'olya and stemming from its importance both in the theory and applications of probability), states in modern terms that the normalized sum of a sequence of independent and identically distributed random variables converges to a normal distribution, provided the distribution of the random variables being summed guarantees they have a high probability of being small. All of this imprecise language will be made precise later on. In the work of Laplace all the main ingredients of the proof of the central limit theorem are present, though of course the theorem was refined and extended as probability underwent the radical changes necessitated by its move to measure-theoretic foundations in the first half of the twentieth century.
+
+Gauss was one of the first to recognize the importance of the normal distribution to the estimation of measurement errors, and it is notable that the usefulness of the normal distribution in this context is largely a consequence of the central limit theorem, for errors occurring in practice are frequently the result of many independent factors which sum to an overall error in a way which can be regarded as approximated by a sum of independent and identically distributed random variables. The normal distribution also arose with surprising frequency in a wide variety of empirical contexts: from the heights of men and women to the velocities of molecules in a gas. This gave the central limit theorem the character of a natural law, as seen in the following poetic quote from Sir Francis Galton in 1889:
+\begin{quote}
+ I know of scarcely anything so apt to impress the imagination as the wonderful form of cosmic order expressed by the ``Law of Frequency of Error.'' The law would have been personified by the Greeks and deified, if they had known of it. It reigns with serenity and in complete self-effacement, amidst the wildest confusion. The huger the mob, and the greater the apparent anarchy, the more perfect is its sway. It is the supreme law of Unreason. Whenever a large sample of chaotic elements are taken in hand and marshaled in the order of their magnitude, an unsuspected and most beautiful form of regularity proves to have been latent all along.
+\end{quote}
+
+Standards of rigour have evloved a great deal over the course of the history of the central limit theorem, and around the turn of the twentieth century a completely precise notion of proof, developed by Frege, Russell, and many others, finally became available to mathematicians. Actually writing proofs which conform to the precise requirements of this notion did not become the new norm of mathematical practice, however, largely because it is impractical for human mathematicians to work at that level of formal detail. The burden of writing an entirely precise proof in first-order logic (say) simply does not offer sufficient gain for a human mathematician to undertake it. However, advances in automated computing technology around the middle of the twentieth century quickly progressed to the point where a computer could be programmed to take on the cumbersome burden of verifying all the details of a proof which a human outlined at a high level. This is the domain of interactive theorem proving.
+
+%TODO: Insert a little background on interactive theorem proving and mention Professor Avigad's work on the prime number theorem.
+
+A theorem which both played a fundamental role in the development of modern probability theory and has far-reaching applications seemed to us a perfect candidate for formalization, especially because the measure-theoretic libraries of Isabelle are still under active development and we saw and opportunity to contribute to them by formalizing the characteristic function arguments used to prove the CLT. The formalization was completed between 2011 and 2013, and improvements to the proof scripts are ongoing.
+
+This paper is structured as follows: Section \ref{CLT} outlines the history of the CLT and gives an overview of the various forms of this theorem and the analytical techniques used in its proof. Section \ref{AutoDed} outlines the history of automated and interactive deduction and gives an overview of the techniques and systems used in this field. Section \ref{Isa} gives an overview of the Isabelle interactive theorem proving system and how proofs in mathematical analysis are achieved in that system, including a large number of proofs formalized by the authors. Section \ref{Proof} gives an overview of the proof of the central limit theorem in Isabelle and reflects on the formalization process and opportunities for improvement. Section \ref{End} situates this formalization in the broader project of interactive and automated deduction.
+
+\subsection{History of the Central Limit Theorem and Overview of its Proof} \label{CLT}
+
+%%% HISTORY
+
+%TODO: Decide whether history in introduction is sufficient.
+
+Ideas leading to formulation of CLT. [Brief history of the normal distribution.]
+
+Initial proof by De Moivre.
+
+Generalizations by Laplace, Cauchy, Chebychev, von Mises, Bernshtein, L\'evy, Lindeberg, Markov, etc.
+
+Fully general form proved by Lyapunov in 1901.
+
+Name ``central limit theorem'' likely due to P\'olya.
+
+Modern generalizations and refinements.
+
+Stable and infinitely divisible distributions (Gnedenko and Kolmogorov {\em Limit Distributions for Sums of Independent Random Variables}).
+
+Martingales and other stochastic process generalizations.
+
+Brief history of applications of the CLT. [Quote by Sir Francis Galton.]
+
+%%% OVERVIEW OF PROOF
+
+Measure spaces -- History of use in probability, definition and basic properties, measurable functions.
+
+\begin{definition}
+A collection $\Sigma \subseteq \mathcal P (\Omega)$ is a {\em $\sigma$-algebra over $\Omega$} iff
+\begin{enumerate}
+\item $\emptyset \in \Sigma$.
+\item If $A \in \Sigma$, then $\Omega \setminus A \in \Sigma$.
+\item If for each $n \in \N$, $A_n \in \Sigma$, then $\bigcup_{n \in \N} A_n \in \Sigma$.
+\end{enumerate}
+\end{definition}
+
+The second condition is referred to as closure under complementation, and the third as closure under countable unions. The following lemma is immediate from the definition.
+
+\begin{lemma}
+Let $\Sigma$ be a $\sigma$-algebra over $\Omega$. Then $X \in \Sigma$, and if for each $n \in \N$, $A_n \in \Sigma$, then $\bigcap_{n \in \N} A_n \in \Sigma$.
+\end{lemma}
+
+\begin{proof}
+Take complements.
+\end{proof}
+
+Giving an explicit description of the elements of a $\sigma$-algebra is often very difficult, so it is useful to work with a smaller collection which, in a sense made precise below, generate the $\sigma$-algebra. This is analogous to the use of subbases in topology.
+
+\begin{definition}
+Let $\Delta \subseteq \mathcal P (\Omega)$. The {\em $\sigma$-algebra generated by $\Delta$} is
+\[ \sigma(\Delta) = \bigcap \bldset{\Sigma \subseteq \mathcal P (\Omega)}{\Delta \subseteq \Sigma \ \text{and $\Sigma$ is a $\sigma$-algebra.}} \]
+\end{definition}
+
+%%%TODO: Give alternate names for pi and lambda systems.
+
+As is the case in topology, it is frequently more convenient to work with a generating set which is closed under finite intersections, and such a collection of sets is given a name:
+
+\begin{definition}
+A collection $\Pi \subseteq \mathcal P (\Omega)$ is a {\em $\pi$-system} iff for every $A, B \in \Pi$, $A \cap  B \in \Pi$.
+\end{definition}
+
+Clearly any collection of subsets of $\Omega$ may be extended to a $\pi$ system by closing under intersections.
+
+\begin{definition}
+For $\Delta \subseteq \mathcal P (\Omega)$, the $\pi$-system generated by $\Delta$ is
+\[ \pi(\Delta) = \bigcap \bldset{\Pi \subseteq \mathcal P (\Omega)}{\Delta \subseteq \Pi \ \text{and $\Pi$ is a $\pi$-system.}} \]
+\end{definition}
+
+In order to exploit generating $\pi$-systems to their fullest extent, we need the complementary notion of a $\lambda$-system.
+
+\begin{definition}
+A collection $\Lambda \subseteq \mathcal P (\Omega)$ is a {\em $\lambda$-system} iff
+\begin{enumerate}
+\item $\Omega \in \Lambda$.
+\item If $A \in \Lambda$, then $\Omega \setminus A \in \Lambda$.
+\item If for each $n \in \N$, $A_n \in \Lambda$, and the collection $\bldset{A_n}{n \in \N}$ is pairwise disjoint, then $\bigcup_{n \in \N} A_n \in \Lambda$.
+\end{enumerate}
+\end{definition}
+
+Of course we can consider the $\lambda$-system generated by a collection of subsets of $\Omega$.
+
+\begin{definition}
+Let $\Delta \subseteq \mathcal P (\Omega)$. The $\lambda$-system generated by $\Delta$ is
+\[ \lambda(\Delta) = \bigcap \bldset{\Lambda \subseteq \mathcal P (\Omega)}{\Delta \subseteq \Lambda \ \text{and $\Lambda$ is a $\lambda$-system.}} \]
+\end{definition}
+
+We can now state the main theorem from which generating $\sigma$-algebrae via $\pi$-systems derives its usefulness:
+
+\begin{theorem}[The $\pi$-$\lambda$ theorem.]
+If a collection $\Sigma \subseteq \mathcal P (\Omega)$ is both a $\pi$-system and a $\lambda$-system, then it is a $\sigma$-algebra.
+\end{theorem}
+
+\begin{proof}
+\todo[inline]{Complete.}
+\end{proof}
+
+\todo[inline]{Mention monotone class theorem and relation to $\pi$-$\lambda$ theorem.}
+
+\begin{definition}
+A pair $(\Omega, \Sigma)$ is a {\em measurable space} iff $\Sigma$ is a $\sigma$-algebra over $\Omega$.
+\end{definition}
+
+\begin{definition}
+A triple $(\Omega, \Sigma, \mu)$ is a {\em measure space} iff $(\Omega, \Sigma)$ is a measurable space and $\mu\colon \Sigma \rightarrow \overline \R$ is a measure.
+\end{definition}
+
+\todo[inline]{Motivate almost sure convergence}
+
+\begin{definition}
+Let $(\Omega, \Sigma, \mu)$ be a measure space. A sequence $\bldseq{f_n}{n \in \N}$ of (extended) real-valued functions with domain $\Omega$ is said to converge {\em almost everywhere} to a function $f\colon \Omega \rightarrow \R$ (or $\overline \R$) iff
+\[ \mu \bldset{\omega \in \Omega}{f_n(\omega) \nrightarrow f(\omega)} = 0, \]
+where $f_n(\omega) \nrightarrow f(\omega)$ has the usual meaning for convergence of real-valued sequences.
+\end{definition}
+
+In the case where $\mu$ is a probability measure, convergence almost everywhere is called convergence almost surely, and the condition in the above definition is equivalent to
+
+\[ \mu \bldset{\omega \in \Omega}{f_n(\omega) \rightarrow f(\omega)} = 1, \]
+
+as can be easily verified by taking complements.
+
+\todo[inline]{Motivate definition of random variables}
+
+\begin{definition}
+Let $(\Omega, \Sigma)$ and $(A, \mathcal S)$ be measurable spaces. A function $f\colon \Omega \rightarrow A$ is {\em measurable} iff for every $S \in \mathcal S$, $f\inv[S] \in \Sigma$.
+\end{definition}
+
+Thus a function is measurable iff the inverse image of every measurable set is measurable; note the obvious analogy to the definition of continuity in topology.
+
+As in the case for convergence almost everywhere, the terminology for measurable functions is different in probability theory.
+
+\begin{definition}
+Let $(\Omega, \mathcal F, \P)$ be a probability space. A {\em random variable} on $\Omega$ is a measurable function from $(\Omega, \mathcal F, \P)$ to the reals (or extended reals) with Lebesgue measure.
+\end{definition}
+
+\todo[inline]{Motivate independence, both for events and random variables.}
+
+\begin{definition}
+Let $(\Omega, \mathcal F, \P)$ be a probability space. Events $A, B \in \mathcal F$ are {\em independent} (denoted $A \indep B$) iff $\P(A \cap B) = \P(A)\P(B)$.
+\end{definition}
+
+\begin{definition}
+A finite collection $\{A_1, \ldots, A_n\}$ of events is {\em independent} iff $\P(A_1 \cap \cdots \cap A_n) = \P(A_1) \cdots \P(A_n)$.
+\end{definition}
+
+It is an important fact that this condition is stronger than pairwise independence.
+
+\todo[inline]{Give example where a collection of three sets is pairwise independent but not independent.}
+
+\begin{definition}
+For $\mathcal A \subseteq \mathcal F$, $\mathcal A$ is called {\em independent} iff for every $A, B \in \mathcal A$, if $A \ne B$ then $A \indep B$.
+\end{definition}
+
+\begin{definition}
+Suppose for each $\alpha \in I$, $\mathcal A_\alpha \subseteq \mathcal F$, where $I$ is an index set. The collection $\bldset{\mathcal A_\alpha}{\alpha \in I}$ is called {\em independent} iff for finite collection $\mathcal C$ containing at most one element of $\mathcal A_\alpha$ for each $\alpha$, $\mathcal C$ is independent.
+\end{definition}
+
+The following lemma provides yet another reason for preferring that $\sigma$-algebrae be generated by $\pi$-systems.
+
+\begin{lemma}
+If $\bldset{\Pi_\alpha}{\alpha \in I}$ are independent $\pi$-systems and $\mathcal F$ is a $\sigma$-algebra containing $\Pi_\alpha$ for each $\alpha$, then $\bldset{\sigma(\Pi_\alpha}{\alpha \in I}$ is independent.
+\end{lemma}
+
+\begin{proof}
+We first prove the case where $|I| = 2$. Assume without loss of generality that $I = \{1,2\}$ and $\Omega \in \Pi_1, \Pi_2$ (obviously for any $\pi$-system $\Pi$, $\Pi \cup \{\Omega\}$ is a $\pi$-system and $\sigma(\Pi \cup \{\Omega\} = \sigma(\Pi)$, and independence of $\pi$-systems augmented by $\Omega$ is trivial as well). Fix $B \in \Pi_2$ and define
+\[ \Lambda = \bldset{A \in \mathcal F}{A \indep B}. \]
+It is easily verified that $\Lambda$ is a $\lambda$-system containing $\Pi_1$, and hence by the $\pi$-$\lambda$ theorem $\sigma(\Pi_1) \subseteq \Lambda$. Hence $A \indep B$ for every $A \in \sigma(\Pi_1)$. Since $B \in \Pi_2$ was arbitrary, a similar second $\pi$-$\lambda$ argument shows that $A \indep B$ for every $A \in \sigma(\Pi_1)$ and $B \in \sigma(\Pi_2)$.
+
+The case for $|I|$ finite follows inductively in the same manner, and the case for $|I|$ infinite follows from the definition of independence for infinite collections of sets of events.
+\end{proof}
+
+\todo[inline]{Motivate definition of $\sigma$-algebra generated by a collection of random variables.}
+
+\begin{definition}
+The $\sigma$-algebra generated by a random variable $X$ is
+\[ \sigma(X) = \bldset{X\inv[A]}{A \in \mathcal B}. \]
+\end{definition}
+
+\begin{definition}
+Let $(\Omega, \mathcal F, \P)$ be a probability space, and $X, Y$ be random variables on $\Omega$. $X$ and $Y$ are {\em independent} (denoted $X \indep Y$) iff $\sigma(X) \indep \sigma(Y)$.
+\end{definition}
+
+Distribution functions -- definition and basic properties.
+
+\begin{definition}
+Let $X$ be a random variable on a probability space $(\Omega, \mathcal F, \mu)$. The {\em distribution function} of $X$ is the function $F_\mu\colon \R \rightarrow [0,1]$ given by $F_\mu(x) = \P (-\infty, x]$ for $x \in \R$.
+\end{definition}
+
+\begin{lemma}
+A function $F\colon \R \rightarrow [0,1]$ is the distribution function of some random variable (on some measure space) iff
+\begin{enumerate}
+\item $F$ is nondecreasing.
+\item $F$ is right-continuous.
+\item $\lim_{x \rightarrow -\infty} F(x) = 0$ and $\lim_{x \rightarrow \infty} F(x) = 1$.
+\end{enumerate}
+\end{lemma}
+
+A function satisfying the conditions of this lemma is called a {\em distribution function.}
+
+\begin{proof}
+\todo[inline]{Complete.}
+\end{proof}
+
+Weak convergence of distribution functions and of measures (weak* convergence in sense of functional analysis).
+
+\begin{definition}
+Let $\bldseq{F_n}{n \in \N}$, $F$ be distribution functions. $F_n$ {\em converges weakly} to $F$ (denoted $F_n \Rightarrow F$) iff $F_n(x) \rightarrow F(x)$ for every $x \in \R$ such that $F$ is continuous at $x$.
+\end{definition}
+
+If the assumption that $F$ is a distribution function is dropped and replaced by the assumption that $F$ is nondecreasing and right-continuous, the convergence is called {\em vague.}
+
+\begin{definition}
+Let $\bldseq{\mu_n}{n \in \N}$, $\mu$ be probability measures (not necessarily on the same space). $\mu_n$ {\em converges weakly} to $\mu$ (also denoted $\mu_n \Rightarrow \mu$) iff $F_{\mu_n} \Rightarrow F$.
+\end{definition}
+
+\begin{definition}
+Let $\bldseq{X_n}{n \in \N}$, $X$ be random variables (not necessarily on the same space). $X_n$ {\em converges weakly} to $X$ (again denoted $X_n \Rightarrow X$ iff $\mu_n \Rightarrow \mu$, where for each $n \in \N$, $\mu_n$ is the distribution of $X$, and $\mu$ is the distribution of $X$.
+\end{definition}
+
+\todo[inline]{Give examples illustrating usefulness of this type of convergence.}
+
+Diagonal method.
+
+\begin{theorem}[Helly selection theorem.]
+For every sequence $\bldseq{F_n}{n \in \N}$ of distribution functions there exists a nondecreasing and right-continuous function $F$ such that a subsequence $\bldseq{F_{n_k}}{k \in \N}$ converges vaguely to $F$.
+\end{theorem}
+
+\begin{proof}
+\todo[inline]{Complete.}
+\end{proof}
+
+Tightness of sequences of measures.
+
+Skorohod's theorem.
+
+\begin{theorem}
+Suppose $\bldseq{\mu_n}{n \in \N}$, $\mu$ are Borel probability measures on $\R$, and $\mu_n \Rightarrow \mu$. Then there exists a probability space $(\Omega, \mathcal F, \P)$ and random variables $\bldseq{X_n}{n \in \N}$, $X$ on $\Omega$ such that $X_n \rightarrow X$ almost surely.
+\end{theorem}
+
+Portmanteau theorem.
+
+Characteristic functions (Fourier transforms).
+
+Inversion and continuity theorems (connect to harmonic analysis).
+
+\begin{definition}
+The {\em sine integral} $\Si(x)$ is defined by
+\[ \Si(x) = \int_0^x \frac{\sin x}{x} \, dx. \]
+\end{definition}
+
+Note that by convention $\Si(0) = 0$ (ignoring the fact that $\frac{\sin x}{x}$ is undefined at $0$).
+
+Need fact that $\lim_{x \rightarrow \infty} \Si(x) = \frac{\pi}{2}$.
+
+Lindberg CLT.
+
+Lyapounov condition.
+
+\subsection{History and Overview of Automated and Interactive Deduction} \label{AutoDed}
+
+Developments in logic and computer science leading toward automated deduction.
+
+Davis's implementation of Presburger's decidability procedure.
+
+Newell-Shaw-Simon Logic Theory Machine.
+
+Wang's complete propositional procedure.
+
+Gelernter's geometry machine.
+
+\section{Analysis in the Isabelle Interactive Proof Assisstant} \label{Isa}
+
+\subsection{Overview of Isabelle}
+
+\subsubsection{Isar}
+
+Structured proof language implemented by Markus Wenzel.
+
+Give example illustrating style distinction between tactical and Isar proofs.
+
+\subsubsection{Proof Automation Tools}
+
+Auto, simp, force, blast, smt, metis, sledgehammer.
+
+Simp -- term rewriting using associativity and commutativity and an ordering of terms.
+
+Blast -- classical tableau theorem prover.
+
+Auto -- Combines \texttt{blast} with \texttt{simp}.
+
+\subsection{Isabelle Locales}
+
+\subsection{Number Systems in Isabelle}
+
+Natural numbers (an inductive type).
+
+Rational numbers.
+
+Real numbers.
+
+Implemented as Cauchy sequences.
+
+Extended real numbers.
+
+Simple extension of reals by $\pm \infty$; type \texttt{ereal} is either \texttt{ereal} $r$ where $r$ is a real or \texttt{PInfty} or \texttt{MInfty}.
+
+Complex numbers.
+
+Implemented as pairs of reals; type \texttt{complex} is \texttt{complex a b} where $a$, $b$ are reals.
+
+Type coercions.
+
+\subsection{Limits and Continuity}
+
+Conceptual overview of relation between filters, nets, and limits.
+
+To give a unified account of limits, the Isabelle library formalizes limits using filters. Since this is different than the standard account of limits found in expositions of analysis, it is worthwhile to examine this concept in more detail.
+
+\begin{definition}
+A {\em filter} $\mathcal F$ over a set $X$ is a collection of subsets of $X$ satisfying
+\begin{enumerate}
+\item If $A \in \mathcal F$ and $A \subseteq B$, then $B \in \mathcal F$.
+\item If $A, B \in \mathcal F$ then $A \cap B \in \mathcal F$.
+\item $\emptyset \notin \mathcal F$.
+\end{enumerate}
+\end{definition}
+
+Definition and basic properties of filter limits.
+
+Definition and basic properties of continuity.
+
+Overview of limsup and liminf.
+
+Conditionally complete lattices.
+
+Implementation of limsup and liminf.
+
+Supporting automation for limits and continuity.
+
+\subsection{Differentiation}
+
+Fr\'echet differentiation.
+
+\texttt{has\_derivative} / \texttt{f'} dilemma and resolution in Isabelle.
+
+\texttt{has\_derivative at \_ within \_}
+
+Supporting automation for differentiation.
+
+\subsection{Measure Theory}
+
+Implementation of measure spaces (as record types).
+
+$\pi$-$\lambda$ theorem.
+
+Carath\'eodory extension theorem (semirings, rings, and premeasures).
+
+Construction of Lebesgue measure.
+
+Product spaces.
+
+\subsection{Bochner and Lebesgue Integration}
+
+Reasons for switching to Bochner integral. [Unified treatment of complex and vector-valued integrals, reimplementing libraries using has\_integral style.]
+
+Background on integration theory.
+
+Construction of Bochner and Lebesgue integrals.
+
+\texttt{has\_integral} vs \texttt{integral f = \_} and \texttt{integrable f} tradeoff; resolution in Isabelle (cf. similar dilemma encountered when discussing differentiation).
+
+Original proof used library which included Lebesgue integration implemented with an integral operator and integrability predicate, most lemmata requiring an integrability assumption. This resulted in much frustration when one attempted to show something was integrable by computing its integral (e.g. with the fundamental theorem of calculus).
+
+Johannes H\"olzl has since reimplemented the integration library using Bochner integration and a \texttt{has\_integral} predicate. The integral operator is defined by
+
+\begin{align*} \texttt{integral$^\texttt{L}$ M f = (}&\texttt{if $\exists x.$ has\_bochner\_integral M f x then} \\
+  &\texttt{THE x. has\_bochner\_integral M f x else 0)}.
+\end{align*}
+
+Lemmata concerning integrability.
+
+Monotone convergence theorem.
+
+Dominated convergence theorem.
+
+Integration over sets and intervals; indicator functions; comparison to differentiation for decision as to whether integral over a set should be fundamental; usefulness and cumbersomeness of $\int_b^a = - \int_a^b$.
+
+Can have $\int f \, d\mu$ fundamental and define $\int_A f \, d\mu = \int f \mathbbm 1_A \, d\mu$, or can take $\int_A f \, d\mu$ as fundamental and define $\int f \, d\mu$ as $\int_X f \, d\mu$.
+
+For $a \le b$, $\int_a^b f \, d\mu = \int_{[a,b]} f \, d\mu$. Some results are most naturally stated using the convention that for $b < a$, $\int_a^b f \, d\mu = - \int_b^a f \, d\mu$. An example of such a result is the antiderivative form of the fundamental theorem of calculus, which states that
+
+\[ \frac{d}{dx} \int_a^x f(t) \mu(dt) = f(x). \]
+
+Note that the convention is required for this to make sense for $x < a$.
+
+Fundamental theorem of calculus.
+
+Fubini's theorem.
+
+Integration of complex-valued functions.
+
+Part of the motivation for adopting the Bochner integral.
+
+Supporting automation for integration.
+
+Computer algebra systems are quite good at computing integrals; opportunity to integrate these with proof assistants to verify integral computations.
+
+Computation of integrals -- Si in particular.
+
+Want to verify integrability by computing the integral.
+
+\section{Proof of the Central Limit Theorem} \label{Proof}
+
+The formalization process.
+
+Began formalization in Summer 2012, with aid of departmental LSEC grant.
+
+Continued formalization the following summer with REU grant [give grant number.]
+
+Opportunities for improving process of formalizing mathematical results (in Isabelle in particular).
+
+Opportunities for generalization.
+
+Weakly dependent sums.
+
+Infinitely divisible distributions.
+
+Related projects.
+
+Formalization of measure theory [Three chapters of measure theory.]
+
+\section{Conclusion} \label{End}
+
+Situating result in general programme of formal verification of mathematical proofs.
+
+\bibliographystyle{plain}
+\bibliography{itp}
+
+\end{document}
