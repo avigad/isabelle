@@ -28,7 +28,9 @@
 \renewcommand{\E}{\mathbb E}
 \newcommand\indep{\protect\mathpalette{\protect\independenT}{\perp}}
 \def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+\newcommand\sinc{\mathop{\text{sinc}}\nolimits}
 \newcommand\Si{\text{Si}}
+\newcommand\floor[1]{\lfloor {#1} \rfloor}
 
 \begin{document}
 
@@ -124,10 +126,61 @@ The proof of the main result concerning tight sequences of measures requires the
 
 \section{The Formalized Proof}
 
+\subsection{Distribution Functions}
+
+Often it is more convenient to work with a real-valued function determining a measure on $\R$ than directly with the measure, and an obvious way to accomplish this for finite measures is to study the distribution function of the measure, which when evaluated at an argument gives the amount of mass below that argument.
+
+\begin{definition}
+Let $\mu$ be a finite measure on $\R$. The (cumulative) distribution function $F_\mu$ is defined by $F_\mu(x) = \mu (-\infty, x]$.
+\end{definition}
+
+Before proving that the distribution function of a measure uniquely determines that measure, let us note some general properties of distribution functions. For convenience we assume the measures we are working with are probability measures; other nonzero finite measures can be normalized to probability measures, and the zero measure is trivial.
+
+\begin{theorem}
+The distribution function $F_\mu$ of a finite measure $\mu$ is nondecreasing and right-continuous and satisfies $\lim_{x \rightarrow -\infty} F_\mu(x) = 0$ and $\lim_{x \rightarrow \infty} F_\mu(x) = 1$.
+\end{theorem}
+
+$F_\mu$ nondecreasing follows from nonnegativity of $\mu$; right-continuity follows from continuity of $\mu$ from below as if $x_n \uparrow x$ then $(-\infty
+, x_n] \uparrow (-\infty, x]$. $\lim_{x \rightarrow -\infty} F_\mu(x) = 0$ follows from continuity of $\mu$ from above as $(-\infty, -n] \downarrow \emptyset$, and $\lim_{x \rightarrow \infty} F_\mu(x) = 1$ follows from continuity of $\mu$ from below as $(-\infty, n] \uparrow \R$.
+
+\todo[inline]{Give Isabelle proof script snippets.}
+
+In turn, any function with the properties listed in the preceding theorem is the distribution function of a probability measure on $\R$:
+
+\begin{theorem}
+Suppose $F\colon \R \rightarrow \R$ is nondecreasing, right-continuous, and satisfies $\lim_{x \rightarrow -\infty} F(x) = 0$ and $\lim_{x \rightarrow \infty} F(x) = 1$. Then there exists a Borel probability measure $\mu$ on $\R$ such that $F = F_\mu$.
+\end{theorem}
+
+The requisite measure $\mu$ is constructed by defining $\mu (a,b] = F(b) - F(a)$ and extending this to the Borel $\sigma$-algebra using the Carath\'eodory extension theorem, which fortunately Johannes H\"olzl had already formalized. 
+
+\todo[inline]{Decide whether to rewrite the following as a displayed theorem.}
+A similar method of proof also gives that the distribution function of a probability measure is unique in the sense that if $F_\mu = F_\nu$ then $\mu = \nu$, because $F_\mu = F_\nu$ implies $\mu (a,b] = \nu (a,b]$ for every $a,b$, and the half-open intervals are a $\pi$-system generating the Borel sets on $\R$, so $\mu = \nu$ by Dynkin's uniqueness lemma.
+
+\todo[inline]{Isabelle proof script snippets.}
+
+\subsection{Weak Convergence}
+
+
+
+\subsection{Helly Selection Theorem and Tightness}
+
+
+
+\subsection{Integration}
+
 The proofs of the L\'evy inversion and continuity theorems required formal work with integrals, and brought a number of design issues into focus. First, one frequently wishes to integrate a function only over a subset $A$ of the space on which it is defined rather than the whole space. This can be handled in two ways: The integral over the whole space can be taken as primitive, with the integral of a function $f$ over a set $A$ defined by $\int_A f \, d\mu = \int f \mathbbm{1}_A \, d\mu$,\todo{Ensure indicator function notation is defined prior to this point.} or the integral over a set can be taken as primitive with the integral of a function $f$ over the whole space being defined by $\int f \, d\mu = \int_X f \, d\mu$.
 \todo[inline]{List advantages and disadvantages, and give rationale behind Isabelle method.}
 
 One particular type of set occurs particularly frequently as the domain of integration with respect to Lebesgue measure on $\R$, namely a closed interval. In calculus the integral (with respect to Lebesgue meausre) of a function $f$ over a closed interval $[a,b]$ ($a \le b$) is denoted $\int_a^b f \, dx$, and it is convenient to have a similar notation for integrals over intervals in Isabelle. A number of design issues immediately present themselves: What should be the types of $a$ and $b$? One might assume these should be reals, but frequently integrals are computed over unbounded intervals ($\int_0^\infty e^{-x} \, dx$, $\int_{-\infty}^\infty e^{-x^2} \, dx$), and so there is advantage to taking $a$ and $b$ to be extended reals to avoid the need for separate lemmata for integrals of the form $\int_a^\infty$, $\int_{\infty}^b$ and $\int_{-\infty}^\infty$ (this last form being a notational variant of $\int$). However, this advantage is achieved at a cost, because it entails annoying casts between reals and extended reals that we found in practice frequently prevent automated tools from proving apparently obvious facts (which they do in fact obtain when the endpoints are taken to be of type real).
+
+As noted in the preceding paragraph, for interval integrals with respect to Lebesgue measure the interval is generally assumed to be closed (so any continuous function defined on it is uniformly continuous, and other nice properties hold); since Lebesgue measure is continuous, it makes no difference to the value of the integral whether the endpoints are included. However, for general measures this does make a difference if one of the endpoints is an atom, and in particular the interval partition formula, valid for $f$ integrable with respect to Lebesgue measure and $a \le b \le c$:
+\[ \int_a^b f \, dx + \int_b^c f \, dx = \int_a^c f \, dx \]
+fails in general if $\int_a^b$ is defined as $\int_{[a,b]}$. What holds instead for arbitrary measures $\mu$ (and functions $f$ integrable over $[a,c]$ with respect to $\mu$) is that
+\[ \int_a^b f \, d\mu + \int_b^c f \, d\mu = \int_a^c f \, d\mu + f(b)\mu \{b\}. \]
+Intuitively this is because the mass of the point $b$ was counted twice. This is obviously less convenient than the ordinary interval partition formula, especially for partitions into large numbers of pieces. The problem can be fixed by using a half-open interval to ensure elements of an interval partition are disjoint; such a solution preserves the equality $\int_a^b f \, d\mu = \int_{[a,b]} f \, d\mu$ for continuous measures, and satisfies the intuitive partition formula
+\[ \int_a^b f \, d\mu + \int_b^c f \, d\mu = \int_a^c f \, d\mu \]
+for all $a,b,c$ with $a < b < c$.
+\todo[inline]{Figure out why Bochner integration library does not use half-open intervals, and instead open intervals, which have the same problem as closed intervals.}
 
 A further constellation of design issues arises from considering what should happen if $b < a$ in $\int_a^b f \, dx$. The natural option is to take $\int_a^b f \, dx = -\int_b^a f \, dx$ in this case, but this would require introducing a case split in the definition of $\int_a^b f \, dx$ (e.g. $\int_a^b f \, dx = \int_{[a,b]} f \, dx$ if $a \le b$, otherwise $\int_a^b f \, dx = -\int_{[b,a]} f \, dx$), which then causes headaches for formalization both for human users and automated tools. $\int_a^b f \, dx$ could also be taken simply to be notation for $\int_{[a,b]} f \, dx$, in which case $b < a$ implies $[a,b] = \emptyset$ and so the integral is zero, but this makes it hard to state results such as the fundamental theorem of calculus or the theorem regarding change of variables in a natural manner.
 
@@ -138,6 +191,12 @@ A partial function with domain $X$ and codomain $Y$ can be thought of as a relat
 The Isabelle libraries we used during the formalization of the central limit theorem employed and integral operator and an integrability predicate; there was no instantiation of the relation $R$ from the preceding paragraph. This could have worked had every use of the integral operator been accompanied by a corresponding proof of integrability, but unfortunately this was not the case, and sometimes we had to repeat long arguments from library lemmata with trivial modifications so as to obtain integrability. Another difficulty was that when working with definite functions, one often wishes to prove integrability by computing the integral (e.g. the integral of $e^{-x}$ over $[0, \infty)$ is $1$), and this is generally very inconvenient to do when integrability must be verified separately. A better plan in such cases is to have an instantiation \texttt{has\_integral} of the relation $R$ from the preceding paragraph, and prove integrability by computing the integral by proving that \texttt{$f$ has\_integral $c$} for appropriate $c$. Thus it is convenient to have not only an integral operator and an integrability predicate, but also a \texttt{has\_integral} relation. In some sense it does not matter which is taken as fundamental, but as noted in the preceding paragraph it seems more natural to take \texttt{has\_integral} as fundamental.
 
 The change from a fundamental integral operator and integrability predicate to a fundamental \texttt{has\_integral} relation was accomplished by Johannes H\"olzl when reimplementing the integration library using the Bochner integral. This change was motivated largely by a desire to provide a unified framework for vector-valued integrals, and was of direct importance to the central limit theorem formalization because the complex-valued integrals arising from characteristic functions can be handled as Bochner integrals.
+
+There is also the question of how to handle improper integrals; for example, the $\sinc$ function is not integrable over $[0,\infty)$, and yet 
+\[ \lim_{t \rightarrow \infty} \int_0^t \sinc x \, dx = \frac{\pi}{2}. \]
+Often this is written simply as $\int_0^\infty \sinc x \, dx = \pi/2$, perhaps with a warning that notation is being abused (see note regarding this limit in \cite{Billingsley}, p. 223). Improper integrals also occur over finite intervals, for example
+\[ \lim_{t \rightarrow 0} \int_t^1 \frac{(-1)^{\floor x + 1}}{\floor x} \mathbbm 1_{(0,1]} \, dx = \ln 2, \]
+but the integrand is not integrable over $(0,1]$ because the harmonic series diverges. It would be possible to implement the integral over an interval to include improper integrals, as is standard practice in calculus texts, by including a limit in the definition of such an integral. However, this seems to carry with it too many disadvantages. One is that for measures with atoms, the integral over a half-open interval $(a,b]$ ($a < b$) is not in general equal to the integral over the closed interval $[a,b]$ (in particular, for any function $f$ integrable over $[a,b]$ and any measure $\mu$ on $\R$, $\int_{[a,b]} f \, d\mu = \int_{(a,b]} f \, d\mu + \mu \{a\} f(a)$). Another is simply the complication that a hidden limit introduces; it is inconvenient for users to constantly need to eliminate the limit whenever they use integrals, and difficult to set up automated tools to deal with this effectively.
 
 \section{Conclusion: Opportunities for Improvement and Extension}
 
