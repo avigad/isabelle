@@ -1,8 +1,59 @@
-@book{billingsley,
-  title={Probability and measure},
-  author={Billingsley, Patrick},
-  year={2008},
-  publisher={John Wiley \& Sons}
+@article{prelim,
+  author    = {Jeremy Avigad and
+               Johannes H{\"{o}}lzl and
+               Luke Serafin},
+  title     = {A formally verified proof of the Central Limit Theorem},
+  journal   = {CoRR},
+  volume    = {abs/1405.7012},
+  year      = {2014},
+  url       = {http://arxiv.org/abs/1405.7012},
+  timestamp = {Mon, 02 Jun 2014 08:30:36 +0200},
+  biburl    = {http://dblp.uni-trier.de/rec/bib/journals/corr/AvigadHS14},
+  bibsource = {dblp computer science bibliography, http://dblp.org}
+}
+
+@book{andrews,
+  title={An introduction to mathematical logic and type theory},
+  author={Andrews, Peter B},
+  volume={27},
+  year={2002},
+  publisher={Springer Science \& Business Media}
+}
+
+@article{avigad-etal-pnt,
+ author = {Avigad, Jeremy and Donnelly, Kevin and Gray, David and Raff, Paul},
+ title = {A Formally Verified Proof of the Prime Number Theorem},
+ journal = {ACM Trans. Comput. Logic},
+ issue_date = {December 2007},
+ volume = {9},
+ number = {1},
+ month = dec,
+ year = {2007},
+ issn = {1529-3785},
+ articleno = {2},
+ url = {http://doi.acm.org/10.1145/1297658.1297660},
+ doi = {10.1145/1297658.1297660},
+ acmid = {1297660},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {Prime number theorem, formal verification},
+}
+
+@Book{billingsley,
+  Title                    = {Probability and measure},
+  Author                   = {Billingsley, Patrick},
+  Publisher                = {John Wiley \& Sons Inc.},
+  Year                     = {1995},
+
+  Address                  = {New York},
+  Edition                  = {Third},
+  Note                     = {A Wiley-Interscience Publication},
+  Series                   = {Wiley Series in Probability and Mathematical Statistics},
+
+  ISBN                     = {0-471-00710-2},
+  Mrclass                  = {60-01 (28-01)},
+  Mrnumber                 = {1324786 (95k:60001)},
+  Pages                    = {xiv+593}
 }
 
 @incollection{bundy,
@@ -14,20 +65,180 @@
   publisher={Springer}
 }
 
-@incollection{holzl-filter,
-  title={Type classes and filters for mathematical analysis in Isabelle/HOL},
-  author={H{\"o}lzl, Johannes and Immler, Fabian and Huffman, Brian},
-  booktitle={Interactive Theorem Proving},
-  pages={279--294},
-  year={2013},
+@article{coq-ref,
+  title={The Coq proof assistant reference manual: Version 6.1},
+  author={Barras, Bruno and Boutin, Samuel and Cornes, Cristina and Courant, Judica{\"e}l and Filliatre, Jean-Christophe and Gimenez, Eduardo and Herbelin, Hugo and Huet, Gerard and Munoz, Cesar and Murthy, Chetan and others},
+  year={1997}
+}
+
+@book{galton,
+  title     = {Natural inheritance},
+  publisher = {Macmillan},
+  address   = {London},
+  year      = 1889,
+  author    = {Galton, Francis},
+  pages     = {282}
+}
+
+@article{gordon-lcf,
+  title={Edinburgh LCF: a mechanised logic of computation},
+  author={Gordon, Michael JC},
+  year={1979}
+}
+
+@article{hales-jordan,
+  title={The Jordan curve theorem, formally and informally},
+  author={Hales, Thomas C},
+  journal={The American Mathematical Monthly},
+  pages={882--894},
+  year={2007},
+  publisher={JSTOR}
+}
+
+@ARTICLE{hales-kepler,
+   author = {{Hales}, T. and {Adams}, M. and {Bauer}, G. and {Tat Dang}, D. and 
+	{Harrison}, J. and {Le Hoang}, T. and {Kaliszyk}, C. and {Magron}, V. and 
+	{McLaughlin}, S. and {Tat Nguyen}, T. and {Quang Nguyen}, T. and 
+	{Nipkow}, T. and {Obua}, S. and {Pleso}, J. and {Rute}, J. and 
+	{Solovyev}, A. and {Hoai Thi Ta}, A. and {Tran}, T.~N. and {Thi Trieu}, D. and 
+	{Urban}, J. and {Khac Vu}, K. and {Zumkeller}, R.},
+    title = "{A formal proof of the Kepler conjecture}",
+  journal = {ArXiv e-prints},
+archivePrefix = "arXiv",
+   eprint = {1501.02155},
+ primaryClass = "math.MG",
+ keywords = {Mathematics - Metric Geometry, Computer Science - Logic in Computer Science},
+     year = 2015,
+    month = jan,
+   adsurl = {http://adsabs.harvard.edu/abs/2015arXiv150102155H},
+  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+@article{harrison-complex,
+  author    = {John Harrison},
+  title     = {Formalizing basic complex analysis},
+  journal   = {Studies in Logic, Grammar and Rhetoric},
+  volume     = 10,
+  number    = 23,
+  year      = 2007,
+  pages     = {151--165}
+}
+
+@article{harrison-euclidean,
+  year      = {2013},
+  issn      = {0168-7433},
+  journal   = {Journal of Automated Reasoning},
+  volume    = {50},
+  number    = {2},
+  doi       = {10.1007/s10817-012-9250-9},
+  title     = {The HOL Light Theory of Euclidean Space},
+  doi       = {10.1007/s10817-012-9250-9},
+  publisher = {Springer},
+  author    = {Harrison, John},
+  pages     = {173--190}
+}
+
+@incollection{harrison-hol-light,
+  title={HOL light: An overview},
+  author={Harrison, John},
+  booktitle={Theorem Proving in Higher Order Logics},
+  pages={60--66},
+  year={2009},
   publisher={Springer}
 }
 
-@incollection{holzl-measure,
-  title={Three chapters of measure theory in Isabelle/HOL},
-  author={H{\"o}lzl, Johannes and Heller, Armin},
-  booktitle={Interactive Theorem Proving},
-  pages={135--151},
-  year={2011},
-  publisher={Springer}
+@phdthesis{hoelzl-thesis,
+  author   = {Johannes H{\"o}lzl},
+  title    = {Construction and Stochastic Applications of Measure Spaces in Higher-Order Logic},
+  school   = {Institut f{\"u}r Informatik, Technische Universit{\"a}t M{\"u}nchen},
+  month    = {October},
+  year     = {2012}
+}
+
+
+@inproceedings{hoelzl-measure,
+  author       = {Johannes H{\"o}lzl and Armin Heller},
+  title        = {Three Chapters of Measure Theory in {Isabelle/HOL}},
+  year         = {2011},
+  pages        = {135--151},
+  editor       = {Marko C. J. D. van Eekelen and Herman Geuvers and Julien Schmaltz and Freek Wiedijk},
+  booktitle    = {Interactive Theorem Proving (ITP 2011)},
+  series       = {LNCS},
+  volume       = {6898}
+}
+
+@inproceedings{hoelzl-filter,
+  author    = {Johannes H{\"o}lzl and Fabian Immler and Brian Huffman},
+  title     = {Type Classes and Filters for Mathematical Analysis in {Isabelle/HOL}},
+  booktitle = {Interactive Theorem Proving (ITP 2013)},
+  editor    = {Blazy, Sandrine and Paulin-Mohring, Christine and Pichardie, David},
+  year      = {2013},
+  volume    = {7998},
+  series    = {LNCS},
+  publisher = {Springer},
+  doi       = {10.1007/978-3-642-39634-2_21},
+  isbn      = {978-3-642-39633-5},
+  pages     = {279--294}
+}
+
+@article{muller-holcf,
+  title={Holcf= hol+ lcf},
+  author={M{\"u}ller, Olaf and Nipkow, Tobias and Von Oheimb, David and Slotosch, Oscar},
+  journal={Journal of Functional Programming},
+  volume={9},
+  number={02},
+  pages={191--223},
+  year={1999},
+  publisher={Cambridge Univ Press}
+}
+
+@article{nipkow-prog-prove,
+  title={Programming and proving in Isabelle},
+  author={Nipkow, Tobias},
+  journal={HOL.[Online] Available: http://www. cl. cam. ac. uk/research/hvg/Isabelle/dist/Isabelle2013-2/do c/prog-prove. pdf},
+  year={2013}
+}
+
+@article{paulson-sledgehammer,
+  title={Three years of experience with Sledgehammer, a practical link between automatic and interactive theorem provers},
+  author={Paulson, Lawrence C and Blanchette, Jasmin Christian},
+  journal={IWIL-2010},
+  year={2010},
+  publisher={Citeseer}
+}
+
+@inproceedings{russell-knowledge-acquaintance-description,
+  title={Knowledge by acquaintance and knowledge by description},
+  author={Russell, Bertrand},
+  booktitle={Proceedings of the Aristotelian Society},
+  pages={108--128},
+  year={1910},
+  organization={JSTOR}
+}
+
+@article{selberg-pnt,
+ ISSN = {0003486X},
+ URL = {http://www.jstor.org/stable/1969455},
+ author = {Atle Selberg},
+ journal = {Annals of Mathematics},
+ number = {2},
+ pages = {305-313},
+ publisher = {Annals of Mathematics},
+ title = {An Elementary Proof of the Prime-Number Theorem},
+ volume = {50},
+ year = {1949}
+}
+
+@article{vitali,
+  title={Sul problema della misura dei gruppi di punti di una retta},
+  author={Vitali, Giuseppe},
+  journal={Bologna, Italy},
+  year={1905}
+}
+
+@phdthesis{wenzel-isar,
+  title={Isabelle/Isar—a versatile environment for human-readable formal proof documents},
+  author={Wenzel, Markus and others},
+  year={2002},
+  school={PhD thesis, Institut f{\"u}r Informatik, Technische Universit{\"a}t M{\"u}nchen, 2002. http://tumb1. biblio. tu-muenchen. de/publ/diss/in/2002/wenzel. html}
 }

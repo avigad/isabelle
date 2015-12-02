@@ -26,7 +26,7 @@ proof -
   proof (unfold convergent_def, unfold subseqs_def, auto)
     fix n :: nat fix s :: "nat \<Rightarrow> nat" assume s: "subseq s"
     have "bounded {-M..M}" using bounded_closed_interval by auto
-    moreover have "\<And>k. f (s k) (r n) \<in> {-M..M}" using unif_bdd abs_le_interval_iff by auto
+    moreover have "\<And>k. f (s k) (r n) \<in> {-M..M}" using unif_bdd by (simp add: abs_le_iff minus_le_iff)
     ultimately have "\<exists>l s'. subseq s' \<and> ((\<lambda>k. f (s k) (r n)) \<circ> s') ----> l"
       using compact_Icc compact_imp_seq_compact seq_compactE by metis
     thus "\<exists>s'. subseq s' \<and> (\<exists>l. (\<lambda>k. f (s (s' k)) (r n)) ----> l)" unfolding o_def by auto
@@ -69,7 +69,7 @@ proof -
       \<longrightarrow> lim (\<lambda>k. f (d k) (r n)) \<in> {-M..M}"
       apply (subst (asm) closed_sequential_limits)
       by (drule_tac x = "\<lambda>k. f (d k) (r n)" in spec) blast
-    moreover have "\<forall>i. (\<lambda>k. f (d k) (r n)) i \<in> {-M..M}" using unif_bdd abs_le_interval_iff by auto
+    moreover have "\<forall>i. (\<lambda>k. f (d k) (r n)) i \<in> {-M..M}" using unif_bdd by (simp add: abs_le_iff minus_le_iff)
     moreover have "(\<lambda>k. f (d k) (r n)) ----> lim (\<lambda>k. f (d k) (r n))"
       using rat_cnv convergent_LIMSEQ_iff by auto
     ultimately show "lim (\<lambda>k. f (d k) (r n)) \<in> {-M..M}" by auto
@@ -247,7 +247,7 @@ proof -
           apply (rule Limsup_mono[of "\<lambda>k. ereal (-M)" "\<lambda>k. ereal (f (d k) x)" sequentially])
           apply eventually_elim
           apply (subst ereal_less_eq(3))
-          by (metis abs_le_interval_iff unif_bdd)
+          by (metis abs_le_iff minus_le_iff unif_bdd)
         hence "\<bar>limsup (\<lambda>k. f (d k) x)\<bar> \<noteq> \<infinity>" by auto
         then obtain lsup where lsup: "limsup (\<lambda>n. f (d n) x) = ereal lsup" by auto
         have lsup_e: "lsup - F x < e" using 7
@@ -278,7 +278,7 @@ proof -
           apply (rule Liminf_mono[of "\<lambda>k. ereal (-M)" "\<lambda>k. ereal (f (d k) x)" sequentially])
           apply eventually_elim
           apply (subst ereal_less_eq(3))
-          by (metis abs_le_interval_iff unif_bdd)
+          by (metis abs_le_iff minus_le_iff unif_bdd)
         hence "\<bar>liminf (\<lambda>k. f (d k) x)\<bar> \<noteq> \<infinity>" by auto
         then obtain linf where linf: "liminf (\<lambda>k. f (d k) x) = ereal linf" by auto
         have linf_e: "F x - linf < e" using 8
@@ -338,7 +338,7 @@ proof auto
       unfolding rcont_inc_def f_def mono_def
       using \<mu>_s.cdf_nondecreasing \<mu>_s.cdf_is_right_cont \<mu>_s.cdf_lim_at_top_prob \<mu>_s.cdf_lim_at_bot
       apply auto
-      apply (subst abs_le_interval_iff)
+      apply (simp add: abs_le_iff minus_le_iff)
       using \<mu>_s.cdf_nonneg apply (metis \<mu>_s.cdf_bounded_prob dual_order.trans le_minus_one_simps(1))
       using \<mu>.finite_measure_mono apply force
       using \<mu>.finite_measure_Union by auto

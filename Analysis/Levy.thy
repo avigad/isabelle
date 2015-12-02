@@ -100,7 +100,7 @@ theorem Levy_Inversion:
       of_real (\<mu> {a<..b})) at_top")
   proof -
     interpret M: real_distribution M by (rule assms)
-    interpret P!: pair_sigma_finite lborel M ..
+    interpret P: pair_sigma_finite lborel M ..
     from iSi_bounded obtain B where Bprop: "\<And>T. abs (Si T) \<le> B" by auto
     from Bprop [of 0] have [simp]: "B \<ge> 0" by auto
     let ?f = "\<lambda>t x :: real. (iexp (t * (x - a)) - iexp(t * (x - b))) / (ii * t)"
@@ -189,7 +189,7 @@ theorem Levy_Inversion:
         apply (rule order_trans)
         apply (rule Levy_Inversion_aux2)
         using `a \<le> b` apply (auto simp: M.emeasure_pair_measure_Times)
-        apply (auto intro!: AE_I2 split: split_indicator split_indicator_asm)
+        apply (auto split: split_indicator split_indicator_asm)
         done
       also have "\<dots> = (CLINT x | M. (complex_of_real (2 * (sgn (x - a) * 
            Si (T * abs (x - a)) - sgn (x - b) * Si (T * abs (x - b))))))"
@@ -241,8 +241,8 @@ theorem Levy_Inversion:
            Si (T * abs (x - a)) - sgn (x - b) * Si (T * abs (x - b))))) ----> 
          2 * pi * \<mu> {a<..b}" .
   show ?thesis
-    apply (subst real_of_int_minus)
-    apply (subst real_of_int_of_nat_eq)
+    apply (subst of_int_minus)
+    apply (subst of_int_of_nat_eq)
     apply (subst main_eq2, force)
     apply (subst of_real_mult [symmetric])
     apply (rule tendsto_of_real)
@@ -532,7 +532,7 @@ proof -
     have "(\<lambda>n. CLBINT t:{-d/2..d/2}. 1 - char (M n) t) ----> (CLBINT t:{-d/2..d/2}. 1 - char M' t)"
       using bd1
       apply (intro integral_dominated_convergence[where w="\<lambda>x. indicator {-d/2..d/2} x *\<^sub>R 2"])
-      apply (auto intro!: AE_I2 char_conv tendsto_intros 
+      apply (auto intro!: char_conv tendsto_intros 
                   simp: emeasure_lborel_Icc_eq
                   split: split_indicator)
       done

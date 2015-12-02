@@ -167,36 +167,38 @@ proof -
     also have "\<dots> \<ge> (\<Sum>x\<in>B. inverse (real (Suc i)))" (is "?lhs \<ge> ?rhs")
       using subB by (intro setsum_mono, auto)
     also (xtrans) have "?rhs = card B * inverse (real (Suc i))"
-      (* this should be automatic! *)
-      by (simp add: real_of_nat_def)
+      by simp
     finally have "measure M B \<ge> card B * inverse (real (Suc i))" .
   } note * = this
   have "measure M (space M) < real (Suc (nat (ceiling (measure M (space M)))))"
     by (auto simp del: zero_le_ceiling
-                simp add: real_of_nat_Suc measure_nonneg ceiling_nonneg intro!: less_add_one)
+                simp add: measure_nonneg ceiling_nonneg intro!: less_add_one)
        linarith
   then obtain X :: nat where X: "measure M (space M) < X" ..
   (* it would be nice if this next calculation were automatic, with X replaced the particular
      value above *)
-  { fix i
+  { fix i :: nat
   have "finite {x. inverse (real (Suc i)) < Sigma_Algebra.measure M {x}}"
     apply (rule ccontr)
     apply (drule infinite_arbitrarily_large [of _ "X * Suc i"])
     apply clarify
     apply (drule *, assumption)
-    apply (drule leD, erule notE, erule ssubst, subst real_of_nat_mult)
-    apply (simp add: field_simps)
+    apply (drule leD, erule notE, erule ssubst)
+    apply (subst of_nat_mult)
+    apply (subst mult.assoc)
+    apply (subst right_inverse)
+    apply simp_all
     by (rule order_le_less_trans [OF bounded_measure X])
   } note ** = this
   have "{x. measure M {x} > 0} = (\<Union>i :: nat. {x. measure M {x} > inverse (Suc i)})"
-    apply auto
-    apply (erule reals_Archimedean)
-    by (metis inverse_positive_iff_positive less_trans real_of_nat_Suc_gt_zero)
+    apply (auto intro: reals_Archimedean)
+    using ex_inverse_of_nat_Suc_less apply auto
+    by (metis inverse_positive_iff_positive less_trans of_nat_0_less_iff of_nat_Suc zero_less_Suc)
   thus "countable {x. measure M {x} > 0}"
     apply (elim ssubst)
     apply (rule countable_UN, auto)
     apply (rule countable_finite)
-    by (rule **)
+    using ** by auto
 qed
     
 end
@@ -238,7 +240,7 @@ qed
 lemma UN_Ioc_eq_UNIV: "(\<Union>i. {- real (i::nat)<..real i}) = UNIV"
   by auto
      (metis le_less_trans minus_minus neg_less_iff_less not_le real_arch_simple
-            real_of_nat_ge_zero reals_Archimedean2)
+            of_nat_0_le_iff reals_Archimedean2)
 
 lemma cdf_unique:
   fixes M1 M2
@@ -308,7 +310,7 @@ proof (intro ext)
     then show "(\<lambda>i. measure (interval_measure F) {- real i<..x}) ----> F x - 0"
       apply (rule filterlim_cong[OF refl refl, THEN iffD1, rotated])
       apply (rule eventually_sequentiallyI[where c="nat (ceiling (- x))"])
-      apply (simp add: measure_interval_measure_Ioc right_cont_F nondecF nat_ceiling_le_eq)
+      apply (simp add: measure_interval_measure_Ioc right_cont_F nondecF)
       done
   qed (auto simp: incseq_def)
   also have "(\<Union>i::nat. {-real i <.. x}) = {..x}"

@@ -142,7 +142,7 @@ proof -
   let ?F = "%s. complex_of_real(-((x - s) ^ (Suc n) / (Suc n))) * iexp s"
   have annoying [simp]: "1 + complex_of_real (real n) =
       complex_of_real (real (Suc n))"
-    by (metis of_nat_Suc of_real_of_nat_eq real_of_nat_def)
+    by (metis of_nat_Suc of_real_of_nat_eq)
   have "(CLBINT s=0..x. (f s n * iexp s + (ii * iexp s) * -(f s (Suc n) / (Suc n)))) =
       x^(Suc n) / (Suc n)" (is "?LHS = ?RHS")
   proof -
@@ -152,8 +152,8 @@ proof -
       apply (subst (1 2) zero_ereal_def)
       apply (rule interval_integral_cong)
       unfolding f_def
-      apply (simp add: real_of_nat_def)
-      apply (simp add: real_of_nat_def)
+      apply simp
+      apply simp
       done
     also have "... = ?F x - ?F 0"
       apply (subst zero_ereal_def)
@@ -174,9 +174,9 @@ thus ?thesis
   (* the next few lines should be automatic *)
   unfolding zero_ereal_def
   apply (intro interval_integrable_isCont continuous_intros)
-  apply (simp add: complex_eq_iff real_of_nat_def[symmetric])
+  apply (simp add: complex_eq_iff)
   apply (intro interval_integrable_isCont continuous_intros)
-  apply (simp add: complex_eq_iff real_of_nat_def[symmetric])
+  apply (simp add: complex_eq_iff)
   done
 qed
 
@@ -197,7 +197,21 @@ next
   have of_nat_eq_minus_of_nat: "\<And>x y. of_nat x = - (of_nat y::real) \<longleftrightarrow> (x = 0 \<and> y = 0)"
     by linarith
   have *: "of_nat n * of_nat (fact n) \<noteq> - (of_nat (fact n)::complex)"
-    by (simp add: complex_eq_iff of_nat_mult[symmetric] of_nat_eq_minus_of_nat del: of_nat_fact)
+    using complex_eq_iff of_nat_mult[symmetric] of_nat_eq_minus_of_nat
+    proof -
+      have f1: "\<And>c. (c::complex) + - c = 0"
+        by simp
+      have "\<And>n. fact n \<noteq> (0::complex)"
+        by auto
+      hence "\<exists>c. of_nat (Suc n) * (c::complex) \<noteq> 0"
+        by (metis (no_types) fact_num_eq_if nat.simps(3))
+      hence "fact n * of_nat (Suc n) \<noteq> (0::complex)"
+        by simp
+      hence "- (fact n::complex) \<noteq> of_nat n * fact n"
+        using f1 by (metis Groups.mult_ac(2) distrib_right mult.left_neutral semiring_1_class.of_nat_simps(2))
+      thus ?thesis
+        by simp
+    qed
   show "?P (Suc n)"
     apply (subst setsum_atMost_Suc)
     apply (subst ih)
@@ -223,7 +237,7 @@ proof -
     apply (subst interval_lebesgue_integral_diff(2) [symmetric])
     apply (subst zero_ereal_def)
     apply (rule interval_integrable_isCont)
-    unfolding f_def apply (simp del: i_complex_of_real)
+    unfolding f_def apply simp
     apply (subst zero_ereal_def)
     apply (rule interval_integrable_isCont)
     apply simp
@@ -236,7 +250,7 @@ proof -
     apply (unfold f_def)
     apply (rule continuous_at_imp_continuous_on, force)
     apply (rule has_vector_derivative_of_real)
-    by (auto intro!: derivative_eq_intros simp del: power_Suc simp add: real_of_nat_def add_nonneg_eq_0_iff)
+    by (auto intro!: derivative_eq_intros simp del: power_Suc simp add: add_nonneg_eq_0_iff)
   show ?thesis
     apply (subst equation_26p2 [where n = "Suc n"])
     apply (rule arg_cong)
@@ -266,7 +280,7 @@ proof -
     by (subst equation_26p2 [of _ n], simp add: field_simps)
   hence "cmod (?t1) = cmod (?t2)" by simp
   also have "\<dots> =  (1 / of_nat (fact n)) * cmod (CLBINT s=0..x. (x - s)^n * (iexp s))"
-    by (simp add: norm_mult norm_divide norm_power real_of_nat_def)
+    by (simp add: norm_mult norm_divide norm_power)
   also have "\<dots> \<le> (1 / of_nat (fact n)) * abs (LBINT s=0..x. cmod ((x - s)^n * (iexp s)))"
     apply (rule mult_left_mono)
     apply (rule interval_integral_norm2)
@@ -305,14 +319,14 @@ proof -
       apply force
       unfolding has_field_derivative_iff_has_vector_derivative[symmetric]
       apply (rule DERIV_subset)
-      by (auto simp del: power_Suc intro!: derivative_eq_intros simp add: real_of_nat_def add_nonneg_eq_0_iff)
+      by (auto simp del: power_Suc intro!: derivative_eq_intros simp add: add_nonneg_eq_0_iff)
     also have "\<dots> = x ^ (Suc n) / (Suc n)" by simp
     finally show ?thesis .
   qed
   also have "1 / real_of_nat (fact n::nat) * \<bar>x ^ Suc n / real (Suc n)\<bar> = 
       \<bar>x\<bar> ^ Suc n / fact (Suc n)"
     apply (subst abs_divide, subst power_abs, subst (2) abs_of_nonneg, simp)
-    by (simp add: field_simps real_of_nat_Suc)
+    by (simp add: field_simps of_nat_Suc)
   finally show ?thesis by (simp add: )
 qed
 
@@ -360,7 +374,7 @@ proof -
     by (subst equation_26p3 [of _ n], simp add: field_simps)
   hence "cmod (?t1) = cmod (?t2)" by simp
   also have "\<dots> =  (1 / (fact n)) * cmod (CLBINT s=0..x. (x - s)^n * (iexp s - 1))"
-    by (simp add: norm_mult norm_divide norm_power real_of_nat_def)
+    by (simp add: norm_mult norm_divide norm_power)
   also have "\<dots> \<le> (1 / (fact n)) * abs (LBINT s=0..x. cmod ((x - s)^n * (iexp s - 1)))"
     apply (rule mult_left_mono, rule interval_integral_norm2)
     apply auto
@@ -413,14 +427,14 @@ proof -
       apply force
       unfolding has_field_derivative_iff_has_vector_derivative[symmetric]
       apply (rule DERIV_subset)
-      by (auto simp del: power_Suc intro!: derivative_eq_intros simp add: real_of_nat_def add_nonneg_eq_0_iff)
+      by (auto simp del: power_Suc intro!: derivative_eq_intros simp add: add_nonneg_eq_0_iff)
     also have "\<dots> = x ^ (Suc n) / (Suc n)" by simp
     finally show ?thesis .
   qed
   also have "2 / fact n * \<bar>x ^ Suc n / real (Suc n)\<bar> = 
       2 * \<bar>x\<bar> ^ Suc n / (fact (Suc n))"
     apply (subst abs_divide, subst power_abs, subst (2) abs_of_nonneg, simp)
-    by (simp add: field_simps real_of_nat_Suc real_of_nat_def[symmetric])
+    by (simp add: field_simps of_nat_Suc)
   finally show ?thesis .
 qed
 qed
@@ -531,13 +545,13 @@ proof -
     apply (simp add: field_simps)
     apply (rule arg_cong2[where f=min])
     apply (simp add: field_simps abs_mult del: fact_Suc)
-    apply (simp add: real_of_nat_Suc field_simps)
+    apply (simp add: of_nat_Suc field_simps)
     by (simp add: field_simps abs_mult del: fact_Suc)
   have "?t1 = (CLINT x | M. (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
     apply (subst integral_setsum [OF 1], simp)
     apply (rule setsum.cong, force)
     apply (subst *, subst of_real_power [symmetric], subst integral_mult_right, rule **, simp)
-    by (simp add: field_simps integral_of_real real_of_nat_def del: of_real_power)
+    by (simp add: field_simps integral_of_real del: of_real_power)
   hence "char M t - ?t1 = (CLINT x | M. iexp (t * x) - (\<Sum>k \<le> n. (ii * t * x)^k / fact k))"
       (is "_ = (CLINT x | M. ?f x)")
     apply (elim ssubst)
@@ -559,7 +573,7 @@ proof -
     apply (subst 6)
     apply (rule integral_mult_right)
     by (rule 5)
-  finally show ?thesis by (simp add: real_of_nat_Suc field_simps)
+  finally show ?thesis by (simp add: of_nat_Suc field_simps)
 qed
 
 (* this is the formulation in the book -- in terms of a random variable *with* the distribution,
@@ -791,9 +805,9 @@ proof
     apply (simp del: One_nat_def)
     apply (subst mult.assoc)
     apply (rule mult_left_mono)
-    unfolding of_nat_fact[symmetric, where 'a=real] real_of_nat_def[symmetric]
-    apply (subst real_of_nat_mult [symmetric])
-    apply (subst real_of_nat_le_iff)
+    unfolding of_nat_fact[symmetric, where 'a=real]
+    apply (subst of_nat_mult [symmetric])
+    apply (subst of_nat_le_iff)
     apply (rule order_trans)
     apply (rule square_fact_le_2_fact)
     by auto

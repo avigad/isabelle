@@ -234,7 +234,7 @@ proof safe
         have "y \<le> Inf {x. \<omega> \<le> F x}"
         proof (rule cInf_greatest)
           have "(\<lambda>k::nat. F (real k)) ----> b"
-            by (metis F_at_top rcont_inc assms filterlim_compose filterlim_real_sequentially)
+            by (metis F_at_top filterlim_compose filterlim_real_sequentially)
           then have "\<exists>no::nat. \<forall>k\<ge>no. norm (F (real k) - b) < b - \<omega>"
             by (rule LIMSEQ_D) (insert interval, simp)
           then guess no .. note no = this
@@ -341,7 +341,7 @@ proof -
       apply simp
       apply (erule ssubst)
       unfolding measure_def
-      apply (rule arg_cong[where f=real])
+      apply (rule arg_cong[where f=real_of_ereal])
       unfolding f_def cdf_def
       apply (rule emeasure_eq_AE)
       apply (rule AE_I [of _ _ "{0, 1}"])
@@ -380,7 +380,7 @@ proof -
       by (simp add: \<Omega>_def measure_restrict_space)
     also have "\<dots> = measure lborel {0 .. F x}"
       unfolding measure_def using M.cdf_bounded_prob[of x]
-      by (intro arg_cong[where f=real] emeasure_eq_AE)
+      by (intro arg_cong[where f=real_of_ereal] emeasure_eq_AE)
          (auto intro!: AE_I[where N="{0, 1}"] simp: emeasure_insert_ne less_le F_def)
     also have "\<dots> = cdf M x"
       using M.cdf_nonneg[of x] by (simp add: measure_def F_def)
@@ -479,7 +479,6 @@ proof -
       by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially)
   } note Y_cts_cnv = this
   let ?D = "{\<omega>\<in>{0<..<1}. \<not> isCont Y \<omega>}"
-  (* Why did force work and then fail? *)
   have D_countable: "countable ?D" using Y_mono_on mono_on_ctble_discont
     by (metis (poly_guards_query) mono_on_ctble_discont_open open_greaterThanLessThan)
   hence D: "emeasure lborel ?D = 0" using emeasure_lborel_countable by (metis (full_types))
