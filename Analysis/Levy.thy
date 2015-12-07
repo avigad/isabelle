@@ -74,7 +74,7 @@ proof -
   also have "\<dots> = cmod (iexp (t * (b - a)) - 1) / abs t"
     apply (subst norm_divide)
     apply (subst norm_mult)
-    apply (subst cmod_iexp)
+    apply (subst norm_exp_ii_times)
     using `t \<noteq> 0` by (simp add: complex_eq_iff norm_mult)
   also have "\<dots> \<le> abs (t * (b - a)) / abs t"
     apply (rule divide_right_mono)
@@ -415,7 +415,7 @@ proof -
     also have "\<dots> = (LBINT t=ereal 0..u. 2 + -2 * cos (t * x))"
       apply (subst interval_lebesgue_integral_add (2) [symmetric])
       apply ((rule interval_integrable_isCont, auto)+) [2]
-      unfolding iexp_alt cos_of_real
+      unfolding exp_Euler cos_of_real
       apply (simp add: of_real_mult interval_lebesgue_integral_of_real[symmetric])
       done
     also have "\<dots> = 2 * u - 2 * sin (u * x) / x"

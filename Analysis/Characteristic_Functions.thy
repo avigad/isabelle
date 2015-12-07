@@ -19,12 +19,6 @@ abbreviation iexp :: "real \<Rightarrow> complex" where
 lemma isCont_iexp [simp]: "isCont iexp x"
   by (intro continuous_intros)
 
-lemma cmod_iexp [simp]: "cmod (Exp (\<i> * (x::real))) = 1"
-  by simp
-
-lemma iexp_alt: "iexp x = cos x + \<i> * sin x"
-  by (simp add: complex_eq_iff cis_conv_exp[symmetric] cos_of_real sin_of_real)
-
 lemma has_vector_derivative_iexp[derivative_intros]:
   "(iexp has_vector_derivative \<i> * iexp x) (at x within s)"
   by (auto intro!: derivative_eq_intros simp: Re_exp Im_exp has_vector_derivative_complex_iff)
@@ -54,7 +48,7 @@ proof (intro integrable_const_bound [of _ 1])
   from f have "\<And>x. of_real (Re (f x)) = f x"
     by (simp add: complex_eq_iff)
   then show "AE x in M. cmod (Exp (\<i> * f x)) \<le> 1"
-    using cmod_iexp[of "Re (f x)" for x] by simp
+    using norm_exp_ii_times[of "Re (f x)" for x] by simp
 qed (insert f, simp)
 
 lemma (in real_distribution) cmod_char_le_1: "norm (char M t) \<le> 1"
@@ -454,7 +448,7 @@ lemma (in real_distribution) equation_26p5b:
 proof -
   have [simplified, simp]: "complex_integrable M (\<lambda>x. iexp (t * x))"
     apply (rule integrable_const_bound, rule AE_I2)
-    by (subst cmod_iexp, auto)
+    by (subst norm_exp_ii_times, auto)
   have *: "\<And>k x. (ii * t * x)^k / fact k = (ii * t)^k / fact k * x^k"
     by (simp add: power_mult_distrib)
   have ** [simp]: "!!k. k \<le> n \<Longrightarrow> complex_integrable M (\<lambda>x. complex_of_real (x ^ k))"
@@ -511,7 +505,7 @@ lemma (in real_distribution) equation_26p5b_stronger:
 proof -
   have [simplified, simp]: "complex_integrable M (\<lambda>x. iexp (t * x))"
     apply (rule integrable_const_bound, rule AE_I2)
-    by (subst cmod_iexp, auto)
+    by (subst norm_exp_ii_times, auto)
   have *: "\<And>k x. (ii * t * x)^k / fact k = (ii * t)^k / fact k * x^k"
     by (simp add: power_mult_distrib)
   have ** [simp]: "!!k. k \<le> n \<Longrightarrow> complex_integrable M (\<lambda>x. complex_of_real (x ^ k))"
@@ -592,7 +586,7 @@ lemma (in prob_space) equation_26p5b':
 proof -
   have [simplified, simp]: "complex_integrable M (\<lambda>x. iexp (t * X x))"
     apply (rule integrable_const_bound, rule AE_I2)
-    using rv_X by (subst cmod_iexp, auto)
+    using rv_X by (subst norm_exp_ii_times, auto)
   have *: "\<And>k x. (ii * t * X x)^k / fact k = (ii * t)^k / fact k * (X x)^k"
     by (simp add: power_mult_distrib)
   have ** [simp]: "\<And>k. k \<le> n \<Longrightarrow> complex_integrable M (\<lambda>x. complex_of_real (X x ^ k))"
