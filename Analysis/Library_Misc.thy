@@ -2,6 +2,9 @@ theory Library_Misc
 imports Probability "~~/src/HOL/Library/ContNotDenum"
 begin
 
+lemma zero_less_measure_iff: "0 < measure M A \<longleftrightarrow> measure M A \<noteq> 0"
+  using measure_nonneg[of M A] by (auto simp add: le_less)
+
 abbreviation exterior :: "'a::{topological_space} set \<Rightarrow> 'a set" where
   "exterior A \<equiv> interior (-A)"
 

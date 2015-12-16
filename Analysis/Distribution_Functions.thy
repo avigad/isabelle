@@ -158,48 +158,7 @@ lemma ceiling_nonneg: "0 \<le> x \<Longrightarrow> 0 \<le> \<lceil>x\<rceil>"
   by simp
 
 lemma countable_atoms: "countable {x. measure M {x} > 0}"
-proof -
-  { fix B i
-    assume finB: "finite B" and 
-      subB: "B \<subseteq> {x. inverse (real (Suc i)) < Sigma_Algebra.measure M {x}}"
-    have "measure M B = (\<Sum>x\<in>B. measure M {x})"
-      by (rule measure_eq_setsum_singleton [OF finB], auto)
-    also have "\<dots> \<ge> (\<Sum>x\<in>B. inverse (real (Suc i)))" (is "?lhs \<ge> ?rhs")
-      using subB by (intro setsum_mono, auto)
-    also (xtrans) have "?rhs = card B * inverse (real (Suc i))"
-      by simp
-    finally have "measure M B \<ge> card B * inverse (real (Suc i))" .
-  } note * = this
-  have "measure M (space M) < real (Suc (nat (ceiling (measure M (space M)))))"
-    by (auto simp del: zero_le_ceiling
-                simp add: measure_nonneg ceiling_nonneg intro!: less_add_one)
-       linarith
-  then obtain X :: nat where X: "measure M (space M) < X" ..
-  (* it would be nice if this next calculation were automatic, with X replaced the particular
-     value above *)
-  { fix i :: nat
-  have "finite {x. inverse (real (Suc i)) < Sigma_Algebra.measure M {x}}"
-    apply (rule ccontr)
-    apply (drule infinite_arbitrarily_large [of _ "X * Suc i"])
-    apply clarify
-    apply (drule *, assumption)
-    apply (drule leD, erule notE, erule ssubst)
-    apply (subst of_nat_mult)
-    apply (subst mult.assoc)
-    apply (subst right_inverse)
-    apply simp_all
-    by (rule order_le_less_trans [OF bounded_measure X])
-  } note ** = this
-  have "{x. measure M {x} > 0} = (\<Union>i :: nat. {x. measure M {x} > inverse (Suc i)})"
-    apply (auto intro: reals_Archimedean)
-    using ex_inverse_of_nat_Suc_less apply auto
-    by (metis inverse_positive_iff_positive less_trans of_nat_0_less_iff of_nat_Suc zero_less_Suc)
-  thus "countable {x. measure M {x} > 0}"
-    apply (elim ssubst)
-    apply (rule countable_UN, auto)
-    apply (rule countable_finite)
-    using ** by auto
-qed
+  using countable_support unfolding zero_less_measure_iff .
     
 end
 
