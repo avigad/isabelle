@@ -264,15 +264,12 @@ proof -
   interpret M2: real_distribution M2 by (rule assms)
   have "(cdf M1 ---> 0) at_bot" by (rule M1.cdf_lim_at_bot)
   have "(cdf M2 ---> 0) at_bot" by (rule M2.cdf_lim_at_bot)
-  have "countable {x. measure M1 {x} > 0}" by (rule M1.countable_atoms)
-  moreover have "countable {x. measure M2 {x} > 0}" by (rule M2.countable_atoms)
-  ultimately have "countable ({x. measure M1 {x} > 0} \<union> {x. measure M2 {x} > 0})"
+  have "countable {x. measure M1 {x} \<noteq> 0}" by (rule M1.countable_support)
+  moreover have "countable {x. measure M2 {x} \<noteq> 0}" by (rule M2.countable_support)
+  ultimately have "countable ({x. measure M1 {x} \<noteq> 0} \<union> {x. measure M2 {x} \<noteq> 0})"
     by (rule countable_Un)
-  also have "{x. measure M1 {x} > 0} \<union> {x. measure M2 {x} > 0} = 
-      {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}"
-    apply auto
-    by (metis antisym_conv1 measure_nonneg)+
-  finally have count: "countable {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}" .
+  then have count: "countable {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}"
+    by (simp add: Un_def)
 
   have "cdf M1 = cdf M2"
   proof (rule ext)
@@ -439,9 +436,9 @@ proof -
     (* TODO: put this in the real_distribution locale as a simp rule? *)
     have Mn1 [simp]: "measure (M n) UNIV = 1" by (metis Mn.prob_space Mn.space_eq_univ)
     (* TODO: make this automatic somehow? *)
-    have Mn2 [simp]: "\<And>x. complex_integrable (M n) (\<lambda>t. Exp (\<i> * complex_of_real (x * t)))"
+    have Mn2 [simp]: "\<And>x. complex_integrable (M n) (\<lambda>t. exp (\<i> * complex_of_real (x * t)))"
       by (rule Mn.integrable_const_bound [where B = 1], auto)
-    have Mn3: "set_integrable (M n \<Otimes>\<^sub>M lborel) (UNIV \<times> {- u..u}) (\<lambda>a. 1 - Exp (\<i> * complex_of_real (snd a * fst a)))"
+    have Mn3: "set_integrable (M n \<Otimes>\<^sub>M lborel) (UNIV \<times> {- u..u}) (\<lambda>a. 1 - exp (\<i> * complex_of_real (snd a * fst a)))"
       apply (rule integrableI_bounded_set_indicator [where B="2"])
       using `0 < u`
       apply (auto simp: lborel.emeasure_pair_measure_Times)

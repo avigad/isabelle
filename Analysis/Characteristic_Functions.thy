@@ -14,7 +14,7 @@ begin
 *)
 
 abbreviation iexp :: "real \<Rightarrow> complex" where
-  "iexp \<equiv> (\<lambda>x. Exp (\<i> * complex_of_real x))"
+  "iexp \<equiv> (\<lambda>x. exp (\<i> * complex_of_real x))"
 
 lemma isCont_iexp [simp]: "isCont iexp x"
   by (intro continuous_intros)
@@ -43,11 +43,11 @@ lemma (in real_distribution) char_zero: "char M 0 = 1"
 
 lemma (in prob_space) integrable_iexp: 
   assumes f: "f \<in> borel_measurable M" "\<And>x. Im (f x) = 0"
-  shows "integrable M (\<lambda>x. Exp (ii * (f x)))"
+  shows "integrable M (\<lambda>x. exp (ii * (f x)))"
 proof (intro integrable_const_bound [of _ 1])
   from f have "\<And>x. of_real (Re (f x)) = f x"
     by (simp add: complex_eq_iff)
-  then show "AE x in M. cmod (Exp (\<i> * f x)) \<le> 1"
+  then show "AE x in M. cmod (exp (\<i> * f x)) \<le> 1"
     using norm_exp_ii_times[of "Re (f x)" for x] by simp
 qed (insert f, simp)
 
