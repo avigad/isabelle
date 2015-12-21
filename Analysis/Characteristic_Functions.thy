@@ -5,7 +5,7 @@ Authors: Jeremy Avigad, Luke Serafin
 
 theory Characteristic_Functions
 
-imports Weak_Convergence Si 
+imports Weak_Convergence
 
 begin
 
