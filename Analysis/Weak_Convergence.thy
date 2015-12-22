@@ -1,34 +1,15 @@
 (*
-Theory: Weak_Convergence.thy
-Authors: Jeremy Avigad, Luke Serafin
-
-Properties of weak convergence of functions and measures, including the portmanteau theorem.
+  Theory: Weak_Convergence.thy
+  Authors: Jeremy Avigad, Luke Serafin
 *)
 
+section \<open>Weak Convergence of Functions and Distributions\<close>
+
+text \<open>Properties of weak convergence of functions and measures, including the portmanteau theorem.\<close>
+
 theory Weak_Convergence
-
-imports Distribution_Functions
-
+  imports Distribution_Functions
 begin
-
-(* weak convergence of functions *)
-definition
-  weak_conv :: "(nat \<Rightarrow> (real \<Rightarrow> real)) \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> bool"
-where
-  "weak_conv F_seq F \<equiv> \<forall>x. isCont F x \<longrightarrow> (\<lambda>n. F_seq n x) ----> F x"
-
-(* weak convergence of distributions *)
-definition
-  weak_conv_m :: "(nat \<Rightarrow> real measure) \<Rightarrow> real measure \<Rightarrow> bool"
-where
-  "weak_conv_m M_seq M \<equiv> weak_conv (\<lambda>n. cdf (M_seq n)) (cdf M)"
-
-(* TODO: we never use this; delete? *)
-(* weak convergence of random variables *)
-abbreviation (in prob_space)
-  "weak_conv_r X_seq X \<equiv> weak_conv_m (\<lambda>n. distr M borel (X_seq n)) (distr M borel X)" 
-  
-
 (* 
   general stuff - move elsewhere 
 *)
@@ -177,11 +158,20 @@ lemma mono_ctble_discont:
   shows "countable {a. \<not> isCont f a}"
 using assms mono_on_ctble_discont [of f UNIV] unfolding mono_on_def mono_def by auto
 
-(*
+section \<open>Weak Convergence of Functions\<close>
 
-  Skorohod's theorem
+definition
+  weak_conv :: "(nat \<Rightarrow> (real \<Rightarrow> real)) \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> bool"
+where
+  "weak_conv F_seq F \<equiv> \<forall>x. isCont F x \<longrightarrow> (\<lambda>n. F_seq n x) ----> F x"
 
-*)
+section \<open>Weak Convergence of Distributions\<close>
+definition
+  weak_conv_m :: "(nat \<Rightarrow> real measure) \<Rightarrow> real measure \<Rightarrow> bool"
+where
+  "weak_conv_m M_seq M \<equiv> weak_conv (\<lambda>n. cdf (M_seq n)) (cdf M)"
+
+section \<open>Skorohod's theorem\<close>
 
 (* TODO: should this definition be eliminated? **)
 definition rcont_inc :: "(real \<Rightarrow> real) \<Rightarrow> bool"
