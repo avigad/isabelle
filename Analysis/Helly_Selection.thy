@@ -323,7 +323,7 @@ where "tight \<mu> \<equiv> (\<forall>n. real_distribution (\<mu> n)) \<and> (\<
 theorem tight_iff_convergent_subsubsequence:
   fixes \<mu>
   assumes "\<And>n. real_distribution (\<mu> n)"
-  shows "tight \<mu> = (\<forall>s. subseq s \<longrightarrow> (\<exists>r. \<exists>M.  subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M))"
+  shows "tight \<mu> \<Longrightarrow> (\<forall>s. subseq s \<longrightarrow> (\<exists>r. \<exists>M.  subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M))"
 proof auto
   assume \<mu>: "tight \<mu>"
   fix s assume s: "subseq s"
@@ -509,6 +509,7 @@ proof auto
   hence "weak_conv_m (\<mu> \<circ> s \<circ> r) (interval_measure F)" using M unfolding weak_conv_m_def f_def o_def by auto
   hence "\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M" using M by auto
   thus "\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" using F by auto
+(*
 next
   assume sseq: "\<forall>s. subseq s \<longrightarrow> (\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M))"
   show "tight \<mu>" unfolding tight_def
@@ -555,6 +556,7 @@ next
         by (metis dual_order.strict_trans2 less_le_not_le not_one_le_zero)
     qed
   qed
+*)
 qed
 
 corollary tight_subseq_weak_converge:
