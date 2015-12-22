@@ -37,11 +37,6 @@ lemma restrict_space_sets_cong:
   "A = B \<Longrightarrow> sets M = sets N \<Longrightarrow> sets (restrict_space M A) = sets (restrict_space N B)"
   by (auto simp: sets_restrict_space)
 
-definition mono_on :: "('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "mono_on f A = (\<forall>x\<in>A. \<forall>y\<in>A. x \<le> y \<longrightarrow> f x \<le> f y)"
-
-lemma mono_onD: "mono_on f A \<Longrightarrow> x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> x \<le> y \<Longrightarrow> f x \<le> f y"
-  unfolding mono_on_def by auto
 (* Show such a function is an ereal-valued measurable function times the indicator function of the
    complement of A. *)
 lemma mono_on_ctble_discont:
@@ -50,7 +45,6 @@ lemma mono_on_ctble_discont:
   assumes "mono_on f A"
   shows "countable {a\<in>A. \<not> continuous (at a within A) f}"
 proof -
-
   have "\<forall>a \<in> {a\<in>A. \<not> continuous (at a within A) f}. \<exists>q :: nat \<times> rat.
       (fst q = 0 \<and> of_rat (snd q) < f a \<and> (\<forall>x \<in> A. x < a \<longrightarrow> f x < of_rat (snd q))) |
       (fst q = 1 \<and> of_rat (snd q) > f a \<and> (\<forall>x \<in> A. x > a \<longrightarrow> f x > of_rat (snd q)))"
@@ -158,13 +152,11 @@ proof (auto simp add: continuous_within_eps_delta dist_real_def greaterThan_def)
       by (rule order_le_less_trans [OF abs_ge_self d], auto)
     thus "\<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>" ..
   }
-
 qed
 
 (* TODO: make mono_on primitive, and define mono f to be an abbreviation for mono_on f UNIV? *)
 lemma "mono f = mono_on f UNIV"
   unfolding mono_def mono_on_def by auto
-
 
 lemma mono_on_ctble_discont_open:
   fixes f :: "real \<Rightarrow> real"
