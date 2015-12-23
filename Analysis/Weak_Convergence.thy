@@ -14,6 +14,23 @@ begin
   general stuff - move elsewhere 
 *)
 
+lemma open_minus_countable:
+  fixes S A :: "real set" assumes "countable A" "S \<noteq> {}" "open S"
+  shows "\<exists>x\<in>S. x \<notin> A"
+proof -
+  obtain x where "x \<in> S"
+    using \<open>S \<noteq> {}\<close> by auto
+  then obtain e where "0 < e" "ball x e \<subseteq> S"
+    using \<open>open S\<close> by (auto elim!: openE)
+  moreover have "ball x e = {x - e <..< x + e}"
+    by (auto simp: ball_def dist_real_def)
+  ultimately have "uncountable (S - A)"
+    using uncountable_open_interval[of "x - e" "x + e"] \<open>countable A\<close>
+    by (intro uncountable_minus_countable) (auto dest: countable_subset)
+  then show ?thesis
+    unfolding uncountable_def by auto
+qed
+
 lemma (in real_distribution) measurable_finite_borel [simp]:
   "f \<in> borel_measurable borel \<Longrightarrow> f \<in> borel_measurable M"
   by (rule borel_measurable_subalgebra[where N=borel]) auto
@@ -35,47 +52,39 @@ lemma mono_on_ctble_discont:
   assumes "mono_on f A"
   shows "countable {a\<in>A. \<not> continuous (at a within A) f}"
 proof -
+  have mono: "\<And>x y. x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> x \<le> y \<Longrightarrow> f x \<le> f y"
+    using `mono_on f A` by (simp add: mono_on_def)
   have "\<forall>a \<in> {a\<in>A. \<not> continuous (at a within A) f}. \<exists>q :: nat \<times> rat.
-      (fst q = 0 \<and> of_rat (snd q) < f a \<and> (\<forall>x \<in> A. x < a \<longrightarrow> f x < of_rat (snd q))) |
+      (fst q = 0 \<and> of_rat (snd q) < f a \<and> (\<forall>x \<in> A. x < a \<longrightarrow> f x < of_rat (snd q))) \<or>
       (fst q = 1 \<and> of_rat (snd q) > f a \<and> (\<forall>x \<in> A. x > a \<longrightarrow> f x > of_rat (snd q)))"
-  proof auto
-    from `mono_on f A` have mono: "\<And>x y. x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> x \<le> y \<Longrightarrow> f x \<le> f y"
-      by (simp add: mono_on_def)
-    fix a
-    assume "a \<in> A"
-    assume "\<not> continuous (at a within A) f"
+  proof (clarsimp simp del: One_nat_def)
+    fix a assume "a \<in> A" assume "\<not> continuous (at a within A) f"
     thus "\<exists>q1 q2.
             q1 = 0 \<and> real_of_rat q2 < f a \<and> (\<forall>x\<in>A. x < a \<longrightarrow> f x < real_of_rat q2) \<or>
-            q1 = Suc 0 \<and> f a < real_of_rat q2 \<and> (\<forall>x\<in>A. a < x \<longrightarrow> real_of_rat q2 < f x)"
+            q1 = 1 \<and> f a < real_of_rat q2 \<and> (\<forall>x\<in>A. a < x \<longrightarrow> real_of_rat q2 < f x)"
     proof (auto simp add: continuous_within order_tendsto_iff eventually_at)
-      fix l
-      assume "l < f a"
-      hence "\<exists>q :: rat. l < of_rat q \<and> of_rat q < f a"
-        by (rule of_rat_dense)
-      then guess q2 .. note 1 = this
-      assume 2 [rule_format]: "\<forall>d>0. \<exists>x\<in>A. x \<noteq> a \<and> dist x a < d \<and> \<not> l < f x"
-      from 1 have "real_of_rat q2 < f a \<and> (\<forall>x\<in>A. x < a \<longrightarrow> f x < real_of_rat q2)"
+      fix l assume "l < f a"
+      then obtain q2 where q2: "l < of_rat q2" "of_rat q2 < f a"
+        using of_rat_dense by blast
+      assume * [rule_format]: "\<forall>d>0. \<exists>x\<in>A. x \<noteq> a \<and> dist x a < d \<and> \<not> l < f x"
+      from q2 have "real_of_rat q2 < f a \<and> (\<forall>x\<in>A. x < a \<longrightarrow> f x < real_of_rat q2)"
       proof auto
-        fix x 
-        assume "x \<in> A" "x < a"
-        with 1 2 [of "a - x"] show "f x < real_of_rat q2"
-          apply (auto simp add: dist_real_def)
+        fix x assume "x \<in> A" "x < a"
+        with q2 *[of "a - x"] show "f x < real_of_rat q2"
+          apply (auto simp add: dist_real_def not_less)
           apply (subgoal_tac "f x \<le> f xa")
           by (auto intro: mono)
       qed 
       thus ?thesis by auto
     next
-      fix u
-      assume "u > f a"
-      hence "\<exists>q :: rat. f a < of_rat q \<and> of_rat q < u"
-        by (rule of_rat_dense)
-      then guess q2 .. note 1 = this
-      assume 2 [rule_format]: "\<forall>d>0. \<exists>x\<in>A. x \<noteq> a \<and> dist x a < d \<and> \<not> u > f x"
-      from 1 have "real_of_rat q2 > f a \<and> (\<forall>x\<in>A. x > a \<longrightarrow> f x > real_of_rat q2)"
+      fix u assume "u > f a"
+      then obtain q2 where q2: "f a < of_rat q2" "of_rat q2 < u"
+        using of_rat_dense by blast
+      assume *[rule_format]: "\<forall>d>0. \<exists>x\<in>A. x \<noteq> a \<and> dist x a < d \<and> \<not> u > f x"
+      from q2 have "real_of_rat q2 > f a \<and> (\<forall>x\<in>A. x > a \<longrightarrow> f x > real_of_rat q2)"
       proof auto
-        fix x 
-        assume "x \<in> A" "x > a"
-        with 1 2 [of "x - a"] show "f x > real_of_rat q2"
+        fix x assume "x \<in> A" "x > a"
+        with q2 *[of "x - a"] show "f x > real_of_rat q2"
           apply (auto simp add: dist_real_def)
           apply (subgoal_tac "f x \<ge> f xa")
           by (auto intro: mono)
@@ -92,7 +101,7 @@ proof -
       (fst (g a) = 0 \<and> of_rat (snd (g a)) < f a \<and> (x < a \<longrightarrow> f x < of_rat (snd (g a)))) |
       (fst (g a) = 1 \<and> of_rat (snd (g a)) > f a \<and> (x > a \<longrightarrow> f x > of_rat (snd (g a))))"
     by auto
-  have "inj_on (\<lambda>x. g x) {a\<in>A. \<not> continuous (at a within A) f}"
+  have "inj_on g {a\<in>A. \<not> continuous (at a within A) f}"
   proof (auto simp add: inj_on_def)
     fix w z
     assume 1: "w \<in> A" and 2: "\<not> continuous (at w within A) f" and
@@ -315,10 +324,8 @@ proof -
         case (real r)
         with B have r: "r < M.I \<omega>"
           by simp
-        then have "uncountable ({r<..<M.I \<omega>} - {x. measure M {x} \<noteq> 0})"
-          using uncountable_open_interval M.countable_support uncountable_minus_countable by auto
         then obtain x where x: "r < x" "x < M.I \<omega>" "measure M {x} = 0"
-          unfolding uncountable_def by auto
+          using open_minus_countable[OF M.countable_support, of "{r<..<M.I \<omega>}"] by auto
         then have Fx_less: "M.C x < \<omega>"
           using M.pseudoinverse' \<omega> not_less by blast
 
@@ -337,11 +344,8 @@ proof -
       fix B' assume "ereal (M.I \<omega>') < B'" "B' < ereal (M.I \<omega>' + 1)"
       then obtain B where "M.I \<omega>' < B" and [simp]: "B' = ereal B"
         by (cases B') auto
-      then have "uncountable ({M.I \<omega>'<..<B} - {x. measure M {x} \<noteq> 0})"
-        by (intro M.countable_support uncountable_minus_countable)
-           (auto simp: uncountable_open_interval)
       then obtain y where y: "M.I \<omega>' < y" "y < B" "measure M {y} = 0"
-        unfolding uncountable_def by auto
+        using open_minus_countable[OF M.countable_support, of "{M.I \<omega>'<..<B}"] by auto
       then have "\<omega>' \<le> M.C (M.I \<omega>')"
         using M.pseudoinverse' \<omega>' by (metis greaterThanLessThan_iff order_refl)
       also have "... \<le> M.C y"

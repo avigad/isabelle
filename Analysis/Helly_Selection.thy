@@ -11,6 +11,24 @@ theory Helly_Selection
   imports Diagonal_Subsequence Weak_Convergence Library_Misc
 begin
 
+lemma ereal_Inf:
+  assumes *: "bdd_below A" "A \<noteq> {}"
+  shows "ereal (Inf A) = (INF a:A. ereal a)"
+proof (rule ereal_Inf)
+  from * obtain l u where "\<And>x. x \<in> A \<Longrightarrow> l \<le> x" "u \<in> A"
+    by (auto simp: bdd_below_def)
+  then have "l \<le> (INF x:A. ereal x)" "(INF x:A. ereal x) \<le> u"
+    by (auto intro!: INF_greatest INF_lower)
+  then show "\<bar>INF a:A. ereal a\<bar> \<noteq> \<infinity>"
+    by auto
+qed
+
+lemma setcompr_eq_image: "{f x |x. P x} = f ` {x. P x}"
+  by auto
+
+lemma minus_one_less: "a - 1 < (a::real)"
+  by simp
+
 lemma ereal_dist_eq: "\<forall>e>0. \<bar>a - b\<bar> < ereal e \<Longrightarrow> a = b"
   apply (cases a b rule: ereal2_cases)
   apply (auto elim: allE[of _ 1])
@@ -21,7 +39,7 @@ theorem Helly_selection:
   fixes f :: "nat \<Rightarrow> real \<Rightarrow> real"
   assumes rcont: "\<And>n x. continuous (at_right x) (f n)"
   assumes mono: "\<And>n. mono (f n)"
-  assumes bdd: "\<forall>n x. \<bar>f n x\<bar> \<le> M"
+  assumes bdd: "\<And>n x. \<bar>f n x\<bar> \<le> M"
   shows "\<exists>s. subseq s \<and> (\<exists>F. (\<forall>x. continuous (at_right x) F) \<and> mono F \<and> (\<forall>x. \<bar>F x\<bar> \<le> M) \<and>
     (\<forall>x. continuous (at x) F \<longrightarrow> (\<lambda>n. f (s n) x) ----> F x))"
 proof -
@@ -29,6 +47,10 @@ proof -
     using countable_rat Rats_infinite by (erule countableE_infinite)
   then obtain r :: "nat \<Rightarrow> real" where bij: "bij_betw r UNIV \<rat>"
     using bij_betw_inv by blast
+
+  have dense_r: "\<And>x y. x < y \<Longrightarrow> \<exists>n. x < r n \<and> r n < y"
+    by (metis Rats_dense_in_real bij f_the_inv_into_f bij_betw_def)
+
   let ?P = "\<lambda>n. \<lambda>s. convergent (\<lambda>k. f (s k) (r n))"
   interpret nat: subseqs ?P
   proof (unfold convergent_def, unfold subseqs_def, auto)
@@ -45,383 +67,180 @@ proof -
   def d \<equiv> "nat.diagseq"
   have subseq: "subseq d"
     unfolding d_def using nat.subseq_diagseq by auto
-  have rat_cnv: "\<And>n. ?P n d"
+  have rat_cnv: "?P n d" for n
   proof -
-    fix n::nat show "?P n d"
-    proof -
-      have Pn_seqseq: "?P n (nat.seqseq (Suc n))"
-        by (rule nat.seqseq_holds)
-      have 1: "(\<lambda>k. f ((nat.seqseq (Suc n) \<circ> (\<lambda>k. nat.fold_reduce (Suc n) k
-        (Suc n + k))) k) (r n)) = (\<lambda>k. f (nat.seqseq (Suc n) k) (r n)) \<circ>
-        (\<lambda>k. nat.fold_reduce (Suc n) k (Suc n + k))"
-        by auto
-      have 2: "?P n (d \<circ> (op + (Suc n)))"
-        unfolding d_def
-        apply (subst nat.diagseq_seqseq)
-        apply (subst 1)
-        apply (rule convergent_subseq_convergent[of "\<lambda>k. f (nat.seqseq (Suc n) k) (r n)"
-          "\<lambda>k. nat.fold_reduce (Suc n) k (Suc n + k)"])
-        by (rule Pn_seqseq) (rule nat.subseq_diagonal_rest)
-      then obtain L where 3: "(\<lambda>k. f ((d \<circ> (op + (Suc n))) k) (r n)) ----> L"
-        using convergentD by auto
-      have 4: "(\<lambda>k. f (d (k + (Suc n))) (r n)) = (\<lambda>k. f ((d \<circ> (op + (Suc n))) k) (r n))"
-        by (auto simp: add.commute)
-      have "(\<lambda>k. f (d k) (r n)) ----> L" 
-        apply (rule LIMSEQ_offset[of _ "Suc n"])
-        by (subst 4) (rule 3)
-      thus ?thesis unfolding convergent_def by auto
-    qed
-  qed
-  have M_nonneg: "0 \<le> M"
-    by (metis bdd abs_minus_le_zero less_le less_trans neg_le_0_iff_le)
-  have lim_bdd: "\<And>n. lim (\<lambda>k. f (d k) (r n)) \<in> {-M..M}"
-  proof -
-    fix n::nat
-    have "closed {-M..M}" using closed_real_atLeastAtMost by auto
-    hence "(\<forall>i. (\<lambda>k. f (d k) (r n)) i \<in> {-M..M}) \<and> (\<lambda>k. f (d k) (r n)) ----> lim (\<lambda>k. f (d k) (r n))
-      \<longrightarrow> lim (\<lambda>k. f (d k) (r n)) \<in> {-M..M}"
-      apply (subst (asm) closed_sequential_limits)
-      by (drule_tac x = "\<lambda>k. f (d k) (r n)" in spec) blast
-    moreover have "\<forall>i. (\<lambda>k. f (d k) (r n)) i \<in> {-M..M}"
-      using bdd by (simp add: abs_le_iff minus_le_iff)
-    moreover have "(\<lambda>k. f (d k) (r n)) ----> lim (\<lambda>k. f (d k) (r n))"
-      using rat_cnv convergent_LIMSEQ_iff by auto
-    ultimately show "lim (\<lambda>k. f (d k) (r n)) \<in> {-M..M}" by auto
-  qed
-  then have limset_bdd: "\<And>x. {lim (\<lambda>k. f (d k) (r n)) |n. x < r n} \<subseteq> {-M..M}"
-    by auto
-  then have bdd_below: "bdd_below {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}" for x
-    by (metis (mono_tags) bdd_below_Icc bdd_below_mono)
-  have nonempty: "\<And>x::real. {lim (\<lambda>k. f (d k) (r n)) |n. x < r n} \<noteq> {}"
-  proof -
-    fix x :: real
-    obtain q where q: "q \<in> \<rat> \<and> x < q" by (metis (full_types) Rats_dense_in_real linordered_field_no_ub)
-    let ?n = "the_inv_into UNIV r q"
-    let ?y = "lim (\<lambda>k. f (d k) (r ?n))"
-    have "x < r ?n" using f_the_inv_into_f bij q by (metis bij_betw_def)
-    then have "?y \<in> {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}" by auto
-    thus "{lim (\<lambda>k. f (d k) (r n)) |n. x < r n} \<noteq> {}" by auto
-  qed
-  { fix x :: real
-    from Rats_no_top_le [of "x + 1"] guess q ..
-    with bij have "x < r (inv r q)"
-      apply (subst f_inv_into_f[where f=r])
-      apply (simp_all add: bij_betw_def)
-      done
-    hence "\<exists>n. x < r n" ..
-  } note r_unbdd = this
-  def F \<equiv> "\<lambda>x. Inf {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}"
-  have "\<And>x. F x \<in> {-M..M}"
-    unfolding F_def apply (rule closed_subset_contains_Inf)
-    using limset_bdd apply auto
-    prefer 2 apply (rule bdd_below_mono)
-    apply (rule bdd_below_Ici [of "-M"])
-    apply (rule subset_trans, assumption, force)
-    by (rule r_unbdd)
-  have mono_F: "mono F"
-  proof (unfold mono_def, auto)
-    fix x y::real assume le: "x \<le> y"
-    hence subset: "{lim (\<lambda>k. f (d k) (r n)) |n. y < r n} \<subseteq> {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}"
+    have Pn_seqseq: "?P n (nat.seqseq (Suc n))"
+      by (rule nat.seqseq_holds)
+    have 1: "(\<lambda>k. f ((nat.seqseq (Suc n) \<circ> (\<lambda>k. nat.fold_reduce (Suc n) k
+      (Suc n + k))) k) (r n)) = (\<lambda>k. f (nat.seqseq (Suc n) k) (r n)) \<circ>
+      (\<lambda>k. nat.fold_reduce (Suc n) k (Suc n + k))"
       by auto
-    show "F x \<le> F y"
-      unfolding F_def apply (rule cInf_superset_mono[of "{lim (\<lambda>k. f (d k) (r n)) |n. y < r n}"
-        "{lim (\<lambda>k. f (d k) (r n)) |n. x < r n}"])
-      apply (rule nonempty)
-      apply (rule bdd_below)
-      by (rule subset)
+    have 2: "?P n (d \<circ> (op + (Suc n)))"
+      unfolding d_def
+      apply (subst nat.diagseq_seqseq)
+      apply (subst 1)
+      apply (rule convergent_subseq_convergent[of "\<lambda>k. f (nat.seqseq (Suc n) k) (r n)"
+        "\<lambda>k. nat.fold_reduce (Suc n) k (Suc n + k)"])
+      by (rule Pn_seqseq) (rule nat.subseq_diagonal_rest)
+    then obtain L where 3: "(\<lambda>k. f ((d \<circ> (op + (Suc n))) k) (r n)) ----> L"
+      using convergentD by auto
+    have 4: "(\<lambda>k. f (d (k + (Suc n))) (r n)) = (\<lambda>k. f ((d \<circ> (op + (Suc n))) k) (r n))"
+      by (auto simp: add.commute)
+    have "(\<lambda>k. f (d k) (r n)) ----> L" 
+      apply (rule LIMSEQ_offset[of _ "Suc n"])
+      by (subst 4) (rule 3)
+    thus ?thesis unfolding convergent_def by auto
   qed
-  moreover have rcont_F: "\<And>x. continuous (at_right x) F" 
-    apply (unfold Topological_Spaces.continuous_def)
-    apply (unfold tendsto_def, auto)
-    apply (subst eventually_at_right[OF less_add_one])
-    proof -
-      fix x::real fix S::"real set" assume openS: "open S"
-      assume ntlim_inS: "F (netlimit (at_right x)) \<in> S"
-      have "netlimit (at_right x) = x" by (auto intro: netlimit_within)
-      with F_def have "F x \<in> S" using ntlim_inS by simp
-      then obtain e where e_pos: "e > 0" and e: "ball (F x) e \<subseteq> S" using openE openS by auto
-      have "F x < F x + e"
-        using e_pos by simp
-      then have "\<exists>y \<in> {lim (\<lambda>k. f (d k) (r n)) |n. x < r n}. y < F x + e"
-        unfolding F_def cInf_less_iff[OF nonempty bdd_below] by (auto simp add: field_simps)
-      then guess y .. note y = this
-      then obtain n where n: "y = lim (\<lambda>k. f (d k) (r n)) \<and> x < r n" by auto
-      have "\<forall>z. x < z \<and> z < r n \<longrightarrow> F z \<in> S"
-      proof auto
-        fix z assume gr: "x < z" and ls: "z < r n"
-        have 1: "F x \<le> F z" using gr mono_F unfolding mono_def by auto
-        have "F z \<le> y"
-        proof -
-          have "F z \<le> lim (\<lambda>k. f (d k) (r n))"
-            unfolding F_def apply (rule cInf_lower)
-            using bdd_below ls by auto
-          thus ?thesis using n by simp
-        qed
-        hence "F z < F x + e" using y by auto
-        hence "F z \<in> ball (F x) e" unfolding ball_def dist_real_def using 1 by auto
-        thus "F z \<in> S" using e by auto
-      qed
-      thus "\<exists>b>x. \<forall>z>x. z < b \<longrightarrow> F z \<in> S" using n by auto
-    qed
-  moreover have bdd_F: "\<forall>x. \<bar>F x\<bar> \<le> M"
-  proof auto
-    fix x
+  let ?f = "\<lambda>n. \<lambda>k. f (d k) (r n)"
+  have lim_f: "?f n ----> lim (?f n)" for n
+    using rat_cnv convergent_LIMSEQ_iff by auto
+  have lim_bdd: "lim (?f n) \<in> {-M..M}" for n
+  proof -
+    have "closed {-M..M}" using closed_real_atLeastAtMost by auto
+    hence "(\<forall>i. ?f n i \<in> {-M..M}) \<and> ?f n ----> lim (?f n) \<longrightarrow> lim (?f n) \<in> {-M..M}"
+      unfolding closed_sequential_limits by (drule_tac x = "\<lambda>k. f (d k) (r n)" in spec) blast
+    moreover have "\<forall>i. ?f n i \<in> {-M..M}"
+      using bdd by (simp add: abs_le_iff minus_le_iff)
+    ultimately show "lim (?f n) \<in> {-M..M}"
+      using lim_f by auto
+  qed
+  then have limset_bdd: "\<And>x. {lim (?f n) |n. x < r n} \<subseteq> {-M..M}"
+    by auto
+  then have bdd_below: "bdd_below {lim (?f n) |n. x < r n}" for x
+    by (metis (mono_tags) bdd_below_Icc bdd_below_mono)
+  have r_unbdd: "\<exists>n. x < r n" for x
+    using dense_r[OF less_add_one, of x] by auto
+  then have nonempty: "{lim (?f n) |n. x < r n} \<noteq> {}" for x
+    by auto
+
+  def F \<equiv> "\<lambda>x. Inf {lim (?f n) |n. x < r n}"
+  have F_eq: "ereal (F x) = (INF n:{n. x < r n}. ereal (lim (?f n)))" for x
+    unfolding F_def by (subst ereal_Inf[OF bdd_below nonempty]) (simp add: setcompr_eq_image)
+  have mono_F: "mono F"
+    using nonempty by (auto intro!: cInf_superset_mono simp: F_def bdd_below mono_def)
+  moreover have "\<And>x. continuous (at_right x) F"
+    unfolding continuous_within order_tendsto_iff eventually_at_right[OF less_add_one]
+  proof safe
+    show "F x < u \<Longrightarrow> \<exists>b>x. \<forall>y>x. y < b \<longrightarrow> F y < u" for x u
+      unfolding F_def cInf_less_iff[OF nonempty bdd_below] by auto
+  next
+    show "\<exists>b>x. \<forall>y>x. y < b \<longrightarrow> l < F y" if l: "l < F x" for x l
+      using less_le_trans[OF l mono_F[THEN monoD, of x]] by (auto intro: less_add_one)
+  qed
+  moreover
+  { fix x
     have "F x \<in> {-M..M}"
-      unfolding F_def
-      apply (rule atLeastAtMost_subset_contains_Inf)
-      apply (rule nonempty)
-      apply (simp add: M_nonneg)
-      apply (rule limset_bdd)
-      done
-    thus "\<bar>F x\<bar> \<le> M" by auto
-  qed
-  moreover have lim: "\<forall>x.  continuous (at x) F \<longrightarrow> (\<lambda>n. f (d n) x) ----> F x"
-  proof auto
-    fix x::real assume cts: "continuous (at x) F"
-    show "(\<lambda>n. f (d n) x) ----> F x"
-    proof -
-      have "\<forall>(e::real)>0. \<bar>limsup (\<lambda>n. ereal (f (d n) x)) - ereal (F x)\<bar> < e"
-        "\<forall>(e::real)>0. \<bar>ereal (F x) - liminf (\<lambda>n. ereal (f (d n) x))\<bar> < e"
-      proof auto
-        fix e::real assume e: "0 < e"
-        have "F -- x --> F x" using cts continuous_at by auto
-          hence "\<exists>d>0. \<forall>y. y \<noteq> x \<and> norm (y - x) < d \<longrightarrow> norm (F y - F x) < e"
-            by (rule LIM_D) (rule e) (* Why did auto not work here? *)
-        then obtain d' where d: "d' > 0" and cts': "\<forall>y. y \<noteq> x \<and> norm (y - x) < d' \<longrightarrow> norm (F y - F x) < e"
-          by auto
-        have "\<exists>y<x. norm (y - x) < d'"
-          using d by (auto intro: exI[of _ "x - d'/2"])
-        then guess y .. note y = this
-        then have "norm (F y - F x) < e" using cts' by auto
-        hence 1: "F x - e < F y" using y mono by auto
-        have "\<exists>n. y < r n \<and> r n < x"
-        proof -
-          obtain q where q: "q \<in> \<rat> \<and> y < q \<and> q < x" using y Rats_dense_in_real by auto
-          let ?n = "the_inv_into UNIV r q"
-          have "y < r ?n \<and> r ?n < x" using q bij f_the_inv_into_f unfolding bij_betw_def by metis
-          thus ?thesis by auto
-        qed
-        then guess n.. note n = this
-        have "F y \<le> lim (\<lambda>k. f (d k) (r n))"
-          unfolding F_def apply (rule cInf_lower)
-          using bdd_below n by auto
-        hence 2: "F x - e < lim (\<lambda>k. f (d k) (r n))" using 1 by auto
-        from e have "F x < F x + e" by simp
-        then have "\<exists>m. x < r m \<and> lim (\<lambda>k. f (d k) (r m)) < F x + e"
-          unfolding F_def cInf_less_iff[OF nonempty bdd_below] by (auto simp add: field_simps)
-        then guess m .. note m = this
-        from n m have nm: "r n < r m" by auto
-        have 3: "lim (\<lambda>k. f (d k) (r n)) \<le> lim (\<lambda>k. f (d k) (r m))"
-        proof -
-          have le: "\<And>k. f (d k) (r n) \<le> f (d k) (r m)"
-            using y assms nm unfolding mono_def by auto
-          have "convergent (\<lambda>k. f (d k) (r n))"
-            using Bseq_mono_convergent rat_cnv by auto
-          hence L1: "(\<lambda>k. f (d k) (r n)) ----> lim (\<lambda>k. f(d k) (r n))" (is "_ ----> ?L1")
-            using convergent_LIMSEQ_iff by auto
-          have "convergent (\<lambda>k. f (d k) (r m))"
-            using Bseq_mono_convergent rat_cnv by auto
-          hence L2: "(\<lambda>k. f (d k) (r m)) ----> lim (\<lambda>k. f (d k) (r m))" (is "_ ----> ?L2")
-            using convergent_LIMSEQ_iff by auto
-          show "?L1 \<le> ?L2"
-          proof -
-            have "ereal ?L1 \<le> ereal ?L2"
-              apply (rule ereal_lim_mono[of 0 "\<lambda>k. ereal (f (d k) (r n))" "\<lambda>k. ereal (f (d k) (r m))"])
-              apply (force intro: le)
-              by (auto intro: L1 L2)
-            thus ?thesis by auto
-          qed  
-        qed
-        have 4: "lim (\<lambda>k. f (d k) (r m)) < F x + e" using m by simp
-        have 5: "\<And>k. f k (r n) \<le> f k x"  using n mono unfolding mono_def by auto
-        have 6: "\<And>k. f k x \<le> f k (r m)" using m mono unfolding mono_def by auto
-        have 7: "limsup (\<lambda>n. f (d n) x) < F x + e"
-        proof -
-          from 6 have "limsup (\<lambda>k. f (d k) x) \<le> limsup (\<lambda>k. f (d k) (r m))" using Limsup_mono
-            by (smt ereal_less_eq(3) eventually_sequentially)
-          also have "... = lim (\<lambda>k. f (d k) (r m))"
-            apply (subst convergent_limsup_cl)
-            using rat_cnv convergent_real_imp_convergent_ereal by auto
-          also have "ereal (lim (\<lambda>k. f (d k) (r m))) < ereal (F x + e)" using 4 less_ereal.simps(1) by simp
-          finally show ?thesis by simp
-        qed
-        have "\<bar>limsup (\<lambda>k. f (d k) x)\<bar> \<le> ereal M"
-          apply (rule abs_bounds)
-          apply (subst Limsup_const[symmetric, of sequentially "ereal M"], simp)
-          apply (rule Limsup_mono[of "\<lambda>k. ereal (f (d k) x)" "\<lambda>k. ereal M" sequentially])
-          apply eventually_elim
-          apply (subst ereal_less_eq(3))
-          apply (metis abs_ge_self order.trans bdd)
-          apply (subst ereal_uminus_le_reorder)
-          apply (subst uminus_ereal.simps(1))
-          apply (subst Limsup_const[symmetric, of sequentially "ereal (-M)"], simp)
-          apply (rule Limsup_mono[of "\<lambda>k. ereal (-M)" "\<lambda>k. ereal (f (d k) x)" sequentially])
-          apply eventually_elim
-          apply (subst ereal_less_eq(3))
-          by (metis abs_le_iff minus_le_iff bdd)
-        hence "\<bar>limsup (\<lambda>k. f (d k) x)\<bar> \<noteq> \<infinity>" by auto
-        then obtain lsup where lsup: "limsup (\<lambda>n. f (d n) x) = ereal lsup" by auto
-        have lsup_e: "lsup - F x < e" using 7
-          by (smt lsup add.commute diff_less_eq less_ereal.simps(1))
-        have 8: "F x - e < liminf (\<lambda>k. f (d k) x)"
-        proof -
-          from 5 have ineq: "liminf (\<lambda>k. f (d k) (r n)) \<le> liminf (\<lambda>k. f (d k) x)" using Liminf_mono
-            by (smt ereal_less_eq(3) eventually_sequentially)
-          have eq: "liminf (\<lambda>k. f (d k) (r n)) = lim (\<lambda>k. f (d k) (r n))"
-            apply (subst convergent_liminf_cl)
-            using rat_cnv convergent_real_imp_convergent_ereal by auto
-          have "ereal (F x - e) < ereal (lim (\<lambda>k. f (d k) (r n)))" using 2 less_ereal.simps(1) by simp
-          hence "ereal (F x - e) < liminf (\<lambda>k. f (d k) (r n))" using eq by simp
-          thus ?thesis using ineq by simp
-        qed
-        (* Here I just copied the proof for limsup and replaced 'sup' by 'inf'; is there a better
-           way exploiting duality of these operations? *)
-        have "\<bar>liminf (\<lambda>k. f (d k) x)\<bar> \<le> ereal M"
-          apply (rule abs_bounds)
-          apply (subst Liminf_const[symmetric, of sequentially "ereal M"], simp)
-          apply (rule Liminf_mono[of "\<lambda>k. ereal (f (d k) x)" "\<lambda>k. ereal M" sequentially])
-          apply eventually_elim
-          apply (subst ereal_less_eq(3))
-          apply (metis abs_ge_self order.trans bdd)
-          apply (subst ereal_uminus_le_reorder)
-          apply (subst uminus_ereal.simps(1))
-          apply (subst Liminf_const[symmetric, of sequentially "ereal (-M)"], simp)
-          apply (rule Liminf_mono[of "\<lambda>k. ereal (-M)" "\<lambda>k. ereal (f (d k) x)" sequentially])
-          apply eventually_elim
-          apply (subst ereal_less_eq(3))
-          by (metis abs_le_iff minus_le_iff bdd)
-        hence "\<bar>liminf (\<lambda>k. f (d k) x)\<bar> \<noteq> \<infinity>" by auto
-        then obtain linf where linf: "liminf (\<lambda>k. f (d k) x) = ereal linf" by auto
-        have linf_e: "F x - linf < e" using 8
-          by (smt linf add.commute diff_less_eq less_ereal.simps(1))
-        have "ereal linf \<le> ereal lsup"
-          apply (subst linf [symmetric], subst lsup [symmetric])
-          by (auto intro: Liminf_le_Limsup)
-        hence *: "linf \<le> lsup" by auto
-        have "\<bar> lsup - F x \<bar> < e"
-          apply (auto split: abs_split intro: lsup_e)
-          using * linf_e by arith
-        thus "\<bar>limsup (\<lambda>k. (f (d k) x)) - F x\<bar> < e"
-          by (auto simp add: lsup)
-        have "\<bar> linf - F x \<bar> < e"
-          apply (auto split: abs_split)
-          using * lsup_e apply arith
-          by (auto intro: linf_e)
-        thus "\<bar>F x - liminf (\<lambda>k. (f (d k) x))\<bar> < e"
-          by (auto simp add: linf)
-    qed
-    then have "limsup (\<lambda>n. ereal (f (d n) x)) = ereal (F x)"
-      "liminf (\<lambda>n. ereal (f (d n) x)) = ereal (F x)"
-      by (auto dest!: ereal_dist_eq)
-    hence *: "lim (\<lambda>k. ereal (f (d k) x)) = F x" "convergent (\<lambda>k. ereal (f (d k) x))"
-      by (auto simp add: convergent_ereal convergent_limsup_cl[symmetric])
-    have "(\<lambda>k. ereal (f (d k) x)) ----> F x"
-      apply (subst *(1) [symmetric])
-      apply (subst convergent_LIMSEQ_iff [symmetric])
-      by (rule *)
-    thus ?thesis by (subst lim_ereal [symmetric])
-    qed
+      unfolding F_def using limset_bdd bdd_below r_unbdd by (intro closed_subset_contains_Inf) auto
+    then have "\<bar>F x\<bar> \<le> M" by auto }
+  moreover have "(\<lambda>n. f (d n) x) ----> F x" if cts: "continuous (at x) F" for x
+  proof (rule limsup_le_liminf_real)
+    show "limsup (\<lambda>n. f (d n) x) \<le> F x"
+    proof (rule tendsto_le_const)
+      show "(F ---> ereal (F x)) (at_right x)"
+        using cts unfolding continuous_at_split by (auto simp: continuous_within)
+      show "\<forall>\<^sub>F i in at_right x. limsup (\<lambda>n. f (d n) x) \<le> F i"
+        unfolding eventually_at_right[OF less_add_one]
+      proof (rule, rule, rule less_add_one, safe)
+        fix y assume y: "x < y"
+        with dense_r obtain N where "x < r N" "r N < y" by auto
+        have *: "y < r n' \<Longrightarrow> lim (?f N) \<le> lim (?f n')" for n'
+          using \<open>r N < y\<close> by (intro LIMSEQ_le[OF lim_f lim_f]) (auto intro!: mono[THEN monoD])
+        have "limsup (\<lambda>n. f (d n) x) \<le> limsup (?f N)"
+          using \<open>x < r N\<close> by (auto intro!: Limsup_mono always_eventually mono[THEN monoD])
+        also have "\<dots> = lim (\<lambda>n. ereal (?f N n))"
+          using rat_cnv[of N] by (force intro!: convergent_limsup_cl simp: convergent_def)
+        also have "\<dots> \<le> F y"
+          by (auto intro!: INF_greatest * simp: convergent_real_imp_convergent_ereal rat_cnv F_eq)
+        finally show "limsup (\<lambda>n. f (d n) x) \<le> F y" .
+      qed
+    qed simp
+    show "F x \<le> liminf (\<lambda>n. f (d n) x)"
+    proof (rule tendsto_ge_const)
+      show "(F ---> ereal (F x)) (at_left x)"
+        using cts unfolding continuous_at_split by (auto simp: continuous_within)
+      show "\<forall>\<^sub>F i in at_left x. F i \<le> liminf (\<lambda>n. f (d n) x)"
+        unfolding eventually_at_left[OF minus_one_less]
+      proof (rule, rule, rule minus_one_less, safe)
+        fix y assume y: "y < x"
+        with dense_r obtain N where "y < r N" "r N < x" by auto
+        have "F y \<le> liminf (?f N)"
+          using \<open>y < r N\<close> by (auto simp: F_eq convergent_real_imp_convergent_ereal
+            rat_cnv convergent_liminf_cl intro!: INF_lower2)
+        also have "\<dots> \<le> liminf (\<lambda>n. f (d n) x)"
+          using \<open>r N < x\<close> by (auto intro!: Liminf_mono monoD[OF mono] always_eventually)
+        finally show "F y \<le> liminf (\<lambda>n. f (d n) x)" .
+      qed
+    qed simp
   qed
   ultimately show ?thesis using subseq by auto
 qed
 
 (** Weak convergence corollaries to Helly's theorem. **)
 
-definition tight :: "(nat \<Rightarrow> real measure) \<Rightarrow> bool"
-where "tight \<mu> \<equiv> (\<forall>n. real_distribution (\<mu> n)) \<and> (\<forall>(\<epsilon>::real)>0. \<exists>a b::real. a < b \<and> (\<forall>n. measure (\<mu> n) {a<..b} > 1 - \<epsilon>))"
+definition
+  tight :: "(nat \<Rightarrow> real measure) \<Rightarrow> bool"
+where
+  "tight \<mu> \<equiv> (\<forall>n. real_distribution (\<mu> n)) \<and> (\<forall>(\<epsilon>::real)>0. \<exists>a b::real. a < b \<and> (\<forall>n. measure (\<mu> n) {a<..b} > 1 - \<epsilon>))"
 
 (* Can strengthen to equivalence. *)
 theorem tight_iff_convergent_subsubsequence:
-  fixes \<mu>
-  assumes "\<And>n. real_distribution (\<mu> n)"
-  shows "tight \<mu> \<Longrightarrow> (\<forall>s. subseq s \<longrightarrow> (\<exists>r. \<exists>M.  subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M))"
-proof auto
-  assume \<mu>: "tight \<mu>"
+  assumes \<mu>: "tight \<mu>"
+  shows "\<forall>s. subseq s \<longrightarrow> (\<exists>r. \<exists>M.  subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)"
+proof safe
   fix s assume s: "subseq s"
   def f \<equiv> "\<lambda>k. cdf (\<mu> (s k))"
-  {  fix k
-     interpret \<mu>: real_distribution "\<mu> k" using \<mu> unfolding tight_def by auto
-     interpret \<mu>_s: real_distribution "(\<mu> (s k))" using \<mu> unfolding tight_def by auto
-     have "\<And>x. continuous (at_right x) (f k)" "mono (f k)" "((f k) ---> 1) at_top" "((f k) ---> 0) at_bot" "\<forall>x. \<bar>f k x\<bar> \<le> 1"
-      "\<And>A B. A \<subseteq> B \<Longrightarrow> B \<in> sets borel \<Longrightarrow> measure (\<mu> k) A \<le> measure (\<mu> k) B"
-      "\<And>A B. A \<in> sets (\<mu> k) \<Longrightarrow> B \<in> sets (\<mu> k) \<Longrightarrow> A \<inter> B = {} \<Longrightarrow> measure (\<mu> k) (A \<union> B) =
-        measure (\<mu> k) A + measure (\<mu> k) B" "\<And>A. measure (\<mu> k) A \<le> 1"
-      unfolding f_def mono_def
-      using \<mu>_s.cdf_nondecreasing \<mu>_s.cdf_is_right_cont \<mu>_s.cdf_lim_at_top_prob \<mu>_s.cdf_lim_at_bot
-      apply auto
-      apply (simp add: abs_le_iff minus_le_iff)
-      using \<mu>_s.cdf_nonneg apply (metis \<mu>_s.cdf_bounded_prob dual_order.trans le_minus_one_simps(1))
-      using \<mu>.finite_measure_mono apply force
-      using \<mu>.finite_measure_Union by auto
-  } note f_rcont_inc = this(1,2) and f_at_top = this(3) and f_at_bot = this(4) and f_bdd = this(5)
-    and \<mu>_mono = this(6) and \<mu>_disj_un = this(7) and \<mu>_le_1 = this(8)
-  from f_rcont_inc f_bdd Helly_selection obtain r
-  where "subseq r \<and> (\<exists>F. (\<forall>x. continuous (at_right x) F) \<and> mono F \<and> (\<forall>x. \<bar>F x\<bar> \<le> 1) \<and>
-    (\<forall>x.  continuous (at x) F \<longrightarrow> (\<lambda>n. f (r n) x) ----> F x))" by blast
-  then guess F by auto note F = this
-  have F_nonneg: "\<And>x. F x \<ge> 0"
+  interpret \<mu>: real_distribution "\<mu> k" for k
+    using \<mu> unfolding tight_def by auto
+
+  have rcont: "\<And>x. continuous (at_right x) (f k)"
+    and mono: "mono (f k)"
+    and top: "(f k ---> 1) at_top"
+    and bot: "(f k ---> 0) at_bot" for k
+    unfolding f_def mono_def
+    using \<mu>.cdf_nondecreasing \<mu>.cdf_is_right_cont \<mu>.cdf_lim_at_top_prob \<mu>.cdf_lim_at_bot by auto
+  have bdd: "\<bar>f k x\<bar> \<le> 1" for k x
+    by (auto simp add: abs_le_iff minus_le_iff f_def \<mu>.cdf_nonneg \<mu>.cdf_bounded_prob)
+
+  from Helly_selection[OF rcont mono bdd, of "\<lambda>x. x"] obtain r F
+    where F: "subseq r" "\<And>x. continuous (at_right x) F" "mono F" "\<And>x. \<bar>F x\<bar> \<le> 1"
+    and lim_F: "\<And>x. continuous (at x) F \<Longrightarrow> (\<lambda>n. f (r n) x) ----> F x"
+    by blast
+
+  have "0 \<le> f n x" for n x
+    unfolding f_def by (rule \<mu>.cdf_nonneg)
+  have F_nonneg: "0 \<le> F x" for x
   proof -
-    thm field_le_epsilon
-    from f_rcont_inc f_at_bot have "\<And>n x. f n x \<ge> 0" unfolding mono_def tendsto_def
-      apply (subst (asm) eventually_at_bot_linorder)
-      apply (rule field_le_epsilon)
-      apply (subst add_le_cancel_right[symmetric, where c = "-e"], simp)
-      apply (subgoal_tac "\<And>k. \<exists>N. \<forall>n\<le>N. f k n \<in> {-e<..<e}")
-      prefer 2 using open_real_greaterThanLessThan
-      apply (metis greaterThanLessThan_iff neg_less_0_iff_less)
-      by (metis greaterThanLessThan_iff less_le_trans linear not_less)
-    hence cts_nonneg: "\<And>x. isCont F x \<Longrightarrow> F x \<ge> 0" using F by (metis LIMSEQ_le_const)
-    (* Want general lemma to the effect that if a property holds at continuity points of a right
-      continuous increasing function, then it holds everywhere. *)
-    show "\<And>x. F x \<ge> 0" 
-      apply (rule ccontr)
-    proof (subst (asm) not_le)
-      fix x assume x: "F x < 0"
-      (* Should have made this a general lemma. *)
-      have "uncountable {x - 1<..<x}" using uncountable_open_interval by simp
-      hence "uncountable ({x - 1<..<x} - {x. \<not> isCont F x})"
-        using uncountable_minus_countable mono_ctble_discont F by auto
-      then obtain y where "y \<in> {x - 1<..<x} - {x. \<not> isCont F x}" unfolding uncountable_def by blast
-      hence y: "y < x" "isCont F y"
-        using DiffD1 greaterThanLessThan_iff by (simp_all add: linorder_not_less)
-      with F have "F y \<le> F x" unfolding mono_def by auto
-      hence "F y < 0" using x by auto
-      thus False using y(2) cts_nonneg leD by auto
-    qed
+    obtain y where "y < x" "isCont F y"
+      using open_minus_countable[OF mono_ctble_discont[OF \<open>mono F\<close>], of "{..< x}"] by auto
+    then have "0 \<le> F y"
+      by (intro LIMSEQ_le_const[OF lim_F]) (auto simp: f_def \<mu>.cdf_nonneg)
+    also have "\<dots> \<le> F x"
+      using \<open>y < x\<close> by (auto intro!: monoD[OF \<open>mono F\<close>])
+    finally show "0 \<le> F x" .
   qed
-  have Fab: "\<forall>\<epsilon>>0. \<exists>a b. (\<forall>x\<ge>b. F x \<ge> 1 - \<epsilon>) \<and> (\<forall>x\<le>a. F x \<le> \<epsilon>)"
+
+  have Fab: "\<exists>a b. (\<forall>x\<ge>b. F x \<ge> 1 - \<epsilon>) \<and> (\<forall>x\<le>a. F x \<le> \<epsilon>)" if \<epsilon>: "0 < \<epsilon>" for \<epsilon>
   proof auto
-    fix \<epsilon>::real assume \<epsilon>: "\<epsilon> > 0"
-    with \<mu> have "\<exists>a' b'. a' < b' \<and> (\<forall>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>)" unfolding tight_def by auto
+    from \<epsilon> \<mu> have "\<exists>a' b'. a' < b' \<and> (\<forall>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>)" unfolding tight_def by auto
     then obtain a' b' where a'b': "a' < b'" "\<And>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>" by auto
-    have "uncountable {a' - 1<..<a'}" using uncountable_open_interval by simp
-    hence "uncountable ({a' - 1<..<a'} - {x. \<not> isCont F x})"
-      using uncountable_minus_countable mono_ctble_discont F by auto
-    then obtain a where "a \<in> {a' - 1<..<a'} - {x. \<not> isCont F x}" unfolding uncountable_def by blast
-    hence a: "a < a'" "isCont F a"
-      using DiffD1 greaterThanLessThan_iff by (simp_all add: linorder_not_less)
-    have "uncountable {b'<..<b' + 1}" using uncountable_open_interval by simp
-    hence "uncountable ({b'<..<b' + 1} - {x. \<not> isCont F x})"
-      using uncountable_minus_countable mono_ctble_discont F by auto
-    then obtain b where "b \<in> ({b'<..<b' + 1} - {x. \<not> isCont F x})" unfolding uncountable_def by blast
-    hence b: "b' < b" "isCont F b"
-      using DiffD1 greaterThanLessThan_iff by (simp_all add: linorder_not_less)
+    obtain a where a: "a < a'" "isCont F a"
+      using open_minus_countable[OF mono_ctble_discont[OF \<open>mono F\<close>], of "{..< a'}"] by auto
+    obtain b where b: "b' < b" "isCont F b"
+      using open_minus_countable[OF mono_ctble_discont[OF \<open>mono F\<close>], of "{b' <..}"] by auto
     from a b a'b' have ab: "a < b" "\<And>k. measure (\<mu> k) {a<..b} > 1 - \<epsilon>"
     proof simp
       fix k
       have "{a'<..b'} \<subseteq> {a<..b}" using a b by auto
-      hence "measure (\<mu> k) {a'<..b'} \<le> measure (\<mu> k) {a<..b}" using \<mu>_mono by auto
+      hence "measure (\<mu> k) {a'<..b'} \<le> measure (\<mu> k) {a<..b}" using \<mu>.finite_measure_mono by auto
       thus "measure (\<mu> k) {a<..b} > 1 - \<epsilon>" using a'b'(2) by (metis less_eq_real_def less_trans)
     qed
-    from b(2) F have "(\<lambda>k. f (r k) b) ----> F b" by auto
+    from b(2) lim_F have "(\<lambda>k. f (r k) b) ----> F b" by auto
     hence subsubseq_lim: "(\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..b}) ----> F b"
       unfolding f_def cdf_def o_def by auto
     have "\<And>k. measure ((\<mu> \<circ> s \<circ> r) k) {..b} =
       measure ((\<mu> \<circ> s \<circ> r) k) {..a} + measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}"
-      apply (subst ivl_disj_un(9)[symmetric,of a b], simp add: ab less_imp_le)
-      apply auto apply (rule \<mu>_disj_un) apply auto
-      apply (metis \<mu> atMost_borel real_distribution.events_eq_borel tight_def)
-      by (metis \<mu> greaterThanAtMost_borel real_distribution.events_eq_borel tight_def)
+      by (subst ivl_disj_un(9)[symmetric,of a b])
+         (auto simp add: ab less_imp_le intro: \<mu>.finite_measure_Union)
     hence "\<And>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b} =
       measure ((\<mu> \<circ> s \<circ> r) k) {..b} - measure ((\<mu> \<circ> s \<circ> r) k) {..a}" by simp
     hence *: "\<And>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b} = f (r k) b - f (r k) a"
@@ -435,9 +254,9 @@ proof auto
       using * unfolding o_def apply simp
       apply (rule exI)
       apply (rule tendsto_diff)
-      using F b(2) a(2) apply auto
+      using F lim_F b(2) a(2) apply auto
       apply (rule eventually_sequentiallyI)
-      by (rule \<mu>_mono) auto
+      by (rule \<mu>.finite_measure_mono) auto
     moreover have "1 - \<epsilon> \<le> lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b})"
       apply (rule tendsto_le[of sequentially "\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}"
         "lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b})" "\<lambda>k. 1 - \<epsilon>" "1 - \<epsilon>"], auto)
@@ -446,28 +265,25 @@ proof auto
       apply (rule exI)
       using * unfolding o_def apply simp
       apply (rule tendsto_diff)
-      using a b F apply auto
+      using a b lim_F apply auto
       apply (rule eventually_sequentiallyI)
       using ab(2) less_imp_le by metis
     ultimately have "1 - \<epsilon> \<le> F b" by (metis order.trans)
     hence "\<forall>x\<ge>b. F x \<ge> 1 - \<epsilon>" using F unfolding mono_def by (metis order.trans)
     thus "\<exists>b. \<forall>x\<ge>b. 1 - \<epsilon> \<le> F x" by auto
-    from a(2) F have "(\<lambda>k. f (r k) a) ----> F a" by auto
+    from a(2) lim_F have "(\<lambda>k. f (r k) a) ----> F a" by auto
     hence "(\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..a}) ----> F a" unfolding f_def cdf_def o_def by auto
     hence "lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..a}) = F a" using limI by auto
     have 1: "\<And>n. measure (\<mu> n) {..a} < \<epsilon>"
     proof-
       fix n
       have "measure (\<mu> n) {..a} + measure (\<mu> n) {a<..b} \<le> 1"
-        apply (subst \<mu>_disj_un[symmetric], auto)
-        apply (metis \<mu> atMost_borel real_distribution.events_eq_borel tight_def)
-        apply (metis \<mu> greaterThanAtMost_borel real_distribution.events_eq_borel tight_def)
-        by (rule \<mu>_le_1)
+        by (subst \<mu>.finite_measure_Union[symmetric]) auto
       thus "measure (\<mu> n) {..a} < \<epsilon>" using ab(2)[of n] by simp
     qed
     have Fa: "F a \<le> \<epsilon>"
       apply (rule tendsto_le[of sequentially "\<lambda>k. \<epsilon>" \<epsilon> "\<lambda>k. f (r k) a" "F a"], auto)
-      using F a apply auto
+      using lim_F a apply auto
       apply (rule eventually_sequentiallyI)
       apply (unfold f_def cdf_def)
       using 1 less_imp_le by metis
@@ -515,10 +331,10 @@ proof auto
   qed
   with F have M: "real_distribution (interval_measure F)" "cdf (interval_measure F) = F"
     by (auto intro!: real_distribution_interval_measure cdf_interval_measure simp: mono_def)
-  with F have "weak_conv (f \<circ> r) F" unfolding weak_conv_def f_def using lim_subseq by auto
+  with lim_F have "weak_conv (f \<circ> r) F" unfolding weak_conv_def f_def using lim_subseq by auto
   hence "weak_conv_m (\<mu> \<circ> s \<circ> r) (interval_measure F)" using M unfolding weak_conv_m_def f_def o_def by auto
   hence "\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M" using M by auto
-  thus "\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" using F by auto
+  thus "\<exists>r M. subseq r \<and> (real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" using F by auto
 (*
 next
   assume sseq: "\<forall>s. subseq s \<longrightarrow> (\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M))"
