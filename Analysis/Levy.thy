@@ -7,7 +7,7 @@ The Levy inversion theorem, and the Levy continuity theorem.
 
 theory Levy
 
-imports Characteristic_Functions Helly_Selection
+imports Characteristic_Functions Helly_Selection Sinc_Integral
 
 begin
 
@@ -101,7 +101,7 @@ theorem Levy_Inversion:
   proof -
     interpret M: real_distribution M by (rule assms)
     interpret P: pair_sigma_finite lborel M ..
-    from iSi_bounded obtain B where Bprop: "\<And>T. abs (Si T) \<le> B" by auto
+    from bounded_Si obtain B where Bprop: "\<And>T. abs (Si T) \<le> B" by auto
     from Bprop [of 0] have [simp]: "B \<ge> 0" by auto
     let ?f = "\<lambda>t x :: real. (iexp (t * (x - a)) - iexp(t * (x - b))) / (ii * t)"
     {
@@ -160,10 +160,9 @@ theorem Levy_Inversion:
         also have "\<dots> = complex_of_real (2 * (sgn (x - a) * Si (T * abs (x - a)) -
             sgn (x - b) * Si (T * abs (x - b))))"
           apply (subst interval_lebesgue_integral_diff)
-          apply (rule interval_lebesgue_integrable_mult_right, rule iSi_integrable)+
+          apply (rule interval_lebesgue_integrable_mult_right, rule integrable_sinc')+
           apply (subst interval_lebesgue_integral_mult_right)+
-          apply (subst Billingsley_26_15, rule `T \<ge> 0`)+
-          apply simp
+          apply (simp add: zero_ereal_def[symmetric] LBINT_I0c_sin_scale_divide[OF `T \<ge> 0`])
           done
         finally have "(CLBINT t. ?f' (t, x)) = complex_of_real (
             2 * (sgn (x - a) * Si (T * abs (x - a)) - sgn (x - b) * Si (T * abs (x - b))))" .
@@ -264,15 +263,10 @@ proof -
   interpret M2: real_distribution M2 by (rule assms)
   have "(cdf M1 ---> 0) at_bot" by (rule M1.cdf_lim_at_bot)
   have "(cdf M2 ---> 0) at_bot" by (rule M2.cdf_lim_at_bot)
-  have "countable {x. measure M1 {x} > 0}" by (rule M1.countable_atoms)
-  moreover have "countable {x. measure M2 {x} > 0}" by (rule M2.countable_atoms)
-  ultimately have "countable ({x. measure M1 {x} > 0} \<union> {x. measure M2 {x} > 0})"
-    by (rule countable_Un)
-  also have "{x. measure M1 {x} > 0} \<union> {x. measure M2 {x} > 0} = 
-      {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}"
-    apply auto
-    by (metis antisym_conv1 measure_nonneg)+
-  finally have count: "countable {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}" .
+  have "countable ({x. measure M1 {x} \<noteq> 0} \<union> {x. measure M2 {x} \<noteq> 0})"
+    by (intro countable_Un M2.countable_support M1.countable_support)
+  then have count: "countable {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}"
+    by (simp add: Un_def)
 
   have "cdf M1 = cdf M2"
   proof (rule ext)
@@ -293,9 +287,9 @@ proof -
         by (simp only: tendsto_iff dist_real_def diff_0_right)
       hence "\<exists>a. \<forall>a' \<le> a. abs (cdf M2 a') < \<epsilon> / 4" by (simp add: eventually_at_bot_linorder)
       then obtain a2 where a2 [rule_format]: "\<forall>a' \<le> a2. abs (cdf M2 a') < \<epsilon> / 4"  ..
-      have "\<exists>a. a \<in> {min (min a1 a2) x - 1<..<min (min a1 a2) x} \<and> 
+      have "\<exists>a\<in>{min (min a1 a2) x - 1<..<min (min a1 a2) x}.
           a \<notin> {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}"
-        by (rule real_interval_avoid_countable_set [OF _ count], auto)
+        by (rule real_interval_avoid_countable_set [OF _ count]) auto
       then guess a ..
       hence "a \<le> x" "a \<le> a1" "a \<le> a2" "measure M1 {a} = 0" "measure M2 {a} = 0" by auto
 
@@ -313,7 +307,7 @@ proof -
         by (simp add: eventually_at_right[OF less_add_one])
       then obtain b2 where "b2 > x \<and> (\<forall>z>x. z < b2 \<longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4)" ..
       hence "b2 > x" and b2: "\<And>z. x < z \<Longrightarrow> z < b2 \<Longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4" by auto
-      with `x < b1` `x < b2` have "\<exists>b. b \<in> {x<..<min b1 b2} \<and> 
+      with `x < b1` `x < b2` have "\<exists>b \<in> {x<..<min b1 b2}.
           b \<notin> {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}"
         by (intro real_interval_avoid_countable_set [OF _ count], auto)
       then guess b ..
@@ -439,9 +433,9 @@ proof -
     (* TODO: put this in the real_distribution locale as a simp rule? *)
     have Mn1 [simp]: "measure (M n) UNIV = 1" by (metis Mn.prob_space Mn.space_eq_univ)
     (* TODO: make this automatic somehow? *)
-    have Mn2 [simp]: "\<And>x. complex_integrable (M n) (\<lambda>t. Exp (\<i> * complex_of_real (x * t)))"
+    have Mn2 [simp]: "\<And>x. complex_integrable (M n) (\<lambda>t. exp (\<i> * complex_of_real (x * t)))"
       by (rule Mn.integrable_const_bound [where B = 1], auto)
-    have Mn3: "set_integrable (M n \<Otimes>\<^sub>M lborel) (UNIV \<times> {- u..u}) (\<lambda>a. 1 - Exp (\<i> * complex_of_real (snd a * fst a)))"
+    have Mn3: "set_integrable (M n \<Otimes>\<^sub>M lborel) (UNIV \<times> {- u..u}) (\<lambda>a. 1 - exp (\<i> * complex_of_real (snd a * fst a)))"
       apply (rule integrableI_bounded_set_indicator [where B="2"])
       using `0 < u`
       apply (auto simp: lborel.emeasure_pair_measure_Times)

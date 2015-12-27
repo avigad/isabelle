@@ -1,47 +1,49 @@
 (*
-Theory: Weak_Convergence.thy
-Authors: Jeremy Avigad, Luke Serafin
-
-Properties of weak convergence of functions and measures, including the portmanteau theorem.
+  Theory: Weak_Convergence.thy
+  Authors: Jeremy Avigad, Luke Serafin
 *)
 
+section \<open>Weak Convergence of Functions and Distributions\<close>
+
+text \<open>Properties of weak convergence of functions and measures, including the portmanteau theorem.\<close>
+
 theory Weak_Convergence
-
-imports Distribution_Functions
-
+  imports Distribution_Functions
 begin
-
-(* weak convergence of functions *)
-definition
-  weak_conv :: "(nat \<Rightarrow> (real \<Rightarrow> real)) \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> bool"
-where
-  "weak_conv F_seq F \<equiv> \<forall>x. isCont F x \<longrightarrow> (\<lambda>n. F_seq n x) ----> F x"
-
-(* weak convergence of distributions *)
-definition
-  weak_conv_m :: "(nat \<Rightarrow> real measure) \<Rightarrow> real measure \<Rightarrow> bool"
-where
-  "weak_conv_m M_seq M \<equiv> weak_conv (\<lambda>n. cdf (M_seq n)) (cdf M)"
-
-(* TODO: we never use this; delete? *)
-(* weak convergence of random variables *)
-abbreviation (in prob_space)
-  "weak_conv_r X_seq X \<equiv> weak_conv_m (\<lambda>n. distr M borel (X_seq n)) (distr M borel X)" 
-  
-
 (* 
   general stuff - move elsewhere 
 *)
+
+lemma open_minus_countable:
+  fixes S A :: "real set" assumes "countable A" "S \<noteq> {}" "open S"
+  shows "\<exists>x\<in>S. x \<notin> A"
+proof -
+  obtain x where "x \<in> S"
+    using \<open>S \<noteq> {}\<close> by auto
+  then obtain e where "0 < e" "ball x e \<subseteq> S"
+    using \<open>open S\<close> by (auto elim!: openE)
+  moreover have "ball x e = {x - e <..< x + e}"
+    by (auto simp: ball_def dist_real_def)
+  ultimately have "uncountable (S - A)"
+    using uncountable_open_interval[of "x - e" "x + e"] \<open>countable A\<close>
+    by (intro uncountable_minus_countable) (auto dest: countable_subset)
+  then show ?thesis
+    unfolding uncountable_def by auto
+qed
+
+lemma (in real_distribution) measurable_finite_borel [simp]:
+  "f \<in> borel_measurable borel \<Longrightarrow> f \<in> borel_measurable M"
+  by (rule borel_measurable_subalgebra[where N=borel]) auto
+
+lemma isCont_borel_pred[measurable]:
+  fixes f :: "'b::metric_space \<Rightarrow> 'a::metric_space"
+  shows "Measurable.pred borel (isCont f)"
+  unfolding pred_def by (simp add: isCont_borel)
 
 lemma restrict_space_sets_cong:
   "A = B \<Longrightarrow> sets M = sets N \<Longrightarrow> sets (restrict_space M A) = sets (restrict_space N B)"
   by (auto simp: sets_restrict_space)
 
-definition mono_on :: "('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "mono_on f A = (\<forall>x\<in>A. \<forall>y\<in>A. x \<le> y \<longrightarrow> f x \<le> f y)"
-
-lemma mono_onD: "mono_on f A \<Longrightarrow> x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> x \<le> y \<Longrightarrow> f x \<le> f y"
-  unfolding mono_on_def by auto
 (* Show such a function is an ereal-valued measurable function times the indicator function of the
    complement of A. *)
 lemma mono_on_ctble_discont:
@@ -50,48 +52,39 @@ lemma mono_on_ctble_discont:
   assumes "mono_on f A"
   shows "countable {a\<in>A. \<not> continuous (at a within A) f}"
 proof -
-
+  have mono: "\<And>x y. x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> x \<le> y \<Longrightarrow> f x \<le> f y"
+    using `mono_on f A` by (simp add: mono_on_def)
   have "\<forall>a \<in> {a\<in>A. \<not> continuous (at a within A) f}. \<exists>q :: nat \<times> rat.
-      (fst q = 0 \<and> of_rat (snd q) < f a \<and> (\<forall>x \<in> A. x < a \<longrightarrow> f x < of_rat (snd q))) |
+      (fst q = 0 \<and> of_rat (snd q) < f a \<and> (\<forall>x \<in> A. x < a \<longrightarrow> f x < of_rat (snd q))) \<or>
       (fst q = 1 \<and> of_rat (snd q) > f a \<and> (\<forall>x \<in> A. x > a \<longrightarrow> f x > of_rat (snd q)))"
-  proof auto
-    from `mono_on f A` have mono: "\<And>x y. x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> x \<le> y \<Longrightarrow> f x \<le> f y"
-      by (simp add: mono_on_def)
-    fix a
-    assume "a \<in> A"
-    assume "\<not> continuous (at a within A) f"
+  proof (clarsimp simp del: One_nat_def)
+    fix a assume "a \<in> A" assume "\<not> continuous (at a within A) f"
     thus "\<exists>q1 q2.
             q1 = 0 \<and> real_of_rat q2 < f a \<and> (\<forall>x\<in>A. x < a \<longrightarrow> f x < real_of_rat q2) \<or>
-            q1 = Suc 0 \<and> f a < real_of_rat q2 \<and> (\<forall>x\<in>A. a < x \<longrightarrow> real_of_rat q2 < f x)"
+            q1 = 1 \<and> f a < real_of_rat q2 \<and> (\<forall>x\<in>A. a < x \<longrightarrow> real_of_rat q2 < f x)"
     proof (auto simp add: continuous_within order_tendsto_iff eventually_at)
-      fix l
-      assume "l < f a"
-      hence "\<exists>q :: rat. l < of_rat q \<and> of_rat q < f a"
-        by (rule of_rat_dense)
-      then guess q2 .. note 1 = this
-      assume 2 [rule_format]: "\<forall>d>0. \<exists>x\<in>A. x \<noteq> a \<and> dist x a < d \<and> \<not> l < f x"
-      from 1 have "real_of_rat q2 < f a \<and> (\<forall>x\<in>A. x < a \<longrightarrow> f x < real_of_rat q2)"
+      fix l assume "l < f a"
+      then obtain q2 where q2: "l < of_rat q2" "of_rat q2 < f a"
+        using of_rat_dense by blast
+      assume * [rule_format]: "\<forall>d>0. \<exists>x\<in>A. x \<noteq> a \<and> dist x a < d \<and> \<not> l < f x"
+      from q2 have "real_of_rat q2 < f a \<and> (\<forall>x\<in>A. x < a \<longrightarrow> f x < real_of_rat q2)"
       proof auto
-        fix x 
-        assume "x \<in> A" "x < a"
-        with 1 2 [of "a - x"] show "f x < real_of_rat q2"
-          apply (auto simp add: dist_real_def)
+        fix x assume "x \<in> A" "x < a"
+        with q2 *[of "a - x"] show "f x < real_of_rat q2"
+          apply (auto simp add: dist_real_def not_less)
           apply (subgoal_tac "f x \<le> f xa")
           by (auto intro: mono)
       qed 
       thus ?thesis by auto
     next
-      fix u
-      assume "u > f a"
-      hence "\<exists>q :: rat. f a < of_rat q \<and> of_rat q < u"
-        by (rule of_rat_dense)
-      then guess q2 .. note 1 = this
-      assume 2 [rule_format]: "\<forall>d>0. \<exists>x\<in>A. x \<noteq> a \<and> dist x a < d \<and> \<not> u > f x"
-      from 1 have "real_of_rat q2 > f a \<and> (\<forall>x\<in>A. x > a \<longrightarrow> f x > real_of_rat q2)"
+      fix u assume "u > f a"
+      then obtain q2 where q2: "f a < of_rat q2" "of_rat q2 < u"
+        using of_rat_dense by blast
+      assume *[rule_format]: "\<forall>d>0. \<exists>x\<in>A. x \<noteq> a \<and> dist x a < d \<and> \<not> u > f x"
+      from q2 have "real_of_rat q2 > f a \<and> (\<forall>x\<in>A. x > a \<longrightarrow> f x > real_of_rat q2)"
       proof auto
-        fix x 
-        assume "x \<in> A" "x > a"
-        with 1 2 [of "x - a"] show "f x > real_of_rat q2"
+        fix x assume "x \<in> A" "x > a"
+        with q2 *[of "x - a"] show "f x > real_of_rat q2"
           apply (auto simp add: dist_real_def)
           apply (subgoal_tac "f x \<ge> f xa")
           by (auto intro: mono)
@@ -108,7 +101,7 @@ proof -
       (fst (g a) = 0 \<and> of_rat (snd (g a)) < f a \<and> (x < a \<longrightarrow> f x < of_rat (snd (g a)))) |
       (fst (g a) = 1 \<and> of_rat (snd (g a)) > f a \<and> (x > a \<longrightarrow> f x > of_rat (snd (g a))))"
     by auto
-  have "inj_on (\<lambda>x. g x) {a\<in>A. \<not> continuous (at a within A) f}"
+  have "inj_on g {a\<in>A. \<not> continuous (at a within A) f}"
   proof (auto simp add: inj_on_def)
     fix w z
     assume 1: "w \<in> A" and 2: "\<not> continuous (at w within A) f" and
@@ -134,6 +127,7 @@ lemma borel_measurable_mono_on_fnc:
 
 (* TODO: turn this into an iff by weakening the hypothesis *)
 (* compare to continuous_at_right_real_mono *)
+(* not needed anymore... *)
 lemma continuous_at_right_real_mono_on_open:
   fixes f :: "real \<Rightarrow> real" and U a
   assumes "open U" "a \<in> U" and mono: "mono_on f U"
@@ -158,13 +152,11 @@ proof (auto simp add: continuous_within_eps_delta dist_real_def greaterThan_def)
       by (rule order_le_less_trans [OF abs_ge_self d], auto)
     thus "\<exists>\<delta>>0. a + \<delta> \<in> U \<and> f (a + \<delta>) - f a < \<epsilon>" ..
   }
-
 qed
 
 (* TODO: make mono_on primitive, and define mono f to be an abbreviation for mono_on f UNIV? *)
 lemma "mono f = mono_on f UNIV"
   unfolding mono_def mono_on_def by auto
-
 
 lemma mono_on_ctble_discont_open:
   fixes f :: "real \<Rightarrow> real"
@@ -185,90 +177,117 @@ lemma mono_ctble_discont:
   shows "countable {a. \<not> isCont f a}"
 using assms mono_on_ctble_discont [of f UNIV] unfolding mono_on_def mono_def by auto
 
-(*
+section \<open>Weak Convergence of Functions\<close>
 
-  Skorohod's theorem
+definition
+  weak_conv :: "(nat \<Rightarrow> (real \<Rightarrow> real)) \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> bool"
+where
+  "weak_conv F_seq F \<equiv> \<forall>x. isCont F x \<longrightarrow> (\<lambda>n. F_seq n x) ----> F x"
 
-*)
+section \<open>Weak Convergence of Distributions\<close>
+definition
+  weak_conv_m :: "(nat \<Rightarrow> real measure) \<Rightarrow> real measure \<Rightarrow> bool"
+where
+  "weak_conv_m M_seq M \<equiv> weak_conv (\<lambda>n. cdf (M_seq n)) (cdf M)"
 
-(* TODO: should this definition be eliminated? **)
-definition rcont_inc :: "(real \<Rightarrow> real) \<Rightarrow> bool"
-  where "rcont_inc f \<equiv> (\<forall>x. continuous (at_right x) f) \<and> mono f"
+section \<open>Skorohod's theorem\<close>
 
-lemma bdd_rcont_inc_pseudoinverse:
-  fixes F :: "real \<Rightarrow> real"
-  fixes M a b :: real
-  assumes "a < b" and rcont_inc: "rcont_inc F"
-    and F_at_bot: "(F ---> a) at_bot" and F_at_top: "(F ---> b) at_top"
-  shows "\<forall>\<omega>\<in>{a<..<b}. \<forall>x. (\<omega> \<le> F x) = (Inf {x. \<omega> \<le> F x} \<le> x)"
-proof safe
-  fix \<omega> x :: real assume interval: "\<omega> \<in> {a<..<b}"
-  def Y \<equiv> "\<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
-  {
-    assume "\<omega> \<le> F x"
-    hence "x \<in> {x. \<omega> \<le> F x}" using interval by auto
-    thus "Y \<omega> \<le> x" unfolding Y_def
-      apply (rule cInf_lower)
-      proof (unfold bdd_below_def Ball_def, auto)
-        from F_at_bot have "\<exists>y. F y < \<omega>" unfolding filterlim_def le_filter_def
-          apply (subst (asm) eventually_filtermap)
-          apply (subst (asm) eventually_at_bot_linorder)
-          apply (drule_tac x = "\<lambda>z. z < \<omega>" in allE[where R = "\<exists>y. F y < \<omega>"], auto)
-          using interval by (metis F_at_bot eventually_at_bot_linorder greaterThanLessThan_iff order_refl order_tendsto_iff) 
-      then guess y .. note y = this
-      hence "\<forall>x. \<omega> \<le> F x \<longrightarrow> y \<le> x" using rcont_inc unfolding rcont_inc_def mono_def
-        by (metis dual_order.irrefl le_cases le_less_trans)
-      thus "\<exists>m. \<forall>x. \<omega> \<le> F x \<longrightarrow> m \<le> x" by auto
-    qed
-  }
-  {
-    assume "Y \<omega> \<le> x"
-    hence x_less: "\<And>y. x < y \<Longrightarrow> \<omega> \<le> F y"
-    proof (unfold Y_def)
-      fix y assume x: "Inf {x. \<omega> \<le> F x} \<le> x" and y: "x < y"
-      show "\<omega> \<le> F y"
-      proof (rule ccontr)
-        assume "\<not> \<omega> \<le> F y"
-        hence "F y < \<omega>" by simp
-        hence le: "\<And>z. z \<le> y \<Longrightarrow> F z < \<omega>" using rcont_inc le_less_trans unfolding rcont_inc_def mono_def by metis
-        have "y \<le> Inf {x. \<omega> \<le> F x}"
-        proof (rule cInf_greatest)
-          have "(\<lambda>k::nat. F (real k)) ----> b"
-            by (metis F_at_top filterlim_compose filterlim_real_sequentially)
-          then have "\<exists>no::nat. \<forall>k\<ge>no. norm (F (real k) - b) < b - \<omega>"
-            by (rule LIMSEQ_D) (insert interval, simp)
-          then guess no .. note no = this
-          hence "norm (F (real no) - b) < b - \<omega>" by simp
-          hence "\<omega> \<le> F (real no)" by auto
-          thus "{x. \<omega> \<le> F x} \<noteq> {}" by auto
-        qed (meson le_cases mem_Collect_eq not_le le)
-        hence "y \<le> x" using x by simp
-        thus False using y by simp
-      qed
-    qed
-    show "\<omega> \<le> F x"
-    proof (rule field_le_epsilon)
-      fix e::real assume e: "0 < e"
-      hence "\<exists>\<delta>>0. F (x + \<delta>) - F x < e"
-        using continuous_at_right_real_increasing rcont_inc unfolding rcont_inc_def mono_def by auto
-      then guess \<delta> .. note \<delta> = this
-      have \<delta>: "\<delta> > 0" "F (x + \<delta>) - F x < e" using \<delta> by simp_all
-      hence "\<omega> \<le> F (x + \<delta>)" using x_less \<delta> by auto
-      thus "\<omega> \<le> F x + e" using \<delta>(2) by simp
-    qed
-  }
+locale right_continuous_mono = 
+  fixes f :: "real \<Rightarrow> real" and a b :: real
+  assumes cont: "\<And>x. continuous (at_right x) f"
+  assumes mono: "mono f"
+  assumes bot: "(f ---> a) at_bot" 
+  assumes top: "(f ---> b) at_top"
+begin
+
+abbreviation I :: "real \<Rightarrow> real" where
+  "I \<omega> \<equiv> Inf {x. \<omega> \<le> f x}"
+
+lemma pseudoinverse: assumes "a < \<omega>" "\<omega> < b" shows "\<omega> \<le> f x \<longleftrightarrow> I \<omega> \<le> x"
+proof
+  let ?F = "{x. \<omega> \<le> f x}"
+  obtain y where "f y < \<omega>"
+    by (metis eventually_happens' trivial_limit_at_bot_linorder order_tendstoD(2) bot \<open>a < \<omega>\<close>)
+  with mono have bdd: "bdd_below ?F"
+    by (auto intro!: bdd_belowI[of _ y] elim: mono_invE[OF _ less_le_trans])
+
+  have ne: "?F \<noteq> {}"
+    using order_tendstoD(1)[OF top \<open>\<omega> < b\<close>] 
+    by (auto dest!: eventually_happens'[OF trivial_limit_at_top_linorder] intro: less_imp_le)
+
+  show "\<omega> \<le> f x \<Longrightarrow> I \<omega> \<le> x"
+    by (auto intro!: cInf_lower bdd)
+
+  { assume *: "I \<omega> \<le> x"
+    have "\<omega> \<le> (INF s:{x. \<omega> \<le> f x}. f s)"
+      by (rule cINF_greatest[OF ne]) auto
+    also have "\<dots> = f (I \<omega>)"
+      using continuous_at_Inf_mono[OF mono cont ne bdd] ..
+    also have "\<dots> \<le> f x"
+      using * by (rule monoD[OF \<open>mono f\<close>])
+    finally show "\<omega> \<le> f x" . }
 qed
+
+lemma pseudoinverse': "\<forall>\<omega>\<in>{a<..<b}. \<forall>x. \<omega> \<le> f x \<longleftrightarrow> I \<omega> \<le> x"
+  by (intro ballI allI impI pseudoinverse) auto
+
+lemma mono_I: "mono_on I {a <..< b}"
+  unfolding mono_on_def by (metis order.trans order.refl pseudoinverse')
+
+end
+
+locale cdf_distribution = real_distribution
+begin
+
+abbreviation "C \<equiv> cdf M"
+
+sublocale right_continuous_mono C 0 1
+  by standard
+     (auto intro: cdf_nondecreasing cdf_is_right_cont cdf_lim_at_top_prob cdf_lim_at_bot monoI)
+
+lemma measurable_C[measurable]: "C \<in> borel_measurable borel"
+  by (intro borel_measurable_mono mono)
+
+lemma measurable_CI[measurable]: "I \<in> borel_measurable (restrict_space borel {0<..<1})"
+  by (intro borel_measurable_mono_on_fnc mono_I)
+
+lemma emeasure_distr_I: "emeasure (distr (restrict_space lborel {0<..<1::real}) borel I) UNIV = 1"
+  by (simp add: emeasure_distr space_restrict_space emeasure_restrict_space )
+
+lemma distr_I_eq_M: "distr (restrict_space lborel {0<..<1::real}) borel I = M" (is "?I = _")
+proof (intro cdf_unique ext)
+  let ?\<Omega> = "restrict_space lborel {0<..<1}::real measure"
+  interpret \<Omega>: prob_space ?\<Omega>
+    by (auto simp add: emeasure_restrict_space space_restrict_space intro!: prob_spaceI)
+  show "real_distribution ?I"
+    by auto
+
+  fix x
+  have "cdf ?I x = measure lborel {\<omega>\<in>{0<..<1}. \<omega> \<le> C x}"
+    by (subst cdf_def)
+       (auto simp: pseudoinverse[symmetric] measure_distr space_restrict_space measure_restrict_space
+             intro!: arg_cong2[where f="measure"])
+  also have "\<dots> = measure lborel {0 <..< C x}"
+    using cdf_bounded_prob[of x] AE_lborel_singleton[of "C x"]
+    by (auto intro!: arg_cong[where f=real_of_ereal] emeasure_eq_AE simp: measure_def)
+  also have "\<dots> = C x"
+    by (simp add: cdf_nonneg)
+  finally show "cdf (distr ?\<Omega> borel I) x = C x" .
+qed standard
+
+end
+
+context
+  fixes \<mu> :: "nat \<Rightarrow> real measure"
+    and M :: "real measure"
+  assumes \<mu>: "\<And>n. real_distribution (\<mu> n)" 
+  assumes M: "real_distribution M"
+  assumes \<mu>_to_M: "weak_conv_m \<mu> M"
+begin  
 
 (* state using obtains? *)
 theorem Skorohod:
-  fixes 
-    \<mu> :: "nat \<Rightarrow> real measure" and
-    M :: "real measure"
-  assumes 
-    "\<And>n. real_distribution (\<mu> n)" and 
-    "real_distribution M" and 
-    "weak_conv_m \<mu> M"
-  shows "\<exists> (\<Omega> :: real measure) (Y_seq :: nat \<Rightarrow> real \<Rightarrow> real) (Y :: real \<Rightarrow> real). 
+ "\<exists> (\<Omega> :: real measure) (Y_seq :: nat \<Rightarrow> real \<Rightarrow> real) (Y :: real \<Rightarrow> real). 
     prob_space \<Omega> \<and>
     (\<forall>n. Y_seq n \<in> measurable \<Omega> borel) \<and>
     (\<forall>n. distr \<Omega> borel (Y_seq n) = \<mu> n) \<and>
@@ -276,589 +295,291 @@ theorem Skorohod:
     distr \<Omega> borel Y = M \<and>
     (\<forall>x \<in> space \<Omega>. (\<lambda>n. Y_seq n x) ----> Y x)"
 proof -
-  def f \<equiv> "\<lambda>n. cdf (\<mu> n)"
-  def F \<equiv> "cdf M"
-  have fn_weak_conv: "weak_conv f F" using assms(3) unfolding weak_conv_m_def f_def F_def by auto
-  {  fix n
-     interpret \<mu>: real_distribution "\<mu> n" by (rule assms)
-     have "mono (f n)" "\<And>a. continuous (at_right a) (f n)" "((f n) ---> 1) at_top" "((f n) ---> 0) at_bot"
-       by (auto simp add: f_def mono_def \<mu>.cdf_nondecreasing \<mu>.cdf_is_right_cont \<mu>.cdf_lim_at_top_prob \<mu>.cdf_lim_at_bot)
-  } 
-  note f_inc = this(1) and f_right_cts = this(2) and f_at_top = this(3) and f_at_bot = this(4)
-  interpret M: real_distribution M by (rule assms)
-  have F_inc: "mono F" unfolding F_def mono_def using M.cdf_nondecreasing by auto
-  have F_right_cts: "\<And>a. continuous (at_right a) F"
-    unfolding F_def using assms(2) M.cdf_is_right_cont by auto
-  have F_at_top: "(F ---> 1) at_top" unfolding F_def using M.cdf_lim_at_top_prob by auto
-  have F_at_bot: "(F ---> 0) at_bot" unfolding F_def using M.cdf_lim_at_bot by auto
-  def \<Omega> \<equiv> "restrict_space lborel {0::real<..<1}"
-  have prob_\<Omega>: "prob_space \<Omega>"
-    apply (rule prob_spaceI)
-    unfolding \<Omega>_def apply (subst space_restrict_space)
-    by (subst emeasure_restrict_space, auto)
-  def Y_seq \<equiv> "\<lambda>n \<omega>. Inf {x. \<omega> \<le> f n x}"
-  def Y \<equiv> "\<lambda>\<omega>. Inf {x. \<omega> \<le> F x}"
-  have f_meas: "\<And>n. f n \<in> borel_measurable borel" using f_inc borel_measurable_mono by auto
-  have Y_seq_le_iff: "\<And>n. \<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> f n x) = (Y_seq n \<omega> \<le> x)"
-  proof -
-    fix n :: nat
-    show "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> f n x) = (Y_seq n \<omega> \<le> x)"
-      unfolding Y_seq_def apply (rule bdd_rcont_inc_pseudoinverse[of 0 1 "f n"])
-      unfolding rcont_inc_def using f_inc f_right_cts f_at_top f_at_bot by auto
+  interpret \<mu>: cdf_distribution "\<mu> n" for n
+    unfolding cdf_distribution_def by (rule \<mu>)
+  interpret M: cdf_distribution M
+    unfolding cdf_distribution_def by (rule M)
+
+  have conv: "measure M {x} = 0 \<Longrightarrow> (\<lambda>n. \<mu>.C n x) ----> M.C x" for x
+    using \<mu>_to_M M.isCont_cdf by (auto simp: weak_conv_m_def weak_conv_def)
+
+  let ?\<Omega> = "restrict_space lborel {0<..<1} :: real measure"
+  have "prob_space ?\<Omega>"
+    by (auto simp: space_restrict_space emeasure_restrict_space intro!: prob_spaceI)
+  interpret \<Omega>: prob_space ?\<Omega>
+    by fact
+
+  have Y_distr: "distr ?\<Omega> borel M.I = M"
+    by (rule M.distr_I_eq_M)
+
+  have Y_cts_cnv: "(\<lambda>n. \<mu>.I n \<omega>) ----> M.I \<omega>" 
+    if \<omega>: "\<omega> \<in> {0<..<1}" "isCont M.I \<omega>" for \<omega> :: real
+  proof (intro limsup_le_liminf_real)
+    show "liminf (\<lambda>n. \<mu>.I n \<omega>) \<ge> M.I \<omega>"
+      unfolding le_Liminf_iff
+    proof safe
+      fix B :: ereal assume B: "B < M.I \<omega>"
+      then show "\<forall>\<^sub>F n in sequentially. B < \<mu>.I n \<omega>"
+      proof (cases B)
+        case (real r)
+        with B have r: "r < M.I \<omega>"
+          by simp
+        then obtain x where x: "r < x" "x < M.I \<omega>" "measure M {x} = 0"
+          using open_minus_countable[OF M.countable_support, of "{r<..<M.I \<omega>}"] by auto
+        then have Fx_less: "M.C x < \<omega>"
+          using M.pseudoinverse' \<omega> not_less by blast
+
+        have "\<forall>\<^sub>F n in sequentially. \<mu>.C n x < \<omega>"
+          using order_tendstoD(2)[OF conv[OF x(3)] Fx_less] .
+        then have "\<forall>\<^sub>F n in sequentially. x < \<mu>.I n \<omega>"
+          by eventually_elim (insert \<omega> \<mu>.pseudoinverse[symmetric], simp add: not_le[symmetric])
+        then show ?thesis
+          by eventually_elim (insert x(1), simp add: real)
+      qed auto
+    qed
+
+    have *: "limsup (\<lambda>n. \<mu>.I n \<omega>) \<le> M.I \<omega>'"
+      if \<omega>': "0 < \<omega>'" "\<omega>' < 1" "\<omega> < \<omega>'" for \<omega>' :: real
+    proof (rule dense_ge_bounded)
+      fix B' assume "ereal (M.I \<omega>') < B'" "B' < ereal (M.I \<omega>' + 1)"
+      then obtain B where "M.I \<omega>' < B" and [simp]: "B' = ereal B"
+        by (cases B') auto
+      then obtain y where y: "M.I \<omega>' < y" "y < B" "measure M {y} = 0"
+        using open_minus_countable[OF M.countable_support, of "{M.I \<omega>'<..<B}"] by auto
+      then have "\<omega>' \<le> M.C (M.I \<omega>')"
+        using M.pseudoinverse' \<omega>' by (metis greaterThanLessThan_iff order_refl)
+      also have "... \<le> M.C y"
+        using M.mono y unfolding mono_def by auto
+      finally have Fy_gt: "\<omega> < M.C y"
+        using \<omega>'(3) by simp
+
+      have "\<forall>\<^sub>F n in sequentially. \<omega> \<le> \<mu>.C n y"
+        using order_tendstoD(1)[OF conv[OF y(3)] Fy_gt] by eventually_elim (rule less_imp_le)
+      then have 2: "\<forall>\<^sub>F n in sequentially. \<mu>.I n \<omega> \<le> ereal y"
+        by simp (subst \<mu>.pseudoinverse'[rule_format, OF \<omega>(1), symmetric])
+      then show "limsup (\<lambda>n. \<mu>.I n \<omega>) \<le> B'"
+        using \<open>y < B\<close>
+        by (intro Limsup_bounded[rotated]) (auto intro: le_less_trans elim: eventually_mono)
+    qed simp
+    
+    have **: "(M.I ---> ereal (M.I \<omega>)) (at_right \<omega>)"
+      using \<omega>(2) by (auto intro: tendsto_within_subset simp: continuous_at)
+    show "limsup (\<lambda>n. \<mu>.I n \<omega>) \<le> M.I \<omega>"
+      using \<omega>
+      by (intro tendsto_le_const[OF trivial_limit_at_right_real **])
+         (auto intro!: exI[of _ 1] * simp: eventually_at_right[of _ 1])
   qed
-  have Y_seq_mono_on: "\<And>n. mono_on (Y_seq n) {0<..<1}" unfolding mono_on_def
-    using Y_seq_le_iff by (metis order.trans order_refl)
-  hence Y_seq_meas [measurable]: "\<And>n. (Y_seq n) \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc 
-      unfolding \<Omega>_def
-    by (simp cong: measurable_cong_sets restrict_space_sets_cong)
-  have Y_seq_emeasure_distr_\<Omega>: "\<And>n. emeasure (distr \<Omega> borel (Y_seq n)) UNIV = 1"
-     apply (subst emeasure_distr)
-     using Y_seq_meas unfolding \<Omega>_def 
-     by (auto simp add: emeasure_restrict_space space_restrict_space)
-  have "\<And>n. cdf (distr \<Omega> borel (Y_seq n)) = cdf (\<mu> n)"
-  proof -
-    fix n
-    interpret \<mu>: real_distribution "\<mu> n" by (rule assms)
-    show "cdf (distr \<Omega> borel (Y_seq n)) = cdf (\<mu> n)"
-      apply (unfold cdf_def, rule ext)
-      apply (subst measure_distr)
-      apply (rule Y_seq_meas, auto)
-      unfolding \<Omega>_def vimage_def apply auto
-      apply (subst space_restrict_space)
-      apply (subst Int_commute)
-      apply (subst Int_def, simp)
-      apply (subgoal_tac "{xa. 0 < xa \<and> xa < 1} \<inter> {xa. Y_seq n xa \<le> x} = {xa. 0 < xa \<and> xa < 1 \<and> xa \<le> f n x}")
-      apply (erule ssubst)
-      prefer 2
-      using Y_seq_le_iff apply auto [1]
-      apply (subst measure_restrict_space, simp)
-      apply (auto simp del: measure_lborel_Ioc)
-      apply (subgoal_tac "Sigma_Algebra.measure (\<mu> n) {..x} =
-         measure lborel {0..Sigma_Algebra.measure (\<mu> n) {..x}}")
-      prefer 2
-      apply (subst measure_lborel_Icc)
-      apply (rule measure_nonneg)
-      apply simp
-      apply (erule ssubst)
-      unfolding measure_def
-      apply (rule arg_cong[where f=real_of_ereal])
-      unfolding f_def cdf_def
-      apply (rule emeasure_eq_AE)
-      apply (rule AE_I [of _ _ "{0, 1}"])
-      apply (subst measure_def [symmetric])
-      apply auto []
-      apply (subst order_less_le, simp)
-      apply (erule order_trans, auto)
-      apply (simp add: emeasure_insert_ne)
-      done
-    qed
-  hence Y_seq_distr: "\<And>n. distr \<Omega> borel (Y_seq n) = \<mu> n"
-    apply (intro cdf_unique, auto simp add: assms)
-    unfolding real_distribution_def apply auto
-    unfolding prob_space_def apply auto
-    unfolding prob_space_axioms_def real_distribution_axioms_def apply auto
-    by (rule finite_measureI, auto simp add: Y_seq_emeasure_distr_\<Omega>)
-  have F_meas: "F \<in> borel_measurable borel" using F_inc borel_measurable_mono by auto
-  have Y_le_iff: "\<forall>\<omega>\<in>{0<..<1}. \<forall>x. (\<omega> \<le> F x) = (Y \<omega> \<le> x)"
-    unfolding Y_def apply (rule bdd_rcont_inc_pseudoinverse[of 0 1 F])
-    unfolding rcont_inc_def using F_inc F_right_cts F_at_top F_at_bot by auto
-  have Y_mono_on: "mono_on Y {0<..<1}" unfolding mono_on_def
-    using Y_le_iff by (metis order.trans order_refl)
-  hence Y_meas[measurable]: "Y \<in> borel_measurable \<Omega>" using borel_measurable_mono_on_fnc unfolding \<Omega>_def
-    by (simp cong: measurable_cong_sets restrict_space_sets_cong)
-  have Y_emeasure_distr_\<Omega>: "emeasure (distr \<Omega> borel Y) UNIV = 1"
-     apply (subst emeasure_distr)
-     using Y_meas unfolding \<Omega>_def 
-     by (auto simp add: emeasure_restrict_space space_restrict_space)
-  interpret M: real_distribution M by (rule assms)
-  { fix x 
-    have "cdf (distr \<Omega> borel Y) x = measure \<Omega> (Y -` {..x} \<inter> space \<Omega>)"
-      by (simp add: cdf_def measure_distr)
-    also have "(Y -` {..x} \<inter> space \<Omega>) = ({.. F x} \<inter> {0 <..< 1})"
-      using Y_le_iff by (auto simp: Ball_def \<Omega>_def space_restrict_space)
-    also have "measure \<Omega> ({.. F x} \<inter> {0 <..< 1}) = measure lborel ({.. F x} \<inter> {0 <..< 1})"
-      by (simp add: \<Omega>_def measure_restrict_space)
-    also have "\<dots> = measure lborel {0 .. F x}"
-      unfolding measure_def using M.cdf_bounded_prob[of x]
-      by (intro arg_cong[where f=real_of_ereal] emeasure_eq_AE)
-         (auto intro!: AE_I[where N="{0, 1}"] simp: emeasure_insert_ne less_le F_def)
-    also have "\<dots> = cdf M x"
-      using M.cdf_nonneg[of x] by (simp add: measure_def F_def)
-    finally have "cdf (distr \<Omega> borel Y) x = cdf M x" . }
-  then have "cdf (distr \<Omega> borel Y) = cdf M" ..
-  hence Y_distr: "distr \<Omega> borel Y = M"
-    apply (intro cdf_unique, auto simp add: assms)
-    unfolding real_distribution_def apply auto
-    unfolding prob_space_def apply auto
-    unfolding prob_space_axioms_def real_distribution_axioms_def apply auto
-    by (rule finite_measureI, auto simp add: Y_emeasure_distr_\<Omega>)
-  {
-    fix \<omega>::real assume \<omega>: "\<omega> \<in> {0<..<1}" "continuous (at \<omega>) Y"
-    have "liminf (\<lambda>n. Y_seq n \<omega>) \<ge> Y \<omega>"
-    proof (subst liminf_bounded_iff, auto)
-      fix B :: ereal assume B: "B < ereal (Y \<omega>)"
-      show "\<exists>N. \<forall>n\<ge>N. B < ereal (Y_seq n \<omega>)"
-        apply (rule ereal_cases[of B])
-        prefer 2 using B less_ereal.simps(4) apply auto
-        proof -
-          fix r :: real assume r: "r < Y \<omega>"
-          hence "uncountable {r<..<Y \<omega>}" using uncountable_open_interval by simp
-          with M.countable_atoms uncountable_minus_countable
-          have "uncountable ({r<..<Y \<omega>} - {x. measure M {x} > 0})" by auto
-          then obtain x where *: "x \<in> {r<..<Y \<omega>} - {x. measure M {x} > 0}"
-            unfolding uncountable_def by blast
-          hence x: "r < x" "x < Y \<omega>" "measure M {x} = 0"
-            using DiffD1 greaterThanLessThan_iff measure_nonneg[of M "{x}"] by (simp_all add: linorder_not_less)
-          with Y_le_iff \<omega> have Fx_less: "F x < \<omega>" using not_less by blast
-          from fn_weak_conv M.isCont_cdf x(3) have 1: "(\<lambda>n. f n x) ----> F x"
-            unfolding F_def weak_conv_def by auto
-          have "\<exists>N. \<forall>n\<ge>N. f n x < \<omega>"
-            apply (insert 1)
-            apply (drule LIMSEQ_D[of _ _ "\<omega> - F x"])
-            using Fx_less apply auto by smt
-          hence "\<exists>N. \<forall>n\<ge>N. x < Y_seq n \<omega>" using Y_seq_le_iff \<omega>(1) not_less by metis
-          thus "\<exists>N. \<forall>n\<ge>N. r < Y_seq n \<omega>" using x(1) by (metis less_trans) 
-        qed
-    qed
-    moreover have "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>"
-    proof -
-      { fix \<omega>' :: real assume \<omega>': "0 < \<omega>'" "\<omega>' < 1" "\<omega> < \<omega>'"
-        { fix \<epsilon> :: real assume \<epsilon>: "\<epsilon> > 0"
-          hence "uncountable {Y \<omega>'<..<Y \<omega>' + \<epsilon>}" using uncountable_open_interval by simp
-          with M.countable_atoms uncountable_minus_countable
-          have "uncountable ({Y \<omega>'<..<Y \<omega>' + \<epsilon>} - {x. measure M {x} > 0})" by auto
-          then obtain y where *: "y \<in> {Y \<omega>'<..<Y \<omega>' + \<epsilon>} - {x. measure M {x} > 0}"
-            unfolding uncountable_def by blast
-          hence y: "Y \<omega>' < y" "y < Y \<omega>' + \<epsilon>" "measure M {y} = 0"
-            using DiffD1 greaterThanLessThan_iff measure_nonneg[of M "{y}"] by (simp_all add: linorder_not_less)
-          with Y_le_iff \<omega>' have "\<omega>' \<le> F (Y \<omega>')" by (metis greaterThanLessThan_iff order_refl)
-          also from y have "... \<le> F y" using F_inc unfolding mono_def by auto
-          finally have Fy_gt: "\<omega> < F y" using \<omega>'(3) by simp
-          from fn_weak_conv M.isCont_cdf y(3) have 1: "(\<lambda>n. f n y) ----> F y"
-            unfolding F_def weak_conv_def by auto
-          have "\<exists>N. \<forall>n\<ge>N. \<omega> \<le> f n y"
-            apply (insert 1)
-            apply (drule LIMSEQ_D[of _ _ "F y - \<omega>"])
-            using Fy_gt apply auto by smt
-          hence 2: "\<exists>N. \<forall>n\<ge>N. Y_seq n \<omega> \<le> y" using Y_seq_le_iff \<omega>(1) by metis
-          hence "limsup (\<lambda>n. Y_seq n \<omega>) \<le> y"
-            apply (subst (asm) eventually_sequentially[of "\<lambda>n. Y_seq n \<omega> \<le> y",symmetric])
-            using Limsup_mono[of "\<lambda>n. Y_seq n \<omega>" "\<lambda>n. y" sequentially] apply auto
-            by (metis Limsup_bounded eq_iff eventually_sequentiallyI order.trans trivial_limit_sequentially)
-          hence "limsup (\<lambda>n. Y_seq n \<omega>) < Y \<omega>' + \<epsilon>" using y(2)
-            by (smt dual_order.antisym dual_order.trans le_cases less_eq_ereal_def less_ereal.simps(1))
-        }
-        hence "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>'"
-          by (metis ereal_le_epsilon2 order.strict_implies_order plus_ereal.simps(1))
-      } note * = this
-      show "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>"
-      proof (rule ereal_le_epsilon2, auto)
-        fix \<epsilon>::real assume \<epsilon>: "\<epsilon> > 0"
-        thm continuous_at_right_real_increasing
-        have "\<exists>\<delta>>0. \<omega> + \<delta> \<in> {0<..<1} \<and> Y (\<omega> + \<delta>) - Y \<omega> < \<epsilon>"
-          using continuous_at_right_real_mono_on_open \<omega> continuous_at_split Y_mono_on \<epsilon>
-            open_greaterThanLessThan by metis
-        then guess \<delta> .. note \<delta> = this
-        hence "\<exists>\<omega>'\<in>{0<..<1}. \<omega> < \<omega>' \<and> Y \<omega>' \<le> Y \<omega> + \<epsilon>"
-        proof -
-          def d \<equiv> "min \<delta> ((1 - \<omega>)/2)"
-          def \<omega>' \<equiv> "\<omega> + d"
-          have \<omega>': "\<omega>' \<in> {0<..<1}" unfolding \<omega>'_def d_def using \<omega>(1) \<delta>
-            by (auto split: split_min simp: field_simps)
-          moreover have "\<omega> < \<omega>'" unfolding \<omega>'_def d_def using \<delta> \<omega>(1) by auto
-          moreover with \<omega>' have "Y \<omega>' \<le> Y \<omega> + \<epsilon>"
-            using Y_mono_on \<omega>(1) \<delta> unfolding mono_on_def \<omega>'_def d_def by smt
-          ultimately show ?thesis by auto
-        qed
-        then obtain \<omega>' where \<omega>': "\<omega>' \<in> {0<..<1}" "\<omega> < \<omega>'" "Y \<omega>' \<le> Y \<omega> + \<epsilon>" by auto
-        with * have "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega>'" by auto
-        with \<omega>'(3) show "limsup (\<lambda>n. Y_seq n \<omega>) \<le> Y \<omega> + \<epsilon>" by (metis ereal_less_eq(3) order.trans)
-      qed
-    qed
-    ultimately have "(\<lambda>n. Y_seq n \<omega>) ----> Y \<omega>" using Liminf_le_Limsup
-      by (metis Liminf_eq_Limsup dual_order.antisym dual_order.trans lim_ereal trivial_limit_sequentially)
-  } note Y_cts_cnv = this
-  let ?D = "{\<omega>\<in>{0<..<1}. \<not> isCont Y \<omega>}"
-  have D_countable: "countable ?D" using Y_mono_on mono_on_ctble_discont
-    by (metis (poly_guards_query) mono_on_ctble_discont_open open_greaterThanLessThan)
-  hence D: "emeasure lborel ?D = 0" using emeasure_lborel_countable by (metis (full_types))
-  def Y' \<equiv> "\<lambda>\<omega>. (case \<omega>\<in>?D of True => 0 | False => Y \<omega>)"
-  have Y'_AE: "AE \<omega> in \<Omega>. Y' \<omega> = Y \<omega>"
-    apply (rule AE_I [where N = "?D"])
-    apply (auto simp add: \<Omega>_def space_restrict_space) [1]
-    unfolding Y'_def apply auto [1]
-    apply (subst \<Omega>_def, subst emeasure_restrict_space, force)
-    apply force
-    using D apply force
-    apply (rule sets.countable)
-    unfolding \<Omega>_def using D_countable by (subst sets_restrict_space, auto)
-  def Y_seq' \<equiv> "\<lambda>n \<omega>. (case \<omega>\<in>?D of True => 0 | False => Y_seq n \<omega>)"
-  have Y_seq'_AE: "\<And>n. AE \<omega> in \<Omega>. Y_seq' n \<omega> = Y_seq n \<omega>"
-    apply (rule AE_I[where N = "?D"])
-    apply (auto simp add: \<Omega>_def space_restrict_space) [1]
-    unfolding Y_seq'_def apply auto [1]
-    apply (subst \<Omega>_def, subst emeasure_restrict_space, force)
-    apply force
-    using D apply force
-    apply (rule sets.countable)
-    unfolding \<Omega>_def using D_countable by (subst sets_restrict_space, auto)
+
+  let ?D = "{\<omega>\<in>{0<..<1}. \<not> isCont M.I \<omega>}"
+  have D_countable: "countable ?D"
+    using mono_on_ctble_discont[OF M.mono_I] by (simp add: at_within_open[of _ "{0 <..< 1}"] cong: conj_cong)
+  hence D: "emeasure ?\<Omega> ?D = 0"
+    using emeasure_lborel_countable[OF D_countable]
+    by (subst emeasure_restrict_space) auto
+
+  def Y' \<equiv> "\<lambda>\<omega>. if \<omega> \<in> ?D then 0 else M.I \<omega>"
+  have Y'_AE: "AE \<omega> in ?\<Omega>. Y' \<omega> = M.I \<omega>"
+    by (rule AE_I [OF _ D]) (auto simp: space_restrict_space sets_restrict_space_iff Y'_def)
+
+  def Y_seq' \<equiv> "\<lambda>n \<omega>. if \<omega> \<in> ?D then 0 else \<mu>.I n \<omega>"
+  have Y_seq'_AE: "\<And>n. AE \<omega> in ?\<Omega>. Y_seq' n \<omega> = \<mu>.I n \<omega>"
+    by (rule AE_I [OF _ D]) (auto simp: space_restrict_space sets_restrict_space_iff Y_seq'_def)
+
   have Y'_cnv: "\<forall>\<omega>\<in>{0<..<1}. (\<lambda>n. Y_seq' n \<omega>) ----> Y' \<omega>"
-  proof
-    fix \<omega>::real assume \<omega>: "\<omega> \<in> {0<..<1}"
-    show "(\<lambda>n. Y_seq' n \<omega>) ----> Y' \<omega>"
-    proof (cases "\<omega> \<in> ?D")
-      assume \<omega>D: "\<omega> \<in> ?D"
-      hence "\<And>n. Y_seq' n \<omega> = 0" unfolding Y_seq'_def by auto
-      moreover have "Y' \<omega> = 0" using \<omega>D unfolding Y'_def by auto
-      ultimately show ?thesis by auto
-    next
-      assume \<omega>D: "\<omega> \<notin> ?D"
-      hence "continuous (at \<omega>) Y" using \<omega> by auto
-      moreover have "\<And>n. Y_seq' n \<omega> = Y_seq n \<omega>" using \<omega>D unfolding Y_seq'_def by auto
-      moreover have "Y' \<omega> = Y \<omega>" using \<omega>D unfolding Y'_def by auto
-      ultimately show ?thesis using Y_cts_cnv \<omega> by auto
-    qed
-  qed
-  have [simp]: "\<And>n. Y_seq' n \<in> borel_measurable \<Omega>"
-    using Y_seq_meas D_countable
-    by (rule measurable_discrete_difference) (auto simp: Y_seq'_def \<Omega>_def sets_restrict_space)
-  moreover {fix n  have "distr \<Omega> borel (Y_seq' n) = \<mu> n" using Y_seq_distr [of n] 
-      Y_seq'_AE [of n]
-    by (subst distr_cong_AE[where f = "Y_seq' n" and g = "Y_seq n"], auto) }
-  moreover have [simp]: "Y' \<in> borel_measurable \<Omega>"
-    using Y_meas D_countable
-    by (rule measurable_discrete_difference) (auto simp: Y'_def \<Omega>_def sets_restrict_space)
-  moreover have "distr \<Omega> borel Y' = M"
-    apply (subst Y_distr [symmetric])
-    apply (rule distr_cong_AE, auto)
-    by (rule Y'_AE)
-  ultimately have "prob_space \<Omega> \<and> (\<forall>n. Y_seq' n \<in> borel_measurable \<Omega>) \<and>
-    (\<forall>n. distr \<Omega> borel (Y_seq' n) = \<mu> n) \<and> Y' \<in> measurable \<Omega> lborel \<and> distr \<Omega> borel Y' = M \<and>
-    (\<forall>x\<in>space \<Omega>. (\<lambda>n. Y_seq' n x) ----> Y' x)" using prob_\<Omega> Y'_cnv
-    unfolding \<Omega>_def by (auto simp add: space_restrict_space)
+    by (auto simp: Y'_def Y_seq'_def Y_cts_cnv)
+
+  have [simp]: "Y_seq' n \<in> borel_measurable ?\<Omega>" for n
+    by (rule measurable_discrete_difference[of "\<mu>.I n" _ _ ?D])
+       (insert \<mu>.measurable_CI[of n] D_countable, auto simp: sets_restrict_space Y_seq'_def)
+  moreover have "distr ?\<Omega> borel (Y_seq' n) = \<mu> n" for n
+    using \<mu>.distr_I_eq_M [of n] Y_seq'_AE [of n]
+    by (subst distr_cong_AE[where f = "Y_seq' n" and g = "\<mu>.I n"], auto)
+  moreover have [simp]: "Y' \<in> borel_measurable ?\<Omega>"
+    by (rule measurable_discrete_difference[of M.I _ _ ?D])
+       (insert M.measurable_CI D_countable, auto simp: sets_restrict_space Y'_def)
+  moreover have "distr ?\<Omega> borel Y' = M"
+    using M.distr_I_eq_M Y'_AE
+    by (subst distr_cong_AE[where f = Y' and g = M.I], auto)
+  ultimately have "prob_space ?\<Omega> \<and> (\<forall>n. Y_seq' n \<in> borel_measurable ?\<Omega>) \<and>
+    (\<forall>n. distr ?\<Omega> borel (Y_seq' n) = \<mu> n) \<and> Y' \<in> measurable ?\<Omega> lborel \<and> distr ?\<Omega> borel Y' = M \<and>
+    (\<forall>x\<in>space ?\<Omega>. (\<lambda>n. Y_seq' n x) ----> Y' x)"
+    using Y'_cnv \<open>prob_space ?\<Omega>\<close> by (auto simp: space_restrict_space)
   thus ?thesis by metis
 qed
 
-(*
+text \<open>
   The Portmanteau theorem, that is, the equivalence of various definitions of weak convergence.
-*)
+\<close>
 
 theorem weak_conv_imp_bdd_ae_continuous_conv:
   fixes 
-    M_seq :: "nat \<Rightarrow> real measure" and
-    M :: "real measure" and
     f :: "real \<Rightarrow> 'a::{banach, second_countable_topology}"
   assumes 
-    distr_M_seq: "\<And>n. real_distribution (M_seq n)" and 
-    distr_M: "real_distribution M" and 
-    wcM: "weak_conv_m M_seq M" and
     discont_null: "M ({x. \<not> isCont f x}) = 0" and
     f_bdd: "\<And>x. norm (f x) \<le> B" and
     [measurable]: "f \<in> borel_measurable borel"
   shows 
-    "(\<lambda> n. integral\<^sup>L (M_seq n) f) ----> integral\<^sup>L M f"
+    "(\<lambda> n. integral\<^sup>L (\<mu> n) f) ----> integral\<^sup>L M f"
 proof -
   have "0 \<le> B"
     using norm_ge_zero f_bdd by (rule order_trans)
-  note Skorohod [OF distr_M_seq distr_M wcM]
+  note Skorohod
   then obtain Omega Y_seq Y where
     ps_Omega [simp]: "prob_space Omega" and
     Y_seq_measurable [measurable]: "\<And>n. Y_seq n \<in> borel_measurable Omega" and
-    distr_Y_seq: "\<And>n. distr Omega borel (Y_seq n) = M_seq n" and
+    distr_Y_seq: "\<And>n. distr Omega borel (Y_seq n) = \<mu> n" and
     Y_measurable [measurable]: "Y \<in> borel_measurable Omega" and
     distr_Y: "distr Omega borel Y = M" and
     YnY: "\<And>x :: real. x \<in> space Omega \<Longrightarrow> (\<lambda>n. Y_seq n x) ----> Y x"  by force
   interpret prob_space Omega by fact
   have *: "emeasure Omega (Y -` {x. \<not> isCont f x} \<inter> space Omega) = 0"
-    apply (subst emeasure_distr [symmetric])
-    apply (rule Y_measurable)
-    apply (subst double_complement [symmetric])
-    apply (rule borel_comp)
-    apply (subst Compl_eq, simp, rule isCont_borel)
-    by (subst distr_Y, rule discont_null)
+    by (subst emeasure_distr [symmetric, where N=borel]) (auto simp: distr_Y discont_null)
+  have *: "AE x in Omega. (\<lambda>n. f (Y_seq n x)) ----> f (Y x)"
+    by (rule AE_I [OF _ *]) (auto intro: isCont_tendsto_compose YnY)
   show ?thesis
-    apply (subst distr_Y_seq [symmetric])
-    apply (subst distr_Y [symmetric])
-    apply (subst integral_distr, simp_all)+
-    apply (rule integral_dominated_convergence)
-    apply measurable
-    apply (rule integrable_const_bound[where B=B and f="\<lambda>x. B"])
-    apply simp
-    using `0 \<le> B` apply simp
-    apply simp
-    apply (rule AE_I [where N = "Y -` {x. \<not> isCont f x} \<inter> space Omega"])
-    apply auto [1]
-    apply (erule notE)
-    apply (erule isCont_tendsto_compose)
-    apply (erule YnY)
-    apply (rule *)
-    apply (rule measurable_sets)
-    apply (rule Y_measurable)
-    apply (subst double_complement [symmetric])
-    apply (rule borel_comp)
-    apply (subst Compl_eq, simp)
-    apply (rule isCont_borel)
-    using f_bdd
-    apply simp
-    done
+    by (auto intro!: integral_dominated_convergence[where w="\<lambda>x. B"]
+             simp: f_bdd * integral_distr distr_Y_seq [symmetric] distr_Y [symmetric])
 qed
 
 theorem weak_conv_imp_integral_bdd_continuous_conv:
-  fixes 
-    M_seq :: "nat \<Rightarrow> real measure" and
-    M :: "real measure" and
-    f :: "real \<Rightarrow> 'a::{banach, second_countable_topology}"
+  fixes f :: "real \<Rightarrow> 'a::{banach, second_countable_topology}"
   assumes 
-    "\<And>n. real_distribution (M_seq n)" and 
-    "real_distribution M" and 
-    "weak_conv_m M_seq M" and
     "\<And>x. isCont f x" and
     "\<And>x. norm (f x) \<le> B"
   shows 
-    "(\<lambda> n. integral\<^sup>L (M_seq n) f) ----> integral\<^sup>L M f"
-
-  using assms apply (intro weak_conv_imp_bdd_ae_continuous_conv, auto)
-  apply (rule borel_measurable_continuous_on1)
-by (rule continuous_at_imp_continuous_on, auto)
+    "(\<lambda> n. integral\<^sup>L (\<mu> n) f) ----> integral\<^sup>L M f"
+  using assms
+  by (intro weak_conv_imp_bdd_ae_continuous_conv)
+     (auto intro!: borel_measurable_continuous_on1 continuous_at_imp_continuous_on)
 
 theorem weak_conv_imp_continuity_set_conv:
-  fixes 
-    M_seq :: "nat \<Rightarrow> real measure" and
-    M :: "real measure" and
-    f :: "real \<Rightarrow> real"
-  assumes 
-    "\<And>n. real_distribution (M_seq n)" "real_distribution M" and 
-    "weak_conv_m M_seq M" and
-    [measurable]: "A \<in> sets borel" and
-    "M (frontier A) = 0"
-  shows 
-    "(\<lambda> n. (measure (M_seq n) A)) ----> measure M A"
+  fixes f :: "real \<Rightarrow> real"
+  assumes [measurable]: "A \<in> sets borel" and "M (frontier A) = 0"
+  shows "(\<lambda>n. measure (\<mu> n) A) ----> measure M A"
 proof -
   interpret M: real_distribution M by fact
-  interpret M_seq: real_distribution "M_seq n" for n by fact
+  interpret \<mu>: real_distribution "\<mu> n" for n by fact
   
-  have "(\<lambda>n. (\<integral>x. indicator A x \<partial>M_seq n) :: real) ----> (\<integral>x. indicator A x \<partial>M)"
+  have "(\<lambda>n. (\<integral>x. indicator A x \<partial>\<mu> n) :: real) ----> (\<integral>x. indicator A x \<partial>M)"
     by (intro weak_conv_imp_bdd_ae_continuous_conv[where B=1])
        (auto intro: assms simp: isCont_indicator)
   then show ?thesis
     by simp
 qed
 
-theorem continuity_set_conv_imp_weak_conv:
-  fixes 
-    M_seq :: "nat \<Rightarrow> real measure" and
-    M :: "real measure" and
-    f :: "real \<Rightarrow> real"
-  assumes 
-    real_dist_Mn [simp]: "\<And>n. real_distribution (M_seq n)" and 
-    real_dist_M [simp]: "real_distribution M" and 
-    *: "\<And>A. A \<in> sets borel \<Longrightarrow> M (frontier A) = 0 \<Longrightarrow>
-        (\<lambda> n. (measure (M_seq n) A)) ----> measure M A"
-  shows 
-    "weak_conv_m M_seq M"
-proof -
-  interpret real_distribution M by simp
-  show ?thesis
-   unfolding weak_conv_m_def weak_conv_def cdf_def2 apply auto
-   by (rule *, auto simp add: frontier_real_Iic isCont_cdf emeasure_eq_measure)
-qed
+end
 
 definition
   cts_step :: "real \<Rightarrow> real \<Rightarrow> real \<Rightarrow> real"
 where
-  "cts_step a b x \<equiv> 
-    if x \<le> a then 1
-    else (if x \<ge> b then 0 else (b - x) / (b - a))"
+  "cts_step a b x \<equiv> if x \<le> a then 1 else if x \<ge> b then 0 else (b - x) / (b - a)"
 
 lemma cts_step_uniformly_continuous:
-  fixes a b
   assumes [arith]: "a < b"
   shows "uniformly_continuous_on UNIV (cts_step a b)"
-unfolding uniformly_continuous_on_def 
-proof (clarsimp)
-  fix e :: real
-  assume [arith]: "0 < e"
+  unfolding uniformly_continuous_on_def
+proof clarsimp
+  fix e :: real assume [arith]: "0 < e"
   let ?d = "min (e * (b - a)) (b - a)"
-  have "?d > 0" by (auto simp add: field_simps)
-  {
-    fix x x'
-    assume 1: "\<bar>x' - x\<bar> < e * (b - a)" and 2: "\<bar>x' - x\<bar> < b - a" and "x \<le> x'"
-    hence "\<bar>cts_step a b x' - cts_step a b x\<bar> < e"
-      unfolding cts_step_def apply auto
-      apply (auto simp add: field_simps)[2]
-      by (subst diff_divide_distrib [symmetric], simp add: field_simps)
-  } note * = this
-  have "\<forall>x x'. dist x' x < ?d \<longrightarrow> dist (cts_step a b x') (cts_step a b x) < e"
-  proof (clarsimp simp add: dist_real_def)
-    fix x x'
-    assume "\<bar>x' - x\<bar> < e * (b - a)" and "\<bar>x' - x\<bar> < b - a" 
-    thus "\<bar>cts_step a b x' - cts_step a b x\<bar> < e"
-      apply (case_tac "x \<le> x'")
-      apply (rule *, auto)
-      apply (subst abs_minus_commute)
-      by (rule *, auto)
-  qed
-  with `?d > 0` show 
-    "\<exists>d > 0. \<forall>x x'. dist x' x < d \<longrightarrow> dist (cts_step a b x') (cts_step a b x) < e"
+  have "?d > 0"
+    by (auto simp add: field_simps)
+  moreover have "dist x' x < ?d \<Longrightarrow> dist (cts_step a b x') (cts_step a b x) < e" for x x'
+    by (auto simp: dist_real_def divide_simps cts_step_def)
+  ultimately show "\<exists>d > 0. \<forall>x x'. dist x' x < d \<longrightarrow> dist (cts_step a b x') (cts_step a b x) < e"
     by blast
 qed
 
-lemma (in real_distribution) measurable_finite_borel [simp]: "f \<in> borel_measurable borel \<Longrightarrow> 
-  f \<in> borel_measurable M"
-  apply (rule borel_measurable_subalgebra)
-  prefer 3 apply assumption
-  by auto
-
 lemma (in real_distribution) integrable_cts_step: "a < b \<Longrightarrow> integrable M (cts_step a b)"
-  apply (rule integrable_const_bound [of _ 1])
-  apply (force simp add: cts_step_def)
-  apply (rule measurable_finite_borel)
-  apply (rule borel_measurable_continuous_on1)
-  apply (rule uniformly_continuous_imp_continuous)
-by (rule cts_step_uniformly_continuous)
-  
+  by (rule integrable_const_bound [of _ 1]) (auto simp: cts_step_def[abs_def])
+
 lemma (in real_distribution) cdf_cts_step:
-  fixes  
-    x y :: real
-  assumes 
-    "x < y"
-  shows 
-    "cdf M x \<le> integral\<^sup>L M (cts_step x y)" and
-    "integral\<^sup>L M (cts_step x y) \<le> cdf M y"
-unfolding cdf_def 
+  assumes [arith]: "x < y"
+  shows "cdf M x \<le> integral\<^sup>L M (cts_step x y)" and "integral\<^sup>L M (cts_step x y) \<le> cdf M y"
 proof -
-  have "prob {..x} = integral\<^sup>L M (indicator {..x})"
-    by simp
-  thus "prob {..x} \<le> expectation (cts_step x y)"
-    apply (elim ssubst)
-    apply (rule integral_mono)
-    apply simp
-    apply (auto intro!: integrable_cts_step assms) []
-    apply (auto simp add: cts_step_def indicator_def field_simps)
-    done
+  have "cdf M x = integral\<^sup>L M (indicator {..x})"
+    by (simp add: cdf_def)
+  also have "\<dots> \<le> expectation (cts_step x y)"
+    by (intro integral_mono integrable_cts_step) (auto simp: cts_step_def split: split_indicator)
+  finally show "cdf M x \<le> expectation (cts_step x y)" .
 next
-  have "prob {..y} = integral\<^sup>L M (indicator {..y})"
-    by simp
-  thus "expectation (cts_step x y) \<le> prob {..y}"
-    apply (elim ssubst)
-    apply (rule integral_mono)
-    apply (rule integrable_cts_step, rule assms)
-    unfolding cts_step_def indicator_def using `x < y`
-    by (auto simp add: field_simps)
+  have "expectation (cts_step x y) \<le> integral\<^sup>L M (indicator {..y})"
+    by (intro integral_mono integrable_cts_step) (auto simp: cts_step_def split: split_indicator)
+  also have "\<dots> = cdf M y"
+    by (simp add: cdf_def)
+  finally show "expectation (cts_step x y) \<le> cdf M y" .
+qed
+
+context
+  fixes M_seq :: "nat \<Rightarrow> real measure"
+    and M :: "real measure"
+  assumes distr_M_seq [simp]: "\<And>n. real_distribution (M_seq n)" 
+  assumes distr_M [simp]: "real_distribution M"
+begin  
+
+theorem continuity_set_conv_imp_weak_conv:
+  fixes f :: "real \<Rightarrow> real"
+  assumes *: "\<And>A. A \<in> sets borel \<Longrightarrow> M (frontier A) = 0 \<Longrightarrow> (\<lambda> n. (measure (M_seq n) A)) ----> measure M A"
+  shows "weak_conv_m M_seq M"
+proof -
+  interpret real_distribution M by simp
+  show ?thesis
+    by (auto intro!: * simp: frontier_real_Iic isCont_cdf emeasure_eq_measure weak_conv_m_def weak_conv_def cdf_def2)
 qed
 
 theorem integral_cts_step_conv_imp_weak_conv:
-  fixes 
-    M_seq :: "nat \<Rightarrow> real measure" and
-    M :: "real measure"
-  assumes 
-    distr_M_seq: "\<And>n. real_distribution (M_seq n)" and 
-    distr_M: "real_distribution M" and 
-    integral_conv: "\<And>x y. x < y \<Longrightarrow>
-         (\<lambda>n. integral\<^sup>L (M_seq n) (cts_step x y)) ----> integral\<^sup>L M (cts_step x y)"
-  shows 
-    "weak_conv_m M_seq M"
-unfolding weak_conv_m_def weak_conv_def 
+  assumes integral_conv: "\<And>x y. x < y \<Longrightarrow> (\<lambda>n. integral\<^sup>L (M_seq n) (cts_step x y)) ----> integral\<^sup>L M (cts_step x y)"
+  shows "weak_conv_m M_seq M"
+  unfolding weak_conv_m_def weak_conv_def 
 proof (clarsimp)
-  fix x
-  assume "isCont (cdf M) x"
+  interpret real_distribution M by (rule distr_M) 
+  fix x assume "isCont (cdf M) x"
   hence left_cont: "continuous (at_left x) (cdf M)"
-    by (subst (asm) continuous_at_split, auto)
-  have conv: "\<And>a b. a < b \<Longrightarrow> convergent (\<lambda>n. integral\<^sup>L (M_seq n) (cts_step a b))"
-    by (rule convergentI, rule integral_conv, simp)
-  {
-    fix y :: real
-    assume [arith]: "x < y"
-    have "limsup (\<lambda>n. cdf (M_seq n) x) \<le> 
-        limsup (\<lambda>n. integral\<^sup>L (M_seq n) (cts_step x y))"
-      apply (rule Limsup_mono)
-      apply (rule always_eventually, auto)
-      apply (rule real_distribution.cdf_cts_step)
-      by (rule distr_M_seq, simp)
-    also have "\<dots> = lim (\<lambda>n. ereal (integral\<^sup>L (M_seq n) (cts_step x y)))"
-      apply (rule convergent_limsup_cl)
-      by (rule convergent_real_imp_convergent_ereal, rule conv, simp)
+    unfolding continuous_at_split ..
+  { fix y :: real assume [arith]: "x < y"
+    have "limsup (\<lambda>n. cdf (M_seq n) x) \<le> limsup (\<lambda>n. integral\<^sup>L (M_seq n) (cts_step x y))"
+      by (auto intro!: Limsup_mono always_eventually real_distribution.cdf_cts_step)
     also have "\<dots> = integral\<^sup>L M (cts_step x y)"
-      apply (subst convergent_real_imp_convergent_ereal, rule conv, auto)
-      by (rule limI, rule integral_conv, simp)
+      by (intro lim_imp_Limsup) (auto intro: integral_conv)
     also have "\<dots> \<le> cdf M y"
-      by (simp, rule real_distribution.cdf_cts_step, rule assms, simp)
+      by (simp add: cdf_cts_step)
     finally have "limsup (\<lambda>n. cdf (M_seq n) x) \<le> cdf M y" .
   } note * = this
-  {
-    fix y :: real
-    assume [arith]: "x > y"
-    have "liminf (\<lambda>n. cdf (M_seq n) x) \<ge> 
-        liminf (\<lambda>n. integral\<^sup>L (M_seq n) (cts_step y x))" (is "_ \<ge> ?rhs")
-      apply (rule Liminf_mono)
-      apply (rule always_eventually, auto)
-      apply (rule real_distribution.cdf_cts_step)
-      by (rule distr_M_seq, simp)
-    also have "?rhs = lim (\<lambda>n. ereal (integral\<^sup>L (M_seq n) (cts_step y x)))"
-      apply (rule convergent_liminf_cl)
-      by (rule convergent_real_imp_convergent_ereal, rule conv, simp)
-    also have "\<dots> = integral\<^sup>L M (cts_step y x)"
-      apply (subst convergent_real_imp_convergent_ereal, rule conv, auto)
-      by (rule limI, rule integral_conv, simp)
-    also have "\<dots> \<ge> cdf M y"
-      by (simp, rule real_distribution.cdf_cts_step, rule assms, simp)
-    finally (xtrans) have "liminf (\<lambda>n. cdf (M_seq n) x) \<ge> cdf M y" .
+  { fix y :: real assume [arith]: "x > y"
+    have "cdf M y \<le> ereal (integral\<^sup>L M (cts_step y x))"
+      by (simp add: cdf_cts_step)
+    also have "\<dots> = liminf (\<lambda>n. integral\<^sup>L (M_seq n) (cts_step y x))"
+      by (intro lim_imp_Liminf[symmetric]) (auto intro: integral_conv)
+    also have "\<dots> \<le> liminf (\<lambda>n. cdf (M_seq n) x)"
+      by (auto intro!: Liminf_mono always_eventually real_distribution.cdf_cts_step)
+    finally have "liminf (\<lambda>n. cdf (M_seq n) x) \<ge> cdf M y" .
   } note ** = this
-  have le: "limsup (\<lambda>n. cdf (M_seq n) x) \<le> cdf M x"
-  proof -
-    interpret real_distribution M by (rule assms) 
-    have 1: "((\<lambda>x. ereal (cdf M x)) ---> cdf M x) (at_right x)"
-      by (simp add: continuous_within [symmetric], rule cdf_is_right_cont)
-    have 2: "((\<lambda>t. limsup (\<lambda>n. cdf (M_seq n) x)) ---> 
-        limsup (\<lambda>n. cdf (M_seq n) x)) (at_right x)" by (rule tendsto_const)
-    show ?thesis
-      apply (rule tendsto_le [OF _ 1 2], auto)
-      apply (subst eventually_at_right[of _ "x + 1"])
-      apply simp
-      apply (rule exI [of _ "x+1"])
-      apply auto
-      apply (rule *)
-      apply assumption
-      done
-  qed
-  moreover have ge: "cdf M x \<le> liminf (\<lambda>n. cdf (M_seq n) x)"
-  proof -
-    interpret real_distribution M by (rule assms) 
-    have 1: "((\<lambda>x. ereal (cdf M x)) ---> cdf M x) (at_left x)"
-      by (simp add: continuous_within [symmetric] left_cont) 
-    have 2: "((\<lambda>t. liminf (\<lambda>n. cdf (M_seq n) x)) ---> 
-        liminf (\<lambda>n. cdf (M_seq n) x)) (at_left x)" by (rule tendsto_const)
-    show ?thesis
-      apply (rule tendsto_le [OF _ 2 1])
-      apply auto
-      apply (subst eventually_at_left[of "x - 1"])
-      apply simp
-      apply (rule exI [of _ "x - 1"], auto)
-      by (rule **)
-  qed
+
+  have "limsup (\<lambda>n. cdf (M_seq n) x) \<le> cdf M x"
+  proof (rule tendsto_le_const)
+    show "\<forall>\<^sub>F i in at_right x. limsup (\<lambda>xa. ereal (cdf (M_seq xa) x)) \<le> ereal (cdf M i)"
+      by (subst eventually_at_right[of _ "x + 1"]) (auto simp: * intro: exI [of _ "x+1"])
+  qed (insert cdf_is_right_cont, auto simp: continuous_within)
+  moreover have "cdf M x \<le> liminf (\<lambda>n. cdf (M_seq n) x)"
+  proof (rule tendsto_ge_const)
+    show "\<forall>\<^sub>F i in at_left x. ereal (cdf M i) \<le> liminf (\<lambda>xa. ereal (cdf (M_seq xa) x))"
+      by (subst eventually_at_left[of "x - 1"]) (auto simp: ** intro: exI [of _ "x-1"])
+  qed (insert left_cont, auto simp: continuous_within)
   ultimately show "(\<lambda>n. cdf (M_seq n) x) ----> cdf M x"
     by (elim limsup_le_liminf_real) 
 qed
 
 theorem integral_bdd_continuous_conv_imp_weak_conv:
-  fixes 
-    M_seq :: "nat \<Rightarrow> real measure" and
-    M :: "real measure"
   assumes 
-    "\<And>n. real_distribution (M_seq n)" and 
-    "real_distribution M" and 
-    "\<And>f B. (\<And>x. isCont f x) \<Longrightarrow> (\<And>x. abs (f x) \<le> B) \<Longrightarrow>
-         (\<lambda>n. integral\<^sup>L (M_seq n) f::real) ----> integral\<^sup>L M f"
+    "\<And>f. (\<And>x. isCont f x) \<Longrightarrow> (\<And>x. abs (f x) \<le> 1) \<Longrightarrow> (\<lambda>n. integral\<^sup>L (M_seq n) f::real) ----> integral\<^sup>L M f"
   shows 
     "weak_conv_m M_seq M"
-
   apply (rule integral_cts_step_conv_imp_weak_conv [OF assms])
   apply (rule continuous_on_interior)
   apply (rule uniformly_continuous_imp_continuous)
-  apply (rule cts_step_uniformly_continuous, auto)
-  apply (subgoal_tac "abs(cts_step x y xa) \<le> 1")
-  apply assumption
-unfolding cts_step_def by auto
+  apply (rule cts_step_uniformly_continuous)
+  apply (auto simp: cts_step_def)
+  done
 
 end
 
+end
