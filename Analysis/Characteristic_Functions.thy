@@ -1,17 +1,66 @@
 (*
-Theory: Characteristic_Functions.thy
-Authors: Jeremy Avigad, Luke Serafin
+  Theory: Characteristic_Functions.thy
+  Authors: Jeremy Avigad, Luke Serafin
 *)
 
+section \<open>Characteristic Functions\<close>
+
 theory Characteristic_Functions
-
-imports Weak_Convergence
-
+  imports Weak_Convergence
 begin
 
 (*
-  Application of the FTC: integrating e^ix
+  Miscellany
 *)
+
+(* strange this isn't in the library *)
+lemma mult_min_right: "a \<ge> 0 \<Longrightarrow> (a :: real) * min b c = min (a * b) (a * c)"
+  by (metis min.absorb_iff2 min_def mult_left_mono)
+
+(* o.k., what is the nicer way to do this? *)
+
+lemma sequentially_even_odd:
+  assumes E: "eventually (\<lambda>n. P (2 * n)) sequentially" and O: "eventually (\<lambda>n. P (2 * n + 1)) sequentially"
+  shows "eventually P sequentially"
+proof -
+  from E obtain n_e where [intro]: "\<And>n. n \<ge> n_e \<Longrightarrow> P (2 * n)"
+    by (auto simp: eventually_sequentially)
+  moreover
+  from O obtain n_o where [intro]: "\<And>n. n \<ge> n_o \<Longrightarrow> P (Suc (2 * n))"
+    by (auto simp: eventually_sequentially)
+  show ?thesis
+    unfolding eventually_sequentially
+  proof (intro exI allI impI)
+    fix n assume "max (2 * n_e) (2 * n_o + 1) \<le> n" then show "P n"
+      by (cases "even n") (auto elim!: evenE oddE )
+  qed
+qed
+
+lemma limseq_even_odd: 
+  assumes "(\<lambda>n. f (2 * n)) ----> (l :: 'a :: topological_space)"
+      and "(\<lambda>n. f (2 * n + 1)) ----> l"
+  shows "f ----> l"
+  using assms by (auto simp: filterlim_iff intro: sequentially_even_odd)
+
+lemma (in comm_ring_1) uminus_power_if: "(- x) ^ n = (if even n then x^n else - (x ^ n))"
+  by auto
+
+lemma square_fact_le_2_fact: "(fact n) * (fact n::nat) \<le> fact (2 * n)"
+proof (induct n)
+  case 0 then show ?case by simp
+next
+  case (Suc n)
+  have "(fact (Suc n)) * (fact (Suc n)) = (Suc n) * (Suc n) * (fact n * fact n)"
+    by (simp add: field_simps)
+  also have "\<dots> \<le> (Suc n) * (Suc n) * fact (2 * n)"
+    by (rule mult_left_mono [OF Suc], simp)
+  also have "\<dots> \<le> (Suc (Suc (2 * n))) * (Suc (2 * n)) * fact (2 * n)"
+    by (rule mult_right_mono)+ auto
+  also have "\<dots> = fact (2 * Suc n)" by (simp add: field_simps)
+  finally show ?case .
+qed
+
+subsection \<open>Application of the FTC: integrating e^ix\<close>
 
 abbreviation iexp :: "real \<Rightarrow> complex" where
   "iexp \<equiv> (\<lambda>x. exp (\<i> * complex_of_real x))"
@@ -29,14 +78,12 @@ lemma interval_integral_iexp:
   by (subst interval_integral_FTC_finite [where F = "\<lambda>x. -ii * iexp x"])
      (auto intro!: derivative_eq_intros continuous_intros)
 
-(*
-  The characteristic function of a real measure.
-*)
+subsection \<open>The Characteristic Function of a Real Measure.\<close>
 
 definition
   char :: "real measure \<Rightarrow> real \<Rightarrow> complex"
 where
-  "char M t \<equiv> complex_lebesgue_integral M (\<lambda>x. iexp (t * x))"
+  "char M t = CLINT x|M. iexp (t * x)"
 
 lemma (in real_distribution) char_zero: "char M 0 = 1"
   unfolding char_def by (simp del: space_eq_univ add: prob_space)
@@ -73,18 +120,7 @@ qed
 lemma (in real_distribution) char_measurable [measurable]: "char M \<in> borel_measurable borel"
   by (auto intro!: borel_measurable_continuous_on1 continuous_at_imp_continuous_on isCont_char)
 
-(*
-  Miscellany
-*)
-
-(* strange this isn't in the library *)
-lemma mult_min_right: "a \<ge> 0 \<Longrightarrow> (a :: real) * min b c = min (a * b) (a * c)"
-by (metis min.absorb_iff2 min_def mult_left_mono)
-
-
-(*
-  Independence
-*)
+subsection \<open>Independence\<close>
 
 (* the automation can probably be improved *)  
 lemma (in prob_space) char_distr_sum:
@@ -116,9 +152,9 @@ proof (induct A rule: infinite_finite_induct)
     by (auto simp add: char_distr_sum indep_vars_setsum)
 qed (simp_all add: char_def integral_distr prob_space del: distr_const)
 
-(*
-  Approximations to e^ix from Billingsley, page 343
-*)
+subsection \<open>Approximations to $e^{ix}$\<close>
+
+text \<open>Proofs from Billingsley, page 343.\<close>
 
 lemma fact1:
   "((\<lambda>s. complex_of_real(-((x - s) ^ (Suc n) / (Suc n))) * iexp s)
@@ -261,10 +297,6 @@ proof -
     apply (subst equation_26p1 [where n = n])
     by auto
 qed
-
-(* Happily, it seems this is no longer needed!
-declare i_complex_of_real [simp del]
-*)
 
 lemma equation_26p4a: "cmod (iexp x - (\<Sum>k \<le> n. (ii * x)^k / fact k)) \<le>
     (abs x)^(Suc n) / (fact (Suc n)::real)"
@@ -630,42 +662,15 @@ proof -
   finally show ?thesis .
 qed
 
-(* Calculation of the characteristic function of the standard distribution *)
+subsection \<open>Calculation of the Characteristic Function of the Standard Distribution\<close>
 
-(* o.k., what is the nicer way to do this? *)
-
-lemma sequentially_even_odd:
-  assumes E: "eventually (\<lambda>n. P (2 * n)) sequentially" and O: "eventually (\<lambda>n. P (2 * n + 1)) sequentially"
-  shows "eventually P sequentially"
-proof -
-  from E obtain n_e where [intro]: "\<And>n. n \<ge> n_e \<Longrightarrow> P (2 * n)"
-    by (auto simp: eventually_sequentially)
-  moreover
-  from O obtain n_o where [intro]: "\<And>n. n \<ge> n_o \<Longrightarrow> P (Suc (2 * n))"
-    by (auto simp: eventually_sequentially)
-  show ?thesis
-    unfolding eventually_sequentially
-  proof (intro exI allI impI)
-    fix n assume "max (2 * n_e) (2 * n_o + 1) \<le> n" then show "P n"
-      by (cases "even n") (auto elim!: evenE oddE )
-  qed
-qed
-
-lemma limseq_even_odd: 
-  assumes "(\<lambda>n. f (2 * n)) ----> (l :: 'a :: topological_space)"
-      and "(\<lambda>n. f (2 * n + 1)) ----> l"
-  shows "f ----> l"
-  using assms by (auto simp: filterlim_iff intro: sequentially_even_odd)
 
 abbreviation
   "std_normal_distribution \<equiv> density lborel std_normal_density"
 
 (* TODO: should this be an instance statement? *)
 lemma real_dist_normal_dist: "real_distribution std_normal_distribution"
-  unfolding real_distribution_def
-  apply (rule conjI)
-  apply (rule prob_space_normal_density, auto)
-unfolding real_distribution_axioms_def by auto
+  using prob_space_normal_density by (auto simp: real_distribution_def real_distribution_axioms_def)
 
 lemma std_normal_distribution_even_moments:
   fixes k :: nat
@@ -696,82 +701,47 @@ lemma std_normal_distribution_odd_moments_abs:
   using integral_std_normal_moment_abs_odd[of k]
   by (subst integral_density) (auto simp: normal_density_nonneg)
 
-lemma (in comm_ring_1) uminus_power_if: "(- x) ^ n = (if even n then x^n else - (x ^ n))"
-  by auto
-
-lemma square_fact_le_2_fact: "(fact n) * (fact n::nat) \<le> fact (2 * n)"
-proof (induct n)
-  case 0 then show ?case by simp
-next
-  case (Suc n)
-  have "(fact (Suc n)) * (fact (Suc n)) = (Suc n) * (Suc n) * (fact n * fact n)"
-    by (simp add: field_simps)
-  also have "\<dots> \<le> (Suc n) * (Suc n) * fact (2 * n)"
-    by (rule mult_left_mono [OF Suc], simp)
-  also have "\<dots> \<le> (Suc (Suc (2 * n))) * (Suc (2 * n)) * fact (2 * n)"
-    by (rule mult_right_mono)+ auto
-  also have "\<dots> = fact (2 * Suc n)" by (simp add: field_simps)
-  finally show ?case .
-qed
-
 theorem char_std_normal_distribution:
   "char std_normal_distribution = (\<lambda>t. complex_of_real (exp (- (t^2) / 2)))"
 proof
   fix t :: real
   let ?f' = "\<lambda>k. (ii * t)^k / fact k * (LINT x | std_normal_distribution. x^k)"
   let ?f = "\<lambda>n. (\<Sum>k \<le> n. ?f' k)"
-  (* This is an absolutely horrible calculation, with casts from nat to real to complex. *)
-  (* This makes it a good target for automation. *)
-  have 1: "\<And>n :: nat. ?f (2 * n) = complex_of_real (\<Sum>k \<le> n. (1 / fact k) * (- (t^2) / 2)^k)"
-  proof -
-    fix n :: nat
-    let ?g' = "\<lambda>k :: nat. (1 / fact k) * (- (t^2) / 2)^k"
-    let ?g = "\<lambda>n. \<Sum>k \<le> n. ?g' k"  
-    show "?f (2 * n) = complex_of_real (?g n)"
+  have 4: "?f ----> exp (-(t^2) / 2)"
+  proof (rule limseq_even_odd)
+    have *: "?f (2 * n) = complex_of_real (\<Sum>k \<le> n. (1 / fact k) * (- (t^2) / 2)^k)" for n :: nat
       unfolding of_real_setsum
       apply (rule setsum.reindex_bij_witness_not_neutral[symmetric,
           where i="\<lambda>n. n div 2" and j="\<lambda>n. 2 * n" and T'="{i. i \<le> 2 * n \<and> odd i}" and S'="{}"])
-      apply (auto elim!: oddE) []
       apply (auto simp: integral_std_normal_distribution_moment_odd
         std_normal_distribution_even_moments)
-      apply (subst power_mult)
-      apply (simp add: of_real_numeral field_simps uminus_power_if power_mult)
+      apply (subst power_mult[of _ 2])
+      apply (simp add: field_simps uminus_power_if power_mult)
       done
+    show "(\<lambda>n. ?f (2 * n)) ----> exp (-(t^2) / 2)"
+      unfolding * using exp_converges[where 'a=real]
+      by (intro tendsto_of_real)
+         (auto simp: inverse_eq_divide lessThan_Suc_atMost [symmetric] sums_def [symmetric]
+               simp del: setsum_lessThan_Suc intro!: LIMSEQ_Suc)
+    have **: "?f(2 * n + 1) = ?f(2 * n)" for n
+    proof -
+      have "?f(2 * n + 1) = ?f(2 * n) + ?f'(2 * n + 1)"
+        by simp
+      also have "?f' (2 * n + 1) = 0"
+        by (subst integral_std_normal_distribution_moment_odd) simp_all
+      finally show "?f(2 * n + 1) = ?f(2 * n)"
+        by simp
+    qed
+    show "(\<lambda>n. ?f (2 * n + 1)) ----> exp (-(t^2) / 2)"
+      unfolding ** by fact
   qed
-  have 2: "\<And>n. ?f(2 * n + 1) = ?f(2 * n)"
-  proof -
-    fix n :: nat
-    have "?f(2 * n + 1) = ?f(2 * n) + ?f'(2 * n + 1)" by simp
-    also have "?f' (2 * n + 1) = 0"
-      by (subst integral_std_normal_distribution_moment_odd) simp_all
-    finally show "?f(2 * n + 1) = ?f(2 * n)" by simp
-  qed
-  have *: "\<And>x y :: real. 1 / y * x = x /\<^sub>R y" by (simp add: inverse_eq_divide)
-  have 3: "(\<lambda>n. ?f(2 * n)) ----> exp (-(t^2) / 2)"
-    apply (subst 1)
-    apply (rule tendsto_of_real)
-    apply (subst *)
-    apply (subst lessThan_Suc_atMost [symmetric])
-    apply (rule LIMSEQ_Suc)
-    apply (subst sums_def [symmetric])
-    apply (rule exp_converges)
-    done
-  have 4: "?f ----> exp (-(t^2) / 2)"
-    apply (rule limseq_even_odd)
-    apply (rule 3)
-    apply (subst 2)
-    by (rule 3)
-  from summable_LIMSEQ_zero [OF summable_exp] have **: 
-    "\<And>x :: real. (\<lambda>n. x ^ n / fact n) ----> 0"
+  from summable_LIMSEQ_zero [OF summable_exp] have **: "(\<lambda>n. x ^ n / fact n) ----> 0" for x :: real
     by (auto simp add: inverse_eq_divide)
-  have "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n) / fact (2 * n) *
-          (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n))) =
-          (\<lambda>n. 2 * ((t^2 / 2)^n / fact n))"
-    apply (rule ext)
-    apply (subst std_normal_distribution_even_moments_abs)
-    by (simp add: power_mult power_divide)
-  hence 5: "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n) / fact (2 * n) *
-          (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n)))
+  have "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n) / fact (2 * n) * (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n))) =
+      (\<lambda>n. 2 * ((t^2 / 2)^n / fact n))"
+    unfolding std_normal_distribution_even_moments_abs by (simp add: power_mult power_divide)
+  then have 5:
+      "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n) / fact (2 * n) * (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n)))
         ----> 0"
     apply (elim ssubst)
     by (rule tendsto_mult_right_zero, rule **)
@@ -782,8 +752,8 @@ proof
     apply (simp add: field_simps power_mult[symmetric] power_even_abs)
     done
   (* TODO: clean this up! *)
-  hence 6: "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n + 1) / fact (2 * n + 1) *
-        (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n + 1)))
+  hence 6:
+      "(\<lambda>n. 2 * \<bar>t\<bar> ^ (2 * n + 1) / fact (2 * n + 1) * (LINT x|std_normal_distribution. \<bar>x\<bar> ^ (2 * n + 1)))
         ----> 0"
     apply (elim ssubst)
     apply (rule tendsto_mult_right_zero)

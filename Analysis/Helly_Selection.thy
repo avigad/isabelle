@@ -76,20 +76,14 @@ proof -
       (\<lambda>k. nat.fold_reduce (Suc n) k (Suc n + k))"
       by auto
     have 2: "?P n (d \<circ> (op + (Suc n)))"
-      unfolding d_def
-      apply (subst nat.diagseq_seqseq)
-      apply (subst 1)
-      apply (rule convergent_subseq_convergent[of "\<lambda>k. f (nat.seqseq (Suc n) k) (r n)"
-        "\<lambda>k. nat.fold_reduce (Suc n) k (Suc n + k)"])
-      by (rule Pn_seqseq) (rule nat.subseq_diagonal_rest)
-    then obtain L where 3: "(\<lambda>k. f ((d \<circ> (op + (Suc n))) k) (r n)) ----> L"
-      using convergentD by auto
-    have 4: "(\<lambda>k. f (d (k + (Suc n))) (r n)) = (\<lambda>k. f ((d \<circ> (op + (Suc n))) k) (r n))"
-      by (auto simp: add.commute)
-    have "(\<lambda>k. f (d k) (r n)) ----> L" 
-      apply (rule LIMSEQ_offset[of _ "Suc n"])
-      by (subst 4) (rule 3)
-    thus ?thesis unfolding convergent_def by auto
+      unfolding d_def nat.diagseq_seqseq 1
+      by (intro convergent_subseq_convergent Pn_seqseq nat.subseq_diagonal_rest)
+    then obtain L where 3: "(\<lambda>na. f (d (na + Suc n)) (r n)) ----> L"
+      by (auto simp: add.commute dest: convergentD)
+    then have "(\<lambda>k. f (d k) (r n)) ----> L"
+      by (rule LIMSEQ_offset)
+    then show ?thesis
+      by (auto simp: convergent_def)
   qed
   let ?f = "\<lambda>n. \<lambda>k. f (d k) (r n)"
   have lim_f: "?f n ----> lim (?f n)" for n
@@ -183,11 +177,10 @@ where
   "tight \<mu> \<equiv> (\<forall>n. real_distribution (\<mu> n)) \<and> (\<forall>(\<epsilon>::real)>0. \<exists>a b::real. a < b \<and> (\<forall>n. measure (\<mu> n) {a<..b} > 1 - \<epsilon>))"
 
 (* Can strengthen to equivalence. *)
-theorem tight_iff_convergent_subsubsequence:
-  assumes \<mu>: "tight \<mu>"
-  shows "\<forall>s. subseq s \<longrightarrow> (\<exists>r. \<exists>M.  subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)"
-proof safe
-  fix s assume s: "subseq s"
+theorem tight_imp_convergent_subsubsequence:
+  assumes \<mu>: "tight \<mu>" "subseq s"
+  shows "\<exists>r M. subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M"
+proof -
   def f \<equiv> "\<lambda>k. cdf (\<mu> (s k))"
   interpret \<mu>: real_distribution "\<mu> k" for k
     using \<mu> unfolding tight_def by auto
@@ -221,168 +214,80 @@ proof safe
 
   have Fab: "\<exists>a b. (\<forall>x\<ge>b. F x \<ge> 1 - \<epsilon>) \<and> (\<forall>x\<le>a. F x \<le> \<epsilon>)" if \<epsilon>: "0 < \<epsilon>" for \<epsilon>
   proof auto
-    from \<epsilon> \<mu> have "\<exists>a' b'. a' < b' \<and> (\<forall>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>)" unfolding tight_def by auto
-    then obtain a' b' where a'b': "a' < b'" "\<And>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>" by auto
+    obtain a' b' where a'b': "a' < b'" "\<And>k. measure (\<mu> k) {a'<..b'} > 1 - \<epsilon>"
+      using \<epsilon> \<mu> by (auto simp: tight_def)
     obtain a where a: "a < a'" "isCont F a"
       using open_minus_countable[OF mono_ctble_discont[OF \<open>mono F\<close>], of "{..< a'}"] by auto
     obtain b where b: "b' < b" "isCont F b"
       using open_minus_countable[OF mono_ctble_discont[OF \<open>mono F\<close>], of "{b' <..}"] by auto
-    from a b a'b' have ab: "a < b" "\<And>k. measure (\<mu> k) {a<..b} > 1 - \<epsilon>"
-    proof simp
+    have "a < b"
+      using a b a'b' by simp
+
+    let ?\<mu> = "\<lambda>k. measure (\<mu> (s (r k)))"
+    have ab: "?\<mu> k {a<..b} > 1 - \<epsilon>" for k
+    proof -
+      have "?\<mu> k {a'<..b'} \<le> ?\<mu> k {a<..b}"
+        using a b by (intro \<mu>.finite_measure_mono) auto
+      then show ?thesis
+        using a'b'(2) by (metis less_eq_real_def less_trans)
+    qed
+
+    have "(\<lambda>k. ?\<mu> k {..b}) ----> F b"
+      using b(2) lim_F unfolding f_def cdf_def o_def by auto
+    then have "1 - \<epsilon> \<le> F b"
+    proof (rule tendsto_le_const[OF sequentially_bot], intro always_eventually allI)
       fix k
-      have "{a'<..b'} \<subseteq> {a<..b}" using a b by auto
-      hence "measure (\<mu> k) {a'<..b'} \<le> measure (\<mu> k) {a<..b}" using \<mu>.finite_measure_mono by auto
-      thus "measure (\<mu> k) {a<..b} > 1 - \<epsilon>" using a'b'(2) by (metis less_eq_real_def less_trans)
+      have "1 - \<epsilon> < ?\<mu> k {a<..b}"
+        using ab by auto
+      also have "\<dots> \<le> ?\<mu> k {..b}"
+        by (auto intro!: \<mu>.finite_measure_mono)
+      finally show "1 - \<epsilon> \<le> ?\<mu> k {..b}"
+        by (rule less_imp_le)
     qed
-    from b(2) lim_F have "(\<lambda>k. f (r k) b) ----> F b" by auto
-    hence subsubseq_lim: "(\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..b}) ----> F b"
-      unfolding f_def cdf_def o_def by auto
-    have "\<And>k. measure ((\<mu> \<circ> s \<circ> r) k) {..b} =
-      measure ((\<mu> \<circ> s \<circ> r) k) {..a} + measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}"
-      by (subst ivl_disj_un(9)[symmetric,of a b])
-         (auto simp add: ab less_imp_le intro: \<mu>.finite_measure_Union)
-    hence "\<And>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b} =
-      measure ((\<mu> \<circ> s \<circ> r) k) {..b} - measure ((\<mu> \<circ> s \<circ> r) k) {..a}" by simp
-    hence *: "\<And>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b} = f (r k) b - f (r k) a"
-      unfolding f_def cdf_def o_def by auto
-    have "lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}) \<le> F b"
-      apply (rule tendsto_le[of sequentially "\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..b}" "F b"
-        "\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}"  "lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b})"])
-      using subsubseq_lim apply auto
-      apply (subst convergent_LIMSEQ_iff[symmetric])
-      apply (unfold convergent_def)
-      using * unfolding o_def apply simp
-      apply (rule exI)
-      apply (rule tendsto_diff)
-      using F lim_F b(2) a(2) apply auto
-      apply (rule eventually_sequentiallyI)
-      by (rule \<mu>.finite_measure_mono) auto
-    moreover have "1 - \<epsilon> \<le> lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b})"
-      apply (rule tendsto_le[of sequentially "\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b}"
-        "lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {a<..b})" "\<lambda>k. 1 - \<epsilon>" "1 - \<epsilon>"], auto)
-      apply (subst convergent_LIMSEQ_iff[symmetric])
-      apply (unfold convergent_def)
-      apply (rule exI)
-      using * unfolding o_def apply simp
-      apply (rule tendsto_diff)
-      using a b lim_F apply auto
-      apply (rule eventually_sequentiallyI)
-      using ab(2) less_imp_le by metis
-    ultimately have "1 - \<epsilon> \<le> F b" by (metis order.trans)
-    hence "\<forall>x\<ge>b. F x \<ge> 1 - \<epsilon>" using F unfolding mono_def by (metis order.trans)
-    thus "\<exists>b. \<forall>x\<ge>b. 1 - \<epsilon> \<le> F x" by auto
-    from a(2) lim_F have "(\<lambda>k. f (r k) a) ----> F a" by auto
-    hence "(\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..a}) ----> F a" unfolding f_def cdf_def o_def by auto
-    hence "lim (\<lambda>k. measure ((\<mu> \<circ> s \<circ> r) k) {..a}) = F a" using limI by auto
-    have 1: "\<And>n. measure (\<mu> n) {..a} < \<epsilon>"
-    proof-
-      fix n
-      have "measure (\<mu> n) {..a} + measure (\<mu> n) {a<..b} \<le> 1"
+    then show "\<exists>b. \<forall>x\<ge>b. 1 - \<epsilon> \<le> F x"
+      using F unfolding mono_def by (metis order.trans)
+
+    have "(\<lambda>k. ?\<mu> k {..a}) ----> F a"
+      using a(2) lim_F unfolding f_def cdf_def o_def by auto
+    then have Fa: "F a \<le> \<epsilon>"
+    proof (rule tendsto_ge_const[OF sequentially_bot], intro always_eventually allI)
+      fix k
+      have "?\<mu> k {..a} + ?\<mu> k {a<..b} \<le> 1"
         by (subst \<mu>.finite_measure_Union[symmetric]) auto
-      thus "measure (\<mu> n) {..a} < \<epsilon>" using ab(2)[of n] by simp
+      then show "?\<mu> k {..a} \<le> \<epsilon>"
+        using ab[of k] by simp
     qed
-    have Fa: "F a \<le> \<epsilon>"
-      apply (rule tendsto_le[of sequentially "\<lambda>k. \<epsilon>" \<epsilon> "\<lambda>k. f (r k) a" "F a"], auto)
-      using lim_F a apply auto
-      apply (rule eventually_sequentiallyI)
-      apply (unfold f_def cdf_def)
-      using 1 less_imp_le by metis
-    hence  "\<forall>x\<le>a. F x \<le> \<epsilon>" using F unfolding mono_def by (metis order.trans)
-    thus "\<exists>a. \<forall>x\<le>a. F x \<le> \<epsilon>" by auto
+    then show "\<exists>a. \<forall>x\<le>a. F x \<le> \<epsilon>"
+      using F unfolding mono_def by (metis order.trans)
   qed
-  have "(F ---> 1) at_top" "(F ---> 0) at_bot"
-  unfolding tendsto_def proof (auto simp add: eventually_at_top_linorder eventually_at_bot_linorder)
-    fix S :: "real set" assume S: "open S" "1 \<in> S"
-    show "\<exists>N. \<forall>n\<ge>N. F n \<in> S"
-    proof (rule openE[of _ 1], auto intro: S)
-      fix \<epsilon> assume \<epsilon>: "\<epsilon> > 0" "ball 1 \<epsilon> \<subseteq> S"
-      with Fab have "\<exists>b. (\<forall>x\<ge>b. 1 - \<epsilon>/2 \<le> F x)" by auto
-      then guess b .. note b = this
-      hence "\<forall>n\<ge>b. 1 - \<epsilon> < F n"
-        apply (subgoal_tac "1 - \<epsilon> < 1 - \<epsilon>/2")
-        apply (metis less_le_trans)
-        by (simp add: \<epsilon>(1))
-      hence "\<forall>n\<ge>b. F n \<in> ball 1 \<epsilon>"
-        unfolding ball_def dist_real_def apply auto
-        apply (subgoal_tac "\<bar>F n\<bar> = F n")
-        apply (erule ssubst)
-        using F_nonneg F abs_of_nonneg
-        apply (auto simp: field_simps)
-        done
-      hence "\<forall>n\<ge>b. F n \<in> S" using \<epsilon> by auto
-      thus "\<exists>N. \<forall>n\<ge>N. F n \<in> S" by auto
-    qed
-  (* Duplication to be removed. *)
-  next fix S :: "real set" assume S: "open S" "0 \<in> S"
-    show "\<exists>N. \<forall>n\<le>N. F n \<in> S"
-    proof (rule openE[of _ 0], auto intro: S)
-      fix \<epsilon> assume \<epsilon>: "\<epsilon> > 0" "ball 0 \<epsilon> \<subseteq> S"
-      with Fab[rule_format, of "\<epsilon>/2"] have "\<exists>a. (\<forall>x\<le>a. F x \<le> \<epsilon>/2)" by auto
-      then guess a .. note a = this
-      hence "\<forall>n\<le>a. F n < \<epsilon>" using \<epsilon>(1) by auto
-      hence "\<forall>n\<le>a. F n \<in> ball 0 \<epsilon>"
-        unfolding ball_def dist_real_def apply auto
-        apply (subgoal_tac "\<bar>F n\<bar> = F n")
-        apply (erule ssubst)
-        using F_nonneg F abs_of_nonneg by auto
-      hence "\<forall>n\<le>a. F n \<in> S" using \<epsilon> by auto
-      thus "\<exists>N. \<forall>n\<le>N. F n \<in> S" by auto
-    qed
+
+  have "(F ---> 1) at_top"
+  proof (rule order_tendstoI)
+    show "1 < y \<Longrightarrow> \<forall>\<^sub>F x in at_top. F x < y" for y
+      using \<open>\<And>x. \<bar>F x\<bar> \<le> 1\<close> \<open>\<And>x. 0 \<le> F x\<close> by (auto intro: le_less_trans always_eventually)
+    fix y :: real assume "y < 1"
+    then obtain z where "y < z" "z < 1"
+      using dense[of y 1] by auto
+    with Fab[of "1 - z"] show "\<forall>\<^sub>F x in at_top. y < F x"
+      by (auto simp: eventually_at_top_linorder intro: less_le_trans)
   qed
-  with F have M: "real_distribution (interval_measure F)" "cdf (interval_measure F) = F"
-    by (auto intro!: real_distribution_interval_measure cdf_interval_measure simp: mono_def)
-  with lim_F have "weak_conv (f \<circ> r) F" unfolding weak_conv_def f_def using lim_subseq by auto
-  hence "weak_conv_m (\<mu> \<circ> s \<circ> r) (interval_measure F)" using M unfolding weak_conv_m_def f_def o_def by auto
-  hence "\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M" using M by auto
-  thus "\<exists>r M. subseq r \<and> (real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" using F by auto
-(*
-next
-  assume sseq: "\<forall>s. subseq s \<longrightarrow> (\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M))"
-  show "tight \<mu>" unfolding tight_def
-  proof (rule ccontr, auto simp add: assms not_less)
-    fix \<epsilon> :: real assume \<epsilon>: "\<epsilon> > 0"
-    assume ntight: "\<forall>a b. b \<le> a \<or> (\<exists>n. Sigma_Algebra.measure (\<mu> n) {a<..b} \<le> 1 - \<epsilon>)"
-    show False
-    proof (cases "\<epsilon> \<le> 1")
-      assume \<epsilon>1: "\<epsilon> \<le> 1"
-      have "\<forall>k :: nat. \<exists>n. Sigma_Algebra.measure (\<mu> n) {-real k<..real k} \<le> 1 - \<epsilon>"
-      proof
-        fix k :: nat
-        show "\<exists>n. Sigma_Algebra.measure (\<mu> n) {- real k<..real k} \<le> 1 - \<epsilon>"
-        proof (cases "k = 0")
-          assume "k = 0"
-          hence "{-k<..k} = {}" by simp
-          thus ?thesis using \<epsilon>1 by auto
-        next
-          assume "k \<noteq> 0"
-          hence "\<not>real k \<le> - real k" by simp
-          thus ?thesis using ntight by blast
-        qed
-      qed
-      hence "\<exists>s. subseq s \<and> (\<forall>k::nat. measure (\<mu> (s k)) {-real k<..k} \<le> 1 - \<epsilon>)"
-        using choice[of "\<lambda>k n::nat. measure (\<mu> n) {-real k<..k} \<le> 1 - \<epsilon>"] sorry
-      then guess s .. note s = this
-      with sseq have "\<exists>r. subseq r \<and> (\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)" by auto
-      then guess r .. note r = this
-      hence "\<exists>M. real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M" by auto
-      then guess M .. note M = this
-      hence "\<exists>a b. measure M {a} = 0 \<and> measure M {b} = 0 \<and> measure M {a<..b} > 1 - \<epsilon>" sorry
-      then obtain a b where "measure M {a} = 0 \<and> measure M {b} = 0 \<and> measure M {a<..b} > 1 - \<epsilon>" by auto
-      hence cnv: "(\<lambda>k. measure (\<mu> (s (r k))) {a<..b}) ----> measure M {a<..b}" using M sorry
-      have "\<exists>j. {a<..b} \<subseteq> {-real (r j)..r j}" sorry
-      then guess j .. note j = this
-      hence "measure (\<mu> (s (r j))) {a<..b} \<le> measure (\<mu> (s (r j))) {-real (r j)..r j}"
-        using finite_measure.finite_measure_mono sorry
-      also have "measure (\<mu> (s (r j))) {-real (r j)..r j} \<le> 1 - \<epsilon>" sorry
-      thus False sorry
-    next
-      assume "\<not>\<epsilon>\<le>1"
-      hence "1 - \<epsilon> < 0" by simp
-      thus False using ntight[rule_format,where a = 0 and b = 1] measure_nonneg
-        by (metis dual_order.strict_trans2 less_le_not_le not_one_le_zero)
-    qed
+  moreover
+  have "(F ---> 0) at_bot"
+  proof (rule order_tendstoI)
+    show "y < 0 \<Longrightarrow> \<forall>\<^sub>F x in at_bot. y < F x" for y
+      using \<open>\<And>x. 0 \<le> F x\<close> by (auto intro: less_le_trans always_eventually)
+    fix y :: real assume "0 < y"
+    then obtain z where "0 < z" "z < y"
+      using dense[of 0 y] by auto
+    with Fab[of z] show "\<forall>\<^sub>F x in at_bot. F x < y"
+      by (auto simp: eventually_at_bot_linorder intro: le_less_trans)
   qed
-*)
+  ultimately have M: "real_distribution (interval_measure F)" "cdf (interval_measure F) = F"
+    using F by (auto intro!: real_distribution_interval_measure cdf_interval_measure simp: mono_def)
+  with lim_F lim_subseq M have "weak_conv_m (\<mu> \<circ> s \<circ> r) (interval_measure F)"
+    by (auto simp: weak_conv_def weak_conv_m_def f_def comp_def)
+  then show "\<exists>r M. subseq r \<and> (real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)"
+    using F M by auto
 qed
 
 corollary tight_subseq_weak_converge:
@@ -391,59 +296,23 @@ corollary tight_subseq_weak_converge:
     subseq: "\<And>s \<nu>. subseq s \<Longrightarrow> real_distribution \<nu> \<Longrightarrow> weak_conv_m (\<mu> \<circ> s) \<nu> \<Longrightarrow> weak_conv_m (\<mu> \<circ> s) M"
   shows "weak_conv_m \<mu> M"
 proof (rule ccontr)
-  from tight tight_iff_convergent_subsubsequence
-  have subsubseq: "\<forall>s. subseq s \<longrightarrow> (\<exists>r M. subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M)"
-    using assms by simp
-  {
-    fix s assume s: "subseq s"
-    with subsubseq subseq have "\<exists>r M. subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M"
-      by simp
-    then guess r .. note r = this
-    then guess \<nu> .. note \<nu> = this
-    hence subsubseq_conv: "weak_conv_m (\<mu> \<circ> (s \<circ> r)) \<nu>" by (auto simp add: o_assoc)
-    from s r have sr: "subseq (s \<circ> r)" using subseq_o by auto
-    with subsubseq_conv subseq \<nu> have "weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
-    with r have "\<exists>r. subseq r \<and> weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
-  }
-  hence *: "\<And>s. subseq s \<Longrightarrow> \<exists>r. subseq r \<and> weak_conv_m (\<mu> \<circ> (s \<circ> r)) M" by auto
-  def f \<equiv> "\<lambda>n. cdf (\<mu> n)"
-  def F \<equiv> "cdf M"
-  assume CH: "\<not> weak_conv_m \<mu> M"
-  hence "\<exists>x. isCont F x \<and> \<not>((\<lambda>n. f n x) ----> F x)"
-    unfolding weak_conv_m_def weak_conv_def f_def F_def by auto
-  then guess x .. note x = this
-  hence "\<exists>\<epsilon>>0. \<exists>s. subseq s \<and> (\<forall>n. \<bar>f (s n) x - F x\<bar> \<ge> \<epsilon>)"
-    apply (subst (asm) tendsto_iff, auto simp add: not_less)
-    apply (subst (asm) eventually_sequentially, auto)
-    unfolding dist_real_def apply (simp add: not_less)
-    apply (subst subseq_Suc_iff)
-    apply (rule_tac x = e in exI, safe)
-    proof -
-      fix e assume e: "0 < e" "\<forall>N. \<exists>n\<ge>N. e \<le> \<bar>f n x - F x\<bar>"
-      then obtain n where n: "\<And>N. N \<le> n N" "\<And>N. e \<le> \<bar>f (n N) x - F x\<bar>" by metis
-      def s \<equiv> "rec_nat (n 0) (\<lambda>_ i. n (Suc i))"
-      then have s[simp]: "s 0 = n 0" "\<And>i. s (Suc i) = n (Suc (s i))"
-        by simp_all
-      { fix i have "s i < s (Suc i)"
-          using n(1)[of "Suc (s i)"] n(2)[of 0]  by simp_all }
-      moreover { fix i have "e \<le> \<bar>f (s i) x - F x\<bar>"
-        by (cases i) (simp_all add: n) }
-      ultimately show "\<exists>s. (\<forall>n. s n < s (Suc n)) \<and> (\<forall>n. e \<le> \<bar>f (s n) x - F x\<bar>)"
-        by metis
-    qed
-  then obtain \<epsilon> s where \<epsilon>: "\<epsilon> > 0" and s: "subseq s \<and> (\<forall>n. \<bar>f (s n) x - F x\<bar> \<ge> \<epsilon>)" by auto
-  hence "\<And>r. subseq r \<Longrightarrow> \<not>weak_conv_m (\<mu> \<circ> s \<circ> r) M"
-    apply (unfold weak_conv_m_def weak_conv_def, auto)
-    apply (rule_tac x = x in exI)
-    apply (subst tendsto_iff)
-    unfolding dist_real_def apply (subst eventually_sequentially)
-    using x unfolding F_def apply auto
-    apply (subst not_less)
-    apply (subgoal_tac "(\<lambda>n. cdf (\<mu> (s (r n))) x) = (\<lambda>n. f (s (r n)) x)")
-    apply (erule ssubst)
-    apply (rule_tac x = \<epsilon> in exI)
-    unfolding f_def by auto
-  thus False using subseq * by (metis fun.map_comp s) 
+  def f \<equiv> "\<lambda>n. cdf (\<mu> n)" and F \<equiv> "cdf M"
+
+  assume "\<not> weak_conv_m \<mu> M"
+  then obtain x where x: "isCont F x" "\<not> (\<lambda>n. f n x) ----> F x"
+    by (auto simp: weak_conv_m_def weak_conv_def f_def F_def)
+  then obtain \<epsilon> where "\<epsilon> > 0" and "infinite {n. \<not> dist (f n x) (F x) < \<epsilon>}"
+    by (auto simp: tendsto_iff not_eventually INFM_iff_infinite cofinite_eq_sequentially[symmetric])
+  then obtain s where s: "\<And>n. \<not> dist (f (s n) x) (F x) < \<epsilon>" and "subseq s"
+    using enumerate_in_set enumerate_mono by (fastforce simp: subseq_def)
+  then obtain r \<nu> where r: "subseq r" "real_distribution \<nu>" "weak_conv_m (\<mu> \<circ> s \<circ> r) \<nu>"
+    using tight_imp_convergent_subsubsequence[OF tight] by blast
+  then have "weak_conv_m (\<mu> \<circ> (s \<circ> r)) M"
+    using \<open>subseq s\<close> r by (intro subseq subseq_o) (auto simp: comp_assoc)
+  then have "(\<lambda>n. f (s (r n)) x) ----> F x"
+    using x by (auto simp: weak_conv_m_def weak_conv_def F_def f_def)
+  then show False
+    using s \<open>\<epsilon> > 0\<close> by (auto dest: tendstoD)
 qed
 
 end
