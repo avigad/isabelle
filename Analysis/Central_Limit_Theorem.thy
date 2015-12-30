@@ -21,7 +21,7 @@ lemma (in real_distribution) aux:
     "cmod (char M t - (1 - t^2 * \<sigma>2 / 2)) \<le>  (t^2 / 6) * 
         expectation (\<lambda>x. min (6 * x^2) (abs t * (abs x)^3) )"
 proof -
-  note real_distribution.equation_26p5b_stronger [of M 2 t, simplified]
+  note real_distribution.char_approx2 [of M 2 t, simplified]
   have [simp]: "prob UNIV = 1" by (metis prob_space space_eq_univ)
   from integral_2 have [simp]: "expectation (\<lambda>x. x * x) = \<sigma>2" 
     by (simp add: integral_1 numeral_eq_Suc)
@@ -31,11 +31,11 @@ proof -
     hence "k = 0 \<or> k = 1 \<or> k = 2" by auto
     with assms have "integrable M (\<lambda>x. x^k)" by auto
   } note 1 = this
-  note equation_26p5b_stronger
-  note 2 = equation_26p5b_stronger [of 2 t, OF 1, simplified]
+  note char_approx1
+  note 2 = char_approx1 [of 2 t, OF 1, simplified]
   have "cmod (char M t - (\<Sum>k\<le>2. (\<i> * t) ^ k * (expectation (\<lambda>x. x ^ k)) / (fact k)))
       \<le> t\<^sup>2 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3)) / fact (3::nat)"
-      using equation_26p5b_stronger [of 2 t, OF 1] by simp
+      using char_approx2 [of 2 t, OF 1] by simp
   also have "(\<Sum>k\<le>2. (\<i> * t) ^ k * expectation (\<lambda>x. x ^ k) / (fact k)) = 1 - t^2 * \<sigma>2 / 2"
     by (simp add: complex_eq_iff numeral_eq_Suc integral_1 Re_divide Im_divide)
   also have "fact 3 = 6" by (simp add: eval_nat_numeral)

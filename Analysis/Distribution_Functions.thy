@@ -70,9 +70,9 @@ lemma cdf_bounded: "cdf M x \<le> measure M (space M)"
   unfolding cdf_def using assms by (intro bounded_measure)
 
 lemma cdf_lim_infty:
-  "((\<lambda>i. cdf M (real i)) ----> measure M (space M))"
+  "((\<lambda>i. cdf M (real i)) \<longlonglongrightarrow> measure M (space M))"
 proof -
-  have "(\<lambda>i. cdf M (real i)) ----> measure M (\<Union> i::nat. {..real i})"
+  have "(\<lambda>i. cdf M (real i)) \<longlonglongrightarrow> measure M (\<Union> i::nat. {..real i})"
     unfolding cdf_def by (rule finite_Lim_measure_incseq) (auto simp: incseq_def)
   also have "(\<Union> i::nat. {..real i}) = space M"
     by (auto simp: borel_UNIV intro: real_arch_simple)
@@ -83,9 +83,9 @@ lemma cdf_lim_at_top: "(cdf M ---> measure M (space M)) at_top"
   by (rule tendsto_at_topI_sequentially_real)
      (simp_all add: mono_def cdf_nondecreasing cdf_lim_infty)
 
-lemma cdf_lim_neg_infty: "((\<lambda>i. cdf M (- real i)) ----> 0)" 
+lemma cdf_lim_neg_infty: "((\<lambda>i. cdf M (- real i)) \<longlonglongrightarrow> 0)" 
 proof -
-  have "(\<lambda>i. cdf M (- real i)) ----> measure M (\<Inter> i::nat. {.. - real i })"
+  have "(\<lambda>i. cdf M (- real i)) \<longlonglongrightarrow> measure M (\<Inter> i::nat. {.. - real i })"
     unfolding cdf_def by (rule finite_Lim_measure_decseq) (auto simp: decseq_def)
   also have "(\<Inter> i::nat. {..- real i}) = {}"
     by auto (metis leD le_minus_iff reals_Archimedean2)
@@ -106,26 +106,26 @@ qed
 lemma cdf_is_right_cont: "continuous (at_right a) (cdf M)"
   unfolding continuous_within
 proof (rule tendsto_at_right_sequentially[where b="a + 1"])
-  fix f :: "nat \<Rightarrow> real" and x assume f: "decseq f" "f ----> a"
-  then have "(\<lambda>n. cdf M (f n)) ----> measure M (\<Inter>i. {.. f i})"
+  fix f :: "nat \<Rightarrow> real" and x assume f: "decseq f" "f \<longlonglongrightarrow> a"
+  then have "(\<lambda>n. cdf M (f n)) \<longlonglongrightarrow> measure M (\<Inter>i. {.. f i})"
     using `decseq f` unfolding cdf_def 
     by (intro finite_Lim_measure_decseq) (auto simp: decseq_def)
   also have "(\<Inter>i. {.. f i}) = {.. a}"
     using decseq_le[OF f] by (auto intro: order_trans LIMSEQ_le_const[OF f(2)])
-  finally show "(\<lambda>n. cdf M (f n)) ----> cdf M a"
+  finally show "(\<lambda>n. cdf M (f n)) \<longlonglongrightarrow> cdf M a"
     by (simp add: cdf_def)
 qed simp
 
 lemma cdf_at_left: "(cdf M ---> measure M {..<a}) (at_left a)"
 proof (rule tendsto_at_left_sequentially[of "a - 1"])
-  fix f :: "nat \<Rightarrow> real" and x assume f: "incseq f" "f ----> a" "\<And>x. f x < a" "\<And>x. a - 1 < f x"
-  then have "(\<lambda>n. cdf M (f n)) ----> measure M (\<Union>i. {.. f i})"
+  fix f :: "nat \<Rightarrow> real" and x assume f: "incseq f" "f \<longlonglongrightarrow> a" "\<And>x. f x < a" "\<And>x. a - 1 < f x"
+  then have "(\<lambda>n. cdf M (f n)) \<longlonglongrightarrow> measure M (\<Union>i. {.. f i})"
     using `incseq f` unfolding cdf_def 
     by (intro finite_Lim_measure_incseq) (auto simp: incseq_def)
   also have "(\<Union>i. {.. f i}) = {..<a}"
     by (auto dest!: order_tendstoD(1)[OF f(2)] eventually_happens'[OF sequentially_bot]
              intro: less_imp_le le_less_trans f(3))
-  finally show "(\<lambda>n. cdf M (f n)) ----> measure M {..<a}"
+  finally show "(\<lambda>n. cdf M (f n)) \<longlonglongrightarrow> measure M {..<a}"
     by (simp add: cdf_def)
 qed auto
 
@@ -155,7 +155,7 @@ sublocale finite_borel_measure M
 lemma cdf_bounded_prob: "\<And>x. cdf M x \<le> 1"
   by (subst prob_space [symmetric], rule cdf_bounded)
 
-lemma cdf_lim_infty_prob: "(\<lambda>i. cdf M (real i)) ----> 1"
+lemma cdf_lim_infty_prob: "(\<lambda>i. cdf M (real i)) \<longlonglongrightarrow> 1"
   by (subst prob_space [symmetric], rule cdf_lim_infty)
 
 lemma cdf_lim_at_top_prob: "(cdf M ---> 1) at_top" 
@@ -240,10 +240,10 @@ proof (intro ext)
   fix x
   have "F x - 0 = measure (interval_measure F) (\<Union>i::nat. {-real i <.. x})"
   proof (intro LIMSEQ_unique[OF _ finite_Lim_measure_incseq])
-    have "(\<lambda>i. F x - F (- real i)) ----> F x - 0"
+    have "(\<lambda>i. F x - F (- real i)) \<longlonglongrightarrow> F x - 0"
       by (intro tendsto_intros lim_F_at_bot[THEN filterlim_compose] filterlim_real_sequentially
                 filterlim_uminus_at_top[THEN iffD1])
-    then show "(\<lambda>i. measure (interval_measure F) {- real i<..x}) ----> F x - 0"
+    then show "(\<lambda>i. measure (interval_measure F) {- real i<..x}) \<longlonglongrightarrow> F x - 0"
       apply (rule filterlim_cong[OF refl refl, THEN iffD1, rotated])
       apply (rule eventually_sequentiallyI[where c="nat (ceiling (- x))"])
       apply (simp add: measure_interval_measure_Ioc right_cont_F nondecF)
