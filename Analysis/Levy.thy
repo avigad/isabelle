@@ -45,10 +45,10 @@ proof -
           ((- (a * t))^2 / 2) / abs t + ((- (b * t))^2 / 2) / abs t"
         apply (rule add_mono)
         apply (rule divide_right_mono)
-        using equation_26p4a [of "-(t * a)" 1] apply (simp add: field_simps eval_nat_numeral)
+        using iexp_approx1 [of "-(t * a)" 1] apply (simp add: field_simps eval_nat_numeral)
         apply force
         apply (rule divide_right_mono)
-        using equation_26p4a [of "-(t * b)" 1] apply (simp add: field_simps eval_nat_numeral)
+        using iexp_approx1 [of "-(t * b)" 1] apply (simp add: field_simps eval_nat_numeral)
         by force
       also have "\<dots> = a^2 / 2 * abs t + b^2 / 2 * abs t"
         using `t \<noteq> 0` apply (case_tac "t \<ge> 0", simp add: field_simps power2_eq_square)
@@ -78,7 +78,7 @@ proof -
     using `t \<noteq> 0` by (simp add: complex_eq_iff norm_mult)
   also have "\<dots> \<le> abs (t * (b - a)) / abs t"
     apply (rule divide_right_mono)
-    using equation_26p4a [of "t * (b - a)" 0] apply (simp add: field_simps eval_nat_numeral)
+    using iexp_approx1 [of "t * (b - a)" 0] apply (simp add: field_simps eval_nat_numeral)
     by force
   also have "\<dots> = b - a"
     using assms by (auto simp add: abs_mult) 
