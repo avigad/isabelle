@@ -563,9 +563,62 @@ proof -
   finally show ?thesis by (simp add: of_nat_Suc field_simps)
 qed
 
-(* this is the formulation in the book -- in terms of a random variable *with* the distribution,
-   rather the distribution itself. I don't know which is more useful, though in principal we can
-   go back and forth between them. *)
+lemma (in real_distribution) char_approx3:
+  fixes t
+  assumes
+    integrable_1: "integrable M (\<lambda>x. x)" and
+    integral_1: "expectation (\<lambda>x. x) = 0" and
+    integrable_2: "integrable M (\<lambda>x. x^2)" and
+    integral_2: "variance (\<lambda>x. x) = \<sigma>2"
+  shows "cmod (char M t - (1 - t^2 * \<sigma>2 / 2)) \<le>
+    (t^2 / 6) * expectation (\<lambda>x. min (6 * x^2) (abs t * (abs x)^3) )"
+proof -
+  note real_distribution.char_approx2 [of M 2 t, simplified]
+  have [simp]: "prob UNIV = 1" by (metis prob_space space_eq_univ)
+  from integral_2 have [simp]: "expectation (\<lambda>x. x * x) = \<sigma>2" 
+    by (simp add: integral_1 numeral_eq_Suc)
+  have 1: "k \<le> 2 \<Longrightarrow> integrable M (\<lambda>x. x^k)" for k 
+    using assms by (auto simp: eval_nat_numeral le_Suc_eq)
+  note char_approx1
+  note 2 = char_approx1 [of 2 t, OF 1, simplified]
+  have "cmod (char M t - (\<Sum>k\<le>2. (\<i> * t) ^ k * (expectation (\<lambda>x. x ^ k)) / (fact k))) \<le>
+      t\<^sup>2 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3)) / fact (3::nat)"
+    using char_approx2 [of 2 t, OF 1] by simp
+  also have "(\<Sum>k\<le>2. (\<i> * t) ^ k * expectation (\<lambda>x. x ^ k) / (fact k)) = 1 - t^2 * \<sigma>2 / 2"
+    by (simp add: complex_eq_iff numeral_eq_Suc integral_1 Re_divide Im_divide)
+  also have "fact 3 = 6" by (simp add: eval_nat_numeral)
+  also have "t\<^sup>2 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3)) / 6 =
+     t\<^sup>2 / 6 * expectation (\<lambda>x. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3))" by (simp add: field_simps)
+  finally show ?thesis .
+qed
+
+text \<open>
+  This is a more familiar textbook formulation in terms of random variables, but 
+  we will use the previous version for the CLT.
+\<close>
+
+lemma (in prob_space) char_approx3':
+  fixes \<mu> :: "real measure" and X
+  assumes rv_X [simp]: "random_variable borel X"
+    and [simp]: "integrable M X" "integrable M (\<lambda>x. (X x)^2)" "expectation X = 0"
+    and var_X: "variance X = \<sigma>2"
+    and \<mu>_def: "\<mu> = distr M borel X"
+  shows "cmod (char \<mu> t - (1 - t^2 * \<sigma>2 / 2)) \<le>
+      (t^2 / 6) * expectation (\<lambda>x. min (6 * (X x)^2) (abs t * (abs (X x))^3))"
+  apply (subst \<mu>_def)
+  apply (subst integral_distr [symmetric, OF rv_X])
+  apply force
+  apply (rule real_distribution.char_approx3)
+  apply (insert var_X)
+  apply (auto simp add: integrable_distr_eq integral_distr)
+  done
+
+text \<open>
+  this is the formulation in the book -- in terms of a random variable *with* the distribution,
+  rather the distribution itself. I don't know which is more useful, though in principal we can
+  go back and forth between them.
+\<close>
+
 lemma (in prob_space) char_approx2':
   fixes \<mu> :: "real measure" and X
   assumes 
