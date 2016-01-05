@@ -182,7 +182,7 @@ section \<open>Weak Convergence of Functions\<close>
 definition
   weak_conv :: "(nat \<Rightarrow> (real \<Rightarrow> real)) \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> bool"
 where
-  "weak_conv F_seq F \<equiv> \<forall>x. isCont F x \<longrightarrow> (\<lambda>n. F_seq n x) ----> F x"
+  "weak_conv F_seq F \<equiv> \<forall>x. isCont F x \<longrightarrow> (\<lambda>n. F_seq n x) \<longlonglongrightarrow> F x"
 
 section \<open>Weak Convergence of Distributions\<close>
 definition
@@ -196,8 +196,8 @@ locale right_continuous_mono =
   fixes f :: "real \<Rightarrow> real" and a b :: real
   assumes cont: "\<And>x. continuous (at_right x) f"
   assumes mono: "mono f"
-  assumes bot: "(f ---> a) at_bot" 
-  assumes top: "(f ---> b) at_top"
+  assumes bot: "(f \<longlongrightarrow> a) at_bot" 
+  assumes top: "(f \<longlongrightarrow> b) at_top"
 begin
 
 abbreviation I :: "real \<Rightarrow> real" where
@@ -293,14 +293,14 @@ theorem Skorohod:
     (\<forall>n. distr \<Omega> borel (Y_seq n) = \<mu> n) \<and>
     Y \<in> measurable \<Omega> lborel \<and>
     distr \<Omega> borel Y = M \<and>
-    (\<forall>x \<in> space \<Omega>. (\<lambda>n. Y_seq n x) ----> Y x)"
+    (\<forall>x \<in> space \<Omega>. (\<lambda>n. Y_seq n x) \<longlonglongrightarrow> Y x)"
 proof -
   interpret \<mu>: cdf_distribution "\<mu> n" for n
     unfolding cdf_distribution_def by (rule \<mu>)
   interpret M: cdf_distribution M
     unfolding cdf_distribution_def by (rule M)
 
-  have conv: "measure M {x} = 0 \<Longrightarrow> (\<lambda>n. \<mu>.C n x) ----> M.C x" for x
+  have conv: "measure M {x} = 0 \<Longrightarrow> (\<lambda>n. \<mu>.C n x) \<longlonglongrightarrow> M.C x" for x
     using \<mu>_to_M M.isCont_cdf by (auto simp: weak_conv_m_def weak_conv_def)
 
   let ?\<Omega> = "restrict_space lborel {0<..<1} :: real measure"
@@ -312,7 +312,7 @@ proof -
   have Y_distr: "distr ?\<Omega> borel M.I = M"
     by (rule M.distr_I_eq_M)
 
-  have Y_cts_cnv: "(\<lambda>n. \<mu>.I n \<omega>) ----> M.I \<omega>" 
+  have Y_cts_cnv: "(\<lambda>n. \<mu>.I n \<omega>) \<longlonglongrightarrow> M.I \<omega>" 
     if \<omega>: "\<omega> \<in> {0<..<1}" "isCont M.I \<omega>" for \<omega> :: real
   proof (intro limsup_le_liminf_real)
     show "liminf (\<lambda>n. \<mu>.I n \<omega>) \<ge> M.I \<omega>"
@@ -362,7 +362,7 @@ proof -
         by (intro Limsup_bounded[rotated]) (auto intro: le_less_trans elim: eventually_mono)
     qed simp
     
-    have **: "(M.I ---> ereal (M.I \<omega>)) (at_right \<omega>)"
+    have **: "(M.I \<longlongrightarrow> ereal (M.I \<omega>)) (at_right \<omega>)"
       using \<omega>(2) by (auto intro: tendsto_within_subset simp: continuous_at)
     show "limsup (\<lambda>n. \<mu>.I n \<omega>) \<le> M.I \<omega>"
       using \<omega>
@@ -385,7 +385,7 @@ proof -
   have Y_seq'_AE: "\<And>n. AE \<omega> in ?\<Omega>. Y_seq' n \<omega> = \<mu>.I n \<omega>"
     by (rule AE_I [OF _ D]) (auto simp: space_restrict_space sets_restrict_space_iff Y_seq'_def)
 
-  have Y'_cnv: "\<forall>\<omega>\<in>{0<..<1}. (\<lambda>n. Y_seq' n \<omega>) ----> Y' \<omega>"
+  have Y'_cnv: "\<forall>\<omega>\<in>{0<..<1}. (\<lambda>n. Y_seq' n \<omega>) \<longlonglongrightarrow> Y' \<omega>"
     by (auto simp: Y'_def Y_seq'_def Y_cts_cnv)
 
   have [simp]: "Y_seq' n \<in> borel_measurable ?\<Omega>" for n
@@ -402,7 +402,7 @@ proof -
     by (subst distr_cong_AE[where f = Y' and g = M.I], auto)
   ultimately have "prob_space ?\<Omega> \<and> (\<forall>n. Y_seq' n \<in> borel_measurable ?\<Omega>) \<and>
     (\<forall>n. distr ?\<Omega> borel (Y_seq' n) = \<mu> n) \<and> Y' \<in> measurable ?\<Omega> lborel \<and> distr ?\<Omega> borel Y' = M \<and>
-    (\<forall>x\<in>space ?\<Omega>. (\<lambda>n. Y_seq' n x) ----> Y' x)"
+    (\<forall>x\<in>space ?\<Omega>. (\<lambda>n. Y_seq' n x) \<longlonglongrightarrow> Y' x)"
     using Y'_cnv \<open>prob_space ?\<Omega>\<close> by (auto simp: space_restrict_space)
   thus ?thesis by metis
 qed
@@ -419,7 +419,7 @@ theorem weak_conv_imp_bdd_ae_continuous_conv:
     f_bdd: "\<And>x. norm (f x) \<le> B" and
     [measurable]: "f \<in> borel_measurable borel"
   shows 
-    "(\<lambda> n. integral\<^sup>L (\<mu> n) f) ----> integral\<^sup>L M f"
+    "(\<lambda> n. integral\<^sup>L (\<mu> n) f) \<longlonglongrightarrow> integral\<^sup>L M f"
 proof -
   have "0 \<le> B"
     using norm_ge_zero f_bdd by (rule order_trans)
@@ -430,11 +430,11 @@ proof -
     distr_Y_seq: "\<And>n. distr Omega borel (Y_seq n) = \<mu> n" and
     Y_measurable [measurable]: "Y \<in> borel_measurable Omega" and
     distr_Y: "distr Omega borel Y = M" and
-    YnY: "\<And>x :: real. x \<in> space Omega \<Longrightarrow> (\<lambda>n. Y_seq n x) ----> Y x"  by force
+    YnY: "\<And>x :: real. x \<in> space Omega \<Longrightarrow> (\<lambda>n. Y_seq n x) \<longlonglongrightarrow> Y x"  by force
   interpret prob_space Omega by fact
   have *: "emeasure Omega (Y -` {x. \<not> isCont f x} \<inter> space Omega) = 0"
     by (subst emeasure_distr [symmetric, where N=borel]) (auto simp: distr_Y discont_null)
-  have *: "AE x in Omega. (\<lambda>n. f (Y_seq n x)) ----> f (Y x)"
+  have *: "AE x in Omega. (\<lambda>n. f (Y_seq n x)) \<longlonglongrightarrow> f (Y x)"
     by (rule AE_I [OF _ *]) (auto intro: isCont_tendsto_compose YnY)
   show ?thesis
     by (auto intro!: integral_dominated_convergence[where w="\<lambda>x. B"]
@@ -447,7 +447,7 @@ theorem weak_conv_imp_integral_bdd_continuous_conv:
     "\<And>x. isCont f x" and
     "\<And>x. norm (f x) \<le> B"
   shows 
-    "(\<lambda> n. integral\<^sup>L (\<mu> n) f) ----> integral\<^sup>L M f"
+    "(\<lambda> n. integral\<^sup>L (\<mu> n) f) \<longlonglongrightarrow> integral\<^sup>L M f"
   using assms
   by (intro weak_conv_imp_bdd_ae_continuous_conv)
      (auto intro!: borel_measurable_continuous_on1 continuous_at_imp_continuous_on)
@@ -455,12 +455,12 @@ theorem weak_conv_imp_integral_bdd_continuous_conv:
 theorem weak_conv_imp_continuity_set_conv:
   fixes f :: "real \<Rightarrow> real"
   assumes [measurable]: "A \<in> sets borel" and "M (frontier A) = 0"
-  shows "(\<lambda>n. measure (\<mu> n) A) ----> measure M A"
+  shows "(\<lambda>n. measure (\<mu> n) A) \<longlonglongrightarrow> measure M A"
 proof -
   interpret M: real_distribution M by fact
   interpret \<mu>: real_distribution "\<mu> n" for n by fact
   
-  have "(\<lambda>n. (\<integral>x. indicator A x \<partial>\<mu> n) :: real) ----> (\<integral>x. indicator A x \<partial>M)"
+  have "(\<lambda>n. (\<integral>x. indicator A x \<partial>\<mu> n) :: real) \<longlonglongrightarrow> (\<integral>x. indicator A x \<partial>M)"
     by (intro weak_conv_imp_bdd_ae_continuous_conv[where B=1])
        (auto intro: assms simp: isCont_indicator)
   then show ?thesis
@@ -518,7 +518,7 @@ begin
 
 theorem continuity_set_conv_imp_weak_conv:
   fixes f :: "real \<Rightarrow> real"
-  assumes *: "\<And>A. A \<in> sets borel \<Longrightarrow> M (frontier A) = 0 \<Longrightarrow> (\<lambda> n. (measure (M_seq n) A)) ----> measure M A"
+  assumes *: "\<And>A. A \<in> sets borel \<Longrightarrow> M (frontier A) = 0 \<Longrightarrow> (\<lambda> n. (measure (M_seq n) A)) \<longlonglongrightarrow> measure M A"
   shows "weak_conv_m M_seq M"
 proof -
   interpret real_distribution M by simp
@@ -527,7 +527,7 @@ proof -
 qed
 
 theorem integral_cts_step_conv_imp_weak_conv:
-  assumes integral_conv: "\<And>x y. x < y \<Longrightarrow> (\<lambda>n. integral\<^sup>L (M_seq n) (cts_step x y)) ----> integral\<^sup>L M (cts_step x y)"
+  assumes integral_conv: "\<And>x y. x < y \<Longrightarrow> (\<lambda>n. integral\<^sup>L (M_seq n) (cts_step x y)) \<longlonglongrightarrow> integral\<^sup>L M (cts_step x y)"
   shows "weak_conv_m M_seq M"
   unfolding weak_conv_m_def weak_conv_def 
 proof (clarsimp)
@@ -564,13 +564,13 @@ proof (clarsimp)
     show "\<forall>\<^sub>F i in at_left x. ereal (cdf M i) \<le> liminf (\<lambda>xa. ereal (cdf (M_seq xa) x))"
       by (subst eventually_at_left[of "x - 1"]) (auto simp: ** intro: exI [of _ "x-1"])
   qed (insert left_cont, auto simp: continuous_within)
-  ultimately show "(\<lambda>n. cdf (M_seq n) x) ----> cdf M x"
+  ultimately show "(\<lambda>n. cdf (M_seq n) x) \<longlonglongrightarrow> cdf M x"
     by (elim limsup_le_liminf_real) 
 qed
 
 theorem integral_bdd_continuous_conv_imp_weak_conv:
   assumes 
-    "\<And>f. (\<And>x. isCont f x) \<Longrightarrow> (\<And>x. abs (f x) \<le> 1) \<Longrightarrow> (\<lambda>n. integral\<^sup>L (M_seq n) f::real) ----> integral\<^sup>L M f"
+    "\<And>f. (\<And>x. isCont f x) \<Longrightarrow> (\<And>x. abs (f x) \<le> 1) \<Longrightarrow> (\<lambda>n. integral\<^sup>L (M_seq n) f::real) \<longlonglongrightarrow> integral\<^sup>L M f"
   shows 
     "weak_conv_m M_seq M"
   apply (rule integral_cts_step_conv_imp_weak_conv [OF assms])

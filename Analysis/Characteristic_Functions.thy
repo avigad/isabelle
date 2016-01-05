@@ -11,17 +11,17 @@ begin
 
 lemma LIM_zero:
   fixes f :: "_ \<Rightarrow> 'b::real_normed_vector"
-  shows "(f ---> l) F \<Longrightarrow> ((\<lambda>x. f x - l) ---> 0) F"
+  shows "(f \<longlongrightarrow> l) F \<Longrightarrow> ((\<lambda>x. f x - l) \<longlongrightarrow> 0) F"
 unfolding tendsto_iff dist_norm by simp
 
 lemma LIM_zero_cancel:
   fixes f :: "_ \<Rightarrow> 'b::real_normed_vector"
-  shows "((\<lambda>x. f x - l) ---> 0) F \<Longrightarrow> (f ---> l) F"
+  shows "((\<lambda>x. f x - l) \<longlongrightarrow> 0) F \<Longrightarrow> (f \<longlongrightarrow> l) F"
 unfolding tendsto_iff dist_norm by simp
 
 lemma LIM_zero_iff:
   fixes f :: "_ \<Rightarrow> 'b::real_normed_vector"
-  shows "((\<lambda>x. f x - l) ---> 0) F = (f ---> l) F"
+  shows "((\<lambda>x. f x - l) \<longlongrightarrow> 0) F = (f \<longlongrightarrow> l) F"
 unfolding tendsto_iff dist_norm by simp
 
 (*
@@ -52,9 +52,9 @@ proof -
 qed
 
 lemma limseq_even_odd: 
-  assumes "(\<lambda>n. f (2 * n)) ----> (l :: 'a :: topological_space)"
-      and "(\<lambda>n. f (2 * n + 1)) ----> l"
-  shows "f ----> l"
+  assumes "(\<lambda>n. f (2 * n)) \<longlonglongrightarrow> (l :: 'a :: topological_space)"
+      and "(\<lambda>n. f (2 * n + 1)) \<longlonglongrightarrow> l"
+  shows "f \<longlonglongrightarrow> l"
   using assms by (auto simp: filterlim_iff intro: sequentially_even_odd)
 
 lemma (in comm_ring_1) uminus_power_if: "(- x) ^ n = (if even n then x^n else - (x ^ n))"
@@ -128,8 +128,8 @@ qed
 lemma (in real_distribution) isCont_char: "isCont (char M) t"
   unfolding continuous_at_sequentially
 proof safe
-  fix X assume X: "X ----> t"
-  show "(char M \<circ> X) ----> char M t"
+  fix X assume X: "X \<longlonglongrightarrow> t"
+  show "(char M \<circ> X) \<longlonglongrightarrow> char M t"
     unfolding comp_def char_def
     by (rule integral_dominated_convergence[where w="\<lambda>_. 1"])
        (auto simp del: of_real_mult intro!: AE_I2 tendsto_intros X)
@@ -668,7 +668,7 @@ proof (intro ext LIMSEQ_unique)
   fix t :: real
   let ?f' = "\<lambda>k. (ii * t)^k / fact k * (LINT x | std_normal_distribution. x^k)"
   let ?f = "\<lambda>n. (\<Sum>k \<le> n. ?f' k)"
-  show "?f ----> exp (-(t^2) / 2)"
+  show "?f \<longlonglongrightarrow> exp (-(t^2) / 2)"
   proof (rule limseq_even_odd)
     have "(\<i> * complex_of_real t) ^ (2 * a) / (2 ^ a * fact a) = (- ((complex_of_real t)\<^sup>2 / 2)) ^ a / fact a" for a
       by (subst power_mult) (simp add: field_simps uminus_power_if power_mult)
@@ -677,7 +677,7 @@ proof (intro ext LIMSEQ_unique)
       by (intro setsum.reindex_bij_witness_not_neutral[symmetric, where
            i="\<lambda>n. n div 2" and j="\<lambda>n. 2 * n" and T'="{i. i \<le> 2 * n \<and> odd i}" and S'="{}"])
          (auto simp: integral_std_normal_distribution_moment_odd std_normal_distribution_even_moments)
-    show "(\<lambda>n. ?f (2 * n)) ----> exp (-(t^2) / 2)"
+    show "(\<lambda>n. ?f (2 * n)) \<longlonglongrightarrow> exp (-(t^2) / 2)"
       unfolding * using exp_converges[where 'a=real]
       by (intro tendsto_of_real LIMSEQ_Suc) (auto simp: inverse_eq_divide sums_def [symmetric])
     have **: "?f (2 * n + 1) = ?f (2 * n)" for n
@@ -689,18 +689,18 @@ proof (intro ext LIMSEQ_unique)
       finally show "?f (2 * n + 1) = ?f (2 * n)"
         by simp
     qed
-    show "(\<lambda>n. ?f (2 * n + 1)) ----> exp (-(t^2) / 2)"
+    show "(\<lambda>n. ?f (2 * n + 1)) \<longlonglongrightarrow> exp (-(t^2) / 2)"
       unfolding ** by fact
   qed
 
-  have **: "(\<lambda>n. x ^ n / fact n) ----> 0" for x :: real
+  have **: "(\<lambda>n. x ^ n / fact n) \<longlonglongrightarrow> 0" for x :: real
     using summable_LIMSEQ_zero [OF summable_exp] by (auto simp add: inverse_eq_divide)
 
   let ?F = "\<lambda>n. 2 * \<bar>t\<bar> ^ n / fact n * (LINT x|std_normal_distribution. \<bar>x\<bar> ^ n)"
 
-  show "?f ----> char std_normal_distribution t"
+  show "?f \<longlonglongrightarrow> char std_normal_distribution t"
   proof (rule metric_tendsto_imp_tendsto[OF limseq_even_odd])
-    show "(\<lambda>n. ?F (2 * n)) ----> 0"
+    show "(\<lambda>n. ?F (2 * n)) \<longlonglongrightarrow> 0"
     proof (rule Lim_transform_eventually)
       show "\<forall>\<^sub>F n in sequentially. 2 * ((t^2 / 2)^n / fact n) = ?F (2 * n)"
         unfolding std_normal_distribution_even_moments_abs by (simp add: power_mult power_divide)
@@ -712,7 +712,7 @@ proof (intro ext LIMSEQ_unique)
     have "norm ((2 * t\<^sup>2) ^ n * fact n / fact (2 * n + 1)) \<le> (2 * t\<^sup>2) ^ n / fact n" for n
       using mult_mono[OF _ square_fact_le_2_fact, of 1 "1 + 2 * real n" n]
       by (auto simp add: divide_simps intro!: mult_left_mono)
-    then show "(\<lambda>n. ?F (2 * n + 1)) ----> 0"
+    then show "(\<lambda>n. ?F (2 * n + 1)) \<longlonglongrightarrow> 0"
       unfolding * by (intro tendsto_mult_right_zero Lim_null_comparison [OF _ ** [of "2 * t\<^sup>2"]]) auto
 
     show "\<forall>\<^sub>F n in sequentially. dist (?f n) (char std_normal_distribution t) \<le> dist (?F n) 0"

@@ -41,7 +41,7 @@ theorem Helly_selection:
   assumes mono: "\<And>n. mono (f n)"
   assumes bdd: "\<And>n x. \<bar>f n x\<bar> \<le> M"
   shows "\<exists>s. subseq s \<and> (\<exists>F. (\<forall>x. continuous (at_right x) F) \<and> mono F \<and> (\<forall>x. \<bar>F x\<bar> \<le> M) \<and>
-    (\<forall>x. continuous (at x) F \<longrightarrow> (\<lambda>n. f (s n) x) ----> F x))"
+    (\<forall>x. continuous (at x) F \<longrightarrow> (\<lambda>n. f (s n) x) \<longlonglongrightarrow> F x))"
 proof -
   obtain m :: "real \<Rightarrow> nat" where "bij_betw m \<rat> UNIV"
     using countable_rat Rats_infinite by (erule countableE_infinite)
@@ -59,9 +59,9 @@ proof -
       using bounded_closed_interval by auto
     moreover have "\<And>k. f (s k) (r n) \<in> {-M..M}" 
       using bdd by (simp add: abs_le_iff minus_le_iff)
-    ultimately have "\<exists>l s'. subseq s' \<and> ((\<lambda>k. f (s k) (r n)) \<circ> s') ----> l"
+    ultimately have "\<exists>l s'. subseq s' \<and> ((\<lambda>k. f (s k) (r n)) \<circ> s') \<longlonglongrightarrow> l"
       using compact_Icc compact_imp_seq_compact seq_compactE by metis
-    thus "\<exists>s'. subseq s' \<and> (\<exists>l. (\<lambda>k. f (s (s' k)) (r n)) ----> l)"
+    thus "\<exists>s'. subseq s' \<and> (\<exists>l. (\<lambda>k. f (s (s' k)) (r n)) \<longlonglongrightarrow> l)"
       by (auto simp: comp_def)
   qed
   def d \<equiv> "nat.diagseq"
@@ -78,20 +78,20 @@ proof -
     have 2: "?P n (d \<circ> (op + (Suc n)))"
       unfolding d_def nat.diagseq_seqseq 1
       by (intro convergent_subseq_convergent Pn_seqseq nat.subseq_diagonal_rest)
-    then obtain L where 3: "(\<lambda>na. f (d (na + Suc n)) (r n)) ----> L"
+    then obtain L where 3: "(\<lambda>na. f (d (na + Suc n)) (r n)) \<longlonglongrightarrow> L"
       by (auto simp: add.commute dest: convergentD)
-    then have "(\<lambda>k. f (d k) (r n)) ----> L"
+    then have "(\<lambda>k. f (d k) (r n)) \<longlonglongrightarrow> L"
       by (rule LIMSEQ_offset)
     then show ?thesis
       by (auto simp: convergent_def)
   qed
   let ?f = "\<lambda>n. \<lambda>k. f (d k) (r n)"
-  have lim_f: "?f n ----> lim (?f n)" for n
+  have lim_f: "?f n \<longlonglongrightarrow> lim (?f n)" for n
     using rat_cnv convergent_LIMSEQ_iff by auto
   have lim_bdd: "lim (?f n) \<in> {-M..M}" for n
   proof -
     have "closed {-M..M}" using closed_real_atLeastAtMost by auto
-    hence "(\<forall>i. ?f n i \<in> {-M..M}) \<and> ?f n ----> lim (?f n) \<longrightarrow> lim (?f n) \<in> {-M..M}"
+    hence "(\<forall>i. ?f n i \<in> {-M..M}) \<and> ?f n \<longlonglongrightarrow> lim (?f n) \<longrightarrow> lim (?f n) \<in> {-M..M}"
       unfolding closed_sequential_limits by (drule_tac x = "\<lambda>k. f (d k) (r n)" in spec) blast
     moreover have "\<forall>i. ?f n i \<in> {-M..M}"
       using bdd by (simp add: abs_le_iff minus_le_iff)
@@ -126,11 +126,11 @@ proof -
     have "F x \<in> {-M..M}"
       unfolding F_def using limset_bdd bdd_below r_unbdd by (intro closed_subset_contains_Inf) auto
     then have "\<bar>F x\<bar> \<le> M" by auto }
-  moreover have "(\<lambda>n. f (d n) x) ----> F x" if cts: "continuous (at x) F" for x
+  moreover have "(\<lambda>n. f (d n) x) \<longlonglongrightarrow> F x" if cts: "continuous (at x) F" for x
   proof (rule limsup_le_liminf_real)
     show "limsup (\<lambda>n. f (d n) x) \<le> F x"
     proof (rule tendsto_le_const)
-      show "(F ---> ereal (F x)) (at_right x)"
+      show "(F \<longlongrightarrow> ereal (F x)) (at_right x)"
         using cts unfolding continuous_at_split by (auto simp: continuous_within)
       show "\<forall>\<^sub>F i in at_right x. limsup (\<lambda>n. f (d n) x) \<le> F i"
         unfolding eventually_at_right[OF less_add_one]
@@ -150,7 +150,7 @@ proof -
     qed simp
     show "F x \<le> liminf (\<lambda>n. f (d n) x)"
     proof (rule tendsto_ge_const)
-      show "(F ---> ereal (F x)) (at_left x)"
+      show "(F \<longlongrightarrow> ereal (F x)) (at_left x)"
         using cts unfolding continuous_at_split by (auto simp: continuous_within)
       show "\<forall>\<^sub>F i in at_left x. F i \<le> liminf (\<lambda>n. f (d n) x)"
         unfolding eventually_at_left[OF minus_one_less]
@@ -187,8 +187,8 @@ proof -
 
   have rcont: "\<And>x. continuous (at_right x) (f k)"
     and mono: "mono (f k)"
-    and top: "(f k ---> 1) at_top"
-    and bot: "(f k ---> 0) at_bot" for k
+    and top: "(f k \<longlongrightarrow> 1) at_top"
+    and bot: "(f k \<longlongrightarrow> 0) at_bot" for k
     unfolding f_def mono_def
     using \<mu>.cdf_nondecreasing \<mu>.cdf_is_right_cont \<mu>.cdf_lim_at_top_prob \<mu>.cdf_lim_at_bot by auto
   have bdd: "\<bar>f k x\<bar> \<le> 1" for k x
@@ -196,7 +196,7 @@ proof -
 
   from Helly_selection[OF rcont mono bdd, of "\<lambda>x. x"] obtain r F
     where F: "subseq r" "\<And>x. continuous (at_right x) F" "mono F" "\<And>x. \<bar>F x\<bar> \<le> 1"
-    and lim_F: "\<And>x. continuous (at x) F \<Longrightarrow> (\<lambda>n. f (r n) x) ----> F x"
+    and lim_F: "\<And>x. continuous (at x) F \<Longrightarrow> (\<lambda>n. f (r n) x) \<longlonglongrightarrow> F x"
     by blast
 
   have "0 \<le> f n x" for n x
@@ -232,7 +232,7 @@ proof -
         using a'b'(2) by (metis less_eq_real_def less_trans)
     qed
 
-    have "(\<lambda>k. ?\<mu> k {..b}) ----> F b"
+    have "(\<lambda>k. ?\<mu> k {..b}) \<longlonglongrightarrow> F b"
       using b(2) lim_F unfolding f_def cdf_def o_def by auto
     then have "1 - \<epsilon> \<le> F b"
     proof (rule tendsto_le_const[OF sequentially_bot], intro always_eventually allI)
@@ -247,7 +247,7 @@ proof -
     then show "\<exists>b. \<forall>x\<ge>b. 1 - \<epsilon> \<le> F x"
       using F unfolding mono_def by (metis order.trans)
 
-    have "(\<lambda>k. ?\<mu> k {..a}) ----> F a"
+    have "(\<lambda>k. ?\<mu> k {..a}) \<longlonglongrightarrow> F a"
       using a(2) lim_F unfolding f_def cdf_def o_def by auto
     then have Fa: "F a \<le> \<epsilon>"
     proof (rule tendsto_ge_const[OF sequentially_bot], intro always_eventually allI)
@@ -261,7 +261,7 @@ proof -
       using F unfolding mono_def by (metis order.trans)
   qed
 
-  have "(F ---> 1) at_top"
+  have "(F \<longlongrightarrow> 1) at_top"
   proof (rule order_tendstoI)
     show "1 < y \<Longrightarrow> \<forall>\<^sub>F x in at_top. F x < y" for y
       using \<open>\<And>x. \<bar>F x\<bar> \<le> 1\<close> \<open>\<And>x. 0 \<le> F x\<close> by (auto intro: le_less_trans always_eventually)
@@ -272,7 +272,7 @@ proof -
       by (auto simp: eventually_at_top_linorder intro: less_le_trans)
   qed
   moreover
-  have "(F ---> 0) at_bot"
+  have "(F \<longlongrightarrow> 0) at_bot"
   proof (rule order_tendstoI)
     show "y < 0 \<Longrightarrow> \<forall>\<^sub>F x in at_bot. y < F x" for y
       using \<open>\<And>x. 0 \<le> F x\<close> by (auto intro: less_le_trans always_eventually)
@@ -299,7 +299,7 @@ proof (rule ccontr)
   def f \<equiv> "\<lambda>n. cdf (\<mu> n)" and F \<equiv> "cdf M"
 
   assume "\<not> weak_conv_m \<mu> M"
-  then obtain x where x: "isCont F x" "\<not> (\<lambda>n. f n x) ----> F x"
+  then obtain x where x: "isCont F x" "\<not> (\<lambda>n. f n x) \<longlonglongrightarrow> F x"
     by (auto simp: weak_conv_m_def weak_conv_def f_def F_def)
   then obtain \<epsilon> where "\<epsilon> > 0" and "infinite {n. \<not> dist (f n x) (F x) < \<epsilon>}"
     by (auto simp: tendsto_iff not_eventually INFM_iff_infinite cofinite_eq_sequentially[symmetric])
@@ -309,7 +309,7 @@ proof (rule ccontr)
     using tight_imp_convergent_subsubsequence[OF tight] by blast
   then have "weak_conv_m (\<mu> \<circ> (s \<circ> r)) M"
     using \<open>subseq s\<close> r by (intro subseq subseq_o) (auto simp: comp_assoc)
-  then have "(\<lambda>n. f (s (r n)) x) ----> F x"
+  then have "(\<lambda>n. f (s (r n)) x) \<longlonglongrightarrow> F x"
     using x by (auto simp: weak_conv_m_def weak_conv_def F_def f_def)
   then show False
     using s \<open>\<epsilon> > 0\<close> by (auto dest: tendstoD)

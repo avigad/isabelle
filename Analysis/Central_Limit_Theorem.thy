@@ -164,22 +164,22 @@ proof -
   proof (rule levy_continuity)
     fix t
     let ?t = "\<lambda>n. t / sqrt (\<sigma>\<^sup>2 * n)"
-    have "\<And>x. (\<lambda>n. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3 / \<bar>sqrt (\<sigma>\<^sup>2 * real n)\<bar>)) ----> 0"
+    have "\<And>x. (\<lambda>n. min (6 * x\<^sup>2) (\<bar>t\<bar> * \<bar>x\<bar> ^ 3 / \<bar>sqrt (\<sigma>\<^sup>2 * real n)\<bar>)) \<longlonglongrightarrow> 0"
       using \<sigma>_pos 
       by (auto simp: real_sqrt_mult min_absorb2
                intro!: tendsto_min[THEN tendsto_eq_rhs] sqrt_at_top[THEN filterlim_compose]
                        filterlim_tendsto_pos_mult_at_top filterlim_at_top_imp_at_infinity
                        tendsto_divide_0 filterlim_real_sequentially)
-    then have "(\<lambda>n. LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t n\<bar> * \<bar>x\<bar> ^ 3)) ----> (LINT x|\<mu>. 0)"
+    then have "(\<lambda>n. LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t n\<bar> * \<bar>x\<bar> ^ 3)) \<longlonglongrightarrow> (LINT x|\<mu>. 0)"
       by (intro integral_dominated_convergence [where w = "\<lambda>x. 6 * x^2"]) auto
-    then have *: "(\<lambda>n. t\<^sup>2 / (6 * \<sigma>\<^sup>2) * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t n\<bar> * \<bar>x\<bar> ^ 3))) ----> 0"
+    then have *: "(\<lambda>n. t\<^sup>2 / (6 * \<sigma>\<^sup>2) * (LINT x|\<mu>. min (6 * x\<^sup>2) (\<bar>?t n\<bar> * \<bar>x\<bar> ^ 3))) \<longlonglongrightarrow> 0"
       by (simp only: integral_zero tendsto_mult_right_zero)
 
-    have "(\<lambda>n. complex_of_real ((1 + (-(t^2) / 2) / n)^n)) ----> complex_of_real (exp (-(t^2) / 2))"
+    have "(\<lambda>n. complex_of_real ((1 + (-(t^2) / 2) / n)^n)) \<longlonglongrightarrow> complex_of_real (exp (-(t^2) / 2))"
       by (rule isCont_tendsto_compose [OF _ tendsto_exp_limit_sequentially]) auto
-    then have "(\<lambda>n. \<phi> n t) ----> complex_of_real (exp (-(t^2) / 2))"
+    then have "(\<lambda>n. \<phi> n t) \<longlonglongrightarrow> complex_of_real (exp (-(t^2) / 2))"
       by (rule Lim_transform) (rule Lim_null_comparison [OF main *])
-    then show "(\<lambda>n. char (distr M borel (?S' n)) t) ----> char std_normal_distribution t"
+    then show "(\<lambda>n. char (distr M borel (?S' n)) t) \<longlonglongrightarrow> char std_normal_distribution t"
       by (simp add: \<phi>_def char_std_normal_distribution)
   qed (auto intro!: real_dist_normal_dist simp: S_def)
 qed

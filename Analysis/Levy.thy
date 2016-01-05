@@ -22,8 +22,8 @@ declare of_real_mult [simp del]
 lemma Levy_Inversion_aux1:
   fixes a b :: real
   assumes "a \<le> b"
-  shows "((\<lambda>t. (iexp (-(t * a)) - iexp (-(t * b))) / (ii * t)) ---> b - a) (at 0)"
-    (is "(?F ---> _) (at _)")
+  shows "((\<lambda>t. (iexp (-(t * a)) - iexp (-(t * b))) / (ii * t)) \<longlongrightarrow> b - a) (at 0)"
+    (is "(?F \<longlongrightarrow> _) (at _)")
 proof -
   have 1 [rule_format]: "ALL t. t \<noteq> 0 \<longrightarrow> 
       cmod (?F t - (b - a)) \<le> a^2 / 2 * abs t + b^2 / 2 * abs t"
@@ -95,8 +95,8 @@ theorem Levy_Inversion:
   and "\<mu> {a} = 0" and "\<mu> {b} = 0"
   shows
   "((\<lambda>T :: nat. 1 / (2 * pi) * (CLBINT t=-T..T. (iexp (-(t * a)) -
-  iexp (-(t * b))) / (ii * t) * \<phi> t)) ---> \<mu> {a<..b}) at_top"
-  (is "((\<lambda>T :: nat. 1 / (2 * pi) * (CLBINT t=-T..T. ?F t * \<phi> t)) ---> 
+  iexp (-(t * b))) / (ii * t) * \<phi> t)) \<longlongrightarrow> \<mu> {a<..b}) at_top"
+  (is "((\<lambda>T :: nat. 1 / (2 * pi) * (CLBINT t=-T..T. ?F t * \<phi> t)) \<longlongrightarrow> 
       of_real (\<mu> {a<..b})) at_top")
   proof -
     interpret M: real_distribution M by (rule assms)
@@ -201,7 +201,7 @@ theorem Levy_Inversion:
            Si (T * abs (x - a)) - sgn (x - b) * Si (T * abs (x - b)))))" .
     } note main_eq2 = this
     have "(\<lambda>T :: nat. LINT x | M. (2 * (sgn (x - a) * 
-           Si (T * abs (x - a)) - sgn (x - b) * Si (T * abs (x - b))))) ----> 
+           Si (T * abs (x - a)) - sgn (x - b) * Si (T * abs (x - b))))) \<longlonglongrightarrow> 
          (LINT x | M. 2 * pi * indicator {a<..b} x)"
     proof (rule integral_dominated_convergence [where w="\<lambda>x. 4 * B"])
       show "integrable M (\<lambda>x. 4 * B)"
@@ -219,11 +219,11 @@ theorem Levy_Inversion:
         by auto
       have "AE x in M. x \<noteq> a" "AE x in M. x \<noteq> b"
         using M.prob_eq_0[of "{a}"] M.prob_eq_0[of "{b}"] `\<mu> {a} = 0` `\<mu> {b} = 0` by (auto simp: \<mu>_def)
-      then show "AE x in M. (\<lambda>n. 2 * ?S n x) ----> 2 * pi * indicator {a<..b} x"
+      then show "AE x in M. (\<lambda>n. 2 * ?S n x) \<longlonglongrightarrow> 2 * pi * indicator {a<..b} x"
       proof eventually_elim
         fix x assume x: "x \<noteq> a" "x \<noteq> b"
         then have "(\<lambda>n. 2 * (sgn (x - a) * Si (\<bar>x - a\<bar> * n) - sgn (x - b) * Si (\<bar>x - b\<bar> * n)))
-            ----> 2 * (sgn (x - a) * (pi / 2) - sgn (x - b) * (pi / 2))"
+            \<longlonglongrightarrow> 2 * (sgn (x - a) * (pi / 2) - sgn (x - b) * (pi / 2))"
           by (intro tendsto_intros filterlim_compose[OF Si_at_top]
               filterlim_tendsto_pos_mult_at_top[OF tendsto_const] filterlim_real_sequentially)
              auto
@@ -231,13 +231,13 @@ theorem Levy_Inversion:
           by (auto simp: ac_simps)
         also have "2 * (sgn (x - a) * (pi / 2) - sgn (x - b) * (pi / 2)) = 2 * pi * indicator {a<..b} x"
           using x `a \<le> b` by (auto split: split_indicator)
-        finally show "(\<lambda>n. 2 * ?S n x) ----> 2 * pi * indicator {a<..b} x" .
+        finally show "(\<lambda>n. 2 * ?S n x) \<longlonglongrightarrow> 2 * pi * indicator {a<..b} x" .
       qed
     qed simp_all 
     also have "(LINT x | M. 2 * pi * indicator {a<..b} x) = 2 * pi * \<mu> {a<..b}"
       by (simp add: \<mu>_def)
     finally have main3: "(\<lambda>T. LINT x | M. (2 * (sgn (x - a) * 
-           Si (T * abs (x - a)) - sgn (x - b) * Si (T * abs (x - b))))) ----> 
+           Si (T * abs (x - a)) - sgn (x - b) * Si (T * abs (x - b))))) \<longlonglongrightarrow> 
          2 * pi * \<mu> {a<..b}" .
   show ?thesis
     apply (subst of_int_minus)
@@ -261,8 +261,8 @@ theorem Levy_uniqueness:
 proof -
   interpret M1: real_distribution M1 by (rule assms)
   interpret M2: real_distribution M2 by (rule assms)
-  have "(cdf M1 ---> 0) at_bot" by (rule M1.cdf_lim_at_bot)
-  have "(cdf M2 ---> 0) at_bot" by (rule M2.cdf_lim_at_bot)
+  have "(cdf M1 \<longlongrightarrow> 0) at_bot" by (rule M1.cdf_lim_at_bot)
+  have "(cdf M2 \<longlongrightarrow> 0) at_bot" by (rule M2.cdf_lim_at_bot)
   have "countable ({x. measure M1 {x} \<noteq> 0} \<union> {x. measure M2 {x} \<noteq> 0})"
     by (intro countable_Un M2.countable_support M1.countable_support)
   then have count: "countable {x. measure M1 {x} \<noteq> 0 \<or> measure M2 {x} \<noteq> 0}"
@@ -271,19 +271,19 @@ proof -
   have "cdf M1 = cdf M2"
   proof (rule ext)
     fix x
-    from M1.cdf_is_right_cont [of x] have "(cdf M1 ---> cdf M1 x) (at_right x)"
+    from M1.cdf_is_right_cont [of x] have "(cdf M1 \<longlongrightarrow> cdf M1 x) (at_right x)"
       by (simp add: continuous_within)
-    from M2.cdf_is_right_cont [of x] have "(cdf M2 ---> cdf M2 x) (at_right x)"
+    from M2.cdf_is_right_cont [of x] have "(cdf M2 \<longlongrightarrow> cdf M2 x) (at_right x)"
       by (simp add: continuous_within)
     show "cdf M1 x = cdf M2 x"
     proof (rule real_arbitrarily_close_eq)
       fix \<epsilon> :: real
       assume "\<epsilon> > 0"
-      with `(cdf M1 ---> 0) at_bot` have "eventually (\<lambda>y. abs (cdf M1 y) < \<epsilon> / 4) at_bot"
+      with `(cdf M1 \<longlongrightarrow> 0) at_bot` have "eventually (\<lambda>y. abs (cdf M1 y) < \<epsilon> / 4) at_bot"
         by (simp only: tendsto_iff dist_real_def diff_0_right)
       hence "\<exists>a. \<forall>a' \<le> a. abs (cdf M1 a') < \<epsilon> / 4" by (simp add: eventually_at_bot_linorder)
       then obtain a1 where a1 [rule_format]: "\<forall>a' \<le> a1. abs (cdf M1 a') < \<epsilon> / 4"  ..
-      from `\<epsilon> > 0` `(cdf M2 ---> 0) at_bot` have "eventually (\<lambda>y. abs (cdf M2 y) < \<epsilon> /4) at_bot"
+      from `\<epsilon> > 0` `(cdf M2 \<longlongrightarrow> 0) at_bot` have "eventually (\<lambda>y. abs (cdf M2 y) < \<epsilon> /4) at_bot"
         by (simp only: tendsto_iff dist_real_def diff_0_right)
       hence "\<exists>a. \<forall>a' \<le> a. abs (cdf M2 a') < \<epsilon> / 4" by (simp add: eventually_at_bot_linorder)
       then obtain a2 where a2 [rule_format]: "\<forall>a' \<le> a2. abs (cdf M2 a') < \<epsilon> / 4"  ..
@@ -293,14 +293,14 @@ proof -
       then guess a ..
       hence "a \<le> x" "a \<le> a1" "a \<le> a2" "measure M1 {a} = 0" "measure M2 {a} = 0" by auto
 
-      from `\<epsilon> > 0` `(cdf M1 ---> cdf M1 x) (at_right x)` 
+      from `\<epsilon> > 0` `(cdf M1 \<longlongrightarrow> cdf M1 x) (at_right x)` 
       have "eventually (\<lambda>y. abs (cdf M1 y - cdf M1 x) < \<epsilon> / 4) (at_right x)"
         by (simp only: tendsto_iff dist_real_def)
       hence "\<exists>b. b > x \<and> (\<forall>z>x. z < b \<longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4)"
         by (simp add: eventually_at_right[OF less_add_one])
       then obtain b1 where "b1 > x \<and> (\<forall>z>x. z < b1 \<longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4)" ..
       hence "b1 > x" and b1: "\<And>z. x < z \<Longrightarrow> z < b1 \<Longrightarrow> abs (cdf M1 z - cdf M1 x) < \<epsilon> / 4" by auto
-      from `\<epsilon> > 0` `(cdf M2 ---> cdf M2 x) (at_right x)` 
+      from `\<epsilon> > 0` `(cdf M2 \<longlongrightarrow> cdf M2 x) (at_right x)` 
           have "eventually (\<lambda>y. abs (cdf M2 y - cdf M2 x) < \<epsilon> / 4) (at_right x)"
         by (simp only: tendsto_iff dist_real_def)
       hence "\<exists>b. b > x \<and> (\<forall>z>x. z < b \<longrightarrow> abs (cdf M2 z - cdf M2 x) < \<epsilon> / 4)"
@@ -369,7 +369,7 @@ theorem levy_continuity1:
     real_distr_M': "real_distribution M'" and
     measure_conv: "weak_conv_m M M'"
   shows
-    "(\<lambda>n. char (M n) t) ----> char M' t"
+    "(\<lambda>n. char (M n) t) \<longlonglongrightarrow> char M' t"
   unfolding char_def
   apply (rule weak_conv_imp_integral_bdd_continuous_conv)
   apply fact+
@@ -383,7 +383,7 @@ theorem levy_continuity:
   assumes 
     real_distr_M : "\<And>n. real_distribution (M n)" and
     real_distr_M': "real_distribution M'" and
-    char_conv: "\<And>t. (\<lambda>n. char (M n) t) ----> char M' t" 
+    char_conv: "\<And>t. (\<lambda>n. char (M n) t) \<longlonglongrightarrow> char M' t" 
   shows "weak_conv_m M M'"
 proof -
   interpret Mn: real_distribution "M n" for n by fact
@@ -523,7 +523,7 @@ proof -
       have "cmod (1 - char (M n) x) \<le> 2"
         by (rule order_trans [OF norm_triangle_ineq4], auto simp add: Mn.cmod_char_le_1)
     } note bd1 = this
-    have "(\<lambda>n. CLBINT t:{-d/2..d/2}. 1 - char (M n) t) ----> (CLBINT t:{-d/2..d/2}. 1 - char M' t)"
+    have "(\<lambda>n. CLBINT t:{-d/2..d/2}. 1 - char (M n) t) \<longlonglongrightarrow> (CLBINT t:{-d/2..d/2}. 1 - char M' t)"
       using bd1
       apply (intro integral_dominated_convergence[where w="\<lambda>x. indicator {-d/2..d/2} x *\<^sub>R 2"])
       apply (auto intro!: char_conv tendsto_intros 
@@ -580,10 +580,10 @@ proof -
       interpret Mn: real_distribution "M n" by (rule assms)
       have *: "(UN (k :: nat). {- real k<..real k}) = UNIV"
         by (auto, metis leI le_less_trans less_imp_le minus_less_iff reals_Archimedean2)
-      have "(\<lambda>k. measure (M n) {- real k<..real k}) ----> 
+      have "(\<lambda>k. measure (M n) {- real k<..real k}) \<longlonglongrightarrow> 
           measure (M n) (UN (k :: nat). {- real k<..real k})"
         by (rule Mn.finite_Lim_measure_incseq, auto simp add: incseq_def)
-      hence "(\<lambda>k. measure (M n) {- real k<..real k}) ----> 1"
+      hence "(\<lambda>k. measure (M n) {- real k<..real k}) \<longlonglongrightarrow> 1"
         using Mn.prob_space unfolding * Mn.borel_UNIV by simp
       hence "eventually (\<lambda>k. measure (M n) {- real k<..real k} > 1 - \<epsilon>) sequentially"
         apply (elim order_tendstoD (1))
@@ -643,9 +643,9 @@ proof -
       assume nu: "weak_conv_m (M \<circ> s) \<nu>"
       assume *: "real_distribution \<nu>"
       have 2: "\<And>n. real_distribution ((M \<circ> s) n)" unfolding comp_def by (rule assms)
-      have 3: "\<And>t. (\<lambda>n. char ((M \<circ> s) n) t) ----> char \<nu> t" by (intro levy_continuity1 [OF 2 * nu])
+      have 3: "\<And>t. (\<lambda>n. char ((M \<circ> s) n) t) \<longlonglongrightarrow> char \<nu> t" by (intro levy_continuity1 [OF 2 * nu])
       have 4: "\<And>t. (\<lambda>n. char ((M \<circ> s) n) t) = ((\<lambda>n. char (M n) t) \<circ> s)" by (rule ext, simp)
-      have 5: "\<And>t. (\<lambda>n. char ((M \<circ> s) n) t) ----> char M' t"
+      have 5: "\<And>t. (\<lambda>n. char ((M \<circ> s) n) t) \<longlonglongrightarrow> char M' t"
         by (subst 4, rule lim_subseq [OF s], rule assms)
       hence "char \<nu> = char M'" by (intro ext, intro LIMSEQ_unique [OF 3 5])
       hence "\<nu> = M'" by (rule Levy_uniqueness [OF * `real_distribution M'`])

@@ -79,7 +79,7 @@ proof -
   finally show ?thesis .
 qed
 
-lemma cdf_lim_at_top: "(cdf M ---> measure M (space M)) at_top" 
+lemma cdf_lim_at_top: "(cdf M \<longlongrightarrow> measure M (space M)) at_top" 
   by (rule tendsto_at_topI_sequentially_real)
      (simp_all add: mono_def cdf_nondecreasing cdf_lim_infty)
 
@@ -93,9 +93,9 @@ proof -
     by simp
 qed
 
-lemma cdf_lim_at_bot: "(cdf M ---> 0) at_bot"
+lemma cdf_lim_at_bot: "(cdf M \<longlongrightarrow> 0) at_bot"
 proof - 
-  have *: "((\<lambda>x :: real. - cdf M (- x)) ---> 0) at_top"
+  have *: "((\<lambda>x :: real. - cdf M (- x)) \<longlongrightarrow> 0) at_top"
     by (intro tendsto_at_topI_sequentially_real monoI)
        (auto simp: cdf_nondecreasing cdf_lim_neg_infty tendsto_minus_cancel_left[symmetric])
   from filterlim_compose [OF *, OF filterlim_uminus_at_top_at_bot]
@@ -116,7 +116,7 @@ proof (rule tendsto_at_right_sequentially[where b="a + 1"])
     by (simp add: cdf_def)
 qed simp
 
-lemma cdf_at_left: "(cdf M ---> measure M {..<a}) (at_left a)"
+lemma cdf_at_left: "(cdf M \<longlongrightarrow> measure M {..<a}) (at_left a)"
 proof (rule tendsto_at_left_sequentially[of "a - 1"])
   fix f :: "nat \<Rightarrow> real" and x assume f: "incseq f" "f \<longlonglongrightarrow> a" "\<And>x. f x < a" "\<And>x. a - 1 < f x"
   then have "(\<lambda>n. cdf M (f n)) \<longlonglongrightarrow> measure M (\<Union>i. {.. f i})"
@@ -158,7 +158,7 @@ lemma cdf_bounded_prob: "\<And>x. cdf M x \<le> 1"
 lemma cdf_lim_infty_prob: "(\<lambda>i. cdf M (real i)) \<longlonglongrightarrow> 1"
   by (subst prob_space [symmetric], rule cdf_lim_infty)
 
-lemma cdf_lim_at_top_prob: "(cdf M ---> 1) at_top" 
+lemma cdf_lim_at_top_prob: "(cdf M \<longlongrightarrow> 1) at_top" 
   by (subst prob_space [symmetric], rule cdf_lim_at_top)
 
 end
@@ -200,8 +200,8 @@ lemma real_distribution_interval_measure:
   fixes F :: "real \<Rightarrow> real"
   assumes nondecF : "\<And> x y. x \<le> y \<Longrightarrow> F x \<le> F y" and
     right_cont_F : "\<And>a. continuous (at_right a) F" and 
-    lim_F_at_bot : "(F ---> 0) at_bot" and
-    lim_F_at_top : "(F ---> 1) at_top"
+    lim_F_at_bot : "(F \<longlongrightarrow> 0) at_bot" and
+    lim_F_at_top : "(F \<longlongrightarrow> 1) at_top"
   shows "real_distribution (interval_measure F)"
 proof -
   let ?F = "interval_measure F"
@@ -230,8 +230,8 @@ lemma cdf_interval_measure:
   fixes F :: "real \<Rightarrow> real"
   assumes nondecF : "\<And> x y. x \<le> y \<Longrightarrow> F x \<le> F y" and
     right_cont_F : "\<And>a. continuous (at_right a) F" and 
-    lim_F_at_bot : "(F ---> 0) at_bot" and
-    lim_F_at_top : "(F ---> 1) at_top"
+    lim_F_at_bot : "(F \<longlongrightarrow> 0) at_bot" and
+    lim_F_at_top : "(F \<longlongrightarrow> 1) at_top"
   shows "cdf (interval_measure F) = F"
   unfolding cdf_def
 proof (intro ext)

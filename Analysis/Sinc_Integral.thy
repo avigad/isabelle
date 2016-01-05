@@ -59,13 +59,13 @@ proof (subst interval_integral_FTC_nonneg)
   let ?F = "\<lambda>u. 1 / x * (1 - exp (- u * x)) * \<bar>sin x\<bar>"
   show "\<And>t. (?F has_real_derivative \<bar>exp (- t * x) * sin x\<bar>) (at t)"
     using \<open>0 < x\<close> by (auto intro!: derivative_eq_intros simp: abs_mult)
-  show "((?F \<circ> real_of_ereal) ---> 0) (at_right 0)"
+  show "((?F \<circ> real_of_ereal) \<longlongrightarrow> 0) (at_right 0)"
     using \<open>0 < x\<close> by (auto simp: zero_ereal_def ereal_tendsto_simps intro!: tendsto_eq_intros)
-  have *: "((\<lambda>t. exp (- t * x)) ---> 0) at_top"
+  have *: "((\<lambda>t. exp (- t * x)) \<longlongrightarrow> 0) at_top"
     using \<open>0 < x\<close>
     by (auto intro!: exp_at_bot[THEN filterlim_compose] filterlim_tendsto_pos_mult_at_top filterlim_ident
              simp: filterlim_uminus_at_bot mult.commute[of _ x])
-  show "((?F \<circ> real_of_ereal) ---> \<bar>sin x\<bar> / x) (at_left \<infinity>)"
+  show "((?F \<circ> real_of_ereal) \<longlongrightarrow> \<bar>sin x\<bar> / x) (at_left \<infinity>)"
     using \<open>0 < x\<close> unfolding ereal_tendsto_simps
     by (intro filterlim_compose[OF _ *]) (auto intro!: tendsto_eq_intros filterlim_ident)
 qed auto
@@ -116,7 +116,7 @@ section \<open>The sinc function, and the sine integral (Si)\<close>
 abbreviation sinc :: "real \<Rightarrow> real" where
   "sinc \<equiv> (\<lambda>x. if x = 0 then 1 else sin x / x)"
 
-lemma sinc_at_0: "((\<lambda>x. sin x / x::real) ---> 1) (at 0)"
+lemma sinc_at_0: "((\<lambda>x. sin x / x::real) \<longlongrightarrow> 1) (at 0)"
   using DERIV_sin [of 0] by (auto simp add: has_field_derivative_def field_has_derivative_at)
 
 lemma isCont_sinc: "isCont sinc x"
@@ -206,7 +206,7 @@ lemma borel_measurable_Si[measurable]: "Si \<in> borel_measurable borel"
   by (auto intro: isCont_Si continuous_at_imp_continuous_on borel_measurable_continuous_on1)
 
 lemma Si_at_top_LBINT:
-  "((\<lambda>t. (LBINT x=0..\<infinity>. exp (-(x * t)) * (x * sin t + cos t) / (1 + x^2))) ---> 0) at_top"
+  "((\<lambda>t. (LBINT x=0..\<infinity>. exp (-(x * t)) * (x * sin t + cos t) / (1 + x^2))) \<longlongrightarrow> 0) at_top"
 proof -
   let ?F = "\<lambda>x t. exp (- (x * t)) * (x * sin t + cos t) / (1 + x\<^sup>2) :: real"
   have int: "set_integrable lborel {0<..} (\<lambda>x. exp (- x) * (x + 1) :: real)"
@@ -214,7 +214,7 @@ proof -
     using has_bochner_integral_I0i_power_exp_m[of 0] has_bochner_integral_I0i_power_exp_m[of 1]
     by (intro set_integral_add) (auto dest!: integrable.intros simp: ac_simps)
 
-  have "((\<lambda>t::real. LBINT x:{0<..}. ?F x t) ---> LBINT x::real:{0<..}. 0) at_top"
+  have "((\<lambda>t::real. LBINT x:{0<..}. ?F x t) \<longlongrightarrow> LBINT x::real:{0<..}. 0) at_top"
   proof (rule integral_dominated_convergence_at_top[OF _ _ int], simp_all del: abs_divide split: split_indicator)
     have *: "0 < x \<Longrightarrow> \<bar>x * sin t + cos t\<bar> / (1 + x\<^sup>2) \<le> (x * 1 + 1) / 1" for x t :: real
       by (intro frac_le abs_triangle_ineq[THEN order_trans] add_mono)
@@ -225,23 +225,23 @@ proof -
   
     show "\<forall>\<^sub>F i in at_top. AE x in lborel. 0 < x \<longrightarrow> \<bar>?F x i\<bar> \<le> exp (- x) * (x + 1)"
       using eventually_ge_at_top[of "1::real"] ** by (auto elim: eventually_mono)
-    show "AE x in lborel. 0 < x \<longrightarrow> (?F x ---> 0) at_top"
+    show "AE x in lborel. 0 < x \<longrightarrow> (?F x \<longlongrightarrow> 0) at_top"
     proof (intro always_eventually impI allI)
       fix x :: real assume "0 < x"
-      show "((\<lambda>t. exp (- (x * t)) * (x * sin t + cos t) / (1 + x\<^sup>2)) ---> 0) at_top"
+      show "((\<lambda>t. exp (- (x * t)) * (x * sin t + cos t) / (1 + x\<^sup>2)) \<longlongrightarrow> 0) at_top"
       proof (rule Lim_null_comparison)
         show "\<forall>\<^sub>F t in at_top. norm (?F x t) \<le> exp (- (x * t)) * (x + 1)"
           using eventually_ge_at_top[of "1::real"] * \<open>0 < x\<close>
           by (auto simp add: abs_mult times_divide_eq_right[symmetric] simp del: times_divide_eq_right
                    intro!: mult_mono elim: eventually_mono)
-        show "((\<lambda>t. exp (- (x * t)) * (x + 1)) ---> 0) at_top"
+        show "((\<lambda>t. exp (- (x * t)) * (x + 1)) \<longlongrightarrow> 0) at_top"
           by (auto simp: filterlim_uminus_at_top [symmetric]
                    intro!: filterlim_tendsto_pos_mult_at_top[OF tendsto_const] \<open>0<x\<close> filterlim_ident
                            tendsto_mult_left_zero filterlim_compose[OF exp_at_bot])
       qed
     qed
   qed
-  then show "((\<lambda>t. (LBINT x=0..\<infinity>. exp (-(x * t)) * (x * sin t + cos t) / (1 + x^2))) ---> 0) at_top"
+  then show "((\<lambda>t. (LBINT x=0..\<infinity>. exp (-(x * t)) * (x * sin t + cos t) / (1 + x^2))) \<longlongrightarrow> 0) at_top"
     by (simp add: interval_lebesgue_integral_0_infty)
 qed
 
@@ -266,7 +266,7 @@ next
     by (rule integrable_bound) (auto simp: field_simps * split: split_indicator)
 qed
 
-lemma Si_at_top: "(Si ---> pi / 2) at_top"
+lemma Si_at_top: "(Si \<longlongrightarrow> pi / 2) at_top"
 proof -
   have "\<forall>\<^sub>F t in at_top. pi / 2 - (LBINT u=0..\<infinity>. exp (-(u * t)) * (u * sin t + cos t) / (1 + u^2)) = Si t"
     using eventually_ge_at_top[of 0]
