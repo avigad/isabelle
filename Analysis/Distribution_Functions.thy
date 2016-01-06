@@ -18,16 +18,8 @@ theorem.
  should be somewhere else. *)
 
 theory Distribution_Functions
-  imports Probability Library_Misc
+  imports Probability "~~/src/HOL/Library/ContNotDenum"
 begin
-
-lemma ceiling_nonneg: "0 \<le> x \<Longrightarrow> 0 \<le> \<lceil>x\<rceil>"
-  by simp
-
-lemma UN_Ioc_eq_UNIV: "(\<Union>i. {- real (i::nat)<..real i}) = UNIV"
-  by auto
-     (metis le_less_trans minus_minus neg_less_iff_less not_le real_arch_simple
-            of_nat_0_le_iff reals_Archimedean2)
 
 subsection {* Properties of cdf's *}
 
@@ -160,6 +152,10 @@ lemma cdf_lim_infty_prob: "(\<lambda>i. cdf M (real i)) \<longlonglongrightarrow
 
 lemma cdf_lim_at_top_prob: "(cdf M \<longlongrightarrow> 1) at_top" 
   by (subst prob_space [symmetric], rule cdf_lim_at_top)
+
+lemma measurable_finite_borel [simp]:
+  "f \<in> borel_measurable borel \<Longrightarrow> f \<in> borel_measurable M"
+  by (rule borel_measurable_subalgebra[where N=borel]) auto
 
 end
 

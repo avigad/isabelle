@@ -11,30 +11,6 @@ theory Helly_Selection
   imports Diagonal_Subsequence Weak_Convergence Library_Misc
 begin
 
-lemma ereal_Inf:
-  assumes *: "bdd_below A" "A \<noteq> {}"
-  shows "ereal (Inf A) = (INF a:A. ereal a)"
-proof (rule ereal_Inf)
-  from * obtain l u where "\<And>x. x \<in> A \<Longrightarrow> l \<le> x" "u \<in> A"
-    by (auto simp: bdd_below_def)
-  then have "l \<le> (INF x:A. ereal x)" "(INF x:A. ereal x) \<le> u"
-    by (auto intro!: INF_greatest INF_lower)
-  then show "\<bar>INF a:A. ereal a\<bar> \<noteq> \<infinity>"
-    by auto
-qed
-
-lemma setcompr_eq_image: "{f x |x. P x} = f ` {x. P x}"
-  by auto
-
-lemma minus_one_less: "a - 1 < (a::real)"
-  by simp
-
-lemma ereal_dist_eq: "\<forall>e>0. \<bar>a - b\<bar> < ereal e \<Longrightarrow> a = b"
-  apply (cases a b rule: ereal2_cases)
-  apply (auto elim: allE[of _ 1])
-  apply (metis eq_iff_diff_eq_0 less_irrefl zero_less_abs_iff)
-  done
-
 theorem Helly_selection:
   fixes f :: "nat \<Rightarrow> real \<Rightarrow> real"
   assumes rcont: "\<And>n x. continuous (at_right x) (f n)"
@@ -109,7 +85,7 @@ proof -
 
   def F \<equiv> "\<lambda>x. Inf {lim (?f n) |n. x < r n}"
   have F_eq: "ereal (F x) = (INF n:{n. x < r n}. ereal (lim (?f n)))" for x
-    unfolding F_def by (subst ereal_Inf[OF bdd_below nonempty]) (simp add: setcompr_eq_image)
+    unfolding F_def by (subst ereal_Inf'[OF bdd_below nonempty]) (simp add: setcompr_eq_image)
   have mono_F: "mono F"
     using nonempty by (auto intro!: cInf_superset_mono simp: F_def bdd_below mono_def)
   moreover have "\<And>x. continuous (at_right x) F"
