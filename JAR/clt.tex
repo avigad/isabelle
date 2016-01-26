@@ -1,0 +1,251 @@
+\documentclass{svjour3}
+
+\usepackage{amsfonts}
+\usepackage{amsbsy,amssymb,amsmath}
+%\usepackage[latin1]{inputenc}
+%\usepackage[T1]{fontenc}
+\usepackage{todonotes}
+%\usepackage{latexsym}
+\usepackage{url}
+%\usepackage{listings}
+%\usepackage{alltt}
+%\usepackage{graphicx}
+%\usepackage{color}
+%\usepackage{colortbl}
+%\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows,positioning,calc,shapes.geometric}
+%\usepackage{algorithmicx}
+%\usepackage{algpseudocode}
+%\usepackage{caption}
+%\usepackage{subcaption}
+%\newcommand*\Let[2]{\State #1 $\gets$ #2}
+%\algrenewcommand\algorithmicrequire{\textbf{Precondition:}}
+%\algrenewcommand\algorithmicensure{\textbf{Postcondition:}}
+% \linespread{.95}
+% \usepackage[scaled=0.80]{beramono}
+
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\QQ}{\mathbb{Q}}
+\newcommand{\CC}{\mathbb{C}}
+\newcommand{\ZZ}{\mathbb{Z}}
+\newcommand{\fn}[1]{\mathtt{#1}} % I used mathtt in the thesis; personally, I think it looks better that way.
+
+% \newcommand{\term}{\mathtt{Term}}
+% \newcommand{\sterm}{\mathtt{STerm}}
+% \newcommand{\functerm}{\mathtt{FuncTerm}}
+
+% \hypersetup{
+%     colorlinks=true,
+%     citecolor=blue,
+%     linkcolor=blue,
+%     urlcolor=blue
+% }
+
+\tikzset{
+    %Define standard arrow tip
+    >=stealth',
+    %Define style for boxes
+    module/.style={
+           rectangle,
+           draw=black, very thick,
+           text width=7em,
+           minimum height=2em,
+           text centered},
+    % Define arrow style
+    interface/.style={
+           ->,
+           thick,
+           shorten <=2pt,
+           shorten >=2pt,}
+}
+
+
+\begin{document}
+
+
+% first the title is needed
+\title{A formally verified proof of the Central Limit Theorem}
+
+%\titlerunning{A heuristic prover for real ineq.}  % abbreviated title (for running head)
+
+\author{Jeremy Avigad \and Johannes H\"olzl \and Luke Serafin}
+\authorrunning{J.~Avigad, J.~H\"olzl, and L.~Serafin}   % abbreviated author list (for running head)
+
+\institute{J. Avigad \and L. Serafin \at Carnegie Mellon University, Pittsburgh, PA 15213, USA \and J. H\"olzl \at Technische Universit\"at M\"unchen}
+
+
+\maketitle
+
+
+\begin{abstract}
+We proved the CLT!
+%\keywords{nonlinear inequalities, interactive theorem proving}
+\end{abstract}
+
+
+\section{Introduction}
+\label{section:introduction}
+
+
+\section{Overview of the Central Limit Theorem}
+\label{section:overview}
+
+
+Formal statement.
+
+\section{Isabelle and its libraries for analysis}
+\label{section:isabelle}
+
+Much of the infrastructure described in this section was available before the project began, but we had to add to it substantially. (We will try to indicate our contribution.)
+
+\subsection{The Isabelle proof assistant}
+
+\subsection{Topology and Limits}
+
+Filter limits (refer to paper)
+
+boundaries, open, closed, compact, \ldots
+
+Introduction rules for open and closed
+
+rule set for continuity
+
+\subsection{Real analysis}
+
+Reals an instance of a conditionally complete lattice, sup and inf.
+
+Derivatives. Frechet.
+
+Integrals (HK, Bochner)
+
+Transcendental functions (exp, sin, \ldots)
+
+\subsection{Complex valued functions}
+
+For Fourier analysis, we need functions from $\RR$ to $\CC$. Derivative: Frechet worked. Integral: initially, pairs, but with Bochner, direct.
+
+\subsection{Measure theory and probability}
+
+Overview, refer to paper
+
+Measures and integrals; dominated convergence and monotone convergence
+
+AE quantifier, rules (AE filter -- use stuff from filters). Fixing countably many values.
+
+densities, push-forward measure, Fubini
+
+Convolutions, independence
+
+Distributions, especially normal distribution (Sudeep Kanav)
+
+Lebesgue-Stieltjes (cdf to measure), cumulative distribution functions
+
+Sets of points of continuity is measurable
+
+\subsection{Calculus exercises}
+
+Sinc, moments of Gaussian distribution
+
+Integration by parts
+
+Change of coordinates
+
+Moments of the normal distribution (Sudeep)
+
+$\sin x / x$ using Fubini (options: polar, contour (have now), or Fubini)
+
+\subsection{Varieties of integrals}
+
+General integral
+
+Set integral
+
+Interval integral.
+
+Substitution, FTC, Manual Eberl strengthened substitution
+
+\subsection{Countability and uncountability}
+
+Reals uncountable (we had to extend to intervals, nonempty open sets).
+
+Closure properties of countable sets
+
+Diagonalization 
+
+
+\section{The formal proof}
+\label{section:formal}
+
+\subsection{Weak convergence}
+
+Definition
+
+Portmanteau theorem
+
+\subsection{Characteristic functions}
+
+Main thing: convolution $\simeq$ pointwise product
+
+Also, approximations
+
+\subsection{Levy inversion}
+
+Used: Si
+
+\subsection{Helly's theorem}
+
+\ldots characterize this as some sort of compactness
+
+\subsection{Levy continuity}
+
+
+\subsection{The Central Limit Theorem}
+
+
+\section{Reflections}
+\label{section:reflections}
+
+\subsection{Dealing with partial functions}
+
+has-integral, etc.
+
+Fubini, dominated convergence
+
+Message: both representations are useful and needed, but you have to be careful
+
+\subsection{Strategies for limit proofs}
+
+For example, use properties of ordering instead of epsilon delta
+
+\subsection{Strategies for integrals}
+
+affine trick
+
+\subsection{Alternatives}
+
+Stone-Weierstrass, complex analysis countour integrals
+
+\subsection{Cleanup and length}
+
+Originally, combined, 13000
+
+Now, things in this section, 2500
+
+Infrastructure: interval integral, Bochner, set integral
+
+Distributions
+
+give line counts, esp.~for CLT, given infrastructure
+
+
+cleanup:
+\begin{itemize}
+ \item moving things to libraries
+ \item general refactoring, using general properties rather than fiddly proofs
+ \item eliminating duplicated code
+ \item choosing good names (esp.~for integrals), rather than ``billingsley 13.1''
+\end{itemize}
+
+
+\end{document}
