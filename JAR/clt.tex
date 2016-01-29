@@ -79,13 +79,32 @@
 
 
 \begin{abstract}
-We proved the CLT!
+We formalize the proof of the central limit theorem in the Isabelle proof assistant, building upon and extending the libraries for mathematical analysis, in particular measure-theoretic probability theory. The formalization introduces the notion of weak convergence (or convergence in distribution) required to state the central limit theorem, and uses characteristic functions (Fourier transforms) to demonstrate convergence to the standard normal distribution under the hypotheses of the central limit theorem. Supporting such reasoning motivated significant changes to the measure-theoretic integration libraries of Isabelle.
 %\keywords{nonlinear inequalities, interactive theorem proving}
 \end{abstract}
 
 
 \section{Introduction}
 \label{section:introduction}
+
+Consider a toss of a fair coin. If we treat a result of tails as having value zero and a result of heads as having value one, we may treat the coin toss as a random variable, say $X$. Thus $X$ is supported on $\{0,1\}$, and
+\[ \mathbb P(X = 0) = \mathbb P(X = 1) = \frac{1}{2}. \]
+Hence the expected value of $X$ is
+\[ \mathbb E(X) = 0 \cdot \mathbb P(X = 0) + 1 \cdot \mathbb P(X = 1) = \frac{1}{2}. \]
+
+Now suppose we toss the coin repeatedly, thus generating an infinite sequence $\{X_n\}_{n =0}^\infty$ of random variables which are pairwise independent and have the same distribution as $X$. By the strong law of large numbers, the mean $\overline X_n = \frac{1}{n} \sum_{i \le n} X_i$ converges almost surely to $\mathbb E(X) = \frac{1}{2}$. But clearly after a finite number of trials there is a nonzero probability that the value of $\overline X_n$ will differ from $\mathbb E(X)$. In fact, for $n$ odd the probability of deviation is $1$, because in that case it is impossible for $\frac{1}{n} \sum_{i \le n} X_i$ to have the value $\frac{1}{2}$ at any element of the sample space. Nevertheless $|\overline X_n - \mathbb E(X)|$ must converge to zero, and so the probability of large deviations of the mean $\overline X_n$ from the expected value $\mathbb E(X)$ is small. Exactly how small is made precise by De Moivre's central limit theorem.
+
+In 1733 De Moivre privately circulated a proof\footnote{This historical information is drawn from \cite{fischer}, and references to original works may be found there.} which, in modern terminology, shows that $n^{-1/2} \overline X_n$ converges to a normal distribution. This material was later published in the 1738 second edition of his book {\em The Doctrine of Chances,} the first edition of which was first published in 1712 and is widely regarded as the first textbook on probability theory. De Moivre also considered the case of what we might call a biased coin (an event which has value one with probability $p$ and zero with probability $1-p$, for some $p \in (0,1)$), and realized that his convergence theorem continues to hold in that case.
+
+De Moivre's result was generalized by Laplace in the period between about 1776 and 1812 to sums of random variables with various other distributions. For example, in 1776 Laplace proved that $n^{-1/2} \overline X_n$ converges to a normal distribution in the case where the $X_n$'s are uniformly distributed. The particular problem Laplace considered in that paper was finding the distribution of the average inclination of a random sample of comets, the distribution for a single comet being assumed uniform between $0^\circ$ and $90^\circ$. Over the next three decades Laplace developed the conceptual and analytical tools to extend this convergence theorem to sums of independent identically distributed random variables with ever more general distributions, and this work culminated in his treatise {\em Th\'eorie analytique des probabilit\'es}. This included the development of the method of characteristic functions to study the convergence of sums of random variables, a move which firmly established the usefulness of analytic methods in probability theory (in particular Fourier analysis, the characteristic function of a random variable being exactly the Fourier transform of that variable).
+
+Laplace's theorem, which later became known as the central limit theorem (a designation due to P\'olya and stemming from its importance both in the theory and applications of probability), states in modern terms that the normalized sum of a sequence of independent and identically distributed random variables with finite, nonzero variance converges to a normal distribution. All of this imprecise language will be made precise later on. In the work of Laplace all the main ingredients of the proof of the central limit theorem are present, though of course the theorem was refined and extended as probability underwent the radical changes necessitated by its move to measure-theoretic foundations in the first half of the twentieth century.
+
+Gauss was one of the first to recognize the importance of the normal distribution to the estimation of measurement errors, and it is notable that the usefulness of the normal distribution in this context is largely a consequence of the central limit theorem, for errors occurring in practice are frequently the result of many independent factors which sum to an overall error in a way which can be regarded as approximated by a sum of independent and identically distributed random variables. The normal distribution also arose with surprising frequency in a wide variety of empirical contexts: from the heights of men and women to the velocities of molecules in a gas. This gave the central limit theorem the character of a natural law, as seen in the following poetic quote from Sir Francis Galton in 1889 \cite{galton}:
+\begin{quote}
+ I know of scarcely anything so apt to impress the imagination as the wonderful form of cosmic order expressed by the ``Law of Frequency of Error.'' The law would have been personified by the Greeks and deified, if they had known of it. It reigns with serenity and in complete self-effacement, amidst the wildest confusion. The huger the mob, and the greater the apparent anarchy, the more perfect is its sway. It is the supreme law of Unreason. Whenever a large sample of chaotic elements are taken in hand and marshaled in the order of their magnitude, an unsuspected and most beautiful form of regularity proves to have been latent all along.
+\end{quote}
+Many more details on the history of the central limit theorem and its proof can be found in \cite{fischer}.
 
 
 \section{Overview of the Central Limit Theorem}
@@ -100,6 +119,14 @@ Formal statement.
 Much of the infrastructure described in this section was available before the project began, but we had to add to it substantially. (We will try to indicate our contribution.)
 
 \subsection{The Isabelle proof assistant}
+
+The Isabelle system was initially developed by Larry Paulson at Cambridge University and Tobias Nipkow at Technische Universit\"at M\"unchen, and has grown to include a large number of additional developers and library contributers. Isabelle is generic in the sense that it provides a small, trusted core reasoner (known as ``Isabelle/Pure'') and allows extension in any direction over that. It employs an LCF-style architecture \cite{gordon-lcf} to ensure extensions preserve soundness. The extension of Pure which has received the most attention by library developers is Isabelle/HOL, where HOL stands for higher-order logic. Our formalization was carried out in Isabelle/HOL-Probability, an extension of the HOL main library incorporating a significant amount of measure-theoretic probability theory.
+
+In simple form, higher-order logic is a conservative extension of first-order logic incorporating quantification over predicates and functions, higher-order predicates and functions (e.g. a predicate $T(R)$ which holds iff $R$ is a transitive binary relation), and quantification over these. This can be augmented by a definite description operator (\texttt{THE} in Isabelle), and the extension remains conservative roughly because definite descriptions can be eliminated via Russell's well-known interpretation \cite{russell-knowledge-acquaintance-description}. The indefinite description operator \texttt{SOME} included in Isabelle/HOL is a more radical departure, for its presence entails the axiom of choice (which can be easily stated in higher-order logic), and thus breaks conservativity of the HOL extension. However, the axiom of choice (or at least some weak variant of it) is essential to the usual development of mathematical analysis, and so the indefinite description operator is a welcome addition for our purposes.
+
+One might reasonably ask why higher-order logic rather than set theory is used as the basis of our formalization. Pragmatically, the Isabelle support for higher-order logic is far better than that for set theory, but why is this? A number of advantages exist, including functions as primitives, type-checking and type inference, and the additional resources provided by the type system for pruning the search space of automated procedures. However, all these advantages could in principle be obtained in a system based on set theory, say by augmenting ordinary set theory with ``weak types.'' Further discussion of the tradeoffs between higher-order logic and set theory in the context of automated deduction, and possibilities for combining the two approaches, are found in \cite{gordon-hol-set}.
+
+Include something about the Isabelle type system?
 
 \subsection{Topology and Limits}
 
@@ -247,5 +274,7 @@ cleanup:
  \item choosing good names (esp.~for integrals), rather than ``billingsley 13.1''
 \end{itemize}
 
+\bibliographystyle{plain}
+\bibliography{itp}
 
 \end{document}
