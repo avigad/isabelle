@@ -2,38 +2,25 @@
 
 \usepackage{amsfonts}
 \usepackage{amsbsy,amssymb,amsmath}
-%\usepackage[latin1]{inputenc}
-%\usepackage[T1]{fontenc}
-\usepackage{todonotes}
-%\usepackage{latexsym}
 \usepackage{url}
-%\usepackage{listings}
-%\usepackage{alltt}
-%\usepackage{graphicx}
-%\usepackage{color}
-%\usepackage{colortbl}
-%\usepackage{hyperref}
-\usepackage{tikz}
-\usetikzlibrary{arrows,positioning,calc,shapes.geometric}
-%\usepackage{algorithmicx}
-%\usepackage{algpseudocode}
-%\usepackage{caption}
-%\usepackage{subcaption}
-%\newcommand*\Let[2]{\State #1 $\gets$ #2}
-%\algrenewcommand\algorithmicrequire{\textbf{Precondition:}}
-%\algrenewcommand\algorithmicensure{\textbf{Postcondition:}}
-% \linespread{.95}
-% \usepackage[scaled=0.80]{beramono}
+%\usepackage{todonotes}\presetkeys{todonotes}{color=blue!20}{}
+\usepackage{color}
+\usepackage{isabelle,isabellesym}
+
+\newcommand{\todo}[1]{{\color{red}#1}}
 
 \newcommand{\RR}{\mathbb{R}}
 \newcommand{\QQ}{\mathbb{Q}}
 \newcommand{\CC}{\mathbb{C}}
 \newcommand{\ZZ}{\mathbb{Z}}
-\newcommand{\fn}[1]{\mathtt{#1}} % I used mathtt in the thesis; personally, I think it looks better that way.
 
-% \newcommand{\term}{\mathtt{Term}}
-% \newcommand{\sterm}{\mathtt{STerm}}
-% \newcommand{\functerm}{\mathtt{FuncTerm}}
+\newcommand{\mdl}[1]{{\mathcal #1}} % for the sigma algebras
+\newcommand{\st}{ \; | \;} % such that
+\newcommand{\ph}{\varphi}
+
+
+
+%\newcommand{\fn}[1]{\mathtt{#1}} % I used mathtt in the thesis; personally, I think it looks better that way.
 
 % \hypersetup{
 %     colorlinks=true,
@@ -42,24 +29,6 @@
 %     urlcolor=blue
 % }
 
-\tikzset{
-    %Define standard arrow tip
-    >=stealth',
-    %Define style for boxes
-    module/.style={
-           rectangle,
-           draw=black, very thick,
-           text width=7em,
-           minimum height=2em,
-           text centered},
-    % Define arrow style
-    interface/.style={
-           ->,
-           thick,
-           shorten <=2pt,
-           shorten >=2pt,}
-}
-
 
 \begin{document}
 
@@ -67,93 +36,218 @@
 % first the title is needed
 \title{A formally verified proof of the Central Limit Theorem}
 
-%\titlerunning{A heuristic prover for real ineq.}  % abbreviated title (for running head)
+%\titlerunning{}  % abbreviated title (for running head)
 
 \author{Jeremy Avigad \and Johannes H\"olzl \and Luke Serafin}
 \authorrunning{J.~Avigad, J.~H\"olzl, and L.~Serafin}   % abbreviated author list (for running head)
 
-\institute{J. Avigad \and L. Serafin \at Carnegie Mellon University, Pittsburgh, PA 15213, USA \and J. H\"olzl \at Technische Universit\"at M\"unchen}
+% \institute{J. Avigad \and L. Serafin \at Carnegie Mellon University, Pittsburgh, PA 15213, USA \and J. H\"olzl \at Technische Universit\"at M\"unchen}
 
 
 \maketitle
 
-
 \begin{abstract}
-We formalize the proof of the central limit theorem in the Isabelle proof assistant, building upon and extending the libraries for mathematical analysis, in particular measure-theoretic probability theory. The formalization introduces the notion of weak convergence (or convergence in distribution) required to state the central limit theorem, and uses characteristic functions (Fourier transforms) to demonstrate convergence to the standard normal distribution under the hypotheses of the central limit theorem. Supporting such reasoning motivated significant changes to the measure-theoretic integration libraries of Isabelle.
-%\keywords{nonlinear inequalities, interactive theorem proving}
+We describe a formally verified proof of the Central Limit Theorem in the Isabelle proof assistant, which builds upon and extends Isabelle's libraries for analysis and measure-theoretic probability. 
+% The statement of the theorem relies on the notion of \emph{weak convergence}, also known as \emph{convergence in distribution}. 
+The proof of the theorem uses \emph{characteristic functions}, which are a kind of Fourier transform, to demonstrate that, under suitable hypotheses, sums of random variables converge weakly to the standard normal distribution. We also discuss the general infrastructure that was needed to support the formalization.
+\keywords{interactive theorem proving, measure theory, central limit theorem}
 \end{abstract}
 
 
 \section{Introduction}
 \label{section:introduction}
 
-Consider a toss of a fair coin. If we treat a result of tails as having value zero and a result of heads as having value one, we may treat the coin toss as a random variable, say $X$. Thus $X$ is supported on $\{0,1\}$, and
-\[ \mathbb P(X = 0) = \mathbb P(X = 1) = \frac{1}{2}. \]
-Hence the expected value of $X$ is
-\[ \mathbb E(X) = 0 \cdot \mathbb P(X = 0) + 1 \cdot \mathbb P(X = 1) = \frac{1}{2}. \]
+If you roll a fair die many times and compute the average number of spots showing, the result is likely to be close to 3.5, and the odds that the average is far from the expected value decreases roughly as the area under the familiar bell-shaped curve. Something similar happens if the measurement is continuous rather than discrete, such as when you repeatedly toss a needle on the ground and measure the angle it makes with respect to a fixed reference line. Even if the die is not a fair die or the geometry of the needle and the ground makes some angles more likely than others, the distribution of the average still approaches the area under a bell-shaped curve centered on the expected value. The width of the bell depends on both the variance of the random measurement and the number of times it is performed. Made precise, this amounts to a statement of the Central Limit Theorem.
 
-Now suppose we toss the coin repeatedly, thus generating an infinite sequence $\{X_n\}_{n =0}^\infty$ of random variables which are pairwise independent and have the same distribution as $X$. By the strong law of large numbers, the mean $\overline X_n = \frac{1}{n} \sum_{i \le n} X_i$ converges almost surely to $\mathbb E(X) = \frac{1}{2}$. But clearly after a finite number of trials there is a nonzero probability that the value of $\overline X_n$ will differ from $\mathbb E(X)$. In fact, for $n$ odd the probability of deviation is $1$, because in that case it is impossible for $\frac{1}{n} \sum_{i \le n} X_i$ to have the value $\frac{1}{2}$ at any element of the sample space. Nevertheless $|\overline X_n - \mathbb E(X)|$ must converge to zero, and so the probability of large deviations of the mean $\overline X_n$ from the expected value $\mathbb E(X)$ is small. Exactly how small is made precise by De Moivre's central limit theorem.
+Today, the Central Limit Theorem lies at the heart of modern probability theory. Many generalizations and variations have been studied, relaxing the requirement that the repeated measurements are independent of one another and identically distributed (cf.~in particular, the results of Lyapunov and Lindberg, \cite{?}), or providing additional information on the rate of convergence.
 
-In 1733 De Moivre privately circulated a proof\footnote{This historical information is drawn from \cite{fischer}, and references to original works may be found there.} which, in modern terminology, shows that $n^{-1/2} \overline X_n$ converges to a normal distribution. This material was later published in the 1738 second edition of his book {\em The Doctrine of Chances,} the first edition of which was first published in 1712 and is widely regarded as the first textbook on probability theory. De Moivre also considered the case of what we might call a biased coin (an event which has value one with probability $p$ and zero with probability $1-p$, for some $p \in (0,1)$), and realized that his convergence theorem continues to hold in that case.
+Here we report on a formalization of the Central Limit Theorem that was carried out in the Isabelle proof assistant. This result is valuable for a number of reasons. Not only is the Central Limit Theorem fundamental to probability theory and the study of stochastic processes, but so is almost all of the machinery developed to prove it, ranging from ordinary calculus to the properties of real distributions and characteristic functions. There is a pragmatic need to have statistical claims made in engineering, risk analysis, and financial computation subject to formal verification, and our formalization along with the surrounding infrastructure supports such practical efforts.
 
-De Moivre's result was generalized by Laplace in the period between about 1776 and 1812 to sums of random variables with various other distributions. For example, in 1776 Laplace proved that $n^{-1/2} \overline X_n$ converges to a normal distribution in the case where the $X_n$'s are uniformly distributed. The particular problem Laplace considered in that paper was finding the distribution of the average inclination of a random sample of comets, the distribution for a single comet being assumed uniform between $0^\circ$ and $90^\circ$. Over the next three decades Laplace developed the conceptual and analytical tools to extend this convergence theorem to sums of independent identically distributed random variables with ever more general distributions, and this work culminated in his treatise {\em Th\'eorie analytique des probabilit\'es}. This included the development of the method of characteristic functions to study the convergence of sums of random variables, a move which firmly established the usefulness of analytic methods in probability theory (in particular Fourier analysis, the characteristic function of a random variable being exactly the Fourier transform of that variable).
+The formalization is also a good test for Isabelle's libraries, proof language, and automated reasoning tools. As will become clear below, the proof draws on a very broad base of facts from analysis, topology, measure theory, and probability theory, providing a useful evaluation of the robustness and completeness of the supporting libraries. Moreover, the concepts build on one another. For example, a measure is a function from a class of sets to the reals, and reasoning about convergence of measures involves reasoning about sequences of such functions. The operation of forming the characteristic function is a functional taking a measure to a function from the reals to the complex numbers, and the convergence of such functionals is used to deduce convergence of measures. Thus the conceptual underpinnings are as deep as they are broad, and working with the notions exercises Isabelle's mechanisms for handling abstract mathematical notions.
 
-Laplace's theorem, which later became known as the central limit theorem (a designation due to P\'olya and stemming from its importance both in the theory and applications of probability), states in modern terms that the normalized sum of a sequence of independent and identically distributed random variables with finite, nonzero variance converges to a normal distribution. All of this imprecise language will be made precise later on. In the work of Laplace all the main ingredients of the proof of the central limit theorem are present, though of course the theorem was refined and extended as probability underwent the radical changes necessitated by its move to measure-theoretic foundations in the first half of the twentieth century.
+In Section~\ref{section:overview}, we provide an overview of the central limit theorem, and the proof that we formalized, following the textbook presentation of Billingsley~\cite{billingsley:95}. In Section~\ref{section:isabelle}, we describe the Isabelle proof assistant, and the parts of the library that supported our formalization. In Section~\ref{section:formal}, we describe the formal proof itself, and in Section~\ref{section:reflections}, we reflect on what we have learned from the effort. 
 
-Gauss was one of the first to recognize the importance of the normal distribution to the estimation of measurement errors, and it is notable that the usefulness of the normal distribution in this context is largely a consequence of the central limit theorem, for errors occurring in practice are frequently the result of many independent factors which sum to an overall error in a way which can be regarded as approximated by a sum of independent and identically distributed random variables. The normal distribution also arose with surprising frequency in a wide variety of empirical contexts: from the heights of men and women to the velocities of molecules in a gas. This gave the central limit theorem the character of a natural law, as seen in the following poetic quote from Sir Francis Galton in 1889 \cite{galton}:
-\begin{quote}
- I know of scarcely anything so apt to impress the imagination as the wonderful form of cosmic order expressed by the ``Law of Frequency of Error.'' The law would have been personified by the Greeks and deified, if they had known of it. It reigns with serenity and in complete self-effacement, amidst the wildest confusion. The huger the mob, and the greater the apparent anarchy, the more perfect is its sway. It is the supreme law of Unreason. Whenever a large sample of chaotic elements are taken in hand and marshaled in the order of their magnitude, an unsuspected and most beautiful form of regularity proves to have been latent all along.
-\end{quote}
-Many more details on the history of the central limit theorem and its proof can be found in \cite{fischer}.
-
+Our formalization is currently part of the Isabelle library, which can be found online at \url{https://isabelle.in.tum.de/}.\footnote{The probability library in particular can be found at \url{https://isabelle.in.tum.de/dist/library/HOL/HOL-Probability/index.html}.} A preliminary, unpublished report on the formalization can be found on arXiv \cite{avigad:hoelzl:serafin:14}. This report also draws heavily on Serafin's Carnegie Mellon MS thesis \cite{serafin:15}, which provides additional information.
 
 \section{Overview of the Central Limit Theorem}
 \label{section:overview}
 
+For our formalization, we followed Billingsley's textbook, \emph{Probability and Measure} \cite{billingsley:95}, which provides an excellent introduction to these topics. Here we briefly review the core concepts, give a precise statement of the Central Limit Theorem, and present an outline of the proof.
 
-Formal statement.
+\subsection{Historical background}
+
+In 1733, De Moivre privately circulated a proof that, as $n$ approaches infinity, the distribution of $n$ flips of a fair coin converges to a normal distribution. This material was later published in the 1738 second edition of his book {\em The Doctrine of Chances,} the first edition of which was first published in 1712 and is widely regarded as the first textbook on probability theory. De Moivre also considered the case of what we might call a biased coin (an event which has value one with probability $p$ and zero with probability $1-p$, for some $p \in (0,1)$), and realized that his convergence theorem continues to hold in that case.
+
+De Moivre's result was generalized by Laplace in the period between about 1776 and 1812 to sums of random variables with various other distributions, such as the uniform distribution on an interval. Over the next three decades Laplace developed conceptual and analytical tools to extend this convergence theorem to sums of independent identically distributed random variables with ever more general distributions, and this work culminated in his treatise {\em Th\'eorie analytique des probabilit\'es}. This included the development of the method of characteristic functions to study the convergence of sums of random variables, a move which firmly established the usefulness of analytic methods in probability theory (in particular, the use of characteristic functions, a form Fourier analysis that will be discussed below). 
+
+Laplace's theorem later became known as the Central Limit Theorem, a designation due to P\'olya, stemming from its importance both in the theory and applications of probability. In modern terms, the theroem states that the normalized sum of a sequence of independent and identically distributed random variables with finite, nonzero variance converges to a normal distribution. All of the main ingredients of the proof of the central limit theorem are present in the work of Laplace, though of course the theorem was refined and extended as probability underwent the radical changes necessitated by its move to measure-theoretic foundations in the first half of the twentieth century.
+
+Gauss was one of the first to recognize the importance of the normal distribution to the estimation of measurement errors. The usefulness of the normal distribution in this context is largely a consequence of the Central Limit Theorem, since errors occurring in practice are frequently the result of many independent factors which sum to an overall error in a way which can be regarded as approximated by a sum of independent and identically distributed random variables. The normal distribution also arose with surprising frequency in a wide variety of empirical contexts, from the heights of men and women to the velocities of molecules in a gas. This gave the Central Limit Theorem the character of a natural law, as seen in the following poetic quote from Sir Francis Galton in 1889 \cite{galton:89}:
+\begin{quote}
+ I know of scarcely anything so apt to impress the imagination as the wonderful form of cosmic order expressed by the ``Law of Frequency of Error.'' The law would have been personified by the Greeks and deified, if they had known of it. It reigns with serenity and in complete self-effacement, amidst the wildest confusion. The huger the mob, and the greater the apparent anarchy, the more perfect is its sway. It is the supreme law of Unreason. Whenever a large sample of chaotic elements are taken in hand and marshaled in the order of their magnitude, an unsuspected and most beautiful form of regularity proves to have been latent all along.
+\end{quote}
+More details on the history of the central limit theorem and its proof can be found in \cite{fischer}.
+
+\subsection{Background from measure theory}
+
+A \emph{measure space} $(\Omega, \mdl F)$ consists of a set $\Omega$ and a \emph{$\sigma$-algebra $\mdl F$ of subsets of $\Omega$}, that is, a collection of subsets of $\Omega$ containing the empty set and closed under complements and countable unions. Think of $\Omega$ as the set of possible states of affairs, or possible outcomes of an action or experiment, and each element $E$ of $\mdl F$ as representing the set of states or outcomes in which some \emph{event} occurs --- for example, that a card drawn is a face card, or that Spain wins the World Cup. A \emph{probability measure} $\mu$ on this space is a function that assigns a value $\mu(E)$ in $[0, 1]$ to each event $E$, subject to the following two conditions:
+\begin{enumerate}
+ \item $\mu(\emptyset) = 0$, and
+ \item $\mu$ is countably additive: if $(E_i)$ is any sequence of disjoint events in $\mdl F$, $\mu(\bigcup_i E_i) = \sum_i \mu(E_i)$.
+\end{enumerate}
+Intuitively, $\mu(E)$ is the ``probability'' that $E$ occurs. 
+
+The collection $\mdl B$ of \emph{Borel subsets} of the real numbers is the smallest $\sigma$-algebra containing all intervals $(a, b)$. A \emph{random variable} $X$ on the measure space $(\Omega, \mdl F)$ is a measurable function from $(\Omega, \mdl F)$ to $(\RR, \mdl B)$. Saying $X$ is measurable means that for every Borel subset $B$ of the real numbers, the set $\{ \omega \in \Omega \st X(\omega) \in B \}$ is in $\mdl F$. Think of $X$ as some real-valued measurement that one can perform on the outcome of the experiment, in which case, the measurability of $X$ means that if we are given any probability measure $\mu$ on $(\Omega, \mdl F)$, then for any Borel set $B$ it makes sense to talk about ``the probability that $X$ is in $B$.'' In fact, if $X$ is a random variable, then any measure $\mu$ on $(\Omega, \mdl F)$ gives rise to a measure $\nu$ on $(\RR, \mdl B)$, defined by $\nu(B) = \mu ( \{ \omega \in \Omega \st X (\omega) \in B \})$. A measure on $(\RR, \mdl B)$ is called a \emph{real distribution}, or, more simply, a \emph{distribution}, and the measure $\nu$ just described is called \emph{the distribution of $X$}.
+
+If $X$ is a random variable, the \emph{mean} or \emph{expected value} of $X$ with respect to a probability measure $\mu$ is $\int X d\mu$, the integral of $X$ with respect to $\mu$. If $m$ is the mean, the \emph{variance} of $X$ is $\int (X - m)^2 d\mu$, a measure of how far, on average, we should expect $X$ to be from its average value.
+
+Note that passing from $\mu$ and $X$ to its distribution $\nu$ means that instead of worrying about the probability that some abstract event occurs, we focus more concretely on the probability that some measurement on the outcome lands in some set of real numbers. In fact, many theorems of probability theory do not really depend on the abstract space $(\Omega, \mdl F)$ on which $X$ is defined, but, rather, the associated distribution on the real numbers. Nonetheless, it is often more intuitive and convenient to think of the real distribution as being the distribution of a random variable (and, indeed, any real distribution can be represented that way). 
+
+One way to define a real distribution is in terms of a \emph{density}. For example, in the case where $\Omega = \{1, 2, 3, 4, 5, 6\}$, we can specify a probability on all the subsets of $\Omega$ by specifying the probability of each of the events $\{1\}, \{2\}, \ldots, \{6\}$. More generally, we can specify a distribution $\mu$ on $\RR$ by specifying a function $f$ such that for every interval $(a, b)$, $\mu((a, b)) = \int_a^b f x \; \mathit{dx}$. The measure $\mu$ is then said to be the real distribution with density $f$. In particular, the \emph{normal distribution} with mean $m$ and variance $\sigma^2$ is defined to be the real distribution with density function
+\[
+f(x) = \frac{1}{\sigma \sqrt{2 \pi}} e^\frac{-(x - m)^2}{2 \sigma^2}, 
+\]
+a ``bell shaped curve'' centered at $m$. When $m = 0$ and $\sigma = 1$, this is called the \emph{standard normal distribution}.
+
+Let $X_0, X_1, X_2, \ldots$ be any sequence of independent random variables, each with the same distribution $\mu$, mean $m$, and variance $\sigma^2$. Here ``independent'' means that the random variables $X_0, X_1, \ldots$ are all defined on the same measure space $(\Omega, \mdl F)$, but they represent independent measurements, in the sense that for any finite sequence of events $B_1, B_2, \ldots, B_k$ and any sequence of distinct indices $i_1, i_2, \ldots, i_k$, the probability that $X_{i_j}$ is in $B_j$ for each $j$ is just the product of the individual probabilities that $X_{i_j}$ is in $B_j$. For each $n$, let $S_n = \sum_{i < n} X_i$. Notice that each $S_n$ is really a measurable function on $(\Omega, \mdl F)$, which is to say, it is a random variable; and so it is natural to ask how its values are distributed. We can shift the expected value of $S_n$ to $0$ by subtracting $n m$, and scale the variance to $1$ by dividing by $\sqrt{ n \sigma^2}$. The Central Limit Theorem says that the corresponding quantity,
+\[
+ \frac{S_n - nm}{\sqrt{n \sigma^2}},
+\]
+approaches the standard normal distribution as $n$ approaches infinity.
+
+All that remains to do is to make sense of the assertion that a sequence of distributions $\mu_0, \mu_1, \mu_2, \ldots$ ``approaches'' a distribution, $\mu$. For distributions that are defined in terms of densities, the intuition is that over time the graph of the density should look more and more like the graph of the density of the limit. For example, if you flip a coin a number of times and graph all the possible values of the average number of ones, the discrete points plotted over the possibilities $0, 1/n, 2/n, 3/n, \ldots, 1$ start to look like a bell-shaped curve centered on $1 / 2$. The notion of \emph{weak convergence} makes the notion of ``starts to look like'' precise.
+
+If $\mu$ is any real distribution, then the function $F_\mu(x) = \mu((-\infty, x])$ is called the \emph{cumulative distribution function} of $\mu$. In words, for every $x$, $F_\mu(x)$ returns the likelihood that a real number chosen randomly according to the distribution is at most $x$. Clearly $F_\mu(x)$ is nondecreasing, and it is not hard to show that $F_\mu$ is right continuous, approaches $0$ as $x$ approaches $-\infty$, and approaches $1$ as $x$ approaches $\infty$. Conversely, one can show that any such function is the cumulative distribution function of a unique measure. Thus there is a one-to-one correspondence between functions $F$ satisfying the properties above and real distributions.
+
+The notion of weak convergence can be defined in terms of the cumulative distribution function:
+\begin{definition}
+ Let $(\mu_n)$ be a sequence of real distributions, and let $\mu$ be a real distribution. Then \emph{$\mu_n$ converge weakly $\mu$}, written $\mu_n \Rightarrow \mu$, if $F_{\mu_n}(x)$ approaches $F_\mu(x)$ at each point $x$ where $F_\mu$ is continuous.
+\end{definition}
+
+To understand why we need to exclude points of continuity of $F_\mu$, for each $n$, consider the probability measure $\mu_n$ that puts all its ``weight'' on $1 / n$, which is to say, for any Borel set $B$, $\mu(B) = 1$ if and only if $B$ contains $1 / n$. Then $F_{\mu_n}$ is the function that jumps from $0$ to $1$ at $1 / n$. Intuitively, it makes sense to say that $\mu_n$ approaches the real distribution $\mu$ that puts all its weight at $0$. But for every $n$, $F_{\mu_n}(0) = 0$, while $F_\mu(0) = 1$, which explains why want to exclude the point $0$ from consideration. Notice that since $F_\mu$ is a monotone function, it can have at most countably many points of discontinuity, so we are excluding only countably many points.
+
+The fact that weak convergence is a robust notion is evidenced by the fact that it has a number of equivalent characterizations, as discussed in Section~\ref{subsection:weak:convergence} below.
+
+With this background in place, we can now state the Central Limit Theorem precisely, as follows:
+\begin{theorem}
+\label{theorem:clt}
+Let $X_0, X_1, X_2, \ldots$ be a sequence of independent random variables with mean $0$, variance $\sigma^2$, and common distribution $\mu$. Let $S_n = (X_0 + X_1 + \ldots + X_{n-1})$. Then the distribution of $S_n / \sqrt{n \sigma^2}$ converges weakly to the standard normal distribution.
+\end{theorem}
+The restriction to mean $0$ does not result in any loss of generality, since if each $X_i$ has mean $m$, we can apply Theorem~\ref{theorem:clt} to the sequence $(X_i - m)$ to obtain the more general statement above. Our formulation of Theorem~\ref{theorem:clt} in Isabelle is as follows:
+
+%depicted as Figure~\ref{fig:clt}.
+%\begin{figure}
+\begin{quote}
+\begin{isabellebody}
+\isacommand{theorem}\isamarkupfalse%
+\ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ central{\isacharunderscore}limit{\isacharunderscore}theorem{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ \isanewline
+\ \ \ \ X\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ {\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ {\isasymmu}\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ {\isasymsigma}\ {\isacharcolon}{\isacharcolon}\ real\ \isakeyword{and}\isanewline
+\ \ \ \ S\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ {\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\isanewline
+\ \ \ \ X{\isacharunderscore}indep{\isacharcolon}\ {\isachardoublequoteopen}indep{\isacharunderscore}vars\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ borel{\isacharparenright}\ X\ UNIV{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}integrable{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}X\ n{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}mean{\isacharunderscore}{\isadigit{0}}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ expectation\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ {\isasymsigma}{\isacharunderscore}pos{\isacharcolon}\ {\isachardoublequoteopen}{\isasymsigma}\ {\isachargreater}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}square{\isacharunderscore}integrable{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isacharparenleft}X\ n\ x{\isacharparenright}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}variance{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ variance\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}distrib{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isasymmu}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{defines}\isanewline
+\ \ \ \ {\isachardoublequoteopen}S\ n\ {\isasymequiv}\ {\isasymlambda}x{\isachardot}\ {\isasymSum}i{\isacharless}n{\isachardot}\ X\ i\ x{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\isanewline
+\ \ \ \ {\isachardoublequoteopen}weak{\isacharunderscore}conv{\isacharunderscore}m\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ S\ n\ x\ {\isacharslash}\ sqrt\ {\isacharparenleft}n\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isacharparenright}{\isacharparenright}\ \isanewline
+\ \ \ \ \ \ \ \ {\isacharparenleft}density\ lborel\ standard{\isacharunderscore}normal{\isacharunderscore}density{\isacharparenright}{\isachardoublequoteclose}
+\end{isabellebody}
+\end{quote}
+%\caption{The Central Limit Theorem}
+%\label{fig:clt}
+%\end{figure}
+
+\subsection{An overview of the proof}
+
+Contemporary proofs of the Central Limit Theorem rely on the use of \emph{characteristic functions}, a powerful method that dates back to Laplace. If $\mu$ is a real-valued distribution, its characteristic function $\ph(t)$ is defined by
+\[
+\ph(t) = \int_{-\infty}^{\infty} e^{itx} \mu(dx).
+\]
+In words, $\ph(t)$ is the integral of the function $f(x) = e^{itx}$ over the whole real line, with respect to the measure $\mu$. Notice that for each $t \neq 0$, the function $e^{itx}$ is periodic with period $2 \pi / t$. It might be helpful to think of $e^{itx}$, as a function of $x$, as like a sine or cosine in $x$ whose period depends on $t$. (Indeed, $e^{itx}= \cos (t x) + i \sin (t x)$.) Notice that $\ph(0) = 1$, the measure of the entire real line. The characteristic function of a real distribution $\mu$ is a Fourier transform of the measure $\mu$, and when $t \neq 0$, $\ph(t)$ ``detects'' periodicity in the way that the real distribution $\mu$ distributes its ``weight'' over different parts of the real line.
+
+A key fact is that if $X_1$ and $X_2$ are independent random variables, then the characteristic function of $X_1 + X_2$ is the product of the characteristic function of $X_1$ and the characteristic function of $X_2$. Of course, this extends to sums with any finite number of terms, and the resulting products are often easier to work with. 
+
+The \emph{Levy Uniqueness Theorem} asserts that if $\mu_1$ and $\mu_2$ have the same characteristic function, then $\mu_1 = \mu_2$. In other words, a measure $\mu$ can be ``reconstructed'' from its characteristic function, and so the characteristic function of a measure determines the measure uniquely.  Let $(\mu_n)$ be a sequence of distributions, where each $\mu_n$ has characteristic function $\ph_n$, and let $\mu$ be a distribution with characteristic function $\ph$. The \emph{Levy Continuity Theorem} states that $\ph_n$ converges to $\ph$ weakly if and only if $\ph_n(t)$ converges to $\ph(t)$ for every $t$.
+
+Remember that the CLT asserts that if $(X_n)$ is a sequence of random variable satisfying certain hypotheses, and, for each $n$, $\mu_n$ is a certain distribution defined in terms of $X_1, \ldots, X_n$, then $\mu_n$ converges weakly to the standard normal distribution. The continuity and uniqueness theorems provide a straightforward strategy to prove the theorem: if we let $\ph_n$ denote the characteristic function of $\mu_n$ for each $n$, we need only show that $\ph_n$ approaches the characteristic function of the standard normal distribution pointwise.
+
+Implementing this strategy requires two key ingredients. First, one needs to know that the characteristic function of the standard normal distribution is $\ph(t) = e^{-t^2/2}$. Second, one needs to compute the characteristic functions of the distributions $\mu_n$, which are defined in terms of finite sums of the random variables $X_0, X_1, \ldots$. This is where the key property of characteristic functions comes into play.
+
+Once all these components are were in place, putting the pieces together was not hard. Given the continuity theorem, the characteristic function of the standard normal distribution, the result on the characteristic functions of sums of random variables, and a power series approximation to the complex exponential function, the proof of the Central Limit Theorem is quite short. In our formalization, it was only about 120 lines long. 
 
 \section{Isabelle and its libraries for analysis}
 \label{section:isabelle}
 
-Much of the infrastructure described in this section was available before the project began, but we had to add to it substantially. (We will try to indicate our contribution.)
+When we began our project, a good deal of infrastructure was already available in the Isabelle libraries, but we had to add to it substantially. The formalization thus provided a stress test, allowing us to fill in gaps in the lbirary and ensure its practical efficacy. In this section, we will describe those features of Isabelle and its libraries that were most relevant to the formalization, as well as indicate some of our contributions to the latter.
 
 \subsection{The Isabelle proof assistant}
 
-The Isabelle system was initially developed by Larry Paulson at Cambridge University and Tobias Nipkow at Technische Universit\"at M\"unchen, and has grown to include a large number of additional developers and library contributers. Isabelle is generic in the sense that it provides a small, trusted core reasoner (known as ``Isabelle/Pure'') and allows extension in any direction over that. It employs an LCF-style architecture \cite{gordon-lcf} to ensure extensions preserve soundness. The extension of Pure which has received the most attention by library developers is Isabelle/HOL, where HOL stands for higher-order logic. Our formalization was carried out in Isabelle/HOL-Probability, an extension of the HOL main library incorporating a significant amount of measure-theoretic probability theory.
+\todo{
+Boilerplate, with references.
 
-In simple form, higher-order logic is a conservative extension of first-order logic incorporating quantification over predicates and functions, higher-order predicates and functions (e.g. a predicate $T(R)$ which holds iff $R$ is a transitive binary relation), and quantification over these. This can be augmented by a definite description operator (\texttt{THE} in Isabelle), and the extension remains conservative roughly because definite descriptions can be eliminated via Russell's well-known interpretation \cite{russell-knowledge-acquaintance-description}. The indefinite description operator \texttt{SOME} included in Isabelle/HOL is a more radical departure, for its presence entails the axiom of choice (which can be easily stated in higher-order logic), and thus breaks conservativity of the HOL extension. However, the axiom of choice (or at least some weak variant of it) is essential to the usual development of mathematical analysis, and so the indefinite description operator is a welcome addition for our purposes.
+Simple type theory.
 
-One might reasonably ask why higher-order logic rather than set theory is used as the basis of our formalization. Pragmatically, the Isabelle support for higher-order logic is far better than that for set theory, but why is this? A number of advantages exist, including functions as primitives, type-checking and type inference, and the additional resources provided by the type system for pruning the search space of automated procedures. However, all these advantages could in principle be obtained in a system based on set theory, say by augmenting ordinary set theory with ``weak types.'' Further discussion of the tradeoffs between higher-order logic and set theory in the context of automated deduction, and possibilities for combining the two approaches, are found in \cite{gordon-hol-set}.
+Axiomatic type classes. In our formalization, we used them for the algebraic hierarchy, analysis (normed spaces, Euclidean spaces), topological notions.
 
-Include something about the Isabelle type system?
+Locales. In our formalization, we used them for measures.
+
+Isar, tactic proofs. We aimed for declarative proofs.
+
+Automation: auto, simp. Sledgehammer and Metis (how much did we use these?). SMT?
+}
 
 \subsection{Topology and Limits}
 
-Filter limits (refer to paper)
+\todo{
+open, closed, compact, frontier (aka ``boundary'') and properties \ldots
 
-boundaries, open, closed, compact, \ldots
+Introduction rules for open and closed sets.
+}
 
-Introduction rules for open and closed
+Conventional reasoning about limits was ubiquitous in our formalization. Everyday mathematics requires one to deal with expressions such as the following:
+\begin{itemize}
+ \item $\lim_{x \to a} f(x) = b$
+ \item $\lim_{n \to \infty} a_n = a$
+ \item $\lim_{x \to \infty} f(x) = b$
+ \item $\lim_{x \to a^-} f(x) = b$
+ \item $\lim_{x \to a} f(x) = \infty$
+\end{itemize}
+Here, the source and target spaces can be any topological space, including metric spaces or the natural numbers with the order topology. One can consider limits as $x$ approaches a value $a$, or $\infty$, or $-\infty$. One can also restrict consider the limit as $x$ approaches $a$ within a set $s$; saying $x$ approaches $a$ from the left (where $x$ and $a$ are real-valued, for example) is equivalent to saying that $x$ approaches $a$ on the interval $(-\infty, a)$. There is a similar range of variations on the output: $f(x)$ can approach a value, $b$, or $\infty$, or $-\infty$; and it can approach the value from the left, or from the right, or on any subset of the range of $f$. Not only does this threaten a combinatorial explosion of definitions, but also redundancy. For example, assuming $f(x)$ and $g(x)$ converge as $x$ approaches $a$, we have the identity $\lim_{x \to a} f(x) + g(x) = \lim_{x \to a} f(x) + \lim_{x \to a} g(x)$, but this also holds under all the variations of convergence in the source.
 
-rule set for continuity
+To handle the many instances of convergence that arose in the formalization, we used Isabelle's elegant library for dealing with limits via filters, as described in \cite{hoelzl:et:al:13}. The idea is that when dealing with any notion of limit, the relevant notions of convergence in the source and the target can be represented by \emph{filters}. A {\em filter} over $X$ is a nonempty set $\mathcal F \subseteq \mathcal P(X)$ such that if $A \subseteq B$ and $A \in \mathcal F$, then $B \in \mathcal F$, and if $A, B \in \mathcal F$, then $A \cap B \in \mathcal F$. The general notion of limit in Isabelle, {\tt filterlim f F1 F2}, says, roughly, that the function $f$ ``converges'' in the sense of $F_2$, as the input converges in the sense of $F_1$. By specializing $F_1$ and $F_2$ appropriately, we obtain all the variations described in the last paragraph, and more. In addition, theorems can be proved at the appropriate level of generality. For example, we have:
+\begin{quote}
+ \todo{Add: Isabelle formulation of addition under limits.}
+\end{quote}
+This avoids the need to formalize endless variations of the same theorem. Details can be found in \cite{hoelzl:et:al:13}.
 
-\subsection{Real analysis}
+\todo{Say more here? Note that there is more text in Luke's thesis.}
 
+
+\subsection{Real analysis and complex-valued functions}
+
+\todo{
 Reals an instance of a conditionally complete lattice, sup and inf.
 
 Derivatives. Frechet.
 
-Integrals (HK, Bochner)
+Isabelle's library now has two forms of the integral. First, there is the gauge integral, ported from HOL light, for function on $R_n$. Second, there is the Bochner integral, a generalization of the Lebesgue integral, which can be defined for functions on any measure space, taking values in any Banach space.
 
-Transcendental functions (exp, sin, \ldots)
+Transcendental functions (exp, sin, \ldots).
 
-\subsection{Complex valued functions}
-
-For Fourier analysis, we need functions from $\RR$ to $\CC$. Derivative: Frechet worked. Integral: initially, pairs, but with Bochner, direct.
+For Fourier analysis, we need functions from $\RR$ to $\CC$. Exp defined for any Banach space. Derivative: Frechet worked. Integral: initially, pairs, but with Bochner, direct.
+}
 
 \subsection{Measure theory and probability}
 
+\todo{
 Overview, refer to paper
 
 Measures and integrals; dominated convergence and monotone convergence
@@ -169,21 +263,91 @@ Distributions, especially normal distribution (Sudeep Kanav)
 Lebesgue-Stieltjes (cdf to measure), cumulative distribution functions
 
 Sets of points of continuity is measurable
+}
 
-\subsection{Calculus exercises}
+\subsection{Distribution functions}
 
-Sinc, moments of Gaussian distribution
+Every measure on $\RR$ gives rise to the real valued function which, at each input $x$, returns the amount of ``mass'' below that argument:
+
+\begin{definition}
+Let $\mu$ be a finite measure on $\RR$. The \emph{cumulative distribution function} $F_\mu$ is defined by $F_\mu(x) = \mu (-\infty, x]$.
+\end{definition}
+
+The cumulative distribution function is sometimes called, more simply, the \emph{distribution function}, or denoted by the acronym \emph{cdf}. In Isabelle, the definition is rendered as follows:
+
+\begin{quote}
+\begin{isabellebody}
+\isacommand{definition}\isamarkupfalse%
+\isanewline
+\ \ cdf\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure\ {\isasymRightarrow}\ real\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}cdf\ M\ {\isasymequiv}\ {\isasymlambda}x{\isachardot}\ measure\ M\ {\isacharbraceleft}{\isachardot}{\isachardot}x{\isacharbraceright}{\isachardoublequoteclose}
+\end{isabellebody}
+\end{quote}
+
+It is not hard to see that the distribution function $F_\mu$ of a finite measure $\mu$ is nondecreasing and right-continuous, and satisfies $\lim_{x \rightarrow -\infty} F_\mu(x) = 0$ and \linebreak $\lim_{x \rightarrow \infty} F_\mu(x) = 1$.
+
+\begin{quote}
+\begin{isabellebody}
+\isacommand{lemma}\isamarkupfalse%
+\ cdf{\isacharunderscore}nondecreasing{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isasymforall}x\ y{\isachardot}\ x\ {\isasymle}\ y\ {\isasymlongrightarrow}\ cdf\ M\ x\ {\isasymle}\ cdf\ M\ y{\isacharparenright}{\isachardoublequoteclose}\isanewline
+
+\isacommand{lemma}\isamarkupfalse%
+\ cdf{\isacharunderscore}is{\isacharunderscore}right{\isacharunderscore}cont{\isacharcolon}\ {\isachardoublequoteopen}continuous\ {\isacharparenleft}at{\isacharunderscore}right\ a{\isacharparenright}\ {\isacharparenleft}cdf\ M{\isacharparenright}{\isachardoublequoteclose}\isanewline
+
+\isacommand{lemma}\isamarkupfalse%
+\ cdf{\isacharunderscore}lim{\isacharunderscore}at{\isacharunderscore}bot{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}cdf\ M\ {\isacharminus}{\isacharminus}{\isacharminus}{\isachargreater}\ {\isadigit{0}}{\isacharparenright}\ at{\isacharunderscore}bot{\isachardoublequoteclose}\isanewline
+
+\isacommand{lemma}\isamarkupfalse%
+\ cdf{\isacharunderscore}lim{\isacharunderscore}at{\isacharunderscore}top{\isacharunderscore}prob{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}cdf\ M\ {\isacharminus}{\isacharminus}{\isacharminus}{\isachargreater}\ {\isadigit{1}}{\isacharparenright}\ at{\isacharunderscore}top{\isachardoublequoteclose}
+\end{isabellebody}
+\end{quote}
+
+Conversely, it turns out that any function with these properties is the distribution of a Boreal probability measure on $\RR$. The requisite measure $\mu$ is constructed by defining $\mu (a,b] = F(b) - F(a)$ and extending this to the Borel $\sigma$-algebra using the Carath\'eodory extension theorem. (To apply the extension theorem we had to show that the function $\mu$, so defined, is $\sigma$-additive on intervals. This requires some effort, and the use of the compactness theorem.)
+\begin{quote}
+\begin{isabellebody}
+\isacommand{lemma}\isamarkupfalse%
+\ real{\isacharunderscore}distribution{\isacharunderscore}interval{\isacharunderscore}measure{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ F\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ nondecF\ {\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}\ x\ y{\isachardot}\ x\ {\isasymle}\ y\ {\isasymLongrightarrow}\ F\ x\ {\isasymle}\ F\ y{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ right{\isacharunderscore}cont{\isacharunderscore}F\ {\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}a{\isachardot}\ continuous\ {\isacharparenleft}at{\isacharunderscore}right\ a{\isacharparenright}\ F{\isachardoublequoteclose}\ \isakeyword{and}\ \isanewline
+\ \ \ \ lim{\isacharunderscore}F{\isacharunderscore}at{\isacharunderscore}bot\ {\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}F\ {\isacharminus}{\isacharminus}{\isacharminus}{\isachargreater}\ {\isadigit{0}}{\isacharparenright}\ at{\isacharunderscore}bot{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ lim{\isacharunderscore}F{\isacharunderscore}at{\isacharunderscore}top\ {\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}F\ {\isacharminus}{\isacharminus}{\isacharminus}{\isachargreater}\ {\isadigit{1}}{\isacharparenright}\ at{\isacharunderscore}top{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}real{\isacharunderscore}distribution\ {\isacharparenleft}interval{\isacharunderscore}measure\ F{\isacharparenright}{\isachardoublequoteclose}
+\end{isabellebody}
+\end{quote}
+Here \texttt{real\_distribution} is a locale for Borel probability measures, and \texttt{interval\_measure} is the function that generates a measure from a nondecreasing, right-continuous function.
+
+We also showed that this assignment is unique, in the sense that if two measures have the same cumulative distribution function, then they are equal: 
+\begin{quote}
+\begin{isabellebody}
+\isacommand{lemma}\isamarkupfalse%
+\ cdf{\isacharunderscore}unique{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ M{\isadigit{1}}\ M{\isadigit{2}}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}real{\isacharunderscore}distribution\ M{\isadigit{1}}{\isachardoublequoteclose}\ \isakeyword{and}\ {\isachardoublequoteopen}real{\isacharunderscore}distribution\ M{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}cdf\ M{\isadigit{1}}\ {\isacharequal}\ cdf\ M{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}M{\isadigit{1}}\ {\isacharequal}\ M{\isadigit{2}}{\isachardoublequoteclose}
+\end{isabellebody}
+\end{quote}
+Thus one can pass freely between talk of measures on $\RR$ and their distribution functions, a key fact in the proof of the CLT.
+
+\subsection{Calculus}
+
+\todo{
+Sinc
+
+Approximations to complex $e^{it}$.
 
 Integration by parts
 
 Change of coordinates
 
-Moments of the normal distribution (Sudeep)
-
 $\sin x / x$ using Fubini (options: polar, contour (have now), or Fubini)
+}
 
-\subsection{Varieties of integrals}
+\subsection{Variations on the integral}
 
+\todo{ 
 General integral
 
 Set integral
@@ -191,41 +355,75 @@ Set integral
 Interval integral.
 
 Substitution, FTC, Manual Eberl strengthened substitution
+}
 
 \subsection{Countability and uncountability}
 
+\todo{
 Reals uncountable (we had to extend to intervals, nonempty open sets).
 
-Closure properties of countable sets
+Closure properties of countable sets (Fabian's library)
 
 Diagonalization 
-
+}
 
 \section{The formal proof}
 \label{section:formal}
 
 \subsection{Weak convergence}
+\label{subsection:weak:convergence}
 
+\todo{
 Definition
 
 Portmanteau theorem
 
+That the notion of weak convergence is robust is supported by the fact that there are a number of equivalent characterizations. The following theorem is sometimes known as the \emph{Portmanteau Theorem}:
+\begin{theorem}
+The following are equivalent:
+\begin{itemize}
+ \item $\mu_n \Rightarrow \mu$
+ \item $\int f \; d\mu_n$ approaches $\int f \; d\mu$ for every bounded, continuous function $f$
+ \item If $A$ is any Borel set, $\partial A$ denotes the topological boundary of $A$, and $\mu(\partial A) = 0$, then $\mu_n(A)$ approaches $\mu_n(A)$. 
+\end{itemize}
+\end{theorem}
+
+}
+
 \subsection{Characteristic functions}
 
+\todo{
 Main thing: convolution $\simeq$ pointwise product
 
 Also, approximations
+}
 
 \subsection{Levy inversion}
 
+\todo{
 Used: Si
+
+The \emph{Levy Uniqueness Theorem} asserts that if $\mu_1$ and $\mu_2$ have the same characteristic function, then $\mu_1 = \mu_2$. In other words, a measure $\mu$ can be ``reconstructed'' from its characteristic function, and so the characteristic function of a measure determines the measure uniquely. To prove the uniqueness theorem, it is enough to show that $\mu_1((a,b]) = \mu_2((a,b])$ for real numbers $a$ and $b$ with the property that $\mu_1(\{a\}) = \mu_2(\{a\}) = \mu_1(\{b\}) = \mu_2(\{b\}) = 0$. The proof involves approximating the indicator function of $(a,b]$ in terms of the complex exponential (this is where the function $(\sin x) / x$ comes into play), unfolding the definition of the characteristic function, and doing an explicit calculation with integrals and limits.
+}
 
 \subsection{Helly's theorem}
 
+\todo{
 \ldots characterize this as some sort of compactness
+
+}
 
 \subsection{Levy continuity}
 
+\todo{
+Let $(\mu_n)$ be a sequence of distributions, where each $\mu_n$ has characteristic function $\ph_n$, and let $\mu$ be a distribution with characteristic function $\ph$. The \emph{Levy Continuity Theorem} states that $\ph_n$ converges to $\ph$ weakly if and only if $\ph_n(t)$ converges to $\ph(t)$ for every $t$. Proving the ``only if'' direction is easy, but the other direction is a lot harder. It relies on a result known as \emph{Helly's Selection Theorem}, a form of compactness for the space of distributions.
+}
+
+\subsection{The moments of the normal distribution}
+
+\todo{
+To implement this strategy, one needs to know that the characteristic function of the standard normal distribution is $\ph(t) = e^{-t^2/2}$. Establishing this fact took more work than we thought it would. Many textbook proofs of this invoke facts from complex analysis that were unavailable to us. Billingsley \cite[page 344]{billingsley:95} sketches an elementary proof, which required calculating the moments and absolute moments of the standard normal distribution. (This is where the calculations of $\int_{-\infty}^\infty x^k e^{-x^2 / t} \; dx$, mentioned in the last section, were needed. A prior calculation by Sudeep Kanav covered the cases $k = 0, 1$, which provide the base cases for an inductive proof.) Filling in the details involved carrying out careful computations with integrals and power series approximations to $e^x$.
+}
 
 \subsection{The Central Limit Theorem}
 
@@ -235,26 +433,35 @@ Used: Si
 
 \subsection{Dealing with partial functions}
 
+\todo{
 has-integral, etc.
 
 Fubini, dominated convergence
 
 Message: both representations are useful and needed, but you have to be careful
+}
 
 \subsection{Strategies for limit proofs}
 
+\todo{
 For example, use properties of ordering instead of epsilon delta
+}
 
 \subsection{Strategies for integrals}
 
+\todo{
 affine trick
+}
 
 \subsection{Alternatives}
 
+\todo{
 Stone-Weierstrass, complex analysis countour integrals
+}
 
 \subsection{Cleanup and length}
 
+\todo{
 Originally, combined, 13000
 
 Now, things in this section, 2500
@@ -273,8 +480,9 @@ cleanup:
  \item eliminating duplicated code
  \item choosing good names (esp.~for integrals), rather than ``billingsley 13.1''
 \end{itemize}
+}
 
 \bibliographystyle{plain}
-\bibliography{itp}
+\bibliography{clt}
 
 \end{document}
