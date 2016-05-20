@@ -40,13 +40,12 @@
 
 \institute{J. Avigad \and L. Serafin \at Carnegie Mellon University \and J. H\"olzl \at Technische Universit\"at M\"unchen}
 
-
 \maketitle
 
 \begin{abstract}
 We describe a formally verified proof of the Central Limit Theorem in the Isabelle proof assistant, which builds upon and extends Isabelle's libraries for analysis and measure-theoretic probability. 
 % The statement of the theorem relies on the notion of \emph{weak convergence}, also known as \emph{convergence in distribution}. 
-The proof of the theorem uses \emph{characteristic functions}, which are a kind of Fourier transform, to demonstrate that, under suitable hypotheses, sums of random variables converge weakly to the standard normal distribution. We also discuss the general infrastructure that was needed to support the formalization.
+The proof of the theorem uses \emph{characteristic functions}, which are a kind of Fourier transform, to demonstrate that, under suitable hypotheses, sums of random variables converge weakly to the standard normal distribution. We also discuss the libraries and infrastructure that supported the formalization.
 \keywords{interactive theorem proving, measure theory, central limit theorem}
 \end{abstract}
 
@@ -65,6 +64,8 @@ The formalization is also a good test for Isabelle's libraries, proof language, 
 In Section~\ref{section:overview}, we provide an overview of the Central Limit Theorem, and the proof that we formalized, following the textbook presentation of Billingsley~\cite{billingsley:95}. In Section~\ref{section:isabelle}, we describe the Isabelle proof assistant, and the parts of the library that supported our formalization. In Section~\ref{section:formal}, we describe the formal proof itself, and in Section~\ref{section:reflections}, we reflect on what we have learned from the effort. 
 
 Our formalization is currently part of the Isabelle library, which can be found online at \url{https://isabelle.in.tum.de/}.\footnote{The probability library in particular can be found at \url{https://isabelle.in.tum.de/dist/library/HOL/HOL-Probability/index.html}.} A preliminary, unpublished report on the formalization can be found on arXiv \cite{avigad:hoelzl:serafin:14}. This report also draws heavily on Serafin's Carnegie Mellon MS thesis \cite{serafin:15}, which provides additional information.
+
+\emph{Acknowledgments.} We are grateful to Tobias Nipkow, Lawrence Paulson, Makarius Wenzel, and the entire Isabelle team for the ongoing development of Isabelle, and to Tobias in particular for steadfast encouragement and support.
 
 \section{Overview of the Central Limit Theorem}
 \label{section:overview}
@@ -220,7 +221,7 @@ Here, the source and target spaces can be any topological space, including metri
 
 To handle the many instances of convergence that arose in the formalization, we used Isabelle's elegant library for dealing with limits via filters, as described in \cite{hoelzl:et:al:13}. The idea is that when dealing with any notion of limit, the relevant notions of convergence in the source and the target can be represented by \emph{filters}. A {\em filter} over $X$ is a nonempty set $\mathcal F \subseteq \mathcal P(X)$ such that if $A \subseteq B$ and $A \in \mathcal F$, then $B \in \mathcal F$, and if $A, B \in \mathcal F$, then $A \cap B \in \mathcal F$. The general notion of limit in Isabelle, {\tt filterlim f F1 F2}, says, roughly, that the function $f$ ``converges'' in the sense of $F_2$, as the input converges in the sense of $F_1$. By specializing $F_1$ and $F_2$ appropriately, we obtain all the variations described in the last paragraph, and more. In addition, theorems can be proved at the appropriate level of generality. For example, we have:
 \begin{quote}
- \todo{Add: Isabelle formulation of addition under limits.}
+ \todo{Insert: Isabelle formulation of addition under limits.}
 \end{quote}
 This avoids the need to formalize endless variations of the same theorem. Details can be found in \cite{hoelzl:et:al:13}.
 
@@ -241,7 +242,7 @@ Our initial formalization of the Central Limit Theorem relied on the theory of L
 
 As with the Lebesgue integral, we obtain a version of the dominated convergence theorem.
 \begin{quote}
- \todo{Add a formal statement of this.}
+ \todo{Insert a formal statement of this.}
 \end{quote}
 We also obtain the monotone convergence theorem, for sequences of functions taking values in the real numbers. We also obtain Fubini's theorem. These are staples of the theory of integration, and were used throughout our formalization.
 
@@ -280,6 +281,7 @@ For integration, the story is more involved. Isabelle's library now has two form
 With Bochner integral, as with the Frechet derivative, integrating functions taking values in $\CC$ is no different from integrating functions taking values in $\RR$. Indeed, this was the primary motivation for generalizing from the Lebesgue integral to the Bochner integral.
 
 \subsection{Calculus}
+\label{subsection:calculus}
 
 Our formalization required extensive use of calculus at an undergraduate level: integration by parts, Taylor series approximations, changes of variable, and so on. For example, the calculation of moments of the normal distribution required the following estimate on the complex exponential:
 \[
@@ -500,7 +502,7 @@ Recall the the \emph{characteristic function} $\ph$ of a probability measure $\m
 If $X$ is a random variable, the characteristic function of $X$ is defined to be the characteristic function of its distribution.
 In our formalization, these characteristic function of a measure is defined as follows:
 \begin{quote}
- \todo{Fill in.}
+ \todo{Insert.}
 \end{quote}
 The characteristic function of a random variable \texttt{X} defined on a measure space \texttt{M} is then written \texttt{char (distr M borel X)}, since \texttt{distr M borel X} denotes the distribution of \texttt{X} with respect to the usual Borel measure on the real numbers.
 
@@ -517,7 +519,7 @@ The key property of characteristic functions is this: if $X_1$ and $X_2$ are ind
 \end{align*}
 Here, $X_1$ and $X_2$ are really functions over the underlying measure space, and the third equation follows from the independence of $X_1$ and $X_2$. We reproduce our formal proof, as well as the generalization to arbitrary finite sums, in full:
 \begin{quote}
-\todo{Add char-distr-sum and char-distr-setsum, in full.}
+\todo{Insert char-distr-sum and char-distr-setsum, in full.}
 \end{quote}
 We also needed an explicit approximations to the characteristic functions of a random variable, obtained using the calculation described at the beginning of Section~\ref{subsection:calculus}. One formulation is as follows:
 \begin{quote}
@@ -526,11 +528,11 @@ We also needed an explicit approximations to the characteristic functions of a r
 
 Finally, we needed to compute the characteristic function $\ph$ of the standard normal distribution, and show $\ph(t) = e^{-t^2/2}$. Establishing this fact took more work than we thought it would. Many textbook proofs of this invoke facts from complex analysis that were unavailable to us. Billingsley \cite[page 344]{billingsley:95} sketches an elementary proof, which required calculating the moments and absolute moments of the standard normal distribution. This is where the calculations of $\int_{-\infty}^\infty x^k e^{-x^2 / t} \; dx$ mentioned in Section~\ref{subsection:calculus}, were needed: specifically, we have for even $k$, 
 \begin{quote}
-\todo{std-normal-moment-even in Distributions}
+\todo{Insert std-normal-moment-even in Distributions}
 \end{quote}
 and for odd $k$,
 \begin{quote}
-\todo{std-normal-moment-odd}
+\todo{Insert std-normal-moment-odd}
 \end{quote}
 A prior calculation by Sudeep Kanav covered the cases $k = 0, 1$, which provide the base cases for an inductive proof. Filling in the details involved carrying out careful computations with integrals and power series approximations to $e^x$.
 
@@ -565,7 +567,10 @@ In our formalization, this is expressed simply as follows:
 
 \subsection{The L\'evy Continuity Theorem}
 
-Let $(\mu_n)$ be a sequence of distributions, where each $\mu_n$ has characteristic function $\ph_n$, and let $\mu$ be a distribution with characteristic function $\ph$. The \emph{L\'evy Continuity Theorem} states that $\mu_n$ converges to $\mu$ weakly if and only if $\ph_n(t)$ converges to $\ph(t)$ for every $t$. In our formalization
+Let $(\mu_n)$ be a sequence of distributions, where each $\mu_n$ has characteristic function $\ph_n$, and let $\mu$ be a distribution with characteristic function $\ph$. The \emph{L\'evy Continuity Theorem} states that $\mu_n$ converges to $\mu$ weakly if and only if $\ph_n(t)$ converges to $\ph(t)$ for every $t$. In our formalization, it is expressed as follows:
+\begin{quote}
+ \todo{Insert.}
+\end{quote}
 
 Proving the ``only if'' direction is easy, using Portmanteau Theorem of Section~\ref{subsection:weak:convergence}, since $e^{itx}$ is bounded and continuous. In fact, in our formalization, it has a one-line proof:
 \begin{quote}
@@ -581,24 +586,46 @@ The other direction is a lot harder. The outline of the proof runs as follows:
  \item By the Uniqueness Theorem, this implies that $\nu = \mu$, contrary to the choice of $(\mu_{n_k})$ in 4.
 \end{enumerate}
 
-The necessary compactness principal is a consequence of the \emph{Helly Selection Theorem}, which we now describe. Although the proof of this theorem and its consequence take up only a page-and-a-half in Billingsley's textbook, these were among the most subtle and difficult components of our formalization.
+The necessary compactness principal is a consequence of the \emph{Helly Selection Theorem}, which we now describe. Although the proof of this theorem and its consequence take up only a page-and-a-half in Billingsley's textbook, these were among the most subtle components of our formalization. The theorem states the following:
+\begin{theorem}
+Let $(F_n)$ be a uniformly bounded sequence of nondecreasing, right continuous functions. Then there is a subsequence $(F_{n_k})$ and a nondecreasing, right-continuous function $F$ such that $\lim_k F_{n_k}(x) = F(x)$ at continuity points of $F$.  
+\end{theorem}
+In our formalization, this is expressed as follows:
+\begin{quote}
+  Insert.
+\end{quote}
+Note that the subsequence $(F_{n_k})$ is represented by a strictly increasing function $s : \NN \to \NN$ which returns, for each $k$, the value $n_k$. The proof involves a diagonalization argument: for each rational $r$, we thin the sequence to guarantee convergence at $r$, and then take a ``diagonal limit'' to construct the required subsequence and limit. To that end, we used a general framework for such diagonalization arguments, provided by Fabian Immler.
 
-\todo{Describe Helly and the corollary.}
-
-% The theory of tightness of sequences of measures gives an analogue in the space of probability measures of the Weierstrass theorem that every bounded sequence of reals has a convergent subsequence. Tightness is the requisite analogue of boundedness: Roughly a sequence of probability measures is called tight iff no mass ``escapes to infinity.'' The sequence $\bldseq{\mu_n}{n \in \N}$, where $\mu_n$ is a unit mass at $n$, gives an example of how mass can ``escape to infinity.'' The key result regarding tightness of a sequence $\bldseq{\mu_n}{n \in \N}$ of probability measures is that it is equivalent to the condition that for every subsequence $\bldseq{\mu_{n_k}}{k \in \N}$ there exists a subsubsequence $\bldseq{\mu_{n_{k_j}}}{j \in \N}$ which converges in distribution to some probability measure. A corollary of this result is that if a sequence $\bldseq{\mu_n}{n \in \N}$ is tight, and it can be shown that every subsequence which has a weak limit must converge in distribution to a given probability measure $\mu$, then in fact $\mu_n \Rightarrow \mu$.
-
-% The proof of the main result concerning tight sequences of measures requires the Helly selection theorem, which is of importance also in functional analysis. This is another analogue of Weierstrass theorem, this time giving that if \linebreak $\bldseq{F_n}{n \in \N}$ is any sequence of distribution functions\footnote{The distribution function $F$ of a Borel probability measure $\mu$ on $\R$ is given by $F(x) = \mu(-\infty, x]$; these functions are treated in section \ref{sec:cdf}.} then it has a subsequence $\bldseq{F_{n_k}}{k \in \N}$ which converges vaguely to some nondecreasing, right-continuous function $F$ (which may not be a distribution function because its limit at $\infty$ may be less than $1$). Vague convergence is defined the same way as weak convergence, and differs only in not requiring that the limit function have limit $1$ at $\infty$. The Helly selection theorem is proven using the method of diagonal subsequences to obtain values for the requisite function $F$ at rationals, and extending to all reals by right-continuity.\footnote{This summary is not quite accurate, but provides reasonable intuition. The actual proof is given in section \ref{sec:helly}.} The elementary analytical arguments involved in this were straightforward but tedious to verify.
-
-% Closure properties of countable sets (Fabian's library)
-
-% Diagonalization 
-
+To describe the relevant corollary, we need to introduce a definition. A sequence $(\mu_n)$ of real measures is said to be \emph{tight} if for every $\varepsilon > 0$, there is a finite interval $(a, b]$ such that $\mu_n(a, b] > 1 - \varepsilon$ for all $n$. Roughly, a sequence of probability measures is tight if no mass ``escapes to infinity''; the sequence $(\mu_n)$, where $\mu_n$ is a unit mass at $n$, is an example of a sequence that is \emph{not} tight. Helly's theorem can be used to show that if $(\mu_n)$ is a tight sequence of measures, then for every subsequence $(\mu_{n_k})$ there is a further subsequence $(\mu_{n_{k(j)}})$ and a probability measure $\mu$ such that $(\mu_{n_{k(j)}})$ converges weakly $\mu$ as $j$ approaches infinity.
+\begin{quote}
+ \todo{Insert our formal version.}
+\end{quote}
 
 In the Isabelle 2016 distribution, the Helly Selection Theorem and its corollary are proved in \verb=Helly_Selection=, and the L\'evy Continuity Theorem is proved in \verb=Levy=.
 
 \subsection{The Central Limit Theorem}
 
-\todo{Talk about the end-game proof. Maybe include the whole proof, as a small figure?}
+Proving the Central Limit Theorem is now just a matter of putting the pieces together. Let $(X_n)$ be a sequence of random variables all of which have the same distribution, $\mu$, and finite variance, $\sigma^2 > 0$. Without loss of generalizing, subtracting a common offset, we can assume that each $X_n$ has mean $0$. Let
+\[
+ S'_n = \sum_{i < n} X_i / \sqrt {n \sigma^2}
+\]
+be the normalized sums. Our goal is to show that the distributions of $S'_n$ converge weakly to the standard normal distribution. 
+
+For each $n$, let $\ph_n$ be the characteristic function of $\Sigma'_n$. By the L\'evy continuity theorem, it suffices to show that $\ph_n$ approaches the characteristic function of the standard normal distribution points. In other words, we need to show that for every $t$, $\ph_n(t)$ approaches $e^{-t^2/2}$.
+
+Since each $X_i$ has the same distribution, all the $X_i$'s have the same characteristic function; call it $\psi$. By the key property, the characteristic function of the sum $S'_n$ is the product of the characteristic functions of the components, so
+\begin{align*}
+ \ph_n(t) & = \prod_{j = 1}^n \int e^{itX_j} / \sqrt{n \sigma^2} \, d\mu \\
+   & = \prod_{j = 1}^n \psi(t / \sqrt{n \sigma^2}) \\
+   & = (\psi(t / \sqrt{n \sigma^2}))^n.
+\end{align*}
+Now some of the explicit calculations described in Section~\ref{subsection:calculus} can be used to show that $\psi(t)$ is well approximated by
+\[
+1 + it \int X \, d\mu + \frac{t^2}{2} \int X^2 d\mu, 
+\]
+which is equal to $1 - t^2\sigma^2 / 2$, since we are assuming $X$ has mean $0$ and variance $\sigma^2$. Plugging in $t / \sqrt{n \sigma^2}$ for $t$, we see that $\ph_n(t)$ is approximated by $(1 - \frac{t^2}{2n})^n$, which approaches $e^{-t^2/2}$ as $t$ approaches infinity.
+
+The Central Limit Theorem is proved, of course, in the theory \verb=Central_Limit_Theorem=. The formal version of the proof we have just sketched is given in its entirety in the appendix. 
 
 \section{Reflections}
 \label{section:reflections}
@@ -660,5 +687,294 @@ cleanup:
 
 \bibliographystyle{plain}
 \bibliography{clt}
+
+\section*{Appendix}
+
+{
+\scriptsize
+\begin{isabellebody}
+\isacommand{theorem}\isamarkupfalse%
+\ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ central{\isacharunderscore}limit{\isacharunderscore}theorem{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ \isanewline
+\ \ \ \ X\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ {\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ {\isasymmu}\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ {\isasymsigma}\ {\isacharcolon}{\isacharcolon}\ real\ \isakeyword{and}\isanewline
+\ \ \ \ S\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ {\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\isanewline
+\ \ \ \ X{\isacharunderscore}indep{\isacharcolon}\ {\isachardoublequoteopen}indep{\isacharunderscore}vars\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ borel{\isacharparenright}\ X\ UNIV{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}integrable{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}X\ n{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}mean{\isacharunderscore}{\isadigit{0}}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ expectation\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ {\isasymsigma}{\isacharunderscore}pos{\isacharcolon}\ {\isachardoublequoteopen}{\isasymsigma}\ {\isachargreater}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}square{\isacharunderscore}integrable{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isacharparenleft}X\ n\ x{\isacharparenright}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}variance{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ variance\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isachardoublequoteclose}\ \isakeyword{and}\isanewline
+\ \ \ \ X{\isacharunderscore}distrib{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isasymmu}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{defines}\isanewline
+\ \ \ \ {\isachardoublequoteopen}S\ n\ {\isasymequiv}\ {\isasymlambda}x{\isachardot}\ {\isasymSum}i{\isacharless}n{\isachardot}\ X\ i\ x{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\isanewline
+\ \ \ \ {\isachardoublequoteopen}weak{\isacharunderscore}conv{\isacharunderscore}m\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ S\ n\ x\ {\isacharslash}\ sqrt\ {\isacharparenleft}n\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isacharparenright}{\isacharparenright}\ \isanewline
+\ \ \ \ \ \ \ \ {\isacharparenleft}density\ lborel\ std{\isacharunderscore}normal{\isacharunderscore}density{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}\isanewline
+\ \ \isacommand{def}\isamarkupfalse%
+\ S{\isacharprime}\ {\isasymequiv}\ {\isachardoublequoteopen}{\isasymlambda}n\ x{\isachardot}\ S\ n\ x\ {\isacharslash}\ sqrt\ {\isacharparenleft}n\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \isacommand{def}\isamarkupfalse%
+\ {\isasymphi}\ {\isasymequiv}\ {\isachardoublequoteopen}{\isasymlambda}n{\isachardot}\ char\ {\isacharparenleft}distr\ M\ borel\ {\isacharparenleft}S{\isacharprime}\ n{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \isacommand{def}\isamarkupfalse%
+\ {\isasympsi}\ {\isasymequiv}\ {\isachardoublequoteopen}{\isasymlambda}n\ t{\isachardot}\ char\ {\isasymmu}\ {\isacharparenleft}t\ {\isacharslash}\ sqrt\ {\isacharparenleft}{\isasymsigma}\isactrlsup {\isadigit{2}}\ {\isacharasterisk}\ n{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ X{\isacharunderscore}rv\ {\isacharbrackleft}simp{\isacharcomma}\ measurable{\isacharbrackright}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ random{\isacharunderscore}variable\ borel\ {\isacharparenleft}X\ n{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ X{\isacharunderscore}indep\ \isacommand{unfolding}\isamarkupfalse%
+\ indep{\isacharunderscore}vars{\isacharunderscore}def{\isadigit{2}}\ \isacommand{by}\isamarkupfalse%
+\ simp\isanewline
+\ \ \isacommand{interpret}\isamarkupfalse%
+\ {\isasymmu}{\isacharcolon}\ real{\isacharunderscore}distribution\ {\isasymmu}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}subst\ X{\isacharunderscore}distrib\ {\isacharbrackleft}symmetric{\isacharcomma}\ of\ {\isadigit{0}}{\isacharbrackright}{\isacharcomma}\ rule\ real{\isacharunderscore}distribution{\isacharunderscore}distr{\isacharcomma}\ simp{\isacharparenright}\isanewline
+\ \ \isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isasymmu}{\isacharunderscore}integrable\ {\isacharbrackleft}simp{\isacharbrackright}{\isacharcolon}\ {\isachardoublequoteopen}integrable\ {\isasymmu}\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ x{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}simp\ add{\isacharcolon}\ X{\isacharunderscore}distrib\ {\isacharbrackleft}symmetric{\isacharcomma}\ of\ {\isadigit{0}}{\isacharbrackright}{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ assms\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}subst\ integrable{\isacharunderscore}distr{\isacharunderscore}eq{\isacharcomma}\ auto{\isacharparenright}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isasymmu}{\isacharunderscore}mean{\isacharunderscore}integrable\ {\isacharbrackleft}simp{\isacharbrackright}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymmu}{\isachardot}expectation\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ x{\isacharparenright}\ {\isacharequal}\ {\isadigit{0}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}simp\ add{\isacharcolon}\ X{\isacharunderscore}distrib\ {\isacharbrackleft}symmetric{\isacharcomma}\ of\ {\isadigit{0}}{\isacharbrackright}{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ assms\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}subst\ integral{\isacharunderscore}distr{\isacharcomma}\ auto{\isacharparenright}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isasymmu}{\isacharunderscore}square{\isacharunderscore}integrable\ {\isacharbrackleft}simp{\isacharbrackright}{\isacharcolon}\ {\isachardoublequoteopen}integrable\ {\isasymmu}\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ x{\isacharcircum}{\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}simp\ add{\isacharcolon}\ X{\isacharunderscore}distrib\ {\isacharbrackleft}symmetric{\isacharcomma}\ of\ {\isadigit{0}}{\isacharbrackright}{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ assms\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}subst\ integrable{\isacharunderscore}distr{\isacharunderscore}eq{\isacharcomma}\ auto{\isacharparenright}\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isasymmu}{\isacharunderscore}variance\ {\isacharbrackleft}simp{\isacharbrackright}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymmu}{\isachardot}expectation\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ x{\isacharcircum}{\isadigit{2}}{\isacharparenright}\ {\isacharequal}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}simp\ add{\isacharcolon}\ X{\isacharunderscore}distrib\ {\isacharbrackleft}symmetric{\isacharcomma}\ of\ {\isadigit{0}}{\isacharbrackright}{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ assms\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}subst\ integral{\isacharunderscore}distr{\isacharcomma}\ auto{\isacharparenright}\isanewline
+\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ main{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}t{\isachardot}\ eventually\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ cmod\ {\isacharparenleft}{\isasymphi}\ n\ t\ {\isacharminus}\ {\isacharparenleft}{\isadigit{1}}\ {\isacharplus}\ {\isacharparenleft}{\isacharminus}{\isacharparenleft}t{\isacharcircum}{\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ {\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ n{\isacharparenright}{\isacharcircum}n{\isacharparenright}\ {\isasymle}\ \isanewline
+\ \ \ \ \ \ \ \ {\isacharparenleft}t\isactrlsup {\isadigit{2}}\ {\isacharslash}\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharasterisk}\ {\isacharparenleft}LINT\ x{\isacharbar}{\isasymmu}{\isachardot}\ min\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ x\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharparenleft}{\isasymbar}t\ {\isacharslash}\ sqrt\ {\isacharparenleft}{\isasymsigma}\isactrlsup {\isadigit{2}}\ {\isacharasterisk}\ n{\isacharparenright}{\isasymbar}\ {\isacharasterisk}\ {\isasymbar}x{\isasymbar}\ {\isacharcircum}\ {\isadigit{3}}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ \ \ sequentially{\isachardoublequoteclose}\isanewline
+\ \ \isacommand{proof}\isamarkupfalse%
+\ {\isacharparenleft}rule\ eventually{\isacharunderscore}sequentiallyI{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{fix}\isamarkupfalse%
+\ n\ {\isacharcolon}{\isacharcolon}\ nat\ \isakeyword{and}\ t\ {\isacharcolon}{\isacharcolon}\ real\isanewline
+\ \ \ \ \isacommand{assume}\isamarkupfalse%
+\ {\isachardoublequoteopen}n\ {\isasymge}\ nat\ {\isacharparenleft}ceiling\ {\isacharparenleft}t{\isacharcircum}{\isadigit{2}}\ {\isacharslash}\ {\isadigit{4}}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{hence}\isamarkupfalse%
+\ n{\isacharcolon}\ {\isachardoublequoteopen}n\ {\isasymge}\ t{\isacharcircum}{\isadigit{2}}\ {\isacharslash}\ {\isadigit{4}}{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}subst\ nat{\isacharunderscore}ceiling{\isacharunderscore}le{\isacharunderscore}eq\ {\isacharbrackleft}symmetric{\isacharbrackright}{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{let}\isamarkupfalse%
+\ {\isacharquery}t\ {\isacharequal}\ {\isachardoublequoteopen}t\ {\isacharslash}\ sqrt\ {\isacharparenleft}{\isasymsigma}\isactrlsup {\isadigit{2}}\ {\isacharasterisk}\ n{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\ \ \ \ \isacommand{def}\isamarkupfalse%
+\ {\isasympsi}{\isacharprime}\ {\isasymequiv}\ {\isachardoublequoteopen}{\isasymlambda}n\ i{\isachardot}\ char\ {\isacharparenleft}distr\ M\ borel\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ X\ i\ x\ {\isacharslash}\ sqrt\ {\isacharparenleft}{\isasymsigma}\isactrlsup {\isadigit{2}}\ {\isacharasterisk}\ n{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{have}\isamarkupfalse%
+\ {\isacharasterisk}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n\ i\ t{\isachardot}\ {\isasympsi}{\isacharprime}\ n\ i\ t\ {\isacharequal}\ {\isasympsi}\ n\ t{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ {\isasympsi}{\isacharunderscore}def\ {\isasympsi}{\isacharprime}{\isacharunderscore}def\ char{\isacharunderscore}def\ \isacommand{apply}\isamarkupfalse%
+\ auto\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}subst\ X{\isacharunderscore}distrib\ {\isacharbrackleft}symmetric{\isacharbrackright}{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}subst\ integral{\isacharunderscore}distr{\isacharcomma}\ auto{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}subst\ integral{\isacharunderscore}distr{\isacharcomma}\ auto{\isacharparenright}\isanewline
+\isanewline
+\ \ \ \ \isacommand{have}\isamarkupfalse%
+\ {\isadigit{1}}{\isacharcolon}\ {\isachardoublequoteopen}S{\isacharprime}\ n\ {\isacharequal}\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isacharparenleft}{\isasymSum}\ i\ {\isacharless}\ n{\isachardot}\ X\ i\ x\ {\isacharslash}\ sqrt\ {\isacharparenleft}{\isasymsigma}\isactrlsup {\isadigit{2}}\ {\isacharasterisk}\ n{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\ \isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}rule\ ext{\isacharcomma}\ simp\ add{\isacharcolon}\ S{\isacharprime}{\isacharunderscore}def\ S{\isacharunderscore}def\ setsum{\isacharunderscore}divide{\isacharunderscore}distrib\ ac{\isacharunderscore}simps{\isacharparenright}\isanewline
+\isanewline
+\ \ \ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isasymphi}\ n\ t\ {\isacharequal}\ {\isacharparenleft}{\isasymProd}\ i\ {\isacharless}\ n{\isachardot}\ {\isasympsi}{\isacharprime}\ n\ i\ t{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ {\isasymphi}{\isacharunderscore}def\ {\isasympsi}{\isacharprime}{\isacharunderscore}def\ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}subst\ {\isadigit{1}}{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}rule\ char{\isacharunderscore}distr{\isacharunderscore}setsum{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}rule\ indep{\isacharunderscore}vars{\isacharunderscore}compose{\isadigit{2}}{\isacharbrackleft}\isakeyword{where}\ X{\isacharequal}X{\isacharbrackright}{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}rule\ indep{\isacharunderscore}vars{\isacharunderscore}subset{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}rule\ X{\isacharunderscore}indep{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ auto\isanewline
+\ \ \ \ \ \ \isacommand{done}\isamarkupfalse%
+\isanewline
+\ \ \ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isasymdots}\ {\isacharequal}\ {\isacharparenleft}{\isasympsi}\ n\ t{\isacharparenright}{\isacharcircum}n{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}auto\ simp\ add{\isacharcolon}\ {\isacharasterisk}\ setprod{\isacharunderscore}constant{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isadigit{2}}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymphi}\ n\ t\ {\isacharequal}{\isacharparenleft}{\isasympsi}\ n\ t{\isacharparenright}{\isacharcircum}n{\isachardoublequoteclose}\ \isacommand{{\isachardot}}\isamarkupfalse%
+\isanewline
+\isanewline
+\ \ \ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}cmod\ {\isacharparenleft}{\isasympsi}\ n\ t\ {\isacharminus}\ {\isacharparenleft}{\isadigit{1}}\ {\isacharminus}\ {\isacharquery}t{\isacharcircum}{\isadigit{2}}\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}\ {\isacharslash}\ {\isadigit{2}}{\isacharparenright}{\isacharparenright}\ {\isasymle}\ \isanewline
+\ \ \ \ \ \ \ \ {\isacharquery}t\isactrlsup {\isadigit{2}}\ {\isacharslash}\ {\isadigit{6}}\ {\isacharasterisk}\ {\isacharparenleft}LINT\ x{\isacharbar}{\isasymmu}{\isachardot}\ min\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ x\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharparenleft}{\isasymbar}{\isacharquery}t{\isasymbar}\ {\isacharasterisk}\ {\isasymbar}x{\isasymbar}\ {\isacharcircum}\ {\isadigit{3}}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ {\isasympsi}{\isacharunderscore}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}rule\ {\isasymmu}{\isachardot}aux{\isacharcomma}\ auto{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharquery}t{\isacharcircum}{\isadigit{2}}\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}\ {\isacharequal}\ t{\isacharcircum}{\isadigit{2}}\ {\isacharslash}\ n{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{using}\isamarkupfalse%
+\ {\isasymsigma}{\isacharunderscore}pos\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}simp\ add{\isacharcolon}\ power{\isacharunderscore}divide{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}t{\isacharcircum}{\isadigit{2}}\ {\isacharslash}\ n\ {\isacharslash}\ {\isadigit{2}}\ {\isacharequal}\ {\isacharparenleft}t{\isacharcircum}{\isadigit{2}}\ {\isacharslash}\ {\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ n{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ simp\isanewline
+\ \ \ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isacharasterisk}{\isacharasterisk}{\isacharcolon}\ {\isachardoublequoteopen}cmod\ {\isacharparenleft}{\isasympsi}\ n\ t\ {\isacharminus}\ {\isacharparenleft}{\isadigit{1}}\ {\isacharplus}\ {\isacharparenleft}{\isacharminus}{\isacharparenleft}t{\isacharcircum}{\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ {\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ n{\isacharparenright}{\isacharparenright}\ {\isasymle}\ \isanewline
+\ \ \ \ \ \ {\isacharquery}t\isactrlsup {\isadigit{2}}\ {\isacharslash}\ {\isadigit{6}}\ {\isacharasterisk}\ {\isacharparenleft}LINT\ x{\isacharbar}{\isasymmu}{\isachardot}\ min\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ x\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharparenleft}{\isasymbar}{\isacharquery}t{\isasymbar}\ {\isacharasterisk}\ {\isasymbar}x{\isasymbar}\ {\isacharcircum}\ {\isadigit{3}}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ simp\isanewline
+\isanewline
+\ \ \ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}cmod\ {\isacharparenleft}{\isasymphi}\ n\ t\ {\isacharminus}\ {\isacharparenleft}complex{\isacharunderscore}of{\isacharunderscore}real\ {\isacharparenleft}{\isadigit{1}}\ {\isacharplus}\ {\isacharparenleft}{\isacharminus}{\isacharparenleft}t{\isacharcircum}{\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ {\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ n{\isacharparenright}{\isacharparenright}{\isacharcircum}n{\isacharparenright}\ {\isasymle}\ \isanewline
+\ \ \ \ \ \ \ \ \ n\ {\isacharasterisk}\ cmod\ {\isacharparenleft}{\isasympsi}\ n\ t\ {\isacharminus}\ {\isacharparenleft}complex{\isacharunderscore}of{\isacharunderscore}real\ {\isacharparenleft}{\isadigit{1}}\ {\isacharplus}\ {\isacharparenleft}{\isacharminus}{\isacharparenleft}t{\isacharcircum}{\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ {\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ n{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}subst\ {\isadigit{2}}{\isacharcomma}\ rule\ norm{\isacharunderscore}power{\isacharunderscore}diff{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ {\isasympsi}{\isacharunderscore}def\ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}rule\ {\isasymmu}{\isachardot}cmod{\isacharunderscore}char{\isacharunderscore}le{\isacharunderscore}{\isadigit{1}}{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}simp\ only{\isacharcolon}\ norm{\isacharunderscore}of{\isacharunderscore}real{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}auto\ intro{\isacharbang}{\isacharcolon}\ abs{\isacharunderscore}leI{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{using}\isamarkupfalse%
+\ n\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}subst\ divide{\isacharunderscore}le{\isacharunderscore}eq{\isacharcomma}\ auto{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isasymdots}\ {\isasymle}\ n\ {\isacharasterisk}\ {\isacharparenleft}{\isacharquery}t\isactrlsup {\isadigit{2}}\ {\isacharslash}\ {\isadigit{6}}\ {\isacharasterisk}\ {\isacharparenleft}LINT\ x{\isacharbar}{\isasymmu}{\isachardot}\ min\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ x\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharparenleft}{\isasymbar}{\isacharquery}t{\isasymbar}\ {\isacharasterisk}\ {\isasymbar}x{\isasymbar}\ {\isacharcircum}\ {\isadigit{3}}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}rule\ mult{\isacharunderscore}left{\isacharunderscore}mono\ {\isacharbrackleft}OF\ {\isacharasterisk}{\isacharasterisk}{\isacharbrackright}{\isacharcomma}\ simp{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isasymdots}\ {\isacharequal}\ {\isacharparenleft}t\isactrlsup {\isadigit{2}}\ {\isacharslash}\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharasterisk}\ {\isacharparenleft}LINT\ x{\isacharbar}{\isasymmu}{\isachardot}\ min\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ x\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharparenleft}{\isasymbar}{\isacharquery}t{\isasymbar}\ {\isacharasterisk}\ {\isasymbar}x{\isasymbar}\ {\isacharcircum}\ {\isadigit{3}}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\ \isanewline
+\ \ \ \ \ \ \isacommand{using}\isamarkupfalse%
+\ {\isasymsigma}{\isacharunderscore}pos\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}simp\ add{\isacharcolon}\ field{\isacharunderscore}simps\ min{\isacharunderscore}absorb{\isadigit{2}}{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isachardoublequoteopen}cmod\ {\isacharparenleft}{\isasymphi}\ n\ t\ {\isacharminus}\ {\isacharparenleft}{\isadigit{1}}\ {\isacharplus}\ {\isacharparenleft}{\isacharminus}{\isacharparenleft}t{\isacharcircum}{\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ {\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ n{\isacharparenright}{\isacharcircum}n{\isacharparenright}\ {\isasymle}\ \isanewline
+\ \ \ \ \ \ \ \ {\isacharparenleft}t\isactrlsup {\isadigit{2}}\ {\isacharslash}\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharasterisk}\ {\isacharparenleft}LINT\ x{\isacharbar}{\isasymmu}{\isachardot}\ min\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ x\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharparenleft}{\isasymbar}{\isacharquery}t{\isasymbar}\ {\isacharasterisk}\ {\isasymbar}x{\isasymbar}\ {\isacharcircum}\ {\isadigit{3}}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\ \isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ simp\isanewline
+\ \ \isacommand{qed}\isamarkupfalse%
+\isanewline
+\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ S{\isacharunderscore}rv\ {\isacharbrackleft}simp{\isacharcomma}\ measurable{\isacharbrackright}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ random{\isacharunderscore}variable\ borel\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ S\ n\ x\ {\isacharslash}\ sqrt\ {\isacharparenleft}n\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ S{\isacharunderscore}def\ \isacommand{by}\isamarkupfalse%
+\ measurable\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isasymAnd}t{\isachardot}\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ {\isasymphi}\ n\ t{\isacharparenright}\ {\isacharminus}{\isacharminus}{\isacharminus}{\isacharminus}{\isachargreater}\ char\ std{\isacharunderscore}normal{\isacharunderscore}distribution\ t{\isachardoublequoteclose}\isanewline
+\ \ \isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}\isanewline
+\ \ \ \ \isacommand{fix}\isamarkupfalse%
+\ t\isanewline
+\ \ \ \ \isacommand{let}\isamarkupfalse%
+\ {\isacharquery}t\ {\isacharequal}\ {\isachardoublequoteopen}{\isasymlambda}n{\isachardot}\ t\ {\isacharslash}\ sqrt\ {\isacharparenleft}{\isasymsigma}\isactrlsup {\isadigit{2}}\ {\isacharasterisk}\ n{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{have}\isamarkupfalse%
+\ {\isacharasterisk}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ {\isasymmu}\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isadigit{6}}\ {\isacharasterisk}\ x{\isacharcircum}{\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ auto\isanewline
+\ \ \ \ \isacommand{have}\isamarkupfalse%
+\ {\isacharasterisk}{\isacharasterisk}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ {\isasymmu}\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ min\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ x\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharparenleft}{\isasymbar}t\ {\isacharslash}\ sqrt\ {\isacharparenleft}{\isasymsigma}\isactrlsup {\isadigit{2}}\ {\isacharasterisk}\ real\ n{\isacharparenright}{\isasymbar}\ {\isacharasterisk}\ {\isasymbar}x{\isasymbar}\ {\isacharcircum}\ {\isadigit{3}}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}rule\ integrable{\isacharunderscore}bound\ {\isacharbrackleft}OF\ {\isacharasterisk}{\isacharbrackright}{\isacharparenright}\ auto\isanewline
+\ \ \ \ \isacommand{have}\isamarkupfalse%
+\ {\isacharasterisk}{\isacharasterisk}{\isacharasterisk}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}x{\isachardot}\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ {\isasymbar}t{\isasymbar}\ {\isacharasterisk}\ {\isasymbar}x{\isasymbar}\ {\isacharcircum}\ {\isadigit{3}}\ {\isacharslash}\ {\isasymbar}sqrt\ {\isacharparenleft}{\isasymsigma}\isactrlsup {\isadigit{2}}\ {\isacharasterisk}\ real\ n{\isacharparenright}{\isasymbar}{\isacharparenright}\ {\isacharminus}{\isacharminus}{\isacharminus}{\isacharminus}{\isachargreater}\ {\isadigit{0}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}subst\ divide{\isacharunderscore}inverse{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}rule\ tendsto{\isacharunderscore}mult{\isacharunderscore}right{\isacharunderscore}zero{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{using}\isamarkupfalse%
+\ {\isasymsigma}{\isacharunderscore}pos\ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}subst\ abs{\isacharunderscore}of{\isacharunderscore}nonneg{\isacharcomma}\ simp{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}simp\ add{\isacharcolon}\ real{\isacharunderscore}sqrt{\isacharunderscore}mult{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}rule\ tendsto{\isacharunderscore}mult{\isacharunderscore}right{\isacharunderscore}zero{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}rule\ tendsto{\isacharunderscore}inverse{\isacharunderscore}{\isadigit{0}}{\isacharunderscore}at{\isacharunderscore}top{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}rule\ filterlim{\isacharunderscore}compose\ {\isacharbrackleft}OF\ sqrt{\isacharunderscore}at{\isacharunderscore}top\ filterlim{\isacharunderscore}real{\isacharunderscore}sequentially{\isacharbrackright}{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\isasymlambda}n{\isachardot}\ LINT\ x{\isacharbar}{\isasymmu}{\isachardot}\ min\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ x\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharparenleft}{\isasymbar}{\isacharquery}t\ n{\isasymbar}\ {\isacharasterisk}\ {\isasymbar}x{\isasymbar}\ {\isacharcircum}\ {\isadigit{3}}{\isacharparenright}{\isacharparenright}\ {\isacharminus}{\isacharminus}{\isacharminus}{\isacharminus}{\isachargreater}\ {\isacharparenleft}LINT\ x{\isacharbar}{\isasymmu}{\isachardot}\ {\isadigit{0}}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}rule\ integral{\isacharunderscore}dominated{\isacharunderscore}convergence\ {\isacharbrackleft}\isakeyword{where}\ w\ {\isacharequal}\ {\isachardoublequoteopen}{\isasymlambda}x{\isachardot}\ {\isadigit{6}}\ {\isacharasterisk}\ x{\isacharcircum}{\isadigit{2}}{\isachardoublequoteclose}{\isacharbrackright}{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{using}\isamarkupfalse%
+\ {\isasymsigma}{\isacharunderscore}pos\ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}auto\ intro{\isacharbang}{\isacharcolon}\ AE{\isacharunderscore}I{\isadigit{2}}{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}rule\ tendsto{\isacharunderscore}sandwich\ {\isacharbrackleft}OF\ {\isacharunderscore}\ {\isacharunderscore}\ tendsto{\isacharunderscore}const\ {\isacharasterisk}{\isacharasterisk}{\isacharasterisk}{\isacharbrackright}{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}auto\ intro{\isacharbang}{\isacharcolon}\ always{\isacharunderscore}eventually\ min{\isachardot}cobounded{\isadigit{2}}{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{done}\isamarkupfalse%
+\isanewline
+\ \ \ \ \isacommand{hence}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\isasymlambda}n{\isachardot}\ LINT\ x{\isacharbar}{\isasymmu}{\isachardot}\ min\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ x\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharparenleft}{\isasymbar}{\isacharquery}t\ n{\isasymbar}\ {\isacharasterisk}\ {\isasymbar}x{\isasymbar}\ {\isacharcircum}\ {\isadigit{3}}{\isacharparenright}{\isacharparenright}\ {\isacharminus}{\isacharminus}{\isacharminus}{\isacharminus}{\isachargreater}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ simp\isanewline
+\ \ \ \ \isacommand{hence}\isamarkupfalse%
+\ main{\isadigit{2}}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isasymlambda}n{\isachardot}\ t\isactrlsup {\isadigit{2}}\ {\isacharslash}\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharasterisk}\ {\isacharparenleft}LINT\ x{\isacharbar}{\isasymmu}{\isachardot}\ min\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ x\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharparenleft}{\isasymbar}{\isacharquery}t\ n{\isasymbar}\ {\isacharasterisk}\ {\isasymbar}x{\isasymbar}\ {\isacharcircum}\ {\isadigit{3}}{\isacharparenright}{\isacharparenright}{\isacharparenright}\ {\isacharminus}{\isacharminus}{\isacharminus}{\isacharminus}{\isachargreater}\ {\isadigit{0}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}rule\ tendsto{\isacharunderscore}mult{\isacharunderscore}right{\isacharunderscore}zero{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{have}\isamarkupfalse%
+\ {\isacharasterisk}{\isacharasterisk}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isasymlambda}n{\isachardot}\ {\isacharparenleft}{\isadigit{1}}\ {\isacharplus}\ {\isacharparenleft}{\isacharminus}{\isacharparenleft}t{\isacharcircum}{\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ {\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ n{\isacharparenright}{\isacharcircum}n{\isacharparenright}\ {\isacharminus}{\isacharminus}{\isacharminus}{\isacharminus}{\isachargreater}\ exp\ {\isacharparenleft}{\isacharminus}{\isacharparenleft}t{\isacharcircum}{\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ {\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}rule\ tendsto{\isacharunderscore}exp{\isacharunderscore}limit{\isacharunderscore}sequentially{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\isasymlambda}n{\isachardot}\ complex{\isacharunderscore}of{\isacharunderscore}real\ {\isacharparenleft}{\isacharparenleft}{\isadigit{1}}\ {\isacharplus}\ {\isacharparenleft}{\isacharminus}{\isacharparenleft}t{\isacharcircum}{\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ {\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ n{\isacharparenright}{\isacharcircum}n{\isacharparenright}{\isacharparenright}\ {\isacharminus}{\isacharminus}{\isacharminus}{\isacharminus}{\isachargreater}\ \isanewline
+\ \ \ \ \ \ \ \ complex{\isacharunderscore}of{\isacharunderscore}real\ {\isacharparenleft}exp\ {\isacharparenleft}{\isacharminus}{\isacharparenleft}t{\isacharcircum}{\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ {\isadigit{2}}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}rule\ isCont{\isacharunderscore}tendsto{\isacharunderscore}compose\ {\isacharbrackleft}OF\ {\isacharunderscore}\ {\isacharasterisk}{\isacharasterisk}{\isacharbrackright}{\isacharcomma}\ auto{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{hence}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\isasymlambda}n{\isachardot}\ {\isasymphi}\ n\ t{\isacharparenright}\ {\isacharminus}{\isacharminus}{\isacharminus}{\isacharminus}{\isachargreater}\ complex{\isacharunderscore}of{\isacharunderscore}real\ {\isacharparenleft}exp\ {\isacharparenleft}{\isacharminus}{\isacharparenleft}t{\isacharcircum}{\isadigit{2}}{\isacharparenright}\ {\isacharslash}\ {\isadigit{2}}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}rule\ Lim{\isacharunderscore}transform{\isacharparenright}\isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}rule\ Lim{\isacharunderscore}null{\isacharunderscore}comparison\ {\isacharbrackleft}OF\ main\ main{\isadigit{2}}{\isacharbrackright}{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{thus}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isacharparenleft}{\isasymlambda}n{\isachardot}\ {\isasymphi}\ n\ t{\isacharparenright}\ {\isacharminus}{\isacharminus}{\isacharminus}{\isacharminus}{\isachargreater}\ char\ std{\isacharunderscore}normal{\isacharunderscore}distribution\ t{\isachardoublequoteclose}\isanewline
+\ \ \ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}subst\ char{\isacharunderscore}std{\isacharunderscore}normal{\isacharunderscore}distribution{\isacharparenright}\isanewline
+\ \ \isacommand{qed}\isamarkupfalse%
+\isanewline
+\ \ \isacommand{thus}\isamarkupfalse%
+\ {\isacharquery}thesis\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}intro\ levy{\isacharunderscore}continuity{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}rule\ real{\isacharunderscore}distribution{\isacharunderscore}distr\ {\isacharbrackleft}OF\ S{\isacharunderscore}rv{\isacharbrackright}{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ real{\isacharunderscore}distribution{\isacharunderscore}def\ real{\isacharunderscore}distribution{\isacharunderscore}axioms{\isacharunderscore}def\isanewline
+\ \ \ \ \isacommand{apply}\isamarkupfalse%
+\ {\isacharparenleft}simp\ add{\isacharcolon}\ prob{\isacharunderscore}space{\isacharunderscore}normal{\isacharunderscore}density{\isacharparenright}\isanewline
+\ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ {\isasymphi}{\isacharunderscore}def\ S{\isacharprime}{\isacharunderscore}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharminus}\isanewline
+\isacommand{qed}
+\end{isabellebody}
+}
+
 
 \end{document}
