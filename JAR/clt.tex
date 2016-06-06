@@ -6,7 +6,8 @@
 \usepackage{color}
 \usepackage{isabelle,isabellesym}
 
-\newcommand{\todo}[1]{{\color{red}#1}}
+\usepackage[draft]{fixme}
+\usepackage[usenames]{xcolor}
 
 \newcommand{\NN}{\mathbb{N}}
 \newcommand{\ZZ}{\mathbb{Z}}
@@ -27,6 +28,12 @@
 %     urlcolor=blue
 % }
 
+%% Replace \todo
+\fxsetup{targetlayout=colorcb}
+\fxsetface{target}{\itshape}
+\fxsetface{margin}{\tiny \color{red}}
+\definecolor{fxnote}{rgb}{1,0,0}
+\newcommand{\todo}[1]{\fxnote{#1}}
 
 \begin{document}
 
