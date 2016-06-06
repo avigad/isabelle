@@ -240,12 +240,13 @@ Conventional reasoning about limits was ubiquitous in our formalization. Everyda
 Here, the source and target spaces can be any topological space, including metric spaces or the natural numbers with the order topology. One can consider limits as $x$ approaches a value $a$, or $\infty$, or $-\infty$. One can also restrict consider the limit as $x$ approaches $a$ within a set $s$; saying $x$ approaches $a$ from the left (where $x$ and $a$ are real-valued, for example) is equivalent to saying that $x$ approaches $a$ on the interval $(-\infty, a)$. There is a similar range of variations on the output: $f(x)$ can approach a value, $b$, or $\infty$, or $-\infty$; and it can approach the value from the left, or from the right, or on any subset of the range of $f$. Not only does this threaten a combinatorial explosion of definitions, but also redundancy. For example, assuming $f(x)$ and $g(x)$ converge as $x$ approaches $a$, we have the identity $\lim_{x \to a} (f(x) + g(x)) = \lim_{x \to a} f(x) + \lim_{x \to a} g(x)$, but this also holds under all the variations of convergence in the source.
 
 To handle the many instances of convergence that arose in the formalization, we used Isabelle's elegant library for dealing with limits via filters, as described in \cite{hoelzl:et:al:13}. The idea is that when dealing with any notion of limit, the relevant notions of convergence in the source and the target can be represented by \emph{filters}. A {\em filter} over $X$ is a nonempty set $\mathcal F \subseteq \mathcal P(X)$ such that if $A \subseteq B$ and $A \in \mathcal F$, then $B \in \mathcal F$, and if $A, B \in \mathcal F$, then $A \cap B \in \mathcal F$. The general notion of limit in Isabelle, {\tt filterlim f F1 F2}, says, roughly, that the function $f$ ``converges'' in the sense of $F_2$, as the input converges in the sense of $F_1$. By specializing $F_1$ and $F_2$ appropriately, we obtain all the variations described in the last paragraph, and more. In addition, theorems can be proved at the appropriate level of generality. For example, we have:
-\Snippet{test}
+\Snippet{tendstoadd}
 This avoids the need to formalize endless variations of the same theorem. Details can be found in \cite{hoelzl:et:al:13}.
 
 \todo{Talk about automation: introduction rules for open / closed sets, introduction rules for continuity.}
 
 In the Isabelle library, topological facts are found in the standard \texttt{HOL} library, in files such as \texttt{Filter}, \verb=Topological_Spaces=, and \texttt{Limits}. Topological notions for the reals, and vector spaces over the reals, can be found in \verb=Real_Vector_Spaces=.
+
 
 \subsection{Measure theory and integration}
 \label{subsection:measure:theory}
