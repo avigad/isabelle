@@ -157,16 +157,22 @@
 \newcommand{\isasymreal}{\isamath{\mathrm{I}\mkern-3.8mu\mathrm{R}}}
 \newcommand{\isasymint}{\isamath{\mathsf{Z}\mkern-7.5mu\mathsf{Z}}}
 \newcommand{\isasymleftarrow}{\isamath{\leftarrow}}
-\newcommand{\isasymlongleftarrow}{\isamath{\longleftarrow}}
 \newcommand{\isasymrightarrow}{\isamath{\rightarrow}}
+\newcommand{\isasymlongleftarrow}{\isamath{\longleftarrow}}
 \newcommand{\isasymlongrightarrow}{\isamath{\longrightarrow}}
+\newcommand{\isasymlonglongleftarrow}{\isamath{\xleftarrow{\hphantom{AAA}}}}  %requires amsmath
+\newcommand{\isasymlonglongrightarrow}{\isamath{\xrightarrow{\hphantom{AAA}}}}  %requires amsmath
+\newcommand{\isasymlonglonglongleftarrow}{\isamath{\xleftarrow{\hphantom{AAAA}}}}  %requires amsmath
+\newcommand{\isasymlonglonglongrightarrow}{\isamath{\xrightarrow{\hphantom{AAAA}}}}  %requires amsmath
 \newcommand{\isasymLeftarrow}{\isamath{\Leftarrow}}
-\newcommand{\isasymLongleftarrow}{\isamath{\Longleftarrow}}
 \newcommand{\isasymRightarrow}{\isamath{\Rightarrow}}
+\newcommand{\isasymLongleftarrow}{\isamath{\Longleftarrow}}
 \newcommand{\isasymLongrightarrow}{\isamath{\Longrightarrow}}
+\newcommand{\isasymLleftarrow}{\isamath{\Lleftarrow}}  %requires amssymb
+\newcommand{\isasymRrightarrow}{\isamath{\Rrightarrow}}  %requires amssymb
 \newcommand{\isasymleftrightarrow}{\isamath{\leftrightarrow}}
-\newcommand{\isasymlongleftrightarrow}{\isamath{\longleftrightarrow}}
 \newcommand{\isasymLeftrightarrow}{\isamath{\Leftrightarrow}}
+\newcommand{\isasymlongleftrightarrow}{\isamath{\longleftrightarrow}}
 \newcommand{\isasymLongleftrightarrow}{\isamath{\Longleftrightarrow}}
 \newcommand{\isasymmapsto}{\isamath{\mapsto}}
 \newcommand{\isasymlongmapsto}{\isamath{\longmapsto}}
@@ -214,16 +220,18 @@
 \newcommand{\isasymOr}{\isamath{\bigvee}}
 \newcommand{\isasymforall}{\isamath{\forall\,}}
 \newcommand{\isasymexists}{\isamath{\exists\,}}
-\newcommand{\isasymnexists}{\isamath{\nexists\,}}  %requires amssymb
 \newcommand{\isasymnot}{\isamath{\neg}}
+\newcommand{\isasymnexists}{\isamath{\nexists\,}}  %requires amssymb
+\newcommand{\isasymcircle}{\isamath{\ocircle}}  %requires wasysym
 \newcommand{\isasymbox}{\isamath{\Box}}  %requires amssymb
 \newcommand{\isasymdiamond}{\isamath{\Diamond}}  %requires amssymb
+\newcommand{\isasymdiamondop}{\isamath{\diamond}}
+\newcommand{\isasymsurd}{\isamath{\surd}}
 \newcommand{\isasymturnstile}{\isamath{\vdash}}
 \newcommand{\isasymTurnstile}{\isamath{\models}}
 \newcommand{\isasymtturnstile}{\isamath{\vdash\!\!\!\vdash}}
 \newcommand{\isasymTTurnstile}{\isamath{\mid\!\models}}
 \newcommand{\isasymstileturn}{\isamath{\dashv}}
-\newcommand{\isasymsurd}{\isamath{\surd}}
 \newcommand{\isasymle}{\isamath{\le}}
 \newcommand{\isasymge}{\isamath{\ge}}
 \newcommand{\isasymlless}{\isamath{\ll}}
@@ -344,17 +352,18 @@
 \newcommand{\isasymlozenge}{\isamath{\lozenge}}  %requires amssymb
 \newcommand{\isasymwp}{\isamath{\wp}}
 \newcommand{\isasymwrong}{\isamath{\wr}}
-\newcommand{\isasymstruct}{\isamath{\diamond}}
 \newcommand{\isasymacute}{\isatext{\'\relax}}
 \newcommand{\isasymindex}{\isatext{\i}}
 \newcommand{\isasymdieresis}{\isatext{\"\relax}}
 \newcommand{\isasymcedilla}{\isatext{\c\relax}}
 \newcommand{\isasymhungarumlaut}{\isatext{\H\relax}}
 \newcommand{\isasymmodule}{\isamath{\langle}\isakeyword{module}\isamath{\rangle}}
+\newcommand{\isasymsome}{\isamath{\epsilon\,}}
 \newcommand{\isasymbind}{\isamath{\mathbin{>\!\!\!>\mkern-6.7mu=}}}
 \newcommand{\isasymthen}{\isamath{\mathbin{>\!\!\!>}}}
-\newcommand{\isasymsome}{\isamath{\epsilon\,}}
+\newcommand{\isasymhole}{\isatext{\rm\wasylozenge}}  %requires wasysym
+\newcommand{\isasymnewline}{\isatext{\fbox{$\hookleftarrow$}}}
 \newcommand{\isasymopen}{\isatext{\raise.3ex\hbox{$\scriptscriptstyle\langle$}}}
 \newcommand{\isasymclose}{\isatext{\raise.3ex\hbox{$\scriptscriptstyle\rangle$}}}
-\newcommand{\isasymnewline}{\isatext{\fbox{$\hookleftarrow$}}}
-
+\newcommand{\isasymcomment}{\isatext{---}}
+\newcommand{\isasymproof}{\isamath{\,\langle\mathit{proof}\rangle}}

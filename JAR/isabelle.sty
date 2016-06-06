@@ -7,9 +7,12 @@
 % isabelle environments
 
 \newcommand{\isabellecontext}{UNKNOWN}
+\newcommand{\setisabellecontext}[1]{\def\isabellecontext{#1}}
 
 \newcommand{\isastyle}{\UNDEF}
+\newcommand{\isastylett}{\UNDEF}
 \newcommand{\isastyleminor}{\UNDEF}
+\newcommand{\isastyleminortt}{\UNDEF}
 \newcommand{\isastylescript}{\UNDEF}
 \newcommand{\isastyletext}{\normalsize\rm}
 \newcommand{\isastyletxt}{\rm}
@@ -36,6 +39,7 @@
 \DeclareRobustCommand{\isactrlesup}{\egroup\egroup\endmath\egroup}
 \newcommand{\isactrlbold}[1]{{\bfseries\upshape\boldmath#1}}
 
+\newcommand{\isaantiqcontrol}[1]{\isatt{{\char`\\}{\char`\<}{\char`\^}#1{\char`\>}}}
 \newenvironment{isaantiq}{{\isacharat\isacharbraceleft}}{{\isacharbraceright}}
 
 \newdimen\isa@parindent\newdimen\isa@parskip
@@ -46,11 +50,22 @@
 \isa@parskip\parskip\parskip0pt%
 \isaspacing\isastyle}{\par}
 
+\newenvironment{isabellebodytt}{%
+\isamarkuptrue\par%
+\isa@parindent\parindent\parindent0pt%
+\isa@parskip\parskip\parskip0pt%
+\isaspacing\isastylett}{\par}
+
 \newenvironment{isabelle}
 {\begin{trivlist}\begin{isabellebody}\item\relax}
 {\end{isabellebody}\end{trivlist}}
 
+\newenvironment{isabellett}
+{\begin{trivlist}\begin{isabellebodytt}\item\relax}
+{\end{isabellebodytt}\end{trivlist}}
+
 \newcommand{\isa}[1]{\emph{\isaspacing\isastyleminor #1}}
+\newcommand{\isatt}[1]{\emph{\isaspacing\isastyleminortt #1}}
 
 \newcommand{\isaindent}[1]{\hphantom{#1}}
 \newcommand{\isanewline}{\mbox{}\par\mbox{}}
@@ -114,9 +129,8 @@
 \newcommand{\isamarkupsection}[1]{\section{#1}}
 \newcommand{\isamarkupsubsection}[1]{\subsection{#1}}
 \newcommand{\isamarkupsubsubsection}[1]{\subsubsection{#1}}
-\newcommand{\isamarkupsect}[1]{\section{#1}}
-\newcommand{\isamarkupsubsect}[1]{\subsection{#1}}
-\newcommand{\isamarkupsubsubsect}[1]{\subsubsection{#1}}
+\newcommand{\isamarkupparagraph}[1]{\paragraph{#1}}
+\newcommand{\isamarkupsubparagraph}[1]{\subparagraph{#1}}
 
 \newif\ifisamarkup
 \newcommand{\isabeginpar}{\par\ifisamarkup\relax\else\medskip\fi}
@@ -133,7 +147,9 @@
 
 \newcommand{\isabellestyledefault}{%
 \def\isastyle{\small\tt\slshape}%
+\def\isastylett{\small\tt}%
 \def\isastyleminor{\small\tt\slshape}%
+\def\isastyleminortt{\small\tt}%
 \def\isastylescript{\footnotesize\tt\slshape}%
 \isachardefaults%
 }
@@ -141,14 +157,18 @@
 
 \newcommand{\isabellestylett}{%
 \def\isastyle{\small\tt}%
+\def\isastylett{\small\tt}%
 \def\isastyleminor{\small\tt}%
+\def\isastyleminortt{\small\tt}%
 \def\isastylescript{\footnotesize\tt}%
 \isachardefaults%
 }
 
 \newcommand{\isabellestyleit}{%
 \def\isastyle{\small\it}%
+\def\isastylett{\small\tt}%
 \def\isastyleminor{\it}%
+\def\isastyleminortt{\tt}%
 \def\isastylescript{\footnotesize\it}%
 \isachardefaults%
 \def\isacharunderscorekeyword{\mbox{-}}%
@@ -206,7 +226,9 @@
 \newcommand{\isabellestylesl}{%
 \isabellestyleit%
 \def\isastyle{\small\sl}%
+\def\isastylett{\small\tt}%
 \def\isastyleminor{\sl}%
+\def\isastyleminortt{\tt}%
 \def\isastylescript{\footnotesize\sl}%
 }
 

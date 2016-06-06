@@ -1,0 +1,5 @@
+#!/bin/bash
+
+pwd
+find . -type f -name "*.tex" -exec sed -n '/DefineSnippet/,/EndSnippet/p' {} + > ../../../JAR/snippets-generated.tex
+touch ../document.pdf

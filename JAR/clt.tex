@@ -35,6 +35,20 @@
 \definecolor{fxnote}{rgb}{1,0,0}
 \newcommand{\todo}[1]{\fxnote{#1}}
 
+\newcommand{\Snippet}[1]{\csname snippet--#1\endcsname}
+
+%% Support Isabelle Snippets
+\newcommand{\DefineSnippet}[2]{%
+  \expandafter\newcommand\csname snippet--#1\endcsname{%
+    \begin{quote}
+    \begin{isabelle}
+    #2
+    \end{isabelle}
+    \end{quote}}}
+
+\input{snippets-generated}
+
+
 \begin{document}
 
 % first the title is needed
@@ -226,9 +240,7 @@ Conventional reasoning about limits was ubiquitous in our formalization. Everyda
 Here, the source and target spaces can be any topological space, including metric spaces or the natural numbers with the order topology. One can consider limits as $x$ approaches a value $a$, or $\infty$, or $-\infty$. One can also restrict consider the limit as $x$ approaches $a$ within a set $s$; saying $x$ approaches $a$ from the left (where $x$ and $a$ are real-valued, for example) is equivalent to saying that $x$ approaches $a$ on the interval $(-\infty, a)$. There is a similar range of variations on the output: $f(x)$ can approach a value, $b$, or $\infty$, or $-\infty$; and it can approach the value from the left, or from the right, or on any subset of the range of $f$. Not only does this threaten a combinatorial explosion of definitions, but also redundancy. For example, assuming $f(x)$ and $g(x)$ converge as $x$ approaches $a$, we have the identity $\lim_{x \to a} (f(x) + g(x)) = \lim_{x \to a} f(x) + \lim_{x \to a} g(x)$, but this also holds under all the variations of convergence in the source.
 
 To handle the many instances of convergence that arose in the formalization, we used Isabelle's elegant library for dealing with limits via filters, as described in \cite{hoelzl:et:al:13}. The idea is that when dealing with any notion of limit, the relevant notions of convergence in the source and the target can be represented by \emph{filters}. A {\em filter} over $X$ is a nonempty set $\mathcal F \subseteq \mathcal P(X)$ such that if $A \subseteq B$ and $A \in \mathcal F$, then $B \in \mathcal F$, and if $A, B \in \mathcal F$, then $A \cap B \in \mathcal F$. The general notion of limit in Isabelle, {\tt filterlim f F1 F2}, says, roughly, that the function $f$ ``converges'' in the sense of $F_2$, as the input converges in the sense of $F_1$. By specializing $F_1$ and $F_2$ appropriately, we obtain all the variations described in the last paragraph, and more. In addition, theorems can be proved at the appropriate level of generality. For example, we have:
-\begin{quote}
- \todo{Insert: Isabelle formulation of addition under limits.}
-\end{quote}
+\Snippet{test}
 This avoids the need to formalize endless variations of the same theorem. Details can be found in \cite{hoelzl:et:al:13}.
 
 \todo{Talk about automation: introduction rules for open / closed sets, introduction rules for continuity.}
@@ -240,6 +252,7 @@ In the Isabelle library, topological facts are found in the standard \texttt{HOL
 
 Our formalization required the fundamentals of measure theory and integration, as described in any introductory textbook on the subject (including Billingsley). The fundamental development of the subject is well described in the paper ``Three chapters of measure theory'' \cite{hoelzl:heller:11}. Here we therefore only summarize key features of this development, and indicate some of the ways the library has changed as a result of our formalization.
 
+\fxnote{replace by extended non-negative real numbers}
 Measure theory requires the use of the \emph{extended reals}, obtained from the usual reals $\RR$ by adding values $\pm\infty$. A \emph{$\sigma$-algebra} is represented in Isabelle as a record \texttt{S} depending on a type $\alpha$, which specifies an underlying subset of $\alpha$, \texttt{space S}, and a collection of subsets \texttt{sets S} of \texttt{space S} that contains the empty set and is closed under countable unions and complements. These assumptions are specified as a locale. 
 
 A \emph{measure space} \texttt{M} extends the notion of a $\sigma$-algebra with a function \texttt{emeasure M} from subsets of $\alpha$ to the extended reals, satisfying the usual axioms: the measure of the empty set is $0$, the measure of any set in the $\sigma$-algebra is nonnegative, and the measure of a countable disjoint union of sets in the underlying $\sigma$-algebra is equal to sum of the unions (which might be $\infty$). The underlying $\sigma$ algebra corresponds to the usual notion of the collection of \emph{measurable subsets} corresponding to the measure. In Isabelle, for any type $\alpha$, the \texttt{typedef} mechanism is used to specify a new type, $\mathtt{measure} \; \alpha$, consisting of measure spaces on some subset of $\alpha$. 
@@ -341,7 +354,7 @@ We followed Billingsley~\cite[Section 26]{billingsley:95} in obtaining this usin
 
 Textbook results from calculus involve integrals $\int_a^b f(x) \; dx$ over the interval $(a,b)$. These can be viewed simply as an ordinary integral over the set $(a,b)$, with the following two caveats:
 \begin{itemize}
- \item Textbooks allow $a$ to be $-\infty$ and $b$ to be $\infty$, which is to say, $a$ and $b$ should be taken to be extended real numbers.
+ \item Textbooks allow $a$ to be $-\infty$ and $b$ to be $\infty$, which is to say, $a$ and $b$ should be taken to be extended real numbers.\fxnote{replace by extended non-negative real numbers}
  \item It is convenient to adopt the convention that if $b < a$, then $\int_a^b f(x) \; dx = -\int_b^a f(x) dx$.
 \end{itemize}
 We thus defined a notion of ``interval integral'' along these lines, together with supporting notation. We could then state the first fundamental theorem of calculus in the following form, for finite intervals:
@@ -746,7 +759,7 @@ Once all the background information was in place, many of our proofs followed th
 
 The version of the Central Limit Theorem we proved is not the most general version that is presented in Billingsley's book. With some more calculational effort one could formalize the Lindeberg central limit theorem, which relaxes the requirement that the random variables that are summed be identically distributed; we only need to assume that they do not deviate too much in distribution, as made precise by the {\em Lindeberg condition} \cite[p.~359]{billingsley:95}. Even the condition that the variables being summed are independent can be weakened to a condition of weak dependence, as outlined in \cite[p.~363]{billingsley:95}. Other generalizations include the CLT for random vectors \cite[p.~385]{billingsley:95}, and various versions of the CLT for martingales \cite[pp.~475--478]{billingsley:95}. There are many additional refinements and generalizations of the Central Limit Theorem in the mathematical literature.
 
-Supporting automation can always be improved, and it was at times frustrating that automated tools would get stuck on seemingly trivial matters like determining whether an instance of zero should be interpreted as a real or an extended real. As we remarked in Section~\ref{subsection:calculus}, ordinary calculations with integrals was often the most painful part of the formalization. It would be especially useful to have better automated support for such calculations, that either implement features of computer algebra systems in a proof-producing framework, or reconstruct formal proofs of such results from suitable certificates.
+Supporting automation can always be improved, and it was at times frustrating that automated tools would get stuck on seemingly trivial matters like determining whether an instance of zero should be interpreted as a real or an extended real\fxnote{replace by extended non-negative real numbers}. As we remarked in Section~\ref{subsection:calculus}, ordinary calculations with integrals was often the most painful part of the formalization. It would be especially useful to have better automated support for such calculations, that either implement features of computer algebra systems in a proof-producing framework, or reconstruct formal proofs of such results from suitable certificates.
 
 \bibliographystyle{plain}
 \bibliography{clt}
