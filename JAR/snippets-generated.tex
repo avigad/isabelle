@@ -1,26 +1,3 @@
-\DefineSnippet{tendstoadd}{
-   \isa{{\isacharparenleft}f\ {\isasymlonglongrightarrow}\ a{\isacharparenright}\ F\ {\isasymand}\ {\isacharparenleft}g\ {\isasymlonglongrightarrow}\ b{\isacharparenright}\ F\ {\isasymLongrightarrow}\ {\isacharparenleft}{\isacharparenleft}{\isasymlambda}x{\isachardot}\ f\ x\ {\isacharplus}\ g\ x{\isacharparenright}\ {\isasymlonglongrightarrow}\ a\ {\isacharplus}\ b{\isacharparenright}\ F}
- }%EndSnippet%
-\DefineSnippet{skorohod}{
-\isacommand{theorem}\isamarkupfalse%
-\ Skorohod{\isacharcolon}\isanewline
-\ \ \isakeyword{fixes}\ {\isasymmu}\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ real\ measure{\isachardoublequoteclose}\isanewline
-\ \ \ \ \isakeyword{and}\ M\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{assumes}\ {\isasymmu}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ real{\isacharunderscore}distribution\ {\isacharparenleft}{\isasymmu}\ n{\isacharparenright}{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{assumes}\ M{\isacharcolon}\ {\isachardoublequoteopen}real{\isacharunderscore}distribution\ M{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{assumes}\ {\isasymmu}{\isacharunderscore}to{\isacharunderscore}M{\isacharcolon}\ {\isachardoublequoteopen}weak{\isacharunderscore}conv{\isacharunderscore}m\ {\isasymmu}\ M{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isasymexists}{\isacharparenleft}{\isasymOmega}\ {\isacharcolon}{\isacharcolon}\ real\ measure{\isacharparenright}\ {\isacharparenleft}Y{\isacharunderscore}seq\ {\isacharcolon}{\isacharcolon}\ nat\ {\isasymRightarrow}\ real\ {\isasymRightarrow}\ real{\isacharparenright}\ {\isacharparenleft}Y\ {\isacharcolon}{\isacharcolon}\ real\ {\isasymRightarrow}\ real{\isacharparenright}{\isachardot}\isanewline
-\ \ \ \ prob{\isacharunderscore}space\ {\isasymOmega}\ {\isasymand}\isanewline
-\ \ \ \ {\isacharparenleft}{\isasymforall}n{\isachardot}\ Y{\isacharunderscore}seq\ n\ {\isasymin}\ measurable\ {\isasymOmega}\ borel{\isacharparenright}\ {\isasymand}\isanewline
-\ \ \ \ {\isacharparenleft}{\isasymforall}n{\isachardot}\ distr\ {\isasymOmega}\ borel\ {\isacharparenleft}Y{\isacharunderscore}seq\ n{\isacharparenright}\ {\isacharequal}\ {\isasymmu}\ n{\isacharparenright}\ {\isasymand}\isanewline
-\ \ \ \ Y\ {\isasymin}\ measurable\ {\isasymOmega}\ lborel\ {\isasymand}\isanewline
-\ \ \ \ distr\ {\isasymOmega}\ borel\ Y\ {\isacharequal}\ M\ {\isasymand}\isanewline
-\ \ \ \ {\isacharparenleft}{\isasymforall}x\ {\isasymin}\ space\ {\isasymOmega}{\isachardot}\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ Y{\isacharunderscore}seq\ n\ x{\isacharparenright}\ {\isasymlonglonglongrightarrow}\ Y\ x{\isacharparenright}{\isachardoublequoteclose}%
-}%EndSnippet
-\DefineSnippet{countableatoms}{
-\isacommand{lemma}\isamarkupfalse%
-\ countable{\isacharunderscore}atoms{\isacharcolon}\ {\isachardoublequoteopen}countable\ {\isacharbraceleft}x{\isachardot}\ measure\ M\ {\isacharbraceleft}x{\isacharbraceright}\ {\isachargreater}\ {\isadigit{0}}{\isacharbraceright}{\isachardoublequoteclose}%
-}%EndSnippet
 \DefineSnippet{cltproof}{
 \isacommand{theorem}\isamarkupfalse%
 \ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ central{\isacharunderscore}limit{\isacharunderscore}theorem{\isacharcolon}\isanewline
@@ -234,6 +211,32 @@
 \endisadelimproof
 %
 }%EndSnippet
+\DefineSnippet{tendstoadd}{
+\isacommand{lemma}\isamarkupfalse%
+\ tendsto{\isacharunderscore}add{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ f\ g\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharunderscore}\ {\isasymRightarrow}\ {\isacharprime}a{\isacharcolon}{\isacharcolon}topological{\isacharunderscore}monoid{\isacharunderscore}add{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}{\isacharparenleft}f\ {\isasymlonglongrightarrow}\ a{\isacharparenright}\ F{\isachardoublequoteclose}\ \isakeyword{and}\ {\isachardoublequoteopen}{\isacharparenleft}g\ {\isasymlonglongrightarrow}\ b{\isacharparenright}\ F{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharparenleft}{\isasymlambda}x{\isachardot}\ f\ x\ {\isacharplus}\ g\ x{\isacharparenright}\ {\isasymlonglongrightarrow}\ a\ {\isacharplus}\ b{\isacharparenright}\ F{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{skorohod}{
+\isacommand{theorem}\isamarkupfalse%
+\ Skorohod{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ {\isasymmu}\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ real\ measure{\isachardoublequoteclose}\ \isakeyword{and}\ M\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ real{\isacharunderscore}distribution\ {\isacharparenleft}{\isasymmu}\ n{\isacharparenright}{\isachardoublequoteclose}\ {\isachardoublequoteopen}real{\isacharunderscore}distribution\ M{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}weak{\isacharunderscore}conv{\isacharunderscore}m\ {\isasymmu}\ M{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\isanewline
+\ \ \ \ {\isachardoublequoteopen}{\isasymexists}{\isacharparenleft}{\isasymOmega}\ {\isacharcolon}{\isacharcolon}\ real\ measure{\isacharparenright}\ {\isacharparenleft}Y{\isacharunderscore}seq\ {\isacharcolon}{\isacharcolon}\ nat\ {\isasymRightarrow}\ real\ {\isasymRightarrow}\ real{\isacharparenright}\ {\isacharparenleft}Y\ {\isacharcolon}{\isacharcolon}\ real\ {\isasymRightarrow}\ real{\isacharparenright}{\isachardot}\isanewline
+\ \ \ \ prob{\isacharunderscore}space\ {\isasymOmega}\ {\isasymand}\isanewline
+\ \ \ \ {\isacharparenleft}{\isasymforall}n{\isachardot}\ Y{\isacharunderscore}seq\ n\ {\isasymin}\ measurable\ {\isasymOmega}\ borel{\isacharparenright}\ {\isasymand}\isanewline
+\ \ \ \ {\isacharparenleft}{\isasymforall}n{\isachardot}\ distr\ {\isasymOmega}\ borel\ {\isacharparenleft}Y{\isacharunderscore}seq\ n{\isacharparenright}\ {\isacharequal}\ {\isasymmu}\ n{\isacharparenright}\ {\isasymand}\isanewline
+\ \ \ \ Y\ {\isasymin}\ measurable\ {\isasymOmega}\ lborel\ {\isasymand}\isanewline
+\ \ \ \ distr\ {\isasymOmega}\ borel\ Y\ {\isacharequal}\ M\ {\isasymand}\isanewline
+\ \ \ \ {\isacharparenleft}{\isasymforall}x\ {\isasymin}\ space\ {\isasymOmega}{\isachardot}\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ Y{\isacharunderscore}seq\ n\ x{\isacharparenright}\ {\isasymlonglonglongrightarrow}\ Y\ x{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{countableatoms}{
+\isacommand{lemma}\isamarkupfalse%
+\ countable{\isacharunderscore}atoms{\isacharcolon}\ {\isachardoublequoteopen}countable\ {\isacharbraceleft}x{\isachardot}\ measure\ M\ {\isacharbraceleft}x{\isacharbraceright}\ {\isachargreater}\ {\isadigit{0}}{\isacharbraceright}{\isachardoublequoteclose}%
+}%EndSnippet
 \DefineSnippet{clt}{
 \isacommand{theorem}\isamarkupfalse%
 \ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ central{\isacharunderscore}limit{\isacharunderscore}theorem{\isacharcolon}\isanewline
@@ -279,10 +282,9 @@
 \isacommand{lemma}\isamarkupfalse%
 \ real{\isacharunderscore}distribution{\isacharunderscore}interval{\isacharunderscore}measure{\isacharcolon}\isanewline
 \ \ \isakeyword{fixes}\ F\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{assumes}\ nondecF\ {\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}\ x\ y{\isachardot}\ x\ {\isasymle}\ y\ {\isasymLongrightarrow}\ F\ x\ {\isasymle}\ F\ y{\isachardoublequoteclose}\isanewline
-\ \ \ \ \isakeyword{and}\ right{\isacharunderscore}cont{\isacharunderscore}F\ {\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}a{\isachardot}\ continuous\ {\isacharparenleft}at{\isacharunderscore}right\ a{\isacharparenright}\ F{\isachardoublequoteclose}\isanewline
-\ \ \ \ \isakeyword{and}\ lim{\isacharunderscore}F{\isacharunderscore}at{\isacharunderscore}bot\ {\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}F\ {\isasymlonglongrightarrow}\ {\isadigit{0}}{\isacharparenright}\ at{\isacharunderscore}bot{\isachardoublequoteclose}\isanewline
-\ \ \ \ \isakeyword{and}\ lim{\isacharunderscore}F{\isacharunderscore}at{\isacharunderscore}top\ {\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}F\ {\isasymlonglongrightarrow}\ {\isadigit{1}}{\isacharparenright}\ at{\isacharunderscore}top{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}{\isasymAnd}\ x\ y{\isachardot}\ x\ {\isasymle}\ y\ {\isasymLongrightarrow}\ F\ x\ {\isasymle}\ F\ y{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}a{\isachardot}\ continuous\ {\isacharparenleft}at{\isacharunderscore}right\ a{\isacharparenright}\ F{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isacharparenleft}F\ {\isasymlonglongrightarrow}\ {\isadigit{0}}{\isacharparenright}\ at{\isacharunderscore}bot{\isachardoublequoteclose}\ {\isachardoublequoteopen}{\isacharparenleft}F\ {\isasymlonglongrightarrow}\ {\isadigit{1}}{\isacharparenright}\ at{\isacharunderscore}top{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{shows}\ {\isachardoublequoteopen}real{\isacharunderscore}distribution\ {\isacharparenleft}interval{\isacharunderscore}measure\ F{\isacharparenright}{\isachardoublequoteclose}%
 }%EndSnippet
 \DefineSnippet{cdfunique}{
@@ -290,8 +292,206 @@
 \ cdf{\isacharunderscore}unique{\isacharcolon}\isanewline
 \ \ \isakeyword{fixes}\ M{\isadigit{1}}\ M{\isadigit{2}}\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}real{\isacharunderscore}distribution\ M{\isadigit{1}}{\isachardoublequoteclose}\ \isakeyword{and}\ {\isachardoublequoteopen}real{\isacharunderscore}distribution\ M{\isadigit{2}}{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}cdf\ M{\isadigit{1}}\ {\isacharequal}\ cdf\ M{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}cdf\ M{\isadigit{1}}\ {\isacharequal}\ cdf\ M{\isadigit{2}}{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{shows}\ {\isachardoublequoteopen}M{\isadigit{1}}\ {\isacharequal}\ M{\isadigit{2}}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{lebesgueintegralcountableadd}{
+\isacommand{lemma}\isamarkupfalse%
+\ lebesgue{\isacharunderscore}integral{\isacharunderscore}countable{\isacharunderscore}add{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ f\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharunderscore}\ {\isasymRightarrow}\ {\isacharprime}a\ {\isacharcolon}{\isacharcolon}\ {\isacharbraceleft}banach{\isacharcomma}\ second{\isacharunderscore}countable{\isacharunderscore}topology{\isacharbraceright}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ meas{\isacharbrackleft}intro{\isacharbrackright}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}i{\isacharcolon}{\isacharcolon}nat{\isachardot}\ A\ i\ {\isasymin}\ sets\ M{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ disj{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}i\ j{\isachardot}\ i\ {\isasymnoteq}\ j\ {\isasymLongrightarrow}\ A\ i\ {\isasyminter}\ A\ j\ {\isacharequal}\ {\isacharbraceleft}{\isacharbraceright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ intgbl{\isacharcolon}\ {\isachardoublequoteopen}set{\isacharunderscore}integrable\ M\ {\isacharparenleft}{\isasymUnion}i{\isachardot}\ A\ i{\isacharparenright}\ f{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}LINT\ x{\isacharcolon}{\isacharparenleft}{\isasymUnion}i{\isachardot}\ A\ i{\isacharparenright}{\isacharbar}M{\isachardot}\ f\ x\ {\isacharequal}\ {\isacharparenleft}{\isasymSum}i{\isachardot}\ {\isacharparenleft}LINT\ x{\isacharcolon}{\isacharparenleft}A\ i{\isacharparenright}{\isacharbar}M{\isachardot}\ f\ x{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{dominatedconvergence}{
+\isacommand{lemma}\isamarkupfalse%
+\ dominated{\isacharunderscore}convergence{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ f\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}a\ {\isasymRightarrow}\ {\isacharprime}b{\isacharcolon}{\isacharcolon}{\isacharbraceleft}banach{\isacharcomma}\ second{\isacharunderscore}countable{\isacharunderscore}topology{\isacharbraceright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ w\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}f\ {\isasymin}\ borel{\isacharunderscore}measurable\ M{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}\ s\ i\ {\isasymin}\ borel{\isacharunderscore}measurable\ M{\isachardoublequoteclose}\ {\isachardoublequoteopen}integrable\ M\ w{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}AE\ x\ in\ M{\isachardot}\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ s\ i\ x{\isacharparenright}\ {\isasymlonglonglongrightarrow}\ f\ x{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}\ AE\ x\ in\ M{\isachardot}\ norm\ {\isacharparenleft}s\ i\ x{\isacharparenright}\ {\isasymle}\ w\ x{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}integrable\ M\ f{\isachardoublequoteclose}\ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}\ integrable\ M\ {\isacharparenleft}s\ i{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isacharparenleft}{\isasymlambda}i{\isachardot}\ integral\isactrlsup L\ M\ {\isacharparenleft}s\ i{\isacharparenright}{\isacharparenright}\ {\isasymlonglonglongrightarrow}\ integral\isactrlsup L\ M\ f{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{integralnormbound}{
+\isacommand{lemma}\isamarkupfalse%
+\ integral{\isacharunderscore}norm{\isacharunderscore}bound{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ f\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharunderscore}\ {\isasymRightarrow}\ {\isacharprime}a\ {\isacharcolon}{\isacharcolon}\ {\isacharbraceleft}banach{\isacharcomma}\ second{\isacharunderscore}countable{\isacharunderscore}topology{\isacharbraceright}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}integrable\ M\ f\ {\isasymLongrightarrow}\ norm\ {\isacharparenleft}integral\isactrlsup L\ M\ f{\isacharparenright}\ {\isasymle}\ {\isacharparenleft}{\isasymintegral}x{\isachardot}\ norm\ {\isacharparenleft}f\ x{\isacharparenright}\ {\isasympartial}M{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{ftcfinite}{
+\isacommand{lemma}\isamarkupfalse%
+\ interval{\isacharunderscore}integral{\isacharunderscore}FTC{\isacharunderscore}finite{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ f\ F\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ {\isasymRightarrow}\ {\isacharprime}a{\isacharcolon}{\isacharcolon}euclidean{\isacharunderscore}space{\isachardoublequoteclose}\ \isakeyword{and}\ a\ b\ {\isacharcolon}{\isacharcolon}\ real\isanewline
+\ \ \isakeyword{assumes}\ f{\isacharcolon}\ {\isachardoublequoteopen}continuous{\isacharunderscore}on\ {\isacharbraceleft}min\ a\ b{\isachardot}{\isachardot}max\ a\ b{\isacharbraceright}\ f{\isachardoublequoteclose}\isanewline
+\ \ \ \isakeyword{and}\ F{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}x{\isachardot}\ min\ a\ b\ {\isasymle}\ x\ {\isasymLongrightarrow}\ x\ {\isasymle}\ max\ a\ b\ {\isasymLongrightarrow}\isanewline
+\ \ \ \ {\isacharparenleft}F\ has{\isacharunderscore}vector{\isacharunderscore}derivative\ {\isacharparenleft}f\ x{\isacharparenright}{\isacharparenright}\ {\isacharparenleft}at\ x\ within\ {\isacharbraceleft}min\ a\ b{\isachardot}{\isachardot}max\ a\ b{\isacharbraceright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isacharparenleft}LBINT\ x{\isacharequal}a{\isachardot}{\isachardot}b{\isachardot}\ f\ x{\isacharparenright}\ {\isacharequal}\ F\ b\ {\isacharminus}\ F\ a{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{ftcintegrable}{
+\isacommand{lemma}\isamarkupfalse%
+\ interval{\isacharunderscore}integral{\isacharunderscore}FTC{\isacharunderscore}integrable{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ f\ F\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ {\isasymRightarrow}\ {\isacharprime}a{\isacharcolon}{\isacharcolon}euclidean{\isacharunderscore}space{\isachardoublequoteclose}\ \isakeyword{and}\ a\ b\ {\isacharcolon}{\isacharcolon}\ ereal\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}a\ {\isacharless}\ b{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}x{\isachardot}\ a\ {\isacharless}\ ereal\ x\ {\isasymLongrightarrow}\ ereal\ x\ {\isacharless}\ b\ {\isasymLongrightarrow}\isanewline
+\ \ \ \ {\isacharparenleft}F\ has{\isacharunderscore}vector{\isacharunderscore}derivative\ f\ x{\isacharparenright}\ {\isacharparenleft}at\ x{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}x{\isachardot}\ a\ {\isacharless}\ ereal\ x\ {\isasymLongrightarrow}\ ereal\ x\ {\isacharless}\ b\ {\isasymLongrightarrow}\ isCont\ f\ x{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}set{\isacharunderscore}integrable\ lborel\ {\isacharparenleft}einterval\ a\ b{\isacharparenright}\ f{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharparenleft}F\ {\isasymcirc}\ real{\isacharunderscore}of{\isacharunderscore}ereal{\isacharparenright}\ {\isasymlonglongrightarrow}\ A{\isacharparenright}\ {\isacharparenleft}at{\isacharunderscore}right\ a{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharparenleft}F\ {\isasymcirc}\ real{\isacharunderscore}of{\isacharunderscore}ereal{\isacharparenright}\ {\isasymlonglongrightarrow}\ B{\isacharparenright}\ {\isacharparenleft}at{\isacharunderscore}left\ b{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isacharparenleft}LBINT\ x{\isacharequal}a{\isachardot}{\isachardot}b{\isachardot}\ f\ x{\isacharparenright}\ {\isacharequal}\ B\ {\isacharminus}\ A{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{ftc2}{
+\isacommand{lemma}\isamarkupfalse%
+\ interval{\isacharunderscore}integral{\isacharunderscore}FTC{\isadigit{2}}{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ a\ b\ c\ x\ {\isacharcolon}{\isacharcolon}\ real\ \isakeyword{and}\ f\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ {\isasymRightarrow}\ {\isacharprime}a{\isacharcolon}{\isacharcolon}euclidean{\isacharunderscore}space{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}a\ {\isasymle}\ c{\isachardoublequoteclose}\ {\isachardoublequoteopen}c\ {\isasymle}\ b{\isachardoublequoteclose}\ {\isachardoublequoteopen}continuous{\isacharunderscore}on\ {\isacharbraceleft}a{\isachardot}{\isachardot}b{\isacharbraceright}\ f{\isachardoublequoteclose}\ {\isachardoublequoteopen}a\ {\isasymle}\ x{\isachardoublequoteclose}\ {\isachardoublequoteopen}x\ {\isasymle}\ b{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharparenleft}{\isasymlambda}u{\isachardot}\ LBINT\ y{\isacharequal}c{\isachardot}{\isachardot}u{\isachardot}\ f\ y{\isacharparenright}\ has{\isacharunderscore}vector{\isacharunderscore}derivative\ {\isacharparenleft}f\ x{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ {\isacharparenleft}at\ x\ within\ {\isacharbraceleft}a{\isachardot}{\isachardot}b{\isacharbraceright}{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{substfinite}{
+\isacommand{lemma}\isamarkupfalse%
+\ interval{\isacharunderscore}integral{\isacharunderscore}substitution{\isacharunderscore}finite{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ a\ b\ {\isacharcolon}{\isacharcolon}\ real\ \isakeyword{and}\ f\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ {\isasymRightarrow}\ {\isacharprime}a{\isacharcolon}{\isacharcolon}euclidean{\isacharunderscore}space{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}a\ {\isasymle}\ b{\isachardoublequoteclose}\ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}x{\isachardot}\ a\ {\isasymle}\ x\ {\isasymLongrightarrow}\ x\ {\isasymle}\ b\ {\isasymLongrightarrow}\isanewline
+\ \ \ \ \ \ {\isacharparenleft}g\ has{\isacharunderscore}real{\isacharunderscore}derivative\ {\isacharparenleft}g{\isacharprime}\ x{\isacharparenright}{\isacharparenright}\ {\isacharparenleft}at\ x\ within\ {\isacharbraceleft}a{\isachardot}{\isachardot}b{\isacharbraceright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}continuous{\isacharunderscore}on\ {\isacharparenleft}g\ {\isacharbackquote}\ {\isacharbraceleft}a{\isachardot}{\isachardot}b{\isacharbraceright}{\isacharparenright}\ f{\isachardoublequoteclose}\ {\isachardoublequoteopen}continuous{\isacharunderscore}on\ {\isacharbraceleft}a{\isachardot}{\isachardot}b{\isacharbraceright}\ g{\isacharprime}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}LBINT\ x{\isacharequal}a{\isachardot}{\isachardot}b{\isachardot}\ g{\isacharprime}\ x\ {\isacharasterisk}\isactrlsub R\ f\ {\isacharparenleft}g\ x{\isacharparenright}\ {\isacharequal}\ LBINT\ y{\isacharequal}g\ a{\isachardot}{\isachardot}g\ b{\isachardot}\ f\ y{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{substintegrable}{
+\isacommand{lemma}\isamarkupfalse%
+\ interval{\isacharunderscore}integral{\isacharunderscore}substitution{\isacharunderscore}integrable{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ f\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ {\isasymRightarrow}\ {\isacharprime}a{\isacharcolon}{\isacharcolon}euclidean{\isacharunderscore}space{\isachardoublequoteclose}\ \isakeyword{and}\ a\ b\ u\ v\ {\isacharcolon}{\isacharcolon}\ ereal\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}a\ {\isacharless}\ b{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}x{\isachardot}\ a\ {\isacharless}\ ereal\ x\ {\isasymLongrightarrow}\ ereal\ x\ {\isacharless}\ b\ {\isasymLongrightarrow}\ DERIV\ g\ x\ {\isacharcolon}{\isachargreater}\ g{\isacharprime}\ x{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}x{\isachardot}\ a\ {\isacharless}\ ereal\ x\ {\isasymLongrightarrow}\ ereal\ x\ {\isacharless}\ b\ {\isasymLongrightarrow}\ isCont\ f\ {\isacharparenleft}g\ x{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}x{\isachardot}\ a\ {\isacharless}\ ereal\ x\ {\isasymLongrightarrow}\ ereal\ x\ {\isacharless}\ b\ {\isasymLongrightarrow}\ isCont\ g{\isacharprime}\ x{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}x{\isachardot}\ a\ {\isasymle}\ ereal\ x\ {\isasymLongrightarrow}\ ereal\ x\ {\isasymle}\ b\ {\isasymLongrightarrow}\ {\isadigit{0}}\ {\isasymle}\ g{\isacharprime}\ x{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharparenleft}ereal\ {\isasymcirc}\ g\ {\isasymcirc}\ real{\isacharunderscore}of{\isacharunderscore}ereal{\isacharparenright}\ {\isasymlonglongrightarrow}\ A{\isacharparenright}\ {\isacharparenleft}at{\isacharunderscore}right\ a{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharparenleft}ereal\ {\isasymcirc}\ g\ {\isasymcirc}\ real{\isacharunderscore}of{\isacharunderscore}ereal{\isacharparenright}\ {\isasymlonglongrightarrow}\ B{\isacharparenright}\ {\isacharparenleft}at{\isacharunderscore}left\ b{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}set{\isacharunderscore}integrable\ lborel\ {\isacharparenleft}einterval\ a\ b{\isacharparenright}\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ g{\isacharprime}\ x\ {\isacharasterisk}\isactrlsub R\ f\ {\isacharparenleft}g\ x{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}set{\isacharunderscore}integrable\ lborel\ {\isacharparenleft}einterval\ A\ B{\isacharparenright}\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ f\ x{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isacharparenleft}LBINT\ x{\isacharequal}A{\isachardot}{\isachardot}B{\isachardot}\ f\ x{\isacharparenright}\ {\isacharequal}\ {\isacharparenleft}LBINT\ x{\isacharequal}a{\isachardot}{\isachardot}b{\isachardot}\ g{\isacharprime}\ x\ {\isacharasterisk}\isactrlsub R\ f\ {\isacharparenleft}g\ x{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{charprop1}{
+\isacommand{lemma}\isamarkupfalse%
+\ {\isacharparenleft}\isakeyword{in}\ real{\isacharunderscore}distribution{\isacharparenright}\ isCont{\isacharunderscore}char{\isacharcolon}\ {\isachardoublequoteopen}isCont\ {\isacharparenleft}char\ M{\isacharparenright}\ t{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{charprop2}{
+\isacommand{lemma}\isamarkupfalse%
+\ {\isacharparenleft}\isakeyword{in}\ real{\isacharunderscore}distribution{\isacharparenright}\ char{\isacharunderscore}zero{\isacharcolon}\ {\isachardoublequoteopen}char\ M\ {\isadigit{0}}\ {\isacharequal}\ {\isadigit{1}}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{charprop3}{
+\isacommand{lemma}\isamarkupfalse%
+\ {\isacharparenleft}\isakeyword{in}\ real{\isacharunderscore}distribution{\isacharparenright}\ cmod{\isacharunderscore}char{\isacharunderscore}le{\isacharunderscore}{\isadigit{1}}{\isacharcolon}\ {\isachardoublequoteopen}norm\ {\isacharparenleft}char\ M\ t{\isacharparenright}\ {\isasymle}\ {\isadigit{1}}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{chardistrsum}{
+\isacommand{lemma}\isamarkupfalse%
+\ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ char{\isacharunderscore}distr{\isacharunderscore}sum{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ X{\isadigit{1}}\ X{\isadigit{2}}\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\ \isakeyword{and}\ t\ {\isacharcolon}{\isacharcolon}\ real\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}indep{\isacharunderscore}var\ borel\ X{\isadigit{1}}\ borel\ X{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}char\ {\isacharparenleft}distr\ M\ borel\ {\isacharparenleft}{\isasymlambda}{\isasymomega}{\isachardot}\ X{\isadigit{1}}\ {\isasymomega}\ {\isacharplus}\ X{\isadigit{2}}\ {\isasymomega}{\isacharparenright}{\isacharparenright}\ t\ {\isacharequal}\isanewline
+\ \ \ \ char\ {\isacharparenleft}distr\ M\ borel\ X{\isadigit{1}}{\isacharparenright}\ t\ {\isacharasterisk}\ char\ {\isacharparenleft}distr\ M\ borel\ X{\isadigit{2}}{\isacharparenright}\ t{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{chardistrsetsum}{
+\isacommand{lemma}\isamarkupfalse%
+\ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ char{\isacharunderscore}distr{\isacharunderscore}setsum{\isacharcolon}\isanewline
+\ \ {\isachardoublequoteopen}indep{\isacharunderscore}vars\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ borel{\isacharparenright}\ X\ A\ {\isasymLongrightarrow}\isanewline
+\ \ \ \ char\ {\isacharparenleft}distr\ M\ borel\ {\isacharparenleft}{\isasymlambda}{\isasymomega}{\isachardot}\ {\isasymSum}i{\isasymin}A{\isachardot}\ X\ i\ {\isasymomega}{\isacharparenright}{\isacharparenright}\ t\ {\isacharequal}\isanewline
+\ \ \ \ {\isacharparenleft}{\isasymProd}i{\isasymin}A{\isachardot}\ char\ {\isacharparenleft}distr\ M\ borel\ {\isacharparenleft}X\ i{\isacharparenright}{\isacharparenright}\ t{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{charapprox}{
+\isacommand{lemma}\isamarkupfalse%
+\ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ char{\isacharunderscore}approx{\isadigit{3}}{\isacharprime}{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ {\isasymmu}\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure{\isachardoublequoteclose}\ \isakeyword{and}\ X\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}random{\isacharunderscore}variable\ borel\ X{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}integrable\ M\ X{\isachardoublequoteclose}\ {\isachardoublequoteopen}integrable\ M\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isacharparenleft}X\ x{\isacharparenright}{\isacharcircum}{\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\ {\isachardoublequoteopen}expectation\ X\ {\isacharequal}\ {\isadigit{0}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}variance\ X\ {\isacharequal}\ {\isasymsigma}{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymmu}\ {\isacharequal}\ distr\ M\ borel\ X{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}cmod\ {\isacharparenleft}char\ {\isasymmu}\ t\ {\isacharminus}\ {\isacharparenleft}{\isadigit{1}}\ {\isacharminus}\ t{\isacharcircum}{\isadigit{2}}\ {\isacharasterisk}\ {\isasymsigma}{\isadigit{2}}\ {\isacharslash}\ {\isadigit{2}}{\isacharparenright}{\isacharparenright}\ {\isasymle}\isanewline
+\ \ \ \ {\isacharparenleft}t{\isacharcircum}{\isadigit{2}}\ {\isacharslash}\ {\isadigit{6}}{\isacharparenright}\ {\isacharasterisk}\ expectation\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ min\ {\isacharparenleft}{\isadigit{6}}\ {\isacharasterisk}\ {\isacharparenleft}X\ x{\isacharparenright}{\isacharcircum}{\isadigit{2}}{\isacharparenright}\ {\isacharparenleft}{\isasymbar}t{\isasymbar}\ {\isacharasterisk}\ {\isasymbar}X\ x{\isasymbar}{\isacharcircum}{\isadigit{3}}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{momenteven}{
+\isacommand{lemma}\isamarkupfalse%
+\ std{\isacharunderscore}normal{\isacharunderscore}moment{\isacharunderscore}even{\isacharcolon}\isanewline
+\ \ {\isachardoublequoteopen}has{\isacharunderscore}bochner{\isacharunderscore}integral\ lborel\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ std{\isacharunderscore}normal{\isacharunderscore}density\ x\ {\isacharasterisk}\ x\ {\isacharcircum}\ {\isacharparenleft}{\isadigit{2}}\ {\isacharasterisk}\ k{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ {\isacharparenleft}fact\ {\isacharparenleft}{\isadigit{2}}\ {\isacharasterisk}\ k{\isacharparenright}\ {\isacharslash}\ {\isacharparenleft}{\isadigit{2}}{\isacharcircum}k\ {\isacharasterisk}\ fact\ k{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{momentodd}{
+\isacommand{lemma}\isamarkupfalse%
+\ std{\isacharunderscore}normal{\isacharunderscore}moment{\isacharunderscore}odd{\isacharcolon}\isanewline
+\ \ {\isachardoublequoteopen}has{\isacharunderscore}bochner{\isacharunderscore}integral\ lborel\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ std{\isacharunderscore}normal{\isacharunderscore}density\ x\ {\isacharasterisk}\ x{\isacharcircum}{\isacharparenleft}{\isadigit{2}}\ {\isacharasterisk}\ k\ {\isacharplus}\ {\isadigit{1}}{\isacharparenright}{\isacharparenright}\ {\isadigit{0}}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{levyunique}{
+\isacommand{theorem}\isamarkupfalse%
+\ Levy{\isacharunderscore}uniqueness{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ M{\isadigit{1}}\ M{\isadigit{2}}\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}real{\isacharunderscore}distribution\ M{\isadigit{1}}{\isachardoublequoteclose}\ {\isachardoublequoteopen}real{\isacharunderscore}distribution\ M{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}char\ M{\isadigit{1}}\ {\isacharequal}\ char\ M{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}M{\isadigit{1}}\ {\isacharequal}\ M{\isadigit{2}}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{levycont}{
+\isacommand{theorem}\isamarkupfalse%
+\ levy{\isacharunderscore}continuity{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ M\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ real\ measure{\isachardoublequoteclose}\ \isakeyword{and}\ M{\isacharprime}\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ real{\isacharunderscore}distribution\ {\isacharparenleft}M\ n{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}real{\isacharunderscore}distribution\ M{\isacharprime}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}t{\isachardot}\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ char\ {\isacharparenleft}M\ n{\isacharparenright}\ t{\isacharparenright}\ {\isasymlonglonglongrightarrow}\ char\ M{\isacharprime}\ t{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}weak{\isacharunderscore}conv{\isacharunderscore}m\ M\ M{\isacharprime}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{levycont1}{
+\isacommand{theorem}\isamarkupfalse%
+\ levy{\isacharunderscore}continuity{\isadigit{1}}{\isacharcolon}\isanewline
+\ \ {\isachardoublequoteopen}{\isacharparenleft}{\isasymAnd}n{\isachardot}\ real{\isacharunderscore}distribution\ {\isacharparenleft}M\ n{\isacharparenright}{\isacharparenright}\ {\isasymLongrightarrow}\ real{\isacharunderscore}distribution\ M{\isacharprime}\ {\isasymLongrightarrow}\isanewline
+\ \ \ \ weak{\isacharunderscore}conv{\isacharunderscore}m\ M\ M{\isacharprime}\ {\isasymLongrightarrow}\isanewline
+\ \ \ \ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ char\ {\isacharparenleft}M\ n{\isacharparenright}\ t{\isacharparenright}\ {\isasymlonglonglongrightarrow}\ char\ M{\isacharprime}\ t{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+\ \ %
+\endisadelimproof
+%
+\isatagproof
+\isacommand{unfolding}\isamarkupfalse%
+\ char{\isacharunderscore}def\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}rule\ weak{\isacharunderscore}conv{\isacharunderscore}imp{\isacharunderscore}integral{\isacharunderscore}bdd{\isacharunderscore}continuous{\isacharunderscore}conv{\isacharparenright}\ auto%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+}%EndSnippet
+\DefineSnippet{helly}{
+\isacommand{theorem}\isamarkupfalse%
+\ Helly{\isacharunderscore}selection{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ f\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ real\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}{\isasymAnd}n\ x{\isachardot}\ continuous\ {\isacharparenleft}at{\isacharunderscore}right\ x{\isacharparenright}\ {\isacharparenleft}f\ n{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ mono\ {\isacharparenleft}f\ n{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}n\ x{\isachardot}\ {\isasymbar}f\ n\ x{\isasymbar}\ {\isasymle}\ M{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isasymexists}s{\isachardot}\ subseq\ s\ {\isasymand}\ mono\ F\ {\isasymand}\ {\isacharparenleft}{\isasymforall}x{\isachardot}\ {\isasymbar}F\ x{\isasymbar}\ {\isasymle}\ M{\isacharparenright}\ {\isasymand}\isanewline
+\ \ \ \ {\isacharparenleft}{\isasymexists}F{\isachardot}\ {\isacharparenleft}{\isasymforall}x{\isachardot}\ continuous\ {\isacharparenleft}at{\isacharunderscore}right\ x{\isacharparenright}\ F{\isacharparenright}\ {\isasymand}\isanewline
+\ \ \ \ {\isacharparenleft}{\isasymforall}x{\isachardot}\ continuous\ {\isacharparenleft}at\ x{\isacharparenright}\ F\ {\isasymlongrightarrow}\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ f\ {\isacharparenleft}s\ n{\isacharparenright}\ x{\isacharparenright}\ {\isasymlonglonglongrightarrow}\ F\ x{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{thight}{
+\isacommand{theorem}\isamarkupfalse%
+\ tight{\isacharunderscore}imp{\isacharunderscore}convergent{\isacharunderscore}subsubsequence{\isacharcolon}\isanewline
+\ \ \isakeyword{assumes}\ {\isasymmu}{\isacharcolon}\ {\isachardoublequoteopen}tight\ {\isasymmu}{\isachardoublequoteclose}\ {\isachardoublequoteopen}subseq\ s{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}{\isasymexists}r\ M{\isachardot}\ subseq\ r\ {\isasymand}\ real{\isacharunderscore}distribution\ M\ {\isasymand}\ weak{\isacharunderscore}conv{\isacharunderscore}m\ {\isacharparenleft}{\isasymmu}\ {\isasymcirc}\ s\ {\isasymcirc}\ r{\isacharparenright}\ M{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{integraladd}{
+\isacommand{lemma}\isamarkupfalse%
+\ integral{\isacharunderscore}add{\isacharcolon}\isanewline
+\ \ {\isachardoublequoteopen}integrable\ M\ f\ {\isasymLongrightarrow}\ integrable\ M\ g\ {\isasymLongrightarrow}\isanewline
+\ \ \ \ integral\isactrlsup L\ M\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ f\ x\ {\isacharplus}\ g\ x{\isacharparenright}\ {\isacharequal}\ integral\isactrlsup L\ M\ f\ {\isacharplus}\ integral\isactrlsup L\ M\ g{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{integrableadd}{
+\isacommand{lemma}\isamarkupfalse%
+\ integrable{\isacharunderscore}add{\isacharcolon}\isanewline
+\ \ {\isachardoublequoteopen}integrable\ M\ f\ {\isasymLongrightarrow}\ integrable\ M\ g\ {\isasymLongrightarrow}\ integrable\ M\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ f\ x\ {\isacharplus}\ g\ x{\isacharparenright}{\isachardoublequoteclose}%
 }%EndSnippet
 \DefineSnippet{weakconv}{
 \isacommand{definition}\isamarkupfalse%
@@ -305,4 +505,87 @@
 \ \ weak{\isacharunderscore}conv{\isacharunderscore}m\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}nat\ {\isasymRightarrow}\ real\ measure{\isacharparenright}\ {\isasymRightarrow}\ real\ measure\ {\isasymRightarrow}\ bool{\isachardoublequoteclose}\isanewline
 \isakeyword{where}\isanewline
 \ \ {\isachardoublequoteopen}weak{\isacharunderscore}conv{\isacharunderscore}m\ M{\isacharunderscore}seq\ M\ {\isasymequiv}\ weak{\isacharunderscore}conv\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ cdf\ {\isacharparenleft}M{\isacharunderscore}seq\ n{\isacharparenright}{\isacharparenright}\ {\isacharparenleft}cdf\ M{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{distr}{
+\isacommand{definition}\isamarkupfalse%
+\isanewline
+\ \ distr\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}a\ measure\ {\isasymRightarrow}\ {\isacharprime}b\ measure\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}a\ {\isasymRightarrow}\ {\isacharprime}b{\isacharparenright}\ {\isasymRightarrow}\ {\isacharprime}b\ measure{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}distr\ M\ N\ f\ {\isacharequal}\isanewline
+\ \ \ \ measure{\isacharunderscore}of\ {\isacharparenleft}space\ N{\isacharparenright}\ {\isacharparenleft}sets\ N{\isacharparenright}\ {\isacharparenleft}{\isasymlambda}A{\isachardot}\ emeasure\ M\ {\isacharparenleft}f\ {\isacharminus}{\isacharbackquote}\ A\ {\isasyminter}\ space\ M{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{density}{
+\isacommand{definition}\isamarkupfalse%
+\isanewline
+\ \ density\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}a\ measure\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}a\ {\isasymRightarrow}\ ennreal{\isacharparenright}\ {\isasymRightarrow}\ {\isacharprime}a\ measure{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}density\ M\ f\ {\isacharequal}\isanewline
+\ \ \ \ measure{\isacharunderscore}of\ {\isacharparenleft}space\ M{\isacharparenright}\ {\isacharparenleft}sets\ M{\isacharparenright}\ {\isacharparenleft}{\isasymlambda}A{\isachardot}\ {\isasymintegral}\isactrlsup {\isacharplus}\ x{\isachardot}\ f\ x\ {\isacharasterisk}\ indicator\ A\ x\ {\isasympartial}M{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{probspace}{
+\isacommand{locale}\isamarkupfalse%
+\ prob{\isacharunderscore}space\ {\isacharequal}\isanewline
+\ \ \isakeyword{fixes}\ M\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}a\ measure{\isachardoublequoteclose}\ \isakeyword{assumes}\ {\isachardoublequoteopen}emeasure\ M\ {\isacharparenleft}space\ M{\isacharparenright}\ {\isacharequal}\ {\isadigit{1}}{\isachardoublequoteclose}\isanewline
+\isakeyword{begin}\isanewline
+\ \ \isacommand{abbreviation}\isamarkupfalse%
+\ {\isachardoublequoteopen}events\ {\isasymequiv}\ sets\ M{\isachardoublequoteclose}\isanewline
+\ \ \isacommand{abbreviation}\isamarkupfalse%
+\ {\isachardoublequoteopen}prob\ {\isasymequiv}\ measure\ M{\isachardoublequoteclose}\isanewline
+\ \ \isacommand{abbreviation}\isamarkupfalse%
+\ {\isachardoublequoteopen}random{\isacharunderscore}variable\ M{\isacharprime}\ X\ {\isasymequiv}\ X\ {\isasymin}\ measurable\ M\ M{\isacharprime}{\isachardoublequoteclose}\isanewline
+\ \ \isacommand{abbreviation}\isamarkupfalse%
+\ {\isachardoublequoteopen}expectation\ {\isasymequiv}\ integral\isactrlsup L\ M{\isachardoublequoteclose}\isanewline
+\ \ \isacommand{abbreviation}\isamarkupfalse%
+\ {\isachardoublequoteopen}variance\ X\ {\isasymequiv}\ integral\isactrlsup L\ M\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isacharparenleft}X\ x\ {\isacharminus}\ expectation\ X{\isacharparenright}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isacommand{end}\isamarkupfalse%
+%
+}%EndSnippet
+\DefineSnippet{indepsets}{
+\isacommand{definition}\isamarkupfalse%
+\ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\isanewline
+\ \ indep{\isacharunderscore}sets\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}i\ {\isasymRightarrow}\ {\isacharprime}a\ set\ set{\isacharparenright}\ {\isasymRightarrow}\ {\isacharprime}i\ set\ {\isasymRightarrow}\ bool{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}indep{\isacharunderscore}sets\ F\ I\ {\isasymlongleftrightarrow}\isanewline
+\ \ \ \ {\isacharparenleft}{\isasymforall}i{\isasymin}I{\isachardot}\ F\ i\ {\isasymsubseteq}\ events{\isacharparenright}\ {\isasymand}\isanewline
+\ \ \ \ {\isacharparenleft}{\isasymforall}J{\isasymsubseteq}I{\isachardot}\ J\ {\isasymnoteq}\ {\isacharbraceleft}{\isacharbraceright}\ {\isasymlongrightarrow}\ finite\ J\ {\isasymlongrightarrow}\isanewline
+\ \ \ \ \ \ {\isacharparenleft}{\isasymforall}A{\isasymin}{\isacharparenleft}{\isasymPi}\ i{\isasymin}J{\isachardot}\ F\ i{\isacharparenright}{\isachardot}\ prob\ {\isacharparenleft}{\isasymInter}j{\isasymin}J{\isachardot}\ A\ j{\isacharparenright}\ {\isacharequal}\ {\isacharparenleft}{\isasymProd}j{\isasymin}J{\isachardot}\ prob\ {\isacharparenleft}A\ j{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{indepevents}{
+\isacommand{definition}\isamarkupfalse%
+\ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ {\isachardoublequoteopen}indep{\isacharunderscore}events\ A\ I\ {\isasymlongleftrightarrow}\ indep{\isacharunderscore}sets\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ {\isacharbraceleft}A\ i{\isacharbraceright}{\isacharparenright}\ I{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{indepvars}{
+\isacommand{definition}\isamarkupfalse%
+\ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\isanewline
+\ \ indep{\isacharunderscore}vars\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}i\ {\isasymRightarrow}\ {\isacharprime}b\ measure{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}i\ {\isasymRightarrow}\ {\isacharprime}a\ {\isasymRightarrow}\ {\isacharprime}b{\isacharparenright}\ {\isasymRightarrow}\ {\isacharprime}i\ set\ {\isasymRightarrow}\ bool{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}indep{\isacharunderscore}vars\ M{\isacharprime}\ X\ I\ {\isasymlongleftrightarrow}\isanewline
+\ \ \ \ {\isacharparenleft}{\isasymforall}i{\isasymin}I{\isachardot}\ random{\isacharunderscore}variable\ {\isacharparenleft}M{\isacharprime}\ i{\isacharparenright}\ {\isacharparenleft}X\ i{\isacharparenright}{\isacharparenright}\ {\isasymand}\isanewline
+\ \ \ \ indep{\isacharunderscore}sets\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ {\isacharbraceleft}\ X\ i\ {\isacharminus}{\isacharbackquote}\ A\ {\isasyminter}\ space\ M\ {\isacharbar}\ A{\isachardot}\ A\ {\isasymin}\ sets\ {\isacharparenleft}M{\isacharprime}\ i{\isacharparenright}{\isacharbraceright}{\isacharparenright}\ I{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{char}{
+\isacommand{definition}\isamarkupfalse%
+\isanewline
+\ \ char\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure\ {\isasymRightarrow}\ real\ {\isasymRightarrow}\ complex{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}char\ M\ t\ {\isacharequal}\ CLINT\ x{\isacharbar}M{\isachardot}\ iexp\ {\isacharparenleft}t\ {\isacharasterisk}\ x{\isacharparenright}{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{normaldistr}{
+\isacommand{definition}\isamarkupfalse%
+\isanewline
+\ \ normal{\isacharunderscore}density\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ {\isasymRightarrow}\ real\ {\isasymRightarrow}\ real\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}normal{\isacharunderscore}density\ {\isasymmu}\ {\isasymsigma}\ x\ {\isacharequal}\ {\isadigit{1}}\ {\isacharslash}\ sqrt\ {\isacharparenleft}{\isadigit{2}}\ {\isacharasterisk}\ pi\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}\ {\isacharasterisk}\ exp\ {\isacharparenleft}{\isacharminus}{\isacharparenleft}x\ {\isacharminus}\ {\isasymmu}{\isacharparenright}\isactrlsup {\isadigit{2}}{\isacharslash}\ {\isacharparenleft}{\isadigit{2}}\ {\isacharasterisk}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{abbreviation}\isamarkupfalse%
+\isanewline
+\ \ std{\isacharunderscore}normal{\isacharunderscore}density\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}std{\isacharunderscore}normal{\isacharunderscore}density\ {\isasymequiv}\ normal{\isacharunderscore}density\ {\isadigit{0}}\ {\isadigit{1}}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{abbreviation}\isamarkupfalse%
+\isanewline
+\ \ std{\isacharunderscore}normal{\isacharunderscore}distribution\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+\ \ {\isachardoublequoteopen}std{\isacharunderscore}normal{\isacharunderscore}distribution\ {\isasymequiv}\ density\ lborel\ std{\isacharunderscore}normal{\isacharunderscore}density{\isachardoublequoteclose}%
 }%EndSnippet

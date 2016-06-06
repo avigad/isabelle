@@ -245,9 +245,7 @@ Measure theory requires the use of the \emph{extended reals}, obtained from the 
 A \emph{measure space} \texttt{M} extends the notion of a $\sigma$-algebra with a function \texttt{emeasure M} from subsets of $\alpha$ to the extended reals, satisfying the usual axioms: the measure of the empty set is $0$, the measure of any set in the $\sigma$-algebra is nonnegative, and the measure of a countable disjoint union of sets in the underlying $\sigma$-algebra is equal to sum of the unions (which might be $\infty$). The underlying $\sigma$ algebra corresponds to the usual notion of the collection of \emph{measurable subsets} corresponding to the measure. In Isabelle, for any type $\alpha$, the \texttt{typedef} mechanism is used to specify a new type, $\mathtt{measure} \; \alpha$, consisting of measure spaces on some subset of $\alpha$. 
 
 If $\mdl M$ and $\mdl N$ are two measure spaces, a \emph{measurable function} $f$ from $\mdl M$ to $\mdl N$ is a function between the underlying sets that has the property that the inverse image of any measurable subset of the codomain is a measurable subset of the domain. Note that, in fact, the property of being measurable has nothing to do with the measure; it is really a property of the function with respect to the two associated $\sigma$-algebras. Given a measurable function $f : \mdl M \to \mdl N$, a measure $\mu$ on $\mdl M$ gives rise to a new measure $\nu$ on $\mdl N$, defined by $\nu(A) = \mu(f^{-1} A)$. This is sometimes called a \emph{pushforward measure}, but in Isabelle, it is denoted \texttt{distr M N f}, for reasons that are explained in Section~\ref{subsection:probability}. It is defined formally as follows:
-\begin{quote}
- \todo{Insert definition of distr}.
-\end{quote}
+\Snippet{distr}
 
 The library includes a construction of the Borel sets in any topology, and the Caratheodory extension theorem. Lebesgue measure on the reals was initially constructed from the gauge integral, which is discussed in Section~\ref{subsection:real:analysis}. After our formalization, however, the construction was replaced by the more common textbook definition, as the $\sigma$-extension of the measure on finite intervals, as described in Section~\ref{subsection:distribution:functions} below. The measure space consisting of Lebesgue measure on the Borel subsets of the reals is denoted \texttt{lborel} in the Isabelle library. 
 
@@ -256,20 +254,14 @@ Our initial formalization of the Central Limit Theorem relied on the theory of L
 \todo{Discuss the details of the Bochner integral.}
 
 As with the Lebesgue integral, we obtain a version of the dominated convergence theorem.
-\begin{quote}
- \todo{Insert a formal statement of this.}
-\end{quote}
+\Snippet{dominatedconvergence}
 We also obtain the monotone convergence theorem, which applies to sequences of functions taking values in the real numbers. We also obtain Fubini's theorem. These are all staples of the theory of integration, and were used throughout our formalization.
 
 If $f : X \to B$ is any measurable function on a space $X$ with measure $\mu$, and $S$ is any measurable set, one can define the integral over the set $S$ by $\int_S f \, d\mu = \int f \chi_S \, d\mu$. Here $\chi_S$ is the \emph{characteristic function} of $S$, also called the \emph{indicator function}. Rather than introduce a new definition, we took notation for integration over sets to be an abbreviation for the definition in terms of indicators. But because reasoning about integrals over sets is so fundamental, we found it helpful to develop a small library to support it. For example, the following is a consequence of the dominated convergence theorem:
-\begin{quote}
-\todo{Insert lebesgue-integral-countable-add from Set-Integral.thy}
-\end{quote}
+\Snippet{lebesgueintegralcountableadd}
 
 Another way to define a measure $\nu$ on a space $\mdl M$ is to take a nonnegative measurable function $f$ from $\mdl M$ to the real numbers, and define, for every set $A$, $\nu(A) = \int_A f \; d\lambda$, where $\lambda$ denotes Lebesgue measure. This is defined formally in the Isabelle library as follows:
-\begin{quote}
-\todo{Insert definition of density from Nonnegative-Lebesgue-Integration.}
-\end{quote}
+\Snippet{density}
 
 The fundamentals of measure theory are found in the \texttt{HOL-Probability} library, which includes \verb=Sigma_Algebra=, \verb=Measure_Space=, \verb=Bochner_Integration=, \texttt{Caratheodory}, and \verb=Lebesgue_Measure=.
 
@@ -279,33 +271,23 @@ The fundamentals of measure theory are found in the \texttt{HOL-Probability} lib
 Modern probability is based on measure theory, although probabilists and statisticians tend to adopt their own distinct terminology. A \emph{probability space} is simply a measure space in which the measure of the entire space is equal to 1; think of the space as the space of possible outcomes of a random event. A \emph{random variable} on such a space is simply a measurable function from that space to the reals; think of it as a real number that depends on the outcome of the random event. The \emph{expectation} of a random variable is simply the integral of the function over the entire space. Thus talk of probability spaces, random variables, and expectations is really talk of measure spaces, measurable functions, and integrals in disguise.
 
 The Isabelle library defines a locale for \emph{finite measures}, which are simply measures for which the measure of the entire space, \texttt{emeasure (space M)}, is not infinity. For such spaces, one can work more conveniently with the associated real-valued function, \texttt{measure}, which casts the value of \texttt{emeasure} to reals. There is also a locale for \emph{probability measures}, which are finites measure where the measure of the entire space is equal to $1$. When working with cumulative distribution functions, as described in Section~\ref{subsection:distribution:functions}, we found it convenient to define a local for \emph{real distributions}; a real distribution is simply a probability space in which the space is the set of real numbers and the measurable sets consist of exactly the Borel subsets of the reals. To capture the language of informal probability theory, the library defines all of the following abbreviations:
-\begin{quote}
- \todo{Insert the abbreviations for events, prob, random-variable, expectation, and variance defined in the file Probability-Measure.}
-\end{quote}
+\Snippet{probspace}
 
 If $X$ is a random variable on a measure space $\mdl M$ with measure $\mu$, the distribution of $X$, as described in the last section, has the following interpretation: it is the measure $\nu$ on the Borel sets of $\RR$ such that for every $A$, $\nu(A)$ is the probability that $X$ takes a value in $A$. Even though we think of $X$ has depending on some underlying source of randomness, represented by $\mdl M$, often we only care on the induced probability on the real numbers that is given by its distribution. Notice that the word ``distribution'' is used in probability theory in at least three distinct but related ways. In addition to the uses of the term described in this paragraph and the previous one, one also often speaks of the (cumulative) distribution function of a real distribution, as described in Section~\ref{subsection:distribution:functions}. Thus, if $X$ is a random variable, its distribution is a real distribution, which in turn has a distribution function.
 
 Common real distributions in probabilities are often specified as densities, as described in the last section. Thus the normal distribution with mean $\mu$ and variance $\sigma$ is defined formally as follows:
-\begin{quote}
-\todo{Insert definition from distributions.}
-\end{quote}
+\Snippet{normaldistr}
 
 Various notions of independence are used in probability. Perhaps the most general is the following: suppose that for every $i$ in some index set $I$, $F_i$ is a collection of events (measurable sets) of some fixed measure space. Then the sequence $(F_i)_{i \in I}$ is said to be \emph{independent} if for every finite subset $J \subseteq I$ and every choice of a set $A_j \in F_j$ for each $j$, the probability of the intersection $\bigcap_{j \in J} A_j$ is the product of the individual probabilities. In other words, the probability that all of the $A_j$'s occur is just the product of the individual probabilities.
-\begin{quote}
- \todo{Insert definition indep-sets from Independent-Families.}
-\end{quote}
+\Snippet{indepsets}
 If now $(A_i)_{i \in I}$ is a sequence of \emph{events} (rather than collections of events), saying that the sequence $(A_i)$ is independent amounts to saying that the sequence of singletons $(\{A_i\})_{i \in I}$ is an independent sequence of collections.
-\begin{quote}
- \todo{Insert definition indep-events.}
-\end{quote}
+\Snippet{indepevents}
 Finally, if $(X_i)_{i \in I}$ is a sequence of random variables with inputs in one measure space, $\mdl M$, and values in another space, $\mdl M'$ (typically, but not necessarily, the reals), saying that the sequence $X_i$ is independent amounts to saying that the sequence of collections of measurable sets 
 \[
 (\{ X^{-1}(A) \; | \; \mbox{$A$ is a measurable subset of $\mdl M'$}\})_{i \in I}.
 \]
 is independent.
-\begin{quote}
- \todo{Insert definition indep-vars.}
-\end{quote}
+\Snippet{indepvars}
 In probabilistic terms, this means that given any finite $J \subseteq I$ and any finite sequence $A_{j_1}, \ldots, A_{j_n}$ of events, the probability that each $X_{j_u}$ is in $A_{j_u}$ is just the product of the individual probabilities. Of course, we can say that any \emph{two} events, or random variables, or collections of events, are independent by taking $I$ to be any two-element type, such as the Booleans. Isabelle's library defines the binary notions as well, and develops basic properties of independent sets, events, and random variables.
 
 \todo{Discuss automation, tools for proving measurability.}
@@ -335,37 +317,25 @@ Our formalization required extensive use of calculus at an undergraduate level, 
  \left| e^{ix} - \sum_{k=0}^n \frac{(ix)^k}{k!} \right| \le \min\left(\frac{|x|^{n+1}}{(n+1)!}, \frac{2 x^n}{n!}]\right).
 \]
 We followed Billingsley~\cite[Section 26]{billingsley:95} in obtaining this using an inductive argument and integration by parts. Notice that this involves reasoning about functions from the real to complex numbers; as explained in the last section, the relevant properties generally follow from the corresponding properties for real-valued functions, upon splitting functions to the real and imaginary parts. In addition, we have the general inequality, $\| \int_A f \; d\mu \| \le \int_A \| f \| d\mu$, which allows us to bound the modulus of a complex interval by bounding the real-valued integral of the norm. This is an instance of a more general fact about the Bochner integral:
-\begin{quote}
-\todo{Insert integral-norm-bound}
-\end{quote}
+\Snippet{integralnormbound}
 
 Textbook results from calculus involve integrals $\int_a^b f(x) \; dx$ over the interval $(a,b)$. These can be viewed simply as an ordinary integral over the set $(a,b)$, with the following two caveats:
 \begin{itemize}
- \item Textbooks allow $a$ to be $-\infty$ and $b$ to be $\infty$, which is to say, $a$ and $b$ should be taken to be extended real numbers.\fxnote{replace by extended non-negative real numbers}
- \item It is convenient to adopt the convention that if $b < a$, then $\int_a^b f(x) \; dx = -\int_b^a f(x) dx$.
+ \item Textbooks allow $a$ to be $-\infty$ and $b$ to be $\infty$, which is to say, $a$ and $b$ should be taken to be extended real numbers.
+ \item It is convenient to adopt the convention that if $b < a$, then \\ $\int_a^b f(x) \; dx = -\int_b^a f(x) dx$.
 \end{itemize}
 We thus defined a notion of ``interval integral'' along these lines, together with supporting notation. We could then state the first fundamental theorem of calculus in the following form, for finite intervals:
-\begin{quote}
-\todo{Insert interval-integral-FTC-finite}
-\end{quote}
+\Snippet{ftcfinite}
 The following version, for arbitrary intervals, makes sense when the limits are infinite:
-\begin{quote}
-\todo{Insert interval-integral-FTC-integrable}
-\end{quote}
+\Snippet{ftcintegrable}
 Similarly, we could state the second fundamental theorem of calculus, where the variable bound to the integral can be before or after the fixed endpoint:
-\begin{quote}
-\todo{Insert interval-integral-FTC2}
-\end{quote}
+\Snippet{ftc2}
 The use of such an integral was a mixed blessing. It simplified many of our theorems and proofs, but at the expense of introducing yet another notion of integral, which required another library of supporting facts, as well as, at times, translations to and from the other notions of integral.
 
 Many textbook integration arguments require a change of variable, sometimes known as ``integration by substitution.'' It was not hard to prove that if a function $g$ from $\RR$ to $\RR$ has a continuous derivative (and hence is continuous itself) on a closed interval $[a,b]$, and $f$ is continuous on the image of $[a, b]$ under $g$, then $\int_a^b f(g(x)) g'(x) \; dx = \int_{g(a)}^{g(b)} f(x) \; dx$:
-\begin{quote}
- \todo{Insert interval-integral-substitution-finite}
-\end{quote}
+\Snippet{substfinite}
 Manuel Eberl later generalized this to arbitrary Borel measurable functions $f$, but with the added hypothesis that $g'$ is nonnegative on $[a, b]$. However, we also needed a version of this for intervals with potentially infinite endpoints. This requires using either the monotone convergence theorem or the dominated convergence theorem to pass from finite interval approximations to the full interval. In fact, we proved two versions. The following one requires showing independently that both $f(x)$ and $f(g(x)) * g'(x)$ are integrable over the relevant intervals:
-\begin{quote}
- \todo{Insert interval-integral-substitution-integrable}
-\end{quote}
+\Snippet{substintegrable}
 Another version assumes instead that $f$ is nonnegative, and concludes that $f$ is therefore integrable.
 
 As an example where various uses of these components came together, consider the \emph{sine integral function}. The function $\sin x / x$ is undefined at $0$, but the function can be made continuous at $0$ by giving it the value $1$ there. The resulting function is called $\sinc$. The sine integral function is (confusingly) defined to be the indefinite integral of the $\sinc$ function, starting at $0$:
@@ -473,15 +443,13 @@ Recall that the \emph{characteristic function} $\ph$ of a probability measure $\
 \]
 If $X$ is a random variable, the characteristic function of $X$ is defined to be the characteristic function of its distribution.
 In our formalization, the characteristic function of a measure is defined as follows:
-\begin{quote}
- \todo{Insert.}
-\end{quote}
+\Snippet{char}
 The characteristic function of a random variable \texttt{X} defined on a measure space \texttt{M} is then written \texttt{char (distr M borel X)}, since \texttt{distr M borel X} denotes the distribution of \texttt{X} with respect to the usual Borel measure on the real numbers.
 
 The characteristic function $\ph$ of a measure is continuous, and satisfies $\ph(0) = 1$ and $\ph(t) \leq 1$ for every $t$:
-\begin{quote}
- \todo{Insert isCont-chair, char-zero, cmod-char-le-1}
-\end{quote}
+\Snippet{charprop1}
+\Snippet{charprop2}
+\Snippet{charprop3}
 A key property of characteristic functions is this: if $X_1$ and $X_2$ are independent random variables, the characteristic function of $X_1 + X_2$ is the product of the individual characteristic functions. Because we used the Bochner integral, which allows us to integrate complex-valued functions directly, our final proof of this fact is even simpler than the one in Billingsley \cite{billingsley:95}. The calculation runs as follows:
 \begin{align*}
 \ph_{X_1 + X_2}(t) &= \int e^{i t (X_1 + X_2)} \, dM  \\
@@ -490,23 +458,16 @@ A key property of characteristic functions is this: if $X_1$ and $X_2$ are indep
                    &= \ph_{X_1}(t) \ph_{X_2}(t).
 \end{align*}
 Here, $X_1$ and $X_2$ are really functions over the underlying probability space $M$, and the third equation follows from the independence of $X_1$ and $X_2$. We reproduce our formal proof, as well as the generalization to arbitrary finite sums, in full:
-\begin{quote}
-\todo{Insert char-distr-sum and char-distr-setsum, in full.}
-\end{quote}
+\Snippet{chardistrsum}
+\Snippet{chardistrsetsum}
 
 We also needed explicit approximations to the characteristic functions of a random variable, obtained using the calculation described at the beginning of Section~\ref{subsection:calculus}. One of the results we used is as follows:
-\begin{quote}
- \todo{Insert char-approx3'}
-\end{quote}
+\Snippet{charapprox}
 
 Finally, we needed to compute the characteristic function $\ph$ of the standard normal distribution, and show $\ph(t) = e^{-t^2/2}$. Establishing this fact took more work than we thought it would. Many textbook proofs of this invoke facts from complex analysis that were unavailable to us. Billingsley \cite[page 344]{billingsley:95} sketches an elementary proof, which required calculating the moments and absolute moments of the standard normal distribution. This is where the calculations of $\int_{-\infty}^\infty x^k e^{-x^2 / t} \; dx$ mentioned in Section~\ref{subsection:calculus}, were needed: specifically, we have for even $k$, 
-\begin{quote}
-\todo{Insert std-normal-moment-even in Distributions}
-\end{quote}
+\Snippet{momenteven}
 and for odd $k$,
-\begin{quote}
-\todo{Insert std-normal-moment-odd}
-\end{quote}
+\Snippet{momentodd}
 A prior calculation by Sudeep Kanav covered the cases $k = 0, 1$, which provide the base cases for an inductive proof. Filling in the details involved carrying out careful computations with integrals and power series approximations to $e^x$.
 
 In the Isabelle 2016 distribution, characteristic functions are defined in the theory \verb=Characteristic_Functions=, and the properties cited above are proved there. The calculation of the moments of the normal distribution is found in the theory \verb=Distributions=.
@@ -534,21 +495,15 @@ It is not hard to show that fixing the values of a measure on intervals $(a, b]$
 If $\mu_1$ and $\mu_2$ are probability measures and $\ph_{\mu_1} = \ph_{\mu_2}$, then $\mu_1 = \mu_2$. 
 \end{theorem}
 In our formalization, this is expressed simply as follows:
-\begin{quote}
- \todo{Insert Levy uniqueness}
-\end{quote}
+\Snippet{levyunique}
 
 \subsection{The L\'evy Continuity Theorem}
 
 Let $(\mu_n)$ be a sequence of distributions, where each $\mu_n$ has characteristic function $\ph_n$, and let $\mu$ be a distribution with characteristic function $\ph$. The \emph{L\'evy Continuity Theorem} states that $\mu_n$ converges to $\mu$ weakly if and only if $\ph_n(t)$ converges to $\ph(t)$ for every $t$. In our formalization, it is expressed as follows:
-\begin{quote}
- \todo{Insert.}
-\end{quote}
+\Snippet{levycont }
 
 Proving the ``only if'' direction is easy, using Portmanteau Theorem of Section~\ref{subsection:weak:convergence}, since $e^{itx}$ is bounded and continuous. In fact, in our formalization, it has a one-line proof:
-\begin{quote}
- \todo{Insert levy-continuity1 and its one-line proof.}
-\end{quote}
+\Snippet{levycont1}
 The other direction is a lot harder. Here is an outline of the proof:
 \begin{enumerate}
  \item Use a compactness argument to show that every subsequence $(\mu_{n_k})$ of $(\mu_n)$ has a weakly convergent subsequence.
@@ -564,15 +519,11 @@ The necessary compactness principal is a consequence of the \emph{Helly Selectio
 Let $(F_n)$ be a uniformly bounded sequence of nondecreasing, right continuous functions. Then there is a subsequence $(F_{n_k})$ and a nondecreasing, right-continuous function $F$ such that $\lim_k F_{n_k}(x) = F(x)$ at continuity points of $F$.  
 \end{theorem}
 In our formalization, this is expressed as follows:
-\begin{quote}
-  \todo{Insert Helly.}
-\end{quote}
+\Snippet{helly}
 Note that the subsequence $(F_{n_k})$ is represented by a strictly increasing function $s : \NN \to \NN$ which returns, for each $k$, the value $n_k$. The proof involves a diagonalization argument: for each rational $r$, we thin the sequence to guarantee convergence at $r$, and then take a ``diagonal limit'' to construct the required subsequence and limit. To that end, we used a general framework for such diagonalization arguments, provided by Fabian Immler.
 
 To describe the relevant corollary, we need to introduce a definition. A sequence $(\mu_n)$ of real measures is said to be \emph{tight} if for every $\varepsilon > 0$, there is a finite interval $(a, b]$ such that $\mu_n(a, b] > 1 - \varepsilon$ for all $n$. Roughly, a sequence of probability measures is tight if no mass ``escapes to infinity''; the sequence $(\mu_n)$, where $\mu_n$ is a unit mass at $n$, is an example of a sequence that is \emph{not} tight. Helly's theorem can be used to show that if $(\mu_n)$ is a tight sequence of measures, then for every subsequence $(\mu_{n_k})$ there is a further subsequence $(\mu_{n_{k(j)}})$ and a probability measure $\mu$ such that $(\mu_{n_{k(j)}})$ converges weakly $\mu$ as $j$ approaches infinity.
-\begin{quote}
- \todo{Insert our formal version.}
-\end{quote}
+\Snippet{thight}
 
 In the Isabelle 2016 distribution, the Helly Selection Theorem and its corollary are proved in \verb=Helly_Selection=, and the L\'evy Continuity Theorem is proved in \texttt{Levy}. Immler's general framework for diagonal arguments can be found in the theory \verb=Diagonal_Sequence= in \texttt{HOL-Library}.
 
@@ -610,9 +561,8 @@ In the logical framework of type theory, where every function is assumed to be t
 In Isabelle, many partial functions related to analysis, such as limits and derivatives, are represented in this way, with a relation, a predicate asserting the existence of a value, and a function that returns an arbitrary value when the predicate fails. An exception is the notion of a measure on a measure space: the expression $\mathtt{s} \in \mathtt{sets \; M}$ expresses that $s$ is a measurable set for the measure \texttt{M}, in which case, \texttt{measure M s} is the measure of \texttt{s}.
 
 In the measure theory library, however, integration is handled in the usual way: we have \verb=has_bochner_integral M f x= to express that \texttt{f} has Bochner integral \texttt{x} with respect to the measure space \texttt{M}, \texttt{integrable M f} to say that \texttt{f} is integrable, and notation $\mathtt{integral^L \; M \; f}$ for the value of the integral, when it exists (the superscripted \texttt{L} is a holdover from Lebesgue measure). The library tends to favor the latter representations, however, with one theorem asserting the value of an integral, and another theorem asserting integrability. For example, we have:
-\begin{quote}
-\todo{insert integral-add and integrable-add from Bochner-integration}
-\end{quote}
+\Snippet{integraladd}
+\Snippet{integrableadd}
 This sometimes got us into trouble. A couple of times, we used theorems in the library, only to realize that the accompanying integrability assertions were missing; we then had to revise the library to provide these additional assertions. We often made the same mistake in our own developments, and in proofs we often found that we had to carry out parallel calculations: after calculating an integral, we had to go back and prove that the expression we began with was in fact integrable. In some cases, Isabelle's automation could dispel integrability claims for us, but typically in those cases the calculations could also be carried out automatically. On the other hand, writing formulas with integrals rather than the \verb=has_integral= predicate makes them look much more like the formulas one finds in an ordinary mathematical textbook.
 
 We do not know the ideal solution to the problem. In a dependent type theory with propositions as types, one could require \texttt{integrable f} as a ``precondition'' --- a hidden argument --- to an expression \texttt{integral f}, though that might give rise to other difficulties. In simple type theory, it seems that one has to choose between using a relational version or using a function together with a definedness predicate. In the latter case, one has to take care to keep the two pieces of information close together.
