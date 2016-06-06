@@ -593,24 +593,29 @@ Stone-Weierstrass, complex analysis countour integrals
 It is impossible to give a meaningful estimate of the time involved in the formalization, as the work was carried out intermittently over a long period of time, and includes time spent learning to use Isabelle by the third author, Serafin, who was an undergraduate student at Carnegie Mellon at the time. When we first obtained a proof of the CLT, we reported that our repository contained about 13,000 lines \cite{avigad:hoelzl:serafin:14}. This included all the general infrastructure and additions to Isabelle's libraries as well as the core parts of the proof. Since then, we have cleaned up and refactored most of our proof scripts, and many of them have been shortened considerably. Subsequently, also, the second author implemented the Bochner integral, eliminating the need for a separate notion of integration for functions from the reals to the complex numbers. In addition, many of the supporting theorems and facts have been moved to other parts of the Isabelle libraries. 
 
 The proof of the CLT is now part of the Isabelle distribution. One observation is that, in terms of the number of lines, the majority of effort went into developing the background and general infrastructure. For example, some of our longest files involve general facts about integration:
-\begin{itemize}
- \item \verb=Bochner_Integral=: ??? lines
- \item \verb=Set_Integral=: ??? lines
- \item \verb=Interval_Integral=: ??? lines
-\end{itemize}
-In addition, the construction of Lebesgue-Stieltjes measure, described in Section~\ref{subsection:distribution:functions}, is found in \verb=Lebesgue_Measure= and requires about ??? lines. Some of the key background for the formalization is contained in the following files:
-\begin{itemize}
- \item \verb=Distribution_Functions=: ??? lines
- \item \verb=Weak_Convergence=
- \item \verb=Sinc_Integral=: ??? lines
-\end{itemize}
-Also, general facts about the standard normal distribution take about about ??? lines in \texttt{Distributions}. The core development of characteristic functions and their properties, and the proof of the CLT, is found in the following files:
-\begin{itemize}
- \item \verb=Characteristic_Functions=: ??? lines
- \item \verb=Helly_Selection=: ??? lines
- \item \verb=Levy=: ??? lines
- \item \verb=Central_Limit_Theorem=: ??? lines
-\end{itemize}
+
+\begin{tabular}{lr}
+\verb=Bochner_Integral=: & $3,066$ lines \\
+\verb=Set_Integral=: & $602$ lines \\
+\verb=Interval_Integral=: & $1,123$ lines
+\end{tabular}
+
+In addition, the construction of Lebesgue-Stieltjes measure, described in Section~\ref{subsection:distribution:functions}, is found in \verb=Lebesgue_Measure= and requires about $270$ lines. Some of the key background for the formalization is contained in the following files:
+
+\begin{tabular}{lr}
+ \verb=Distribution_Functions=: & $259$ lines \\
+ \verb=Weak_Convergence=: & $422$ lines \\
+ \verb=Sinc_Integral=: & $403$ lines
+\end{tabular}
+
+Also, general facts about the standard normal distribution take about about $380$ lines in \texttt{Distributions}. The core development of characteristic functions and their properties, and the proof of the CLT, is found in the following files:
+
+\begin{tabular}{lr}
+ \verb=Characteristic_Functions=: & $554$ lines \\
+ \verb=Helly_Selection=: & $298$ lines \\
+ \verb=Levy=: & $542$ lines \\
+ \verb=Central_Limit_Theorem=: & $117$ lines
+\end{tabular}
 
 Once all the background information was in place, many of our proofs followed those in Billingsley quite closely. This affords allows for some direct comparisons. For example, the proof of the Helly selection theorem, about ??? in Billingsley's text, is ??? lines in our formalization. The proof of the L\'evy continuity theorem, ??? lines in Billingsley, translates to about ??? lines in our formalization. Billingsley's Corollary ???, described in Section~???, is ??? lines in our formalization. 
 
