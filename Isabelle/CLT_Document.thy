@@ -219,9 +219,9 @@ oops
 text_raw \<open>\DefineSnippet{lebesgueintegralcountableadd}{\<close>
 lemma lebesgue_integral_countable_add:
   fixes f :: "_ \<Rightarrow> 'a :: {banach, second_countable_topology}"
-  assumes meas[intro]: "\<And>i::nat. A i \<in> sets M"
-    and disj: "\<And>i j. i \<noteq> j \<Longrightarrow> A i \<inter> A j = {}"
-    and intgbl: "set_integrable M (\<Union>i. A i) f"
+  assumes "\<And>i::nat. A i \<in> sets M"
+    and "\<And>i j. i \<noteq> j \<Longrightarrow> A i \<inter> A j = {}"
+    and "set_integrable M (\<Union>i. A i) f"
   shows "LINT x:(\<Union>i. A i)|M. f x = (\<Sum>i. (LINT x:(A i)|M. f x))"
 text_raw \<open>}%EndSnippet\<close>
   oops
@@ -236,6 +236,14 @@ lemma dominated_convergence:
     and "\<And>i. AE x in M. norm (s i x) \<le> w x"
   shows "integrable M f" and "\<And>i. integrable M (s i)"
     and "(\<lambda>i. integral\<^sup>L M (s i)) \<longlonglongrightarrow> integral\<^sup>L M f"
+text_raw \<open>}%EndSnippet\<close>
+  oops
+
+text_raw \<open>\DefineSnippet{integrablebounded}{\<close>
+lemma integrable_iff_bounded:
+  fixes f :: "'a \<Rightarrow> 'b::{banach, second_countable_topology}"
+  shows "integrable M f \<longleftrightarrow>
+    f \<in> borel_measurable M \<and> (\<integral>\<^sup>+x. norm (f x) \<partial>M) < \<infinity>"
 text_raw \<open>}%EndSnippet\<close>
   oops
 
@@ -322,20 +330,39 @@ text_raw \<open>}%EndSnippet\<close>
 
 text_raw \<open>\DefineSnippet{chardistrsum}{\<close>
 lemma (in prob_space) char_distr_sum:
-  fixes X1 X2 :: "'a \<Rightarrow> real" and t :: real
   assumes "indep_var borel X1 borel X2"
   shows "char (distr M borel (\<lambda>\<omega>. X1 \<omega> + X2 \<omega>)) t =
     char (distr M borel X1) t * char (distr M borel X2) t"
+proof -
+  from assms have [measurable]: "random_variable borel X1" by (elim indep_var_rv1)
+  from assms have [measurable]: "random_variable borel X2" by (elim indep_var_rv2)
+
+  have "char (distr M borel (\<lambda>\<omega>. X1 \<omega> + X2 \<omega>)) t =
+      (CLINT x|M. iexp (t * (X1 x + X2 x)))"
+    by (simp add: char_def integral_distr)
+  also have "\<dots> = (CLINT x|M. iexp (t * (X1 x)) * iexp (t * (X2 x)))"
+    by (simp add: field_simps exp_add)
+  also have "\<dots> =
+      (CLINT x|M. iexp (t * (X1 x))) * (CLINT x|M. iexp (t * (X2 x)))"
+    by (auto intro!: indep_var_compose[unfolded comp_def, OF assms]
+                     integrable_iexp indep_var_lebesgue_integral)
+  also have "\<dots> = char (distr M borel X1) t * char (distr M borel X2) t"
+    by (simp add: char_def integral_distr)
+  finally show ?thesis .
+qed
 text_raw \<open>}%EndSnippet\<close>
-  oops
 
 text_raw \<open>\DefineSnippet{chardistrsetsum}{\<close>
 lemma (in prob_space) char_distr_setsum:
   "indep_vars (\<lambda>i. borel) X A \<Longrightarrow>
     char (distr M borel (\<lambda>\<omega>. \<Sum>i\<in>A. X i \<omega>)) t =
     (\<Prod>i\<in>A. char (distr M borel (X i)) t)"
+proof (induct A rule: infinite_finite_induct)
+  case (insert x F) then show ?case
+    using indep_vars_subset[of "\<lambda>_. borel" X "insert x F" F]
+    by (auto simp add: char_distr_sum indep_vars_setsum)
+qed (simp_all add: char_def integral_distr prob_space del: distr_const)
 text_raw \<open>}%EndSnippet\<close>
-  oops
 
 text_raw \<open>\DefineSnippet{charapprox}{\<close>
 lemma (in prob_space) char_approx3':

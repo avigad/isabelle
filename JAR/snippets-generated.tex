@@ -306,9 +306,9 @@
 \isacommand{lemma}\isamarkupfalse%
 \ lebesgue{\isacharunderscore}integral{\isacharunderscore}countable{\isacharunderscore}add{\isacharcolon}\isanewline
 \ \ \isakeyword{fixes}\ f\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharunderscore}\ {\isasymRightarrow}\ {\isacharprime}a\ {\isacharcolon}{\isacharcolon}\ {\isacharbraceleft}banach{\isacharcomma}\ second{\isacharunderscore}countable{\isacharunderscore}topology{\isacharbraceright}{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{assumes}\ meas{\isacharbrackleft}intro{\isacharbrackright}{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}i{\isacharcolon}{\isacharcolon}nat{\isachardot}\ A\ i\ {\isasymin}\ sets\ M{\isachardoublequoteclose}\isanewline
-\ \ \ \ \isakeyword{and}\ disj{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}i\ j{\isachardot}\ i\ {\isasymnoteq}\ j\ {\isasymLongrightarrow}\ A\ i\ {\isasyminter}\ A\ j\ {\isacharequal}\ {\isacharbraceleft}{\isacharbraceright}{\isachardoublequoteclose}\isanewline
-\ \ \ \ \isakeyword{and}\ intgbl{\isacharcolon}\ {\isachardoublequoteopen}set{\isacharunderscore}integrable\ M\ {\isacharparenleft}{\isasymUnion}i{\isachardot}\ A\ i{\isacharparenright}\ f{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}{\isasymAnd}i{\isacharcolon}{\isacharcolon}nat{\isachardot}\ A\ i\ {\isasymin}\ sets\ M{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}i\ j{\isachardot}\ i\ {\isasymnoteq}\ j\ {\isasymLongrightarrow}\ A\ i\ {\isasyminter}\ A\ j\ {\isacharequal}\ {\isacharbraceleft}{\isacharbraceright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}set{\isacharunderscore}integrable\ M\ {\isacharparenleft}{\isasymUnion}i{\isachardot}\ A\ i{\isacharparenright}\ f{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{shows}\ {\isachardoublequoteopen}LINT\ x{\isacharcolon}{\isacharparenleft}{\isasymUnion}i{\isachardot}\ A\ i{\isacharparenright}{\isacharbar}M{\isachardot}\ f\ x\ {\isacharequal}\ {\isacharparenleft}{\isasymSum}i{\isachardot}\ {\isacharparenleft}LINT\ x{\isacharcolon}{\isacharparenleft}A\ i{\isacharparenright}{\isacharbar}M{\isachardot}\ f\ x{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}%
 }%EndSnippet
 \DefineSnippet{dominatedconvergence}{
@@ -322,6 +322,13 @@
 \ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}\ AE\ x\ in\ M{\isachardot}\ norm\ {\isacharparenleft}s\ i\ x{\isacharparenright}\ {\isasymle}\ w\ x{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{shows}\ {\isachardoublequoteopen}integrable\ M\ f{\isachardoublequoteclose}\ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}\ integrable\ M\ {\isacharparenleft}s\ i{\isacharparenright}{\isachardoublequoteclose}\isanewline
 \ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isacharparenleft}{\isasymlambda}i{\isachardot}\ integral\isactrlsup L\ M\ {\isacharparenleft}s\ i{\isacharparenright}{\isacharparenright}\ {\isasymlonglonglongrightarrow}\ integral\isactrlsup L\ M\ f{\isachardoublequoteclose}%
+}%EndSnippet
+\DefineSnippet{integrablebounded}{
+\isacommand{lemma}\isamarkupfalse%
+\ integrable{\isacharunderscore}iff{\isacharunderscore}bounded{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ f\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}a\ {\isasymRightarrow}\ {\isacharprime}b{\isacharcolon}{\isacharcolon}{\isacharbraceleft}banach{\isacharcomma}\ second{\isacharunderscore}countable{\isacharunderscore}topology{\isacharbraceright}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}integrable\ M\ f\ {\isasymlongleftrightarrow}\isanewline
+\ \ \ \ f\ {\isasymin}\ borel{\isacharunderscore}measurable\ M\ {\isasymand}\ {\isacharparenleft}{\isasymintegral}\isactrlsup {\isacharplus}x{\isachardot}\ norm\ {\isacharparenleft}f\ x{\isacharparenright}\ {\isasympartial}M{\isacharparenright}\ {\isacharless}\ {\isasyminfinity}{\isachardoublequoteclose}%
 }%EndSnippet
 \DefineSnippet{integralnormbound}{
 \isacommand{lemma}\isamarkupfalse%
@@ -398,17 +405,93 @@
 \DefineSnippet{chardistrsum}{
 \isacommand{lemma}\isamarkupfalse%
 \ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ char{\isacharunderscore}distr{\isacharunderscore}sum{\isacharcolon}\isanewline
-\ \ \isakeyword{fixes}\ X{\isadigit{1}}\ X{\isadigit{2}}\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\ \isakeyword{and}\ t\ {\isacharcolon}{\isacharcolon}\ real\isanewline
 \ \ \isakeyword{assumes}\ {\isachardoublequoteopen}indep{\isacharunderscore}var\ borel\ X{\isadigit{1}}\ borel\ X{\isadigit{2}}{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{shows}\ {\isachardoublequoteopen}char\ {\isacharparenleft}distr\ M\ borel\ {\isacharparenleft}{\isasymlambda}{\isasymomega}{\isachardot}\ X{\isadigit{1}}\ {\isasymomega}\ {\isacharplus}\ X{\isadigit{2}}\ {\isasymomega}{\isacharparenright}{\isacharparenright}\ t\ {\isacharequal}\isanewline
-\ \ \ \ char\ {\isacharparenleft}distr\ M\ borel\ X{\isadigit{1}}{\isacharparenright}\ t\ {\isacharasterisk}\ char\ {\isacharparenleft}distr\ M\ borel\ X{\isadigit{2}}{\isacharparenright}\ t{\isachardoublequoteclose}%
+\ \ \ \ char\ {\isacharparenleft}distr\ M\ borel\ X{\isadigit{1}}{\isacharparenright}\ t\ {\isacharasterisk}\ char\ {\isacharparenleft}distr\ M\ borel\ X{\isadigit{2}}{\isacharparenright}\ t{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharminus}\isanewline
+\ \ \isacommand{from}\isamarkupfalse%
+\ assms\ \isacommand{have}\isamarkupfalse%
+\ {\isacharbrackleft}measurable{\isacharbrackright}{\isacharcolon}\ {\isachardoublequoteopen}random{\isacharunderscore}variable\ borel\ X{\isadigit{1}}{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}elim\ indep{\isacharunderscore}var{\isacharunderscore}rv{\isadigit{1}}{\isacharparenright}\isanewline
+\ \ \isacommand{from}\isamarkupfalse%
+\ assms\ \isacommand{have}\isamarkupfalse%
+\ {\isacharbrackleft}measurable{\isacharbrackright}{\isacharcolon}\ {\isachardoublequoteopen}random{\isacharunderscore}variable\ borel\ X{\isadigit{2}}{\isachardoublequoteclose}\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}elim\ indep{\isacharunderscore}var{\isacharunderscore}rv{\isadigit{2}}{\isacharparenright}\isanewline
+\isanewline
+\ \ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}char\ {\isacharparenleft}distr\ M\ borel\ {\isacharparenleft}{\isasymlambda}{\isasymomega}{\isachardot}\ X{\isadigit{1}}\ {\isasymomega}\ {\isacharplus}\ X{\isadigit{2}}\ {\isasymomega}{\isacharparenright}{\isacharparenright}\ t\ {\isacharequal}\isanewline
+\ \ \ \ \ \ {\isacharparenleft}CLINT\ x{\isacharbar}M{\isachardot}\ iexp\ {\isacharparenleft}t\ {\isacharasterisk}\ {\isacharparenleft}X{\isadigit{1}}\ x\ {\isacharplus}\ X{\isadigit{2}}\ x{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}simp\ add{\isacharcolon}\ char{\isacharunderscore}def\ integral{\isacharunderscore}distr{\isacharparenright}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isasymdots}\ {\isacharequal}\ {\isacharparenleft}CLINT\ x{\isacharbar}M{\isachardot}\ iexp\ {\isacharparenleft}t\ {\isacharasterisk}\ {\isacharparenleft}X{\isadigit{1}}\ x{\isacharparenright}{\isacharparenright}\ {\isacharasterisk}\ iexp\ {\isacharparenleft}t\ {\isacharasterisk}\ {\isacharparenleft}X{\isadigit{2}}\ x{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}simp\ add{\isacharcolon}\ field{\isacharunderscore}simps\ exp{\isacharunderscore}add{\isacharparenright}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isasymdots}\ {\isacharequal}\isanewline
+\ \ \ \ \ \ {\isacharparenleft}CLINT\ x{\isacharbar}M{\isachardot}\ iexp\ {\isacharparenleft}t\ {\isacharasterisk}\ {\isacharparenleft}X{\isadigit{1}}\ x{\isacharparenright}{\isacharparenright}{\isacharparenright}\ {\isacharasterisk}\ {\isacharparenleft}CLINT\ x{\isacharbar}M{\isachardot}\ iexp\ {\isacharparenleft}t\ {\isacharasterisk}\ {\isacharparenleft}X{\isadigit{2}}\ x{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}auto\ intro{\isacharbang}{\isacharcolon}\ indep{\isacharunderscore}var{\isacharunderscore}compose{\isacharbrackleft}unfolded\ comp{\isacharunderscore}def{\isacharcomma}\ OF\ assms{\isacharbrackright}\isanewline
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ integrable{\isacharunderscore}iexp\ indep{\isacharunderscore}var{\isacharunderscore}lebesgue{\isacharunderscore}integral{\isacharparenright}\isanewline
+\ \ \isacommand{also}\isamarkupfalse%
+\ \isacommand{have}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isasymdots}\ {\isacharequal}\ char\ {\isacharparenleft}distr\ M\ borel\ X{\isadigit{1}}{\isacharparenright}\ t\ {\isacharasterisk}\ char\ {\isacharparenleft}distr\ M\ borel\ X{\isadigit{2}}{\isacharparenright}\ t{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}simp\ add{\isacharcolon}\ char{\isacharunderscore}def\ integral{\isacharunderscore}distr{\isacharparenright}\isanewline
+\ \ \isacommand{finally}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}thesis\ \isacommand{{\isachardot}}\isamarkupfalse%
+\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+%
+\endisadelimproof
+%
 }%EndSnippet
 \DefineSnippet{chardistrsetsum}{
 \isacommand{lemma}\isamarkupfalse%
 \ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ char{\isacharunderscore}distr{\isacharunderscore}setsum{\isacharcolon}\isanewline
 \ \ {\isachardoublequoteopen}indep{\isacharunderscore}vars\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ borel{\isacharparenright}\ X\ A\ {\isasymLongrightarrow}\isanewline
 \ \ \ \ char\ {\isacharparenleft}distr\ M\ borel\ {\isacharparenleft}{\isasymlambda}{\isasymomega}{\isachardot}\ {\isasymSum}i{\isasymin}A{\isachardot}\ X\ i\ {\isasymomega}{\isacharparenright}{\isacharparenright}\ t\ {\isacharequal}\isanewline
-\ \ \ \ {\isacharparenleft}{\isasymProd}i{\isasymin}A{\isachardot}\ char\ {\isacharparenleft}distr\ M\ borel\ {\isacharparenleft}X\ i{\isacharparenright}{\isacharparenright}\ t{\isacharparenright}{\isachardoublequoteclose}%
+\ \ \ \ {\isacharparenleft}{\isasymProd}i{\isasymin}A{\isachardot}\ char\ {\isacharparenleft}distr\ M\ borel\ {\isacharparenleft}X\ i{\isacharparenright}{\isacharparenright}\ t{\isacharparenright}{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharparenleft}induct\ A\ rule{\isacharcolon}\ infinite{\isacharunderscore}finite{\isacharunderscore}induct{\isacharparenright}\isanewline
+\ \ \isacommand{case}\isamarkupfalse%
+\ {\isacharparenleft}insert\ x\ F{\isacharparenright}\ \isacommand{then}\isamarkupfalse%
+\ \isacommand{show}\isamarkupfalse%
+\ {\isacharquery}case\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ indep{\isacharunderscore}vars{\isacharunderscore}subset{\isacharbrackleft}of\ {\isachardoublequoteopen}{\isasymlambda}{\isacharunderscore}{\isachardot}\ borel{\isachardoublequoteclose}\ X\ {\isachardoublequoteopen}insert\ x\ F{\isachardoublequoteclose}\ F{\isacharbrackright}\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}auto\ simp\ add{\isacharcolon}\ char{\isacharunderscore}distr{\isacharunderscore}sum\ indep{\isacharunderscore}vars{\isacharunderscore}setsum{\isacharparenright}\isanewline
+\isacommand{qed}\isamarkupfalse%
+\ {\isacharparenleft}simp{\isacharunderscore}all\ add{\isacharcolon}\ char{\isacharunderscore}def\ integral{\isacharunderscore}distr\ prob{\isacharunderscore}space\ del{\isacharcolon}\ distr{\isacharunderscore}const{\isacharparenright}%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+%
+\endisadelimproof
+%
 }%EndSnippet
 \DefineSnippet{charapprox}{
 \isacommand{lemma}\isamarkupfalse%
