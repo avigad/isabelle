@@ -138,9 +138,9 @@ theorem Skorohod:
   shows
     "\<exists>(\<Omega> :: real measure) (Y_seq :: nat \<Rightarrow> real \<Rightarrow> real) (Y :: real \<Rightarrow> real).
     prob_space \<Omega> \<and>
-    (\<forall>n. Y_seq n \<in> measurable \<Omega> borel) \<and>
+    (\<forall>n. Y_seq n \<in> \<Omega> \<rightarrow>\<^sub>M borel) \<and>
     (\<forall>n. distr \<Omega> borel (Y_seq n) = \<mu> n) \<and>
-    Y \<in> measurable \<Omega> lborel \<and>
+    Y \<in> \<Omega> \<rightarrow>\<^sub>M b lborel \<and>
     distr \<Omega> borel Y = M \<and>
     (\<forall>x \<in> space \<Omega>. (\<lambda>n. Y_seq n x) \<longlonglongrightarrow> Y x)"
 text_raw \<open>}%EndSnippet\<close>
@@ -230,8 +230,7 @@ text_raw \<open>\DefineSnippet{dominatedconvergence}{\<close>
 lemma dominated_convergence:
   fixes f :: "'a \<Rightarrow> 'b::{banach, second_countable_topology}"
     and w :: "'a \<Rightarrow> real"
-  assumes "f \<in> borel_measurable M"
-    and "\<And>i. s i \<in> borel_measurable M" "integrable M w"
+  assumes "f \<in> M \<rightarrow>\<^sub>M borel" "\<And>i. s i \<in> M \<rightarrow>\<^sub>M borel" "integrable M w"
     and "AE x in M. (\<lambda>i. s i x) \<longlonglongrightarrow> f x"
     and "\<And>i. AE x in M. norm (s i x) \<le> w x"
   shows "integrable M f" and "\<And>i. integrable M (s i)"
@@ -242,10 +241,9 @@ text_raw \<open>}%EndSnippet\<close>
 text_raw \<open>\DefineSnippet{integrablebounded}{\<close>
 lemma integrable_iff_bounded:
   fixes f :: "'a \<Rightarrow> 'b::{banach, second_countable_topology}"
-  shows "integrable M f \<longleftrightarrow>
-    f \<in> borel_measurable M \<and> (\<integral>\<^sup>+x. norm (f x) \<partial>M) < \<infinity>"
+  shows "integrable M f \<longleftrightarrow> f \<in> M \<rightarrow>\<^sub>M borel \<and> (\<integral>\<^sup>+x. norm (f x) \<partial>M) < \<infinity>"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  by (rule integrable_iff_bounded)
 
 text_raw \<open>\DefineSnippet{integralnormbound}{\<close>
 lemma integral_norm_bound:
@@ -484,7 +482,7 @@ locale prob_space =
 begin
   abbreviation "events \<equiv> sets M"
   abbreviation "prob \<equiv> measure M"
-  abbreviation "random_variable M' X \<equiv> X \<in> measurable M M'"
+  abbreviation "random_variable M' X \<equiv> X \<in> M \<rightarrow>\<^sub>M M'"
   abbreviation "expectation \<equiv> integral\<^sup>L M"
   abbreviation "variance X \<equiv> integral\<^sup>L M (\<lambda>x. (X x - expectation X)\<^sup>2)"
 end

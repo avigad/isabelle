@@ -15,6 +15,7 @@
 \newcommand{\QQ}{\mathbb{Q}}
 \newcommand{\RR}{\mathbb{R}}
 \newcommand{\CC}{\mathbb{C}}
+\newcommand{\ennRR}{\overline{\mathbb{R}}_{\ge 0}}
 
 \newcommand{\fn}[1]{\mathtt{#1}} % for functions
 \newcommand{\mdl}[1]{{\mathcal #1}} % for the sigma algebras
@@ -229,14 +230,6 @@ To handle the many instances of convergence that arose in the formalization, we 
 \Snippet{tendstoadd} 
 Here \isamath{(f \xrightarrow{\hphantom{AAA}} x)~F} is an abbreviation for {\tt filterlim f F (nhds x)}. This avoids the need to formalize endless variations of the same theorem. Now they are just different instances for {\tt F}. Details can be found in \cite{hoelzl:et:al:13}.
 
-To provide a good support for automation, Isabelle's multivariate analysis provides a big set of introduction rule to prove openness or closedness of sets, or continuity of functions. Especially for continuity it is important to state the rules in the right format. Following the usual mathematic conventions, the statements that, e.g.~multiplication and $\ln$ are continuous, would be written like $\mathtt{continuous\_on}~(\RR \times \RR)~(\lambda (x, y).~x * y)$ and $\mathtt{continuous\_on}~(0, \infty]~\ln$. Now, this rules would not fit to prove continuity of $\lambda x.~\ln (1 + x * x)$: we would need to explicitly apply composition of continuous functions, and continuity of pair construction. Hence the continuity rules are stated as follows:
-\[ \mathtt{continuous\_on}~A~f \land (\forall x \in A.~0 < f~x) \implies
-  \mathtt{continuous\_on}~A~(\lambda x.~\ln~(f~x)) \]
-\[ \mathtt{continuous\_on}~A~f \land \mathtt{continuous\_on}~A~g \implies
-  \mathtt{continuous\_on}~A~(\lambda x.~f~x + g~x)) \]
-Now, the conclusions are parametric in the range (i.e.~$A$) and any further function (i.e.~$f$ and $g$). To prove $\lambda x.~\ln (1 + x * x)$, we just apply a fixed set of introduction rules about continuity. Then we end up with the goal $\forall x.~0 < 1 + x * x$, which is proved by the simplifier. This idea goes back to Gottliebsen~\cite{gottliebsen:00}, where it is implemented in PVS.
-\todo{Talk about automation: introduction rules for open / closed sets, introduction rules for continuity.}
-
 In the Isabelle library, topological facts are found in the standard \texttt{HOL} library, in files such as \texttt{Filter}, \verb=Topological_Spaces=, and \texttt{Limits}. Topological notions for the reals, and vector spaces over the reals, can be found in \verb=Real_Vector_Spaces=.
 
 
@@ -245,22 +238,34 @@ In the Isabelle library, topological facts are found in the standard \texttt{HOL
 
 Our formalization required the fundamentals of measure theory and integration, as described in any introductory textbook on the subject (including Billingsley). The fundamental development of the subject is well described in the paper ``Three chapters of measure theory'' \cite{hoelzl:heller:11}. Here we therefore only summarize key features of this development, and indicate some of the ways the library has changed as a result of our formalization.
 
-Measure theory requires the use of the \emph{extended non-negative reals}, obtained by restricting the usual reals $\RR$ to their non-negative part and adding the value $\infty$. A \emph{$\sigma$-algebra} is represented in Isabelle as a record \texttt{S} depending on a type $\alpha$, which specifies an underlying subset of $\alpha$, \texttt{space S}, and a collection of subsets \texttt{sets S} of \texttt{space S} that contains the empty set and is closed under countable unions and complements. These assumptions are specified as a locale. 
+Measure theory requires the use of the \emph{extended nonnegative reals} $\ennRR$, obtained by restricting the usual reals $\RR$ to their non-negative part and adding the value $\infty$. A \emph{$\sigma$-algebra} is represented in Isabelle as a record \texttt{S} depending on a type $\alpha$, which specifies an underlying subset of $\alpha$, \texttt{space S}, and a collection of subsets \texttt{sets S} of \texttt{space S} that contains the empty set and is closed under countable unions and complements. These assumptions are specified as a locale. 
 
-A \emph{measure space} \texttt{M} extends the notion of a $\sigma$-algebra with a function \texttt{emeasure M} from subsets of $\alpha$ to the extended non-negative reals, satisfying the usual axioms: the measure of the empty set is $0$, the measure of any set in the $\sigma$-algebra is nonnegative, and the measure of a countable disjoint union of sets in the underlying $\sigma$-algebra is equal to sum of the unions (which might be $\infty$). The underlying $\sigma$ algebra corresponds to the usual notion of the collection of \emph{measurable subsets} corresponding to the measure. In Isabelle, for any type $\alpha$, the \texttt{typedef} mechanism is used to specify a new type, $\mathtt{measure} \; \alpha$, consisting of measure spaces on some subset of $\alpha$. 
+A \emph{measure space} \texttt{M} extends the notion of a $\sigma$-algebra with a function \texttt{emeasure M} from subsets of $\alpha$ to the extended nonnegative reals, satisfying the usual axioms: the measure of the empty set is $0$, the measure of any set in the $\sigma$-algebra is nonnegative, and the measure of a countable disjoint union of sets in the underlying $\sigma$-algebra is equal to sum of the unions (which might be $\infty$). The underlying $\sigma$ algebra corresponds to the usual notion of the collection of \emph{measurable subsets} corresponding to the measure. In Isabelle, for any type $\alpha$, the \texttt{typedef} mechanism is used to specify a new type, $\mathtt{measure} \; \alpha$, consisting of measure spaces on some subset of $\alpha$. 
 
 If $\mdl M$ and $\mdl N$ are two measure spaces, a \emph{measurable function} $f$ from $\mdl M$ to $\mdl N$ is a function between the underlying sets that has the property that the inverse image of any measurable subset of the codomain is a measurable subset of the domain. Note that, in fact, the property of being measurable has nothing to do with the measure; it is really a property of the function with respect to the two associated $\sigma$-algebras. Given a measurable function $f : \mdl M \to \mdl N$, a measure $\mu$ on $\mdl M$ gives rise to a new measure $\nu$ on $\mdl N$, defined by $\nu(A) = \mu(f^{-1} A)$. This is sometimes called a \emph{pushforward measure}, but in Isabelle, it is denoted \texttt{distr M N f}, for reasons that are explained in Section~\ref{subsection:probability}. It is defined formally as follows:
 \Snippet{distr}
 
-Another way to define a measure $\nu$ on a space $\mdl M$ is to take a nonnegative measurable function $f$ from $\mdl M$ to the extended non-negative real numbers, and define, for every set $A$, $\nu(A) = \int_A^+ f \; d\mdl M$. This is defined formally in the Isabelle library as follows:
+Another way to define a measure $\nu$ on a measure $\mu$ on $\mdl M$, is to take a measurable function $f$ from $\mdl M$ to $\ennRR$, and define, for every set $A$, $\nu(A) = \int_A^+ f \; d\mu$. This is defined formally in the Isabelle library as follows:
 \Snippet{density}
-The integral $\int_A^+ f \; d\mdl M$ is the nonnegative Lebesgue integral, defined for functions into the extended non-negative numbers. For measurable functions it has the expected properties: closed under addition, constant multiplication and monotone convergence. It is monotone even for non-measurable functions, which simplifies certain proofs as measurability is not always easy to prove.
+The integral $\int_A^+ f \; d\mu$ is the \emph{nonnegative Lebesgue integral}, defined for functions into $\ennRR$. For measurable functions it has the expected properties: closed under addition, constant multiplication and monotone convergence. It is monotone even for non-measurable functions, which simplifies certain proofs as measurability is not always easy to prove. As the nonnegative Lebesgue integral is into $\ennRR$, it is well-defined for all measurable functions, even when the integral is infinite.
 
 The library includes a construction of the Borel sets in any topology, and the Caratheodory extension theorem. Lebesgue measure on the reals was initially constructed from the gauge integral, which is discussed in Section~\ref{subsection:real:analysis}. After our formalization, however, the construction was replaced by the more common textbook definition, as the $\sigma$-extension of the measure on finite intervals, as described in Section~\ref{subsection:distribution:functions} below. The measure space consisting of Lebesgue measure on the Borel subsets of the reals is denoted \texttt{lborel} in the Isabelle library. 
 
+The fundamentals of measure theory are found in the \texttt{HOL-Probability} library, which includes \verb=Sigma_Algebra=, \verb=Measure_Space=, \verb=Caratheodory=, and \verb=Lebesgue_Measure=.
+
+\subsection{Bochner integration}
+\label{subsection:bochner}
+
 Our initial formalization of the Central Limit Theorem relied on the theory of Lebesgue integration, described in \cite{hoelzl:heller:11}. This provides a notion of integration for suitable functions $f : X \to \RR$, where $X$ is any space on which a measure is defined. After we completed the proof, however, the second author, H\"olzl, generalized the construction to the \emph{Bochner integral}, which provides a theory of integration for functions $f : X \to B$, where now $B$ is any second-countable Banach space. In particular, $B$ can be any of the spaces $\RR^n$, or the complex numbers, $\CC$. Our formalization made extensive use of integration of functions from $\RR$ to $\CC$, as discussed in Section~\ref{subsection:real:analysis}.
 
-The Bochner integral of $f$ is defined using a sequence of simple functions $s_i$ converging towards $f$ in norm. The distance of two functions is defined as $|| s_i - f || = \int_x^+ |s_i~x - f~x| d\mdl M$, using the Lebesgue integal. Simple functions are measurable functions with a finite range and finitely measurable support. Hence the integral of a simple function is defined as a sum over the range. The Bochner integral is then the limit of the integrals of $s_i$. A function $f$ is Bochner integrable when $f$ is measurable and the norm of $f$ is finite, i.e.~it is equivalent to absolutely integrable on the Lebesgue measure:
+Similar to the Lebesgue integral, the Bochner integral approximates a function $f$ by a sequence of simple functions $s$. Where the simple functions have a finite range and hence their integral is computed by finite summation. When such an approximation exists, the Bochner integal is the limit of the integrals of the simple functions. While the approximation for the Lebesgue integral is w.r.t.~the point wise order on $\ennRR$, the approximation for the Bochner integral is w.r.t.~the $L^1$-norm, defined using the Lebesgue integral: $\lVert f \rVert = \int_x^+ |f~x| d\mu$.
+
+So, to define Bochner integration, we first need to introduce \emph{simple Bochner integrable functions}: a function $s$, Borel-measurable on $\mdl M$, is simple if it has finite range $f[\mdl M]$, and its support $\{x \in \mdl M \mid f~x \not= 0\}$ has a finite measure. The integral of simple Bochner functions is a finite sum over a scalar-vector-product:
+\[ \int s~d\mu = \sum_{ y \in f[\mdl M]} \mu~(f^{-1}[y]) \cdot y~~.\]
+A Borel-measurable function $f$ is Bochner integrable, if there is a sequence of simple Bochner integrable functions $s$, s.t.~$f$ is the limit of $s$ in the $L^1$ norm ($\lim_{i \rightarrow \infty} \lVert s_i - f \rVert = 0$) and the integrals of $s$ converge, i.e. $\lim_{i \rightarrow \infty} \int s_i ~d\mu$ exists. Then the Bochner integral is defined as:
+\[ \int f~d\mu = \lim_{i \rightarrow \infty} \int s_i ~d\mu \]
+
+From this definition follows that the $L^1$-norm of a Bochner integrable $f$ is finite. For the other direction we prove that each Borel-measurable function is point-wise approximated by a sequence of simple Bochner functions. Then follows that a function $f$ is Bochner integrable if and only if $f$ is measurable and the $L^1$-norm of $f$ is finite, i.e.~absolutely integrable on the Lebesgue measure:
 \Snippet{integrablebounded}
 
 As expected for an integral, the Bochner integal is also closed under scalar multiplication and addition. As with the Lebesgue integral, we obtain a version of the dominated convergence theorem.
@@ -270,7 +275,7 @@ We also obtain the monotone convergence theorem, which applies to sequences of f
 If $f : X \to B$ is any measurable function on a space $X$ with measure $\mu$, and $S$ is any measurable set, one can define the integral over the set $S$ by $\int_S f \, d\mu = \int f \chi_S \, d\mu$. Here $\chi_S$ is the \emph{characteristic function} of $S$, also called the \emph{indicator function}. Rather than introduce a new definition, we took notation for integration over sets to be an abbreviation for the definition in terms of indicators. But because reasoning about integrals over sets is so fundamental, we found it helpful to develop a small library to support it. For example, the following is a consequence of the dominated convergence theorem:
 \Snippet{lebesgueintegralcountableadd}
 
-The fundamentals of measure theory are found in the \texttt{HOL-Probability} library, which includes \verb=Sigma_Algebra=, \verb=Measure_Space=, \verb=Bochner_Integration=, \verb=Caratheodory=, and \verb=Lebesgue_Measure=.
+The theory for Bochner integration is included in the \texttt{HOL-Probability} library: \verb=Bochner_Integration= and \verb=Set_Integral=.
 
 \subsection{Probability}
 \label{subsection:probability}
@@ -296,8 +301,6 @@ Finally, if $(X_i)_{i \in I}$ is a sequence of random variables with inputs in o
 is independent.
 \Snippet{indepvars}
 In probabilistic terms, this means that given any finite $J \subseteq I$ and any finite sequence $A_{j_1}, \ldots, A_{j_n}$ of events, the probability that each $X_{j_u}$ is in $A_{j_u}$ is just the product of the individual probabilities. Of course, we can say that any \emph{two} events, or random variables, or collections of events, are independent by taking $I$ to be any two-element type, such as the Booleans. Isabelle's library defines the binary notions as well, and develops basic properties of independent sets, events, and random variables.
-
-Measurability is inherent in probability theory (i.e. events are measurable sets and random variables are measurable functions). The automation works similar to automation of continuity described in Section~\ref{subsection:topology}: using a rule format which allows us to blindly apply introduction rules. A difference is that measurability is also integrated as a plug-in into the simplifier, to solve measurability assumptions. To use the measurability prover, the user needs to annotate all occuring measurability assumption with the \texttt{[measurable]} attribute. This measurability prover then tries to massage all added assumptions into the right form and proves measurability statements by applying them as introduction rules. As a special case it also allows to cut of sub-terms with a countable range, i.e. $f~(g~x)~x$ can be reduced to the measurability of $g$ and $f~c~x$ for all $c$ in the range of $g$. 
 
 In the Isabelle 2016 distribution, these developments are in the \texttt{HOL-Probability} library, including the files \verb=Probability_Measure=, \verb=Independent_Family=, \texttt{Convolution}, and \texttt{Distributions}.
 
@@ -409,6 +412,21 @@ The measure associated to a right-continuous, nondecreasing function in this way
 Thus one can pass freely between talk of measures on $\RR$ and their distribution functions, a key fact in the proof of the CLT. When the function $F(x)$ is the identity function, we obtain Lebesgue measure, and, in fact, this now serves as the definition of Lebesgue measure in the Isabelle library.
 
 In the Isabelle 2016 distribution, the construction of Lebesgue measure on the reals as a Lebesgue-Stieltjes measure is in the theory \verb=Lebesgue_Measure=, and the correspondence between measures and their distribution functions is developed in \verb=Distributions=.
+
+\subsection{Automation}
+\label{subsection:automation}
+
+
+To provide a good support for automation, Isabelle's multivariate analysis provides a big set of introduction rule to prove openness or closedness of sets, or continuity of functions. Especially for continuity it is important to state the rules in the right format. Following the usual mathematic conventions, the statements that, e.g.~multiplication and $\ln$ are continuous, would be written like $\mathtt{continuous\_on}~(\RR \times \RR)~(\lambda (x, y).~x * y)$ and $\mathtt{continuous\_on}~(0, \infty]~\ln$. Now, this rules would not fit to prove continuity of $\lambda x.~\ln (1 + x * x)$: we would need to explicitly apply composition of continuous functions, and continuity of pair construction. Hence the continuity rules are stated as follows:
+\[ \mathtt{continuous\_on}~A~f \land (\forall x \in A.~0 < f~x) \implies
+  \mathtt{continuous\_on}~A~(\lambda x.~\ln~(f~x)) \]
+\[ \mathtt{continuous\_on}~A~f \land \mathtt{continuous\_on}~A~g \implies
+  \mathtt{continuous\_on}~A~(\lambda x.~f~x + g~x)) \]
+Now, the conclusions are parametric in the range (i.e.~$A$) and any further function (i.e.~$f$ and $g$). To prove $\lambda x.~\ln (1 + x * x)$, we just apply a fixed set of introduction rules about continuity. Then we end up with the goal $\forall x.~0 < 1 + x * x$, which is proved by the simplifier. This idea goes back to Gottliebsen~\cite{gottliebsen:00}, where it is implemented in PVS.
+\todo{Sould we also present intro rules for open / closed sets like $open~\{x \mid f~x < g~x \}$, union intersection, ...?}
+
+Measurability is inherent in probability theory (i.e. events are measurable sets and random variables are measurable functions). The automation works similar to automation of continuity described in Section~\ref{subsection:topology}: using a rule format which allows us to blindly apply introduction rules. A difference is that measurability is also integrated as a plug-in into the simplifier, to solve measurability assumptions. To use the measurability prover, the user needs to annotate all occuring measurability assumption with the \texttt{[measurable]} attribute. This measurability prover then tries to massage all added assumptions into the right form and proves measurability statements by applying them as introduction rules. As a special case it also allows to cut of sub-terms with a countable range, i.e. $f~(g~x)~x$ can be reduced to the measurability of $g$ and $f~c~x$ for all $c$ in the range of $g$. 
+
 
 \section{The proof of the Central Limit Theorem}
 \label{section:formal}
@@ -634,7 +652,7 @@ Once all the background information was in place, many of our proofs followed th
 
 The version of the Central Limit Theorem we proved is not the most general version that is presented in Billingsley's book. With some more calculational effort one could formalize the Lindeberg central limit theorem, which relaxes the requirement that the random variables that are summed be identically distributed; we only need to assume that they do not deviate too much in distribution, as made precise by the {\em Lindeberg condition} \cite[p.~359]{billingsley:95}. Even the condition that the variables being summed are independent can be weakened to a condition of weak dependence, as outlined in \cite[p.~363]{billingsley:95}. Other generalizations include the CLT for random vectors \cite[p.~385]{billingsley:95}, and various versions of the CLT for martingales \cite[pp.~475--478]{billingsley:95}. There are many additional refinements and generalizations of the Central Limit Theorem in the mathematical literature.
 
-Supporting automation can always be improved, and it was at times frustrating that automated tools would get stuck on seemingly trivial matters like determining whether an instance of zero should be interpreted as a real or an non-negative extended real. As we remarked in Section~\ref{subsection:calculus}, ordinary calculations with integrals was often the most painful part of the formalization. It would be especially useful to have better automated support for such calculations, that either implement features of computer algebra systems in a proof-producing framework, or reconstruct formal proofs of such results from suitable certificates.
+Supporting automation can always be improved, and it was at times frustrating that automated tools would get stuck on seemingly trivial matters like determining whether an instance of zero should be interpreted as a real or an nonnegative extended real. As we remarked in Section~\ref{subsection:calculus}, ordinary calculations with integrals was often the most painful part of the formalization. It would be especially useful to have better automated support for such calculations, that either implement features of computer algebra systems in a proof-producing framework, or reconstruct formal proofs of such results from suitable certificates.
 
 \bibliographystyle{plain}
 \bibliography{clt}

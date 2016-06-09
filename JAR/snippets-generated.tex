@@ -234,9 +234,9 @@
 \ \ \isakeyword{shows}\isanewline
 \ \ \ \ {\isachardoublequoteopen}{\isasymexists}{\isacharparenleft}{\isasymOmega}\ {\isacharcolon}{\isacharcolon}\ real\ measure{\isacharparenright}\ {\isacharparenleft}Y{\isacharunderscore}seq\ {\isacharcolon}{\isacharcolon}\ nat\ {\isasymRightarrow}\ real\ {\isasymRightarrow}\ real{\isacharparenright}\ {\isacharparenleft}Y\ {\isacharcolon}{\isacharcolon}\ real\ {\isasymRightarrow}\ real{\isacharparenright}{\isachardot}\isanewline
 \ \ \ \ prob{\isacharunderscore}space\ {\isasymOmega}\ {\isasymand}\isanewline
-\ \ \ \ {\isacharparenleft}{\isasymforall}n{\isachardot}\ Y{\isacharunderscore}seq\ n\ {\isasymin}\ measurable\ {\isasymOmega}\ borel{\isacharparenright}\ {\isasymand}\isanewline
+\ \ \ \ {\isacharparenleft}{\isasymforall}n{\isachardot}\ Y{\isacharunderscore}seq\ n\ {\isasymin}\ {\isasymOmega}\ {\isasymrightarrow}\isactrlsub M\ borel{\isacharparenright}\ {\isasymand}\isanewline
 \ \ \ \ {\isacharparenleft}{\isasymforall}n{\isachardot}\ distr\ {\isasymOmega}\ borel\ {\isacharparenleft}Y{\isacharunderscore}seq\ n{\isacharparenright}\ {\isacharequal}\ {\isasymmu}\ n{\isacharparenright}\ {\isasymand}\isanewline
-\ \ \ \ Y\ {\isasymin}\ measurable\ {\isasymOmega}\ lborel\ {\isasymand}\isanewline
+\ \ \ \ Y\ {\isasymin}\ {\isasymOmega}\ {\isasymrightarrow}\isactrlsub M\ b\ lborel\ {\isasymand}\isanewline
 \ \ \ \ distr\ {\isasymOmega}\ borel\ Y\ {\isacharequal}\ M\ {\isasymand}\isanewline
 \ \ \ \ {\isacharparenleft}{\isasymforall}x\ {\isasymin}\ space\ {\isasymOmega}{\isachardot}\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ Y{\isacharunderscore}seq\ n\ x{\isacharparenright}\ {\isasymlonglonglongrightarrow}\ Y\ x{\isacharparenright}{\isachardoublequoteclose}%
 }%EndSnippet
@@ -316,8 +316,7 @@
 \ dominated{\isacharunderscore}convergence{\isacharcolon}\isanewline
 \ \ \isakeyword{fixes}\ f\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}a\ {\isasymRightarrow}\ {\isacharprime}b{\isacharcolon}{\isacharcolon}{\isacharbraceleft}banach{\isacharcomma}\ second{\isacharunderscore}countable{\isacharunderscore}topology{\isacharbraceright}{\isachardoublequoteclose}\isanewline
 \ \ \ \ \isakeyword{and}\ w\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}f\ {\isasymin}\ borel{\isacharunderscore}measurable\ M{\isachardoublequoteclose}\isanewline
-\ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}\ s\ i\ {\isasymin}\ borel{\isacharunderscore}measurable\ M{\isachardoublequoteclose}\ {\isachardoublequoteopen}integrable\ M\ w{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ {\isachardoublequoteopen}f\ {\isasymin}\ M\ {\isasymrightarrow}\isactrlsub M\ borel{\isachardoublequoteclose}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}\ s\ i\ {\isasymin}\ M\ {\isasymrightarrow}\isactrlsub M\ borel{\isachardoublequoteclose}\ {\isachardoublequoteopen}integrable\ M\ w{\isachardoublequoteclose}\isanewline
 \ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}AE\ x\ in\ M{\isachardot}\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ s\ i\ x{\isacharparenright}\ {\isasymlonglonglongrightarrow}\ f\ x{\isachardoublequoteclose}\isanewline
 \ \ \ \ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}\ AE\ x\ in\ M{\isachardot}\ norm\ {\isacharparenleft}s\ i\ x{\isacharparenright}\ {\isasymle}\ w\ x{\isachardoublequoteclose}\isanewline
 \ \ \isakeyword{shows}\ {\isachardoublequoteopen}integrable\ M\ f{\isachardoublequoteclose}\ \isakeyword{and}\ {\isachardoublequoteopen}{\isasymAnd}i{\isachardot}\ integrable\ M\ {\isacharparenleft}s\ i{\isacharparenright}{\isachardoublequoteclose}\isanewline
@@ -327,8 +326,7 @@
 \isacommand{lemma}\isamarkupfalse%
 \ integrable{\isacharunderscore}iff{\isacharunderscore}bounded{\isacharcolon}\isanewline
 \ \ \isakeyword{fixes}\ f\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}a\ {\isasymRightarrow}\ {\isacharprime}b{\isacharcolon}{\isacharcolon}{\isacharbraceleft}banach{\isacharcomma}\ second{\isacharunderscore}countable{\isacharunderscore}topology{\isacharbraceright}{\isachardoublequoteclose}\isanewline
-\ \ \isakeyword{shows}\ {\isachardoublequoteopen}integrable\ M\ f\ {\isasymlongleftrightarrow}\isanewline
-\ \ \ \ f\ {\isasymin}\ borel{\isacharunderscore}measurable\ M\ {\isasymand}\ {\isacharparenleft}{\isasymintegral}\isactrlsup {\isacharplus}x{\isachardot}\ norm\ {\isacharparenleft}f\ x{\isacharparenright}\ {\isasympartial}M{\isacharparenright}\ {\isacharless}\ {\isasyminfinity}{\isachardoublequoteclose}%
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}integrable\ M\ f\ {\isasymlongleftrightarrow}\ f\ {\isasymin}\ M\ {\isasymrightarrow}\isactrlsub M\ borel\ {\isasymand}\ {\isacharparenleft}{\isasymintegral}\isactrlsup {\isacharplus}x{\isachardot}\ norm\ {\isacharparenleft}f\ x{\isacharparenright}\ {\isasympartial}M{\isacharparenright}\ {\isacharless}\ {\isasyminfinity}{\isachardoublequoteclose}%
 }%EndSnippet
 \DefineSnippet{integralnormbound}{
 \isacommand{lemma}\isamarkupfalse%
@@ -622,7 +620,7 @@
 \ \ \isacommand{abbreviation}\isamarkupfalse%
 \ {\isachardoublequoteopen}prob\ {\isasymequiv}\ measure\ M{\isachardoublequoteclose}\isanewline
 \ \ \isacommand{abbreviation}\isamarkupfalse%
-\ {\isachardoublequoteopen}random{\isacharunderscore}variable\ M{\isacharprime}\ X\ {\isasymequiv}\ X\ {\isasymin}\ measurable\ M\ M{\isacharprime}{\isachardoublequoteclose}\isanewline
+\ {\isachardoublequoteopen}random{\isacharunderscore}variable\ M{\isacharprime}\ X\ {\isasymequiv}\ X\ {\isasymin}\ M\ {\isasymrightarrow}\isactrlsub M\ M{\isacharprime}{\isachardoublequoteclose}\isanewline
 \ \ \isacommand{abbreviation}\isamarkupfalse%
 \ {\isachardoublequoteopen}expectation\ {\isasymequiv}\ integral\isactrlsup L\ M{\isachardoublequoteclose}\isanewline
 \ \ \isacommand{abbreviation}\isamarkupfalse%
