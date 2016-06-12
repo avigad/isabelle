@@ -653,9 +653,7 @@ Also, general facts about the standard normal distribution take about about $380
  \verb=Central_Limit_Theorem=: & $117$ lines
 \end{tabular}
 \end{center}
-Once all the background information was in place, many of our proofs followed those in Billingsley quite closely. This affords allows for some direct comparisons. For example, the proof of the Helly selection theorem, about ??? in Billingsley's text, is $127$ lines in our formalization. The proof of the L\'evy continuity theorem, ??? lines in Billingsley, translates to about $240$ lines in our formalization. Billingsley's Corollary ???, described in Section~???, is ??? lines in our formalization. 
-
-\todo{We should pick a few examples. They do not have to be the ones mentioned now.}
+Once all the background information was in place, many of our proofs followed those in Billingsley quite closely. This allows for some direct comparisons. The increases in length are most dramatic in technical proofs where there are one-step arguments in the text that are indeed straightforward to verify, but nonetheless require long and tedious arguments. This includes verifying straightforward continuity and measurability claims, filling in implicit limiting arguments, finding explicit choices of $\varepsilon$ sufficiently small to make a proof go through, and so on. Thus the Helly selection theorem, only 10 lines in Billingsley's text, is 127 lines in our formalization. Billingsley derives two corollaries from that, each with a proof of 9 lines; our formal versions are 102 and 18 lines, respectively. The L\'evy inversion theorem runs only 15 lines in Billingsley, and about 170 lines in our formalization. Billingsley observes that the uniqueness theorem follows from the inversion theorem with four lines of proof, which translates to 74 lines in our formal version.
 
 \subsection{Future directions}
 
