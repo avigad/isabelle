@@ -585,6 +585,7 @@ The Central Limit Theorem is proved, of course, in \verb=Central_Limit_Theorem=.
 \label{section:reflections}
 
 \subsection{Dealing with partial functions}
+\label{subsection:partial}
 
 In the logical framework of type theory, where every function is assumed to be total, one often has to deal with partial functions, such as limits, derivatives, integrals, and so on. One common way of proceeding is represent partial functions as relations. For example, in Isabelle, one can write \texttt{f~sums~l} to indicate that the finite partial sums $\sum_{i < n} f i$ converge to $l$ as $n$ approaches infinity. Another option is to make the function question total by assigning an arbitrary value at inputs where it would otherwise be undefined, and use a predicate to pick out the ``real'' values. For example, \texttt{summable f} is defined to mean that there exists an \texttt{l} such that \texttt{f sums l}, and \texttt{suminf f} specifies that value of \texttt{l}, if it exists, and $0$ otherwise. It is not hard to see that the expression \texttt{f sums l} is then equivalent to the conjunction $\mathtt{summable~f} \wedge \mathtt{suminf~f } = \mathtt{l}$. The expression \texttt{suminf f} allows us to refer to the value of the infinite sum, as we do when we write $\sum_{i = 0}^\infty f(i)$ in ordinary mathematics. In particular, this expression can occur in a more complicated expression; for example, we can write $\mathtt{suminf \; f} + \mathtt{suminf \; g}$. But one typically also wants to know that \texttt{summable f} holds, since otherwise the value of \texttt{suminf f} may be meaningless.
 
@@ -608,13 +609,11 @@ Also many textbook proofs apply a $\epsilon$-$\delta$-method and destruct multip
 
 \subsection{Strategies for integrals}
 
-\todo{
-affine trick, 
-advantages of nn\_integral (requires only measurability),
-define the integral to be zero if not integrable.
-% rules like c * I f = I (c * f), (general linear function), intgbl (c * f) <-> c = 0 \lor intgbl f
-usage of Bochner integral easier
-}
+Measure theory gives us two different integrals on measure spaces, the nonnegative Lebesgue integral and the Bochner integral, as described in Section~\ref{subsection:bochner}. The distinction is clear: the Lebesgue integral only works on $\ennRR$-valued measurable functions, the Bochner integral requires integrable functions supports functions into Banach spaces. The advantage is on the Lebesgue integral, for two reasons: (1) measurability is compositional supporting different measurable spaces which is not given for integrable functions, and (2) the domain $\ennRR$ supports $\infty$ hence no integrability condition is needed to be closed under addition and constant multiplication. An important theorem to prove integrability is Lemma~\isa{integrable\_iff\_bounded}. Similarly, a function is integrable if it is measurable and we find integrable lower and upper bounds.
+
+A small trick to get easier proof rules for the Bochner integral is to fix the value of \isa{integral $\mu$ $f$} to $0$ for a non-integrable function $f$, i.e.~the usual HOL trick to totalize functions. Exploiting this fact avoids some auxiliary integrability rules: for the constant multiplication rules (i.e. multiplication with a real or complex value, scalar multiplication and the inner vector product) we get a rule of the form \isa{integral $\mu$ ($\lambda x.~c * f~x$) = $c$ * integral $\mu$ $f$}, without any assumptions. Also, integrability is invariant under the transformations \isa{distr} and \isa{density}: \isa{integral (distr $\mu$ $\nu$ $f$) $g$ = integral $\mu$ $(g \circ f)$} with the assumption that $f$ and $g$ are measurable. Similarly, we allow the affine transformation under the integral: \isa{integral lborel $f$ = $|c|$ * integral lborel $\lambda x.~f~(t + c * x)$}, with the only assumption $c \not= 0$.
+
+Of course, we still have the problems mentioned in Subsection~\ref{subsection:partial}, i.e.~we separately need to prove integrability. But in many analytical proofs integrability is proved separately and even in a different way then the integral value itself.
 
 \subsection{Alternatives}
 
