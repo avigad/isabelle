@@ -297,7 +297,7 @@ oops
 
 text_raw \<open>\DefineSnippet{substintegrable}{\<close>
 lemma interval_integral_substitution_integrable:
-  fixes f :: "real \<Rightarrow> 'a::euclidean_space" and a b u v :: ereal
+  fixes f :: "real \<Rightarrow> 'a::euclidean_space" and a b A B :: ereal
   assumes "a < b"
     and "\<And>x. a < ereal x \<Longrightarrow> ereal x < b \<Longrightarrow> DERIV g x :> g' x"
     and "\<And>x. a < ereal x \<Longrightarrow> ereal x < b \<Longrightarrow> isCont f (g x)"
