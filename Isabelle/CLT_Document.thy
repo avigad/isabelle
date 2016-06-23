@@ -200,8 +200,7 @@ oops
 text_raw \<open>\DefineSnippet{intervalmeasure}{\<close>
 lemma real_distribution_interval_measure:
   fixes F :: "real \<Rightarrow> real"
-  assumes "\<And>x y. x \<le> y \<Longrightarrow> F x \<le> F y"
-    and "\<And>a. continuous (at_right a) F"
+  assumes "mono F" "\<And>a. continuous (at_right a) F"
     and "(F \<longlongrightarrow> 0) at_bot" "(F \<longlongrightarrow> 1) at_top"
   shows "real_distribution (interval_measure F)"
 text_raw \<open>}%EndSnippet\<close>
@@ -217,7 +216,7 @@ text_raw \<open>}%EndSnippet\<close>
 oops
 
 text_raw \<open>\DefineSnippet{lebesgueintegralcountableadd}{\<close>
-lemma lebesgue_integral_countable_add:
+lemma integral_countable_add:
   fixes f :: "_ \<Rightarrow> 'a :: {banach, second_countable_topology}"
   assumes "\<And>i::nat. A i \<in> sets M"
     and "\<And>i j. i \<noteq> j \<Longrightarrow> A i \<inter> A j = {}"
@@ -234,7 +233,7 @@ lemma dominated_convergence:
     and "AE x in M. (\<lambda>i. s i x) \<longlonglongrightarrow> f x"
     and "\<And>i. AE x in M. norm (s i x) \<le> w x"
   shows "integrable M f" and "\<And>i. integrable M (s i)"
-    and "(\<lambda>i. integral\<^sup>L M (s i)) \<longlonglongrightarrow> integral\<^sup>L M f"
+    and "(\<lambda>i. LINT x|M. s i x) \<longlonglongrightarrow> (LINT x|M. f x)"
 text_raw \<open>}%EndSnippet\<close>
   oops
 
@@ -248,7 +247,7 @@ text_raw \<open>}%EndSnippet\<close>
 text_raw \<open>\DefineSnippet{integralnormbound}{\<close>
 lemma integral_norm_bound:
   fixes f :: "_ \<Rightarrow> 'a :: {banach, second_countable_topology}"
-  shows "integrable M f \<Longrightarrow> norm (integral\<^sup>L M f) \<le> (\<integral>x. norm (f x) \<partial>M)"
+  shows "integrable M f \<Longrightarrow> norm (LINT x|M. f x) \<le> (LINT x|M. norm (f x))"
 text_raw \<open>}%EndSnippet\<close>
   oops
 
@@ -268,7 +267,7 @@ lemma interval_integral_FTC_integrable:
   assumes "a < b"
     and "\<And>x. a < ereal x \<Longrightarrow> ereal x < b \<Longrightarrow>
     (F has_vector_derivative f x) (at x)"
-    and "\<And>x. a < ereal x \<Longrightarrow> ereal x < b \<Longrightarrow> isCont f x"
+    and "\<And>x. a < ereal x \<Longrightarrow> ereal x < b \<Longrightarrow> continuous (at x) f"
     and "set_integrable lborel (einterval a b) f"
     and "((F \<circ> real_of_ereal) \<longlongrightarrow> A) (at_right a)"
     and "((F \<circ> real_of_ereal) \<longlongrightarrow> B) (at_left b)"
@@ -300,8 +299,8 @@ lemma interval_integral_substitution_integrable:
   fixes f :: "real \<Rightarrow> 'a::euclidean_space" and a b A B :: ereal
   assumes "a < b"
     and "\<And>x. a < ereal x \<Longrightarrow> ereal x < b \<Longrightarrow> DERIV g x :> g' x"
-    and "\<And>x. a < ereal x \<Longrightarrow> ereal x < b \<Longrightarrow> isCont f (g x)"
-    and "\<And>x. a < ereal x \<Longrightarrow> ereal x < b \<Longrightarrow> isCont g' x"
+    and "\<And>x. a < ereal x \<Longrightarrow> ereal x < b \<Longrightarrow> continuous (at (g x)) f"
+    and "\<And>x. a < ereal x \<Longrightarrow> ereal x < b \<Longrightarrow> continuous (at x) g'"
     and "\<And>x. a \<le> ereal x \<Longrightarrow> ereal x \<le> b \<Longrightarrow> 0 \<le> g' x"
     and "((ereal \<circ> g \<circ> real_of_ereal) \<longlongrightarrow> A) (at_right a)"
     and "((ereal \<circ> g \<circ> real_of_ereal) \<longlongrightarrow> B) (at_left b)"
@@ -312,7 +311,7 @@ text_raw \<open>}%EndSnippet\<close>
 oops
 
 text_raw \<open>\DefineSnippet{charprop1}{\<close>
-lemma (in real_distribution) isCont_char: "isCont (char M) t"
+lemma (in real_distribution) continuous_char: "continuous (at t) (char M)"
 text_raw \<open>}%EndSnippet\<close>
   oops
 
@@ -336,12 +335,12 @@ proof -
   from assms have [measurable]: "random_variable borel X2" by (elim indep_var_rv2)
 
   have "char (distr M borel (\<lambda>\<omega>. X1 \<omega> + X2 \<omega>)) t =
-      (CLINT x|M. iexp (t * (X1 x + X2 x)))"
+      (LINT x|M. iexp (t * (X1 x + X2 x)))"
     by (simp add: char_def integral_distr)
-  also have "\<dots> = (CLINT x|M. iexp (t * (X1 x)) * iexp (t * (X2 x)))"
+  also have "\<dots> = (LINT x|M. iexp (t * (X1 x)) * iexp (t * (X2 x)))"
     by (simp add: field_simps exp_add)
   also have "\<dots> =
-      (CLINT x|M. iexp (t * (X1 x))) * (CLINT x|M. iexp (t * (X2 x)))"
+      (LINT x|M. iexp (t * (X1 x))) * (LINT x|M. iexp (t * (X2 x)))"
     by (auto intro!: indep_var_compose[unfolded comp_def, OF assms]
                      integrable_iexp indep_var_lebesgue_integral)
   also have "\<dots> = char (distr M borel X1) t * char (distr M borel X2) t"
@@ -436,7 +435,7 @@ oops
 text_raw \<open>\DefineSnippet{integraladd}{\<close>
 lemma integral_add:
   "integrable M f \<Longrightarrow> integrable M g \<Longrightarrow>
-    integral\<^sup>L M (\<lambda>x. f x + g x) = integral\<^sup>L M f + integral\<^sup>L M g"
+    (LINT x|M. f x + g x) = (LINT x|M. f x) + (LINT x|M. g x)"
 text_raw \<open>}%EndSnippet\<close>
   oops
 
@@ -450,7 +449,8 @@ text_raw \<open>\DefineSnippet{weakconv}{\<close>
 definition
   weak_conv :: "(nat \<Rightarrow> (real \<Rightarrow> real)) \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> bool"
 where
-  "weak_conv F_seq F \<equiv> \<forall>x. isCont F x \<longrightarrow> (\<lambda>n. F_seq n x) \<longlonglongrightarrow> F x"
+  "weak_conv F_seq F \<equiv>
+     \<forall>x. continuous (at x) F \<longrightarrow> (\<lambda>n. F_seq n x) \<longlonglongrightarrow> F x"
 
 definition
   weak_conv_m :: "(nat \<Rightarrow> real measure) \<Rightarrow> real measure \<Rightarrow> bool"
@@ -483,8 +483,8 @@ begin
   abbreviation "events \<equiv> sets M"
   abbreviation "prob \<equiv> measure M"
   abbreviation "random_variable M' X \<equiv> X \<in> M \<rightarrow>\<^sub>M M'"
-  abbreviation "expectation \<equiv> integral\<^sup>L M"
-  abbreviation "variance X \<equiv> integral\<^sup>L M (\<lambda>x. (X x - expectation X)\<^sup>2)"
+  abbreviation "expectation X \<equiv> (LINT x|M. X x)"
+  abbreviation "variance X \<equiv> (LINT x|M. (X x - expectation X)\<^sup>2)"
 end
 text_raw \<open>}%EndSnippet\<close>
 
@@ -516,7 +516,7 @@ text_raw \<open>\DefineSnippet{char}{\<close>
 definition
   char :: "real measure \<Rightarrow> real \<Rightarrow> complex"
 where
-  "char M t = CLINT x|M. iexp (t * x)"
+  "char M t = LINT x|M. iexp (t * x)"
 text_raw \<open>}%EndSnippet\<close>
 
 experiment

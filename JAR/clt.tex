@@ -243,7 +243,7 @@ Measure theory requires the use of the \emph{extended nonnegative reals} $\ennRR
 
 A \emph{measure space} \texttt{M} extends the notion of a $\sigma$-algebra with a function \texttt{emeasure M} from subsets of $\alpha$ to the extended nonnegative reals, satisfying the usual axioms: the measure of the empty set is $0$, the measure of any set in the $\sigma$-algebra is nonnegative, and the measure of a countable disjoint union of sets in the underlying $\sigma$-algebra is equal to sum of the unions (which might be $\infty$). The underlying $\sigma$ algebra corresponds to the usual notion of the collection of \emph{measurable subsets} corresponding to the measure. In Isabelle, for any type $\alpha$, the \texttt{typedef} mechanism is used to specify a new type, $\mathtt{measure} \; \alpha$, consisting of measure spaces on some subset of $\alpha$. 
 
-If $\mdl M$ and $\mdl N$ are two measure spaces, a \emph{measurable function} $f$ from $\mdl M$ to $\mdl N$ is a function between the underlying sets that has the property that the inverse image of any measurable subset of the codomain is a measurable subset of the domain. Note that, in fact, the property of being measurable has nothing to do with the measure; it is really a property of the function with respect to the two associated $\sigma$-algebras. Given a measurable function $f : \mdl M \to \mdl N$, a measure $\mu$ on $\mdl M$ gives rise to a new measure $\nu$ on $\mdl N$, defined by $\nu(A) = \mu(f^{-1} A)$. This is sometimes called a \emph{pushforward measure}, but in Isabelle, it is denoted \texttt{distr M N f}, for reasons that are explained in Section~\ref{subsection:probability}. It is defined formally as follows:
+If $\mdl M$ and $\mdl N$ are two measure spaces, a \emph{measurable function} $f$ from $\mdl M$ to $\mdl N$ (written $f \in \mdl{M} \rightarrow_M \mdl{N}$) is a function between the underlying sets that has the property that the inverse image of any measurable subset of the codomain is a measurable subset of the domain. Note that, in fact, the property of being measurable has nothing to do with the measure; it is really a property of the function with respect to the two associated $\sigma$-algebras. Given a measurable function $f : \mdl M \to \mdl N$, a measure $\mu$ on $\mdl M$ gives rise to a new measure $\nu$ on $\mdl N$, defined by $\nu(A) = \mu(f^{-1} A)$. This is sometimes called a \emph{pushforward measure}, but in Isabelle, it is denoted \texttt{distr M N f}, for reasons that are explained in Section~\ref{subsection:probability}. It is defined formally as follows:
 \Snippet{distr}
 
 Another way to define a measure $\nu$ on a measure $\mu$ on $\mdl M$, is to take a measurable function $f$ from $\mdl M$ to $\ennRR$, and define, for every set $A$, $\nu(A) = \int_A^+ f \; d\mu$. This is defined formally in the Isabelle library as follows:
@@ -263,7 +263,7 @@ Similar to the Lebesgue integral, the Bochner integral approximates a function $
 
 More formally, a function $s$ is \emph{simple Bochner integrable} if $s$ is Borel-measurable on $\mdl M$, has a finite range $f[\mdl M]$, and a support $\{x \in \mdl M \mid f~x \not= 0\}$ with finite measure. The integral of a simple Bochner function $s$ is a finite sum over the vectors of the range of $s$ times the measure of their support:
 \[ \int s~d\mu = \sum_{ y \in f[\mdl M]} \mu~(f^{-1}[y]) \cdot y~~.\]
-A Borel-measurable function $f$ is Bochner integrable, if there is a sequence of simple Bochner integrable functions $s$, s.t.~$f$ is the limit of $s$ in the $L^1$ norm ($\lim_{i \rightarrow \infty} \lVert s_i - f \rVert = 0$) and the integrals of $s$ converge, i.e. $\lim_{i \rightarrow \infty} \int s_i ~d\mu$ exists. Then the Bochner integral is defined as:
+A Borel-measurable function $f$ is Bochner integrable, if there is a sequence of simple Bochner integrable functions $s$, s.t.~$f$ is the limit of $s$ in the $L^1$ norm ($\lim_{i \rightarrow \infty} \lVert s_i - f \rVert = 0$) and the integrals of $s$ converge, i.e. $\lim_{i \rightarrow \infty} \int s_i ~d\mu$ exists. Then the Bochner integral (in Isabelle \isa{LINT x|M. f x}) is defined as:
 \[ \int f~d\mu = \lim_{i \rightarrow \infty} \int s_i ~d\mu \]
 
 From the definition follows that each Bochner integrable function $f$ is Borel-measurable and has a finite $L^1$-norm. For the other direction we prove that each Borel-measurable function is point-wise approximated by a sequence of simple Bochner functions. Then follows that a function $f$ is Bochner integrable if and only if $f$ is measurable and the $L^1$-norm of $f$ is finite, i.e.~absolutely integrable:
@@ -273,7 +273,7 @@ As expected for an integral, the Bochner integal is also closed under scalar mul
 \Snippet{dominatedconvergence}
 We also obtain the monotone convergence theorem, which applies to sequences of functions taking values in the real numbers. We also obtain Fubini's theorem. These are all staples of the theory of integration, and were used throughout our formalization.
 
-If $f : X \to B$ is any measurable function on a space $X$ with measure $\mu$, and $S$ is any measurable set, one can define the integral over the set $S$ by $\int_S f \, d\mu = \int f \chi_S \, d\mu$. Here $\chi_S$ is the \emph{characteristic function} of $S$, also called the \emph{indicator function}. Rather than introduce a new definition, we took notation for integration over sets to be an abbreviation for the definition in terms of indicators. But because reasoning about integrals over sets is so fundamental, we found it helpful to develop a small library to support it. For example, the following is a consequence of the dominated convergence theorem:
+If $f : X \to B$ is any measurable function on a space $X$ with measure $\mu$, and $S$ is any measurable set, one can define the integral over the set $S$ by $\int_S f \, d\mu = \int f \chi_S \, d\mu$. Here $\chi_S$ is the \emph{characteristic function} of $S$, also called the \emph{indicator function}. Rather than introduce a new definition, we took notation for integration over sets to be an abbreviation for the definition in terms of indicators. But because reasoning about integrals over sets is so fundamental, we found it helpful to develop a small library to support it (\isa{LINT x:S|M. f x} in Isabelle). For example, the following is a consequence of the dominated convergence theorem:
 \Snippet{lebesgueintegralcountableadd}
 
 The theory for Bochner integration is included in the \texttt{HOL-Probability} library: \verb=Bochner_Integration= and \verb=Set_Integral=.
@@ -335,7 +335,7 @@ Textbook results from calculus involve integrals $\int_a^b f(x) \; dx$ over the 
  \item Textbooks allow $a$ to be $-\infty$ and $b$ to be $\infty$, which is to say, $a$ and $b$ should be taken to be extended real numbers (i.e. the reals extended with $\pm\infty$).
  \item It is convenient to adopt the convention that if $b < a$, then \\ $\int_a^b f(x) \; dx = -\int_b^a f(x) dx$.
 \end{itemize}
-We thus defined a notion of ``interval integral'' along these lines, together with supporting notation. We could then state the first fundamental theorem of calculus in the following form, for finite intervals:
+We thus defined a notion of ``interval integral'' along these lines, together with supporting notation: \isa{LBINT x=a..b. f x}. We could then state the first fundamental theorem of calculus in the following form, for finite intervals:
 \Snippet{ftcfinite}
 The following version, for arbitrary intervals, makes sense when the limits are infinite:
 \Snippet{ftcintegrable}
@@ -410,7 +410,7 @@ Recall \texttt{real\_distribution} is the name of the locale for probability mea
 
 The measure associated to a right-continuous, nondecreasing function in this way is called the \emph{Lebesgue-Stieltjes measure}. The use of the word ``the'' is justified by the fact that the association is unique, in the sense that if two real distributions have the same cumulative distribution function, then they are equal: 
 \Snippet{cdfunique}
-Thus one can pass freely between talk of measures on $\RR$ and their distribution functions, a key fact in the proof of the CLT. When the function $F(x)$ is the identity function, we obtain Lebesgue measure, and, in fact, this now serves as the definition of Lebesgue measure in the Isabelle library.
+Thus one can pass freely between talk of measures on $\RR$ and their distribution functions, a key fact in the proof of the CLT. When the function $F(x)$ is the identity function, we obtain the Lebesgue-Borel measure \isa{lborel}, and, in fact, this now serves as the definition of Lebesgue-Borel measure in the Isabelle library.
 
 In the Isabelle 2016 distribution, the construction of Lebesgue measure on the reals as a Lebesgue-Stieltjes measure is in the theory \verb=Lebesgue_Measure=, and the correspondence between measures and their distribution functions is developed in \verb=Distributions=.
 
