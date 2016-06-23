@@ -200,7 +200,7 @@ oops
 text_raw \<open>\DefineSnippet{intervalmeasure}{\<close>
 lemma real_distribution_interval_measure:
   fixes F :: "real \<Rightarrow> real"
-  assumes "\<And> x y. x \<le> y \<Longrightarrow> F x \<le> F y"
+  assumes "\<And>x y. x \<le> y \<Longrightarrow> F x \<le> F y"
     and "\<And>a. continuous (at_right a) F"
     and "(F \<longlongrightarrow> 0) at_bot" "(F \<longlongrightarrow> 1) at_top"
   shows "real_distribution (interval_measure F)"
