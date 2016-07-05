@@ -605,14 +605,35 @@ This sometimes got us into trouble. A couple of times, we used theorems in the l
 
 We do not know the ideal solution to the problem. In a dependent type theory with propositions as types, one could require \texttt{integrable f} as a ``precondition'' --- a hidden argument --- to an expression \texttt{integral f}, though that might give rise to other difficulties. In simple type theory, it seems that one has to choose between using a relational version or using a function together with a definedness predicate. In the latter case, one has to take care to keep the two pieces of information close together.
 
-
 \subsection{Strategies for limit proofs}
 
 In Billingsley~\cite{billingsley:95} many proofs are performed using $\epsilon$-$\delta$-proofs (e.g. the Helly selection theorem). This works well when the domain is the set of real numbers, or is at least a metric space. It turns out that in this specific case the domain is $\ennRR$, for two reasons: (1) we reason about $\sigma$-finite measures, i.e. there are measurable sets for which the measure is infinite, (2) we reason about $\liminf$ and $\limsup$ which are defined on complete lattices but not on the real numbers. For the proof of the Helly selection theorem it turns out is a order-theoretic approach better suited: we still have limits and filters, but instead of obtaining a $\epsilon$-neighbourhood of a specific point, we get a lower bound for which the property still holds. Working with a positive $\epsilon$ where one needs to compute the difference is difficult, as  in $\ennRR$ the difference is not well-behaved (this also holds on the extended real numbers). 
 
+\[ F~x = \bigsqcup_{x < r~n} \lim_{k \to \infty} f~(d~k)~(r~n) \]
+\[ \lim_{n \to \infty} f~(d~n)~x = F~x \quad\textrm{if $F$ is continuous at $x$} \]
+
+%
+% Old proof (derived from Billingsley):
+%
+% - we get a \epsilon > 0, hence F x + e > F x = \bigsqcup ..., hence a n exists 
+%   this is fine, but we could also work with u > F x!
+% 
+% - 
+%
+%
+%
+
 Also many textbook proofs apply a $\epsilon$-$\delta$-method where they obtain multiple $\epsilon$ by destructing elements, i.e.~diameters of neighbourhoods in open sets or neighbourhoods in the range of continuous functions.  Finally, the properties and all $\epsilon$ are combined and a final $\delta$-value needs to be computed and proved correct. It turns out that many such proofs can be simplifed by keeping the relation with certain filter, i.e.~that multiple properties hold in a neighbourhood now expressed by the filter, then the filter can be transformed by various operations (e.g.~by applying a continuous functions) and finally we derive the end result. This safes us from explicitly carrying around the $\epsilon$ values as well as constructing a final $\delta$ value.
 
-\fxnote{Is this clear? Maybe more concrete examples}
+%
+% Example in Levy's uniqueness theorem: 
+%
+% - simplified variant talks about |cdf M1 x - cdf M2 x| instead of cdf M1 and cdf M2 separately
+%   i.e. we keep the continuity information. we only need to show that it holds for two e/2 and not four e/4 
+%
+% - for at_right x and at_bot we get the information together with x as bound.
+%
+
 
 \subsection{Strategies for integrals}
 
