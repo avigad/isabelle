@@ -17,6 +17,7 @@
 \newcommand{\RR}{\mathbb{R}}
 \newcommand{\CC}{\mathbb{C}}
 \newcommand{\ennRR}{\overline{\mathbb{R}}_{\ge 0}}
+\newcommand{\eRR}{\overline{\mathbb{R}}}
 
 \newcommand{\fn}[1]{\mathrm{#1}} % for functions
 \newcommand{\mdl}[1]{{\mathcal #1}} % for the sigma algebras
@@ -619,33 +620,9 @@ We do not know the ideal solution to the problem. In a dependent type theory wit
 
 \subsection{Strategies for limit proofs}
 
-In Billingsley~\cite{billingsley:95} many proofs are performed using $\varepsilon$-$\delta$-proofs (e.g. the Helly selection theorem). This works well when the domain is the set of real numbers, or is at least a metric space. It turns out that in this specific case the domain is $\ennRR$, for two reasons: (1) we reason about $\sigma$-finite measures, i.e. there are measurable sets for which the measure is infinite, (2) we reason about $\liminf$ and $\limsup$, which are defined on complete lattices but not on the real numbers. For the proof of the Helly selection theorem it turns out that an order-theoretic approach is more appropriate. We still have limits and filters, but instead of obtaining a $\varepsilon$-neighborhood of a specific point, we get a lower bound for which the property still holds. Working with a positive $\varepsilon$ where one needs to compute the difference is difficult, because subtraction is not well behaved in $\ennRR$ (nor is it well behaved on the extended real numbers).
+Finding the right abstraction for limit proofs is not always obvious. It turns out that for measure theory this is often using an order-theoretic view on limits. Instead of proving that a function approaches certain point in a $\varepsilon$-environment, it is sometimes preferable to do this separately for an upper and lower bound. This is contrary to Billingsley~\cite{billingsley:95} where many proofs are performed using $\varepsilon$-proofs (e.g. the Helly selection theorem). This works well when the domain is the set of real numbers, or is at least a metric space. It turns out that in our specific cases the domain is $\eRR$ or $\ennRR$, for two reasons: (1) we reason about $\sigma$-finite measures, i.e. there may be measurable sets with infinite measure, (2) we reason about $\liminf$ and $\limsup$, which are defined on complete lattices but not on the real numbers. We still have limits and filters, but instead of obtaining a $\varepsilon$-neighborhood of a specific point, we get a lower bound for which the property still holds. Working with a positive $\varepsilon$ where one needs to compute the difference is difficult: subtraction and addition are not as well behaved in $\eRR$ or $\ennRR$ as on $\RR$. For example we want to prove some properties around $f~x$: for the metric limit we get an $\varepsilon$ with $0 < \varepsilon$, but it does not immediately imply $f~x < f~x + \varepsilon$, it fails for $f~x = \infty$. For the order-theoretic limit we get an upper bound $y$ with $f~x < y$, then it even follows that $f~x < \infty$.
 
-\[ F~x = \bigsqcup_{x < r~n} \lim_{k \to \infty} f~(d~k)~(r~n) \]
-\[ \lim_{n \to \infty} f~(d~n)~x = F~x \quad\textrm{if $F$ is continuous at $x$} \]
-
-%
-% Old proof (derived from Billingsley):
-%
-% - we get a \varepsilon > 0, hence F x + e > F x = \bigsqcup ..., hence a n exists 
-%   this is fine, but we could also work with u > F x!
-% 
-% - 
-%
-%
-%
-
-Also many textbook proofs apply a $\varepsilon$-$\delta$-method where they obtain multiple $\varepsilon$ by destructing elements, i.e.~diameters of neighbourhoods in open sets or neighbourhoods in the range of continuous functions.  Finally, the properties and all $\varepsilon$ are combined and a final $\delta$-value needs to be computed and proved correct. It turns out that many such proofs can be simplifed by keeping the relation with certain filter, i.e.~that multiple properties hold in a neighbourhood now expressed by the filter, then the filter can be transformed by various operations (e.g.~by applying a continuous functions) and finally we derive the end result. This safes us from explicitly carrying around the $\varepsilon$ values as well as constructing a final $\delta$ value.
-
-%
-% Example in Levy's uniqueness theorem: 
-%
-% - simplified variant talks about |cdf M1 x - cdf M2 x| instead of cdf M1 and cdf M2 separately
-%   i.e. we keep the continuity information. we only need to show that it holds for two e/2 and not four e/4 
-%
-% - for at_right x and at_bot we get the information together with x as bound.
-%
-
+Also many textbook proofs apply a $\varepsilon$-method where they obtain multiple $\varepsilon$ by destructing elements, i.e.~diameters of neighbourhoods in open sets or neighbourhoods in the range of continuous functions.  Finally, the properties and all $\varepsilon$ are combined and a final minimal $\varepsilon$-value needs to be computed and proved correct. It turns out that many such proofs can be simplifed by keeping the properties in the filter, i.e.~showing that the properties form a set in the filter. This safes us from explicitly carrying around $\varepsilon$ values as well as constructing a final $\varepsilon$ value. For example, lets assume that the functions $f$ and $g_i$ (for $i < n$) are continuous at $x$, and that $1 < f~x$ and $f~y \le g_i~y$ around $x$. Now we want to obtain a neighbourhood where $f$ is above $1$ and below all $g_i$. Then either we obtain $\varepsilon$ where $1 < f~y$ and $\varepsilon_i$ where $f~y \le g_i~y$ for all $y$ in the the $\varepsilon$ neighbourhood to $x$. Then we compute the minimum of all these $\varepsilon$, with the special case where $n = 0$. But working with these $\varepsilon$ is completely auxiliary to our original goal. Fortunately, we can immediately show that $\{ x \mid 1 < f~x \} \cap \bigcap_{i < n} \{ x \mid f~x \le g_i~x \} \in \mathcal{F}_x$ as filters are closed under finite intersection (where $\mathcal{F}_x$ is the neighbourhood filter at $x$).
 
 \subsection{Strategies for integrals}
 
