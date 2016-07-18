@@ -76,9 +76,7 @@
 \maketitle
 
 \begin{abstract}
-We describe a proof of the Central Limit Theorem that has been formally verified in the Isabelle proof assistant. Our formalization builds upon and extends Isabelle's libraries for analysis and measure-theoretic probability. 
-% The statement of the theorem relies on the notion of \emph{weak convergence}, also known as \emph{convergence in distribution}. 
-The proof of the theorem uses \emph{characteristic functions}, which are a kind of Fourier transform, to demonstrate that, under suitable hypotheses, sums of random variables converge weakly to the standard normal distribution. We also discuss the libraries and infrastructure that supported the formalization, and reflect on some of the lessons we have learned from the effort.
+We describe a proof of the Central Limit Theorem that has been formally verified in the Isabelle proof assistant. Our formalization builds upon and extends Isabelle's libraries for analysis and measure-theoretic probability. The proof of the theorem uses \emph{characteristic functions}, which are a kind of Fourier transform, to demonstrate that, under suitable hypotheses, sums of random variables converge weakly to the standard normal distribution. We also discuss the libraries and infrastructure that supported the formalization, and reflect on some of the lessons we have learned from the effort.
 \keywords{interactive theorem proving, measure theory, central limit theorem}
 \end{abstract}
 
@@ -98,7 +96,7 @@ In Section~\ref{section:overview} we provide an overview of the Central Limit Th
 
 Our formalization is currently part of the Isabelle library, which can be found online at \url{https://isabelle.in.tum.de/}.\footnote{The probability library in particular can be found at \url{https://isabelle.in.tum.de/dist/library/HOL/HOL-Probability/index.html}.} A preliminary, unpublished report on the formalization can be found on arXiv \cite{avigad:hoelzl:serafin:14}. Our presentation also draws heavily on Serafin's Carnegie Mellon MS thesis \cite{serafin:15}, which provides additional information.
 
-\emph{Acknowledgments.} We are grateful to Tobias Nipkow, Lawrence Paulson, Makarius Wenzel, and the entire Isabelle team for the ongoing development of Isabelle. We are especially grateful to Tobias in particular for steadfast encouragement and support.
+\emph{Acknowledgments.} We are grateful to Tobias Nipkow, Lawrence Paulson, Makarius Wenzel, and the entire Isabelle team for the ongoing development of Isabelle. We are especially greateful to Tobias in particular for steadfast encouragement and support. Avigad and Serafin's work has been partially supported by NSF grant DMS-1068829, and Avigad's work has been partially supported by AFOSR grants FA9550-12-1-0370 and FA9550-15-1-0053. H\"olzl's work has been partially supported by DFG project Ni 491/15-1.
 
 \section{Overview of the Central Limit Theorem}
 \label{section:overview}
