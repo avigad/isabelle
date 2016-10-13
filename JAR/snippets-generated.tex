@@ -1,6 +1,6 @@
 \DefineSnippet{cltproof}{
 \isacommand{theorem}\isamarkupfalse%
-\ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ central{\isacharunderscore}limit{\isacharunderscore}theorem{\isacharcolon}\isanewline
+\ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ central{\isacharunderscore}limit{\isacharunderscore}theorem{\isacharunderscore}zero{\isacharunderscore}mean{\isacharcolon}\isanewline
 \ \ \isakeyword{fixes}\ X\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ {\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
 \ \ \ \ \isakeyword{and}\ {\isasymmu}\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure{\isachardoublequoteclose}\isanewline
 \ \ \ \ \isakeyword{and}\ {\isasymsigma}\ {\isacharcolon}{\isacharcolon}\ real\isanewline
@@ -208,6 +208,64 @@
 \ {\isacharparenleft}simp\ add{\isacharcolon}\ {\isasymphi}{\isacharunderscore}def\ char{\isacharunderscore}std{\isacharunderscore}normal{\isacharunderscore}distribution{\isacharparenright}\isanewline
 \ \ \isacommand{qed}\isamarkupfalse%
 \ {\isacharparenleft}auto\ intro{\isacharbang}{\isacharcolon}\ real{\isacharunderscore}dist{\isacharunderscore}normal{\isacharunderscore}dist\ simp{\isacharcolon}\ S{\isacharunderscore}def{\isacharparenright}\isanewline
+\isacommand{qed}\isamarkupfalse%
+%
+\endisatagproof
+{\isafoldproof}%
+%
+\isadelimproof
+\isanewline
+%
+\endisadelimproof
+\isanewline
+\isacommand{theorem}\isamarkupfalse%
+\ {\isacharparenleft}\isakeyword{in}\ prob{\isacharunderscore}space{\isacharparenright}\ central{\isacharunderscore}limit{\isacharunderscore}theorem{\isacharcolon}\isanewline
+\ \ \isakeyword{fixes}\ X\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ {\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isasymmu}\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}real\ measure{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isasymsigma}\ {\isacharcolon}{\isacharcolon}\ real\isanewline
+\ \ \ \ \isakeyword{and}\ S\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}nat\ {\isasymRightarrow}\ {\isacharprime}a\ {\isasymRightarrow}\ real{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{assumes}\ X{\isacharunderscore}indep{\isacharcolon}\ {\isachardoublequoteopen}indep{\isacharunderscore}vars\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ borel{\isacharparenright}\ X\ UNIV{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ X{\isacharunderscore}integrable{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}X\ n{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ X{\isacharunderscore}mean{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ expectation\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ m{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ {\isasymsigma}{\isacharunderscore}pos{\isacharcolon}\ {\isachardoublequoteopen}{\isasymsigma}\ {\isachargreater}\ {\isadigit{0}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ X{\isacharunderscore}square{\isacharunderscore}integrable{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ integrable\ M\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isacharparenleft}X\ n\ x{\isacharparenright}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ X{\isacharunderscore}variance{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ variance\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isakeyword{and}\ X{\isacharunderscore}distrib{\isacharcolon}\ {\isachardoublequoteopen}{\isasymAnd}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}X\ n{\isacharparenright}\ {\isacharequal}\ {\isasymmu}{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{defines}\ {\isachardoublequoteopen}X{\isacharprime}\ i\ x\ {\isasymequiv}\ X\ i\ x\ {\isacharminus}\ m{\isachardoublequoteclose}\isanewline
+\ \ \isakeyword{shows}\ {\isachardoublequoteopen}weak{\isacharunderscore}conv{\isacharunderscore}m\ {\isacharparenleft}{\isasymlambda}n{\isachardot}\ distr\ M\ borel\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isacharparenleft}{\isasymSum}i{\isacharless}n{\isachardot}\ X{\isacharprime}\ i\ x{\isacharparenright}\ {\isacharslash}\ sqrt\ {\isacharparenleft}n{\isacharasterisk}{\isasymsigma}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isacharparenright}{\isacharparenright}\ std{\isacharunderscore}normal{\isacharunderscore}distribution{\isachardoublequoteclose}\isanewline
+%
+\isadelimproof
+%
+\endisadelimproof
+%
+\isatagproof
+\isacommand{proof}\isamarkupfalse%
+\ {\isacharparenleft}intro\ central{\isacharunderscore}limit{\isacharunderscore}theorem{\isacharunderscore}zero{\isacharunderscore}mean{\isacharparenright}\isanewline
+\ \ \isacommand{show}\isamarkupfalse%
+\ {\isachardoublequoteopen}indep{\isacharunderscore}vars\ {\isacharparenleft}{\isasymlambda}i{\isachardot}\ borel{\isacharparenright}\ X{\isacharprime}\ UNIV{\isachardoublequoteclose}\isanewline
+\ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ X{\isacharprime}{\isacharunderscore}def{\isacharbrackleft}abs{\isacharunderscore}def{\isacharbrackright}\ \isacommand{using}\isamarkupfalse%
+\ X{\isacharunderscore}indep\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}rule\ indep{\isacharunderscore}vars{\isacharunderscore}compose{\isadigit{2}}{\isacharparenright}\ auto\isanewline
+\ \ \isacommand{show}\isamarkupfalse%
+\ {\isachardoublequoteopen}integrable\ M\ {\isacharparenleft}X{\isacharprime}\ n{\isacharparenright}{\isachardoublequoteclose}\ {\isachardoublequoteopen}expectation\ {\isacharparenleft}X{\isacharprime}\ n{\isacharparenright}\ {\isacharequal}\ {\isadigit{0}}{\isachardoublequoteclose}\ \isakeyword{for}\ n\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ X{\isacharunderscore}integrable\ X{\isacharunderscore}mean\ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}auto\ simp{\isacharcolon}\ X{\isacharprime}{\isacharunderscore}def{\isacharbrackleft}abs{\isacharunderscore}def{\isacharbrackright}\ prob{\isacharunderscore}space{\isacharparenright}\isanewline
+\ \ \isacommand{show}\isamarkupfalse%
+\ {\isachardoublequoteopen}{\isasymsigma}\ {\isachargreater}\ {\isadigit{0}}{\isachardoublequoteclose}\ {\isachardoublequoteopen}integrable\ M\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ {\isacharparenleft}X{\isacharprime}\ n\ x{\isacharparenright}\isactrlsup {\isadigit{2}}{\isacharparenright}{\isachardoublequoteclose}\ {\isachardoublequoteopen}variance\ {\isacharparenleft}X{\isacharprime}\ n{\isacharparenright}\ {\isacharequal}\ {\isasymsigma}\isactrlsup {\isadigit{2}}{\isachardoublequoteclose}\ \isakeyword{for}\ n\isanewline
+\ \ \ \ \isacommand{using}\isamarkupfalse%
+\ {\isacartoucheopen}{\isadigit{0}}\ {\isacharless}\ {\isasymsigma}{\isacartoucheclose}\ X{\isacharunderscore}integrable\ X{\isacharunderscore}mean\ X{\isacharunderscore}square{\isacharunderscore}integrable\ X{\isacharunderscore}variance\ \isacommand{unfolding}\isamarkupfalse%
+\ X{\isacharprime}{\isacharunderscore}def\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}auto\ simp{\isacharcolon}\ prob{\isacharunderscore}space\ power{\isadigit{2}}{\isacharunderscore}diff{\isacharparenright}\isanewline
+\ \ \isacommand{show}\isamarkupfalse%
+\ {\isachardoublequoteopen}distr\ M\ borel\ {\isacharparenleft}X{\isacharprime}\ n{\isacharparenright}\ {\isacharequal}\ distr\ {\isasymmu}\ borel\ {\isacharparenleft}{\isasymlambda}x{\isachardot}\ x\ {\isacharminus}\ m{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{for}\ n\isanewline
+\ \ \ \ \isacommand{unfolding}\isamarkupfalse%
+\ X{\isacharunderscore}distrib{\isacharbrackleft}of\ n{\isacharcomma}\ symmetric{\isacharbrackright}\ \isacommand{using}\isamarkupfalse%
+\ X{\isacharunderscore}integrable\isanewline
+\ \ \ \ \isacommand{by}\isamarkupfalse%
+\ {\isacharparenleft}subst\ distr{\isacharunderscore}distr{\isacharparenright}\ {\isacharparenleft}auto\ simp{\isacharcolon}\ X{\isacharprime}{\isacharunderscore}def{\isacharbrackleft}abs{\isacharunderscore}def{\isacharbrackright}\ comp{\isacharunderscore}def{\isacharparenright}\isanewline
 \isacommand{qed}\isamarkupfalse%
 %
 \endisatagproof
