@@ -96,7 +96,7 @@ In Section~\ref{section:overview} we provide an overview of the Central Limit Th
 
 Our formalization is currently part of the Isabelle library, which can be found online at \url{https://isabelle.in.tum.de/}.\footnote{The probability library in particular can be found at \url{https://isabelle.in.tum.de/dist/library/HOL/HOL-Probability/index.html}.} A preliminary, unpublished report on the formalization can be found on arXiv \cite{avigad:hoelzl:serafin:14}. Our presentation also draws heavily on Serafin's Carnegie Mellon MS thesis \cite{serafin:15}, which provides additional information.
 
-\emph{Acknowledgments.} We are grateful to Tobias Nipkow, Lawrence Paulson, Makarius Wenzel, and the entire Isabelle team for the ongoing development of Isabelle. We are especially greateful to Tobias in particular for steadfast encouragement and support. Avigad and Serafin's work has been partially supported by NSF grant DMS-1068829, and Avigad's work has been partially supported by AFOSR grants FA9550-12-1-0370 and FA9550-15-1-0053. H\"olzl's work has been partially supported by DFG projects Ni 491/15-1 and Ni 491/16-1.
+\emph{Acknowledgments.} We are grateful to Tobias Nipkow, Lawrence Paulson, Makarius Wenzel, and the entire Isabelle team for the ongoing development of Isabelle. We are especially grateful to Tobias in particular for steadfast encouragement and support. We thank the two anonymous referees for a very careful reading and helpful comments. Avigad and Serafin's work has been partially supported by NSF grant DMS-1068829, and Avigad's work has been partially supported by AFOSR grants FA9550-12-1-0370 and FA9550-15-1-0053. H\"olzl's work has been partially supported by DFG projects Ni 491/15-1 and Ni 491/16-1.
 
 \section{Overview of the Central Limit Theorem}
 \label{section:overview}
@@ -121,9 +121,10 @@ More details on the history of the Central Limit Theorem and its proof can be fo
 \subsection{Background from measure theory}
 \label{subsection:background}
 
-A \emph{measure space} $(\Omega, \mdl F)$ consists of a set $\Omega$ and a \emph{$\sigma$-algebra $\mdl F$ of subsets of $\Omega$}, that is, a collection of subsets of $\Omega$ containing the empty set and closed under complements and countable unions. Think of $\Omega$ as the set of possible states of affairs, or possible outcomes of an action or experiment, and each element $E$ of $\mdl F$ as representing the set of states or outcomes in which some \emph{event} occurs --- for example, that a card drawn is a face card, or that Spain wins the World Cup. A \emph{probability measure} $\mu$ on this space is a function that assigns a value $\mu(E)$ in $[0, 1]$ to each event $E$, subject to the following two conditions:
+A \emph{measure space} $(\Omega, \mdl F)$ consists of a set $\Omega$ and a \emph{$\sigma$-algebra $\mdl F$ of subsets of $\Omega$}, that is, a collection of subsets of $\Omega$ containing the empty set and closed under complements and countable unions. Think of $\Omega$ as the set of possible states of affairs, or possible outcomes of an action or experiment, and each element $E$ of $\mdl F$ as representing the set of states or outcomes in which some \emph{event} occurs --- for example, that a card drawn is a face card, or that Spain wins the World Cup. A \emph{probability measure} $\mu$ on this space is a function that assigns a value $\mu(E)$ in $[0, 1]$ to each event $E$, subject to the following conditions:
 \begin{enumerate}
- \item $\mu(\emptyset) = 0$, and
+ \item $\mu(\emptyset) = 0$, 
+ \item $\mu(\Omega) = 1$, and
  \item $\mu$ is countably additive: if $(E_i)$ is any sequence of disjoint events in $\mdl F$, then $\mu(\bigcup_i E_i) = \sum_i \mu(E_i)$.
 \end{enumerate}
 Intuitively, $\mu(E)$ is the ``probability'' that $E$ occurs. 
@@ -162,16 +163,16 @@ The fact that weak convergence is a robust notion is evidenced by the fact that 
 With this background in place, we can now state the Central Limit Theorem precisely, as follows:
 \begin{theorem}
 \label{theorem:clt}
-Let $X_0, X_1, X_2, \ldots$ be a sequence of independent random variables with mean $0$, variance $\sigma^2$, and common distribution $\mu$. Let $S_n = X_0 + X_1 + \ldots + X_{n-1}$. Then the distribution of $S_n / \sqrt{n \sigma^2}$ converges weakly to the standard normal distribution.
+Let $X_0, X_1, X_2, \ldots$ be a sequence of independent random variables with mean $c$, strictly positive variance $\sigma^2$, and common distribution $\mu$. Let $S_n = X_0 + X_1 + \ldots + X_{n-1}$. Then the distribution of $(S_n - n c) / \sqrt{n \sigma^2}$ converges weakly to the standard normal distribution.
 \end{theorem}
-The restriction to mean $0$ does not result in any loss of generality, since if each $X_i$ has mean $m$, we can apply Theorem~\ref{theorem:clt} to the sequence $(X_i - m)$ to obtain the more general statement above. Our formulation of Theorem~\ref{theorem:clt} in Isabelle is as follows:
-
+This is Theorem 27.1 in Billingsley's book \cite{billingsley:95}. Setting $c = 0$ in the statement of the theorem does not result in loss of generality: if each $X_i$ has mean $c$, we can apply Theorem~\ref{theorem:clt} to the shifted sequence $(X_i - c)$ and use the result to obtain the more general statement. Our formulation of Theorem~\ref{theorem:clt} in Isabelle is as follows:
 %depicted as Figure~\ref{fig:clt}.
 %\begin{figure}
 \Snippet{clt}
 %\caption{The Central Limit Theorem}
 %\label{fig:clt}
 %\end{figure}
+Here, \texttt{M} denotes the underlying probability space. We present a formal proof of the mean zero case in the appendix, and then derive the version above as a corollary.
 
 \subsection{An overview of the proof}
 \label{subsection:overview}
@@ -201,7 +202,7 @@ When we began our project, a good deal of infrastructure was already available i
 
 The Isabelle proof assistant \cite{nipkow:et:al:02} is based on classical simple type theory \cite{church:40}, with variables ranging polymorphically over types, and a Hilbert choice operator (\texttt{SOME}) which returns an indeterminate element satisfying a given predicate, if there is one. Given a type $\alpha$ and a predicate $P$ on $\alpha$, one can introduce a new abstract type representing the elements of $\alpha$ satisfying $P$, using a \texttt{typedef} command. In addition to the references given in this section, one should consult the documentation available on the Isabelle web site for the most up-to-date information.
 
-Isabelle is an LCF-style theorem prover. This means that stating a theorem amounts to introducing a proof goal, and one can then construct proofs by applying \emph{tactics} that reduce that goal to other goals. Layered on top of that, the Isabelle system includes the \emph{Isar} proof language \cite{wenzel:02}, which provides a more natural, declarative way of writing structured proofs. Although in some places our proofs resort to sequences of tactic applications, for the most part we relied on Isar to make our proofs more robust, and to make them easier to read and maintain.
+Isabelle is an LCF-style theorem prover. This means that stating a theorem amounts to introducing a proof goal, and one can then construct proofs by applying \emph{tactics} that reduce that goal to other goals. Layered on top of that, the Isabelle system includes the \emph{Isar} proof language \cite{wenzel:02}, which provides a natural, declarative way of writing structured proofs. Although in some places our proofs resort to sequences of tactic applications, for the most part we relied on Isar to make our proofs more robust, and to make them easier to read and maintain.
 
 One attractive feature of Isabelle is the strength of its automation. We relied extensively on built-in procedures such as its term rewriter (\texttt{simp}), its generic theorem provers (such as \texttt{auto}), and its procedure for linear arithmetic (\texttt{arith}). Occasionally we relied on Isabelle's \emph{sledgehammer} command \cite{paulson:10}, which invokes external theorem provers and then reconstructs the results in Isabelle.
 
@@ -214,7 +215,7 @@ In the measure theory library, as described in Sections~\ref{subsection:measure:
 \subsection{Topology and Limits}
 \label{subsection:topology}
 
-Isabelle's extensive library for topological spaces includes properties of open and closed sets, limits, compactness, continuity, and so on. The library is well-described in \cite{hoelzl:et:al:13}. Topological notions interact with measure-theoretic notions in various ways. For example, a real distribution is a measure on the real numbers that measures the \emph{Borel sets}, the smallest $\sigma$-algebra containing the open sets. Continuous functions are therefore measurable. Topological notions come into the statements of many measure-theoretic theorems described below, notions including the points of continuity of a function or the boundary of a set. Proving Skorohod's theorem required showing that the set of points of continuity of an arbitrary function from reals to reals is Borel; this is done in a four-line footnote in Billingsley (\cite[page 334]{billingsley:95}), and requires characterizing the set of discontinuities as a union of an intersection of open sets.
+Isabelle's extensive library for topological spaces includes properties of open and closed sets, limits, compactness, continuity, and so on. The library is described in detail by H\"olzl, Immler, and Huffman in \cite{hoelzl:et:al:13}. Topological notions interact with measure-theoretic notions in various ways. For example, a real distribution is a measure on the real numbers that measures the \emph{Borel sets}, the smallest $\sigma$-algebra containing the open sets. Continuous functions are therefore measurable. Topological notions come into the statements of many measure-theoretic theorems described below, notions including the points of continuity of a function or the boundary of a set. Proving Skorohod's theorem required showing that the set of points of continuity of an arbitrary function from reals to reals is Borel; this is done in a four-line footnote in Billingsley (\cite[page 334]{billingsley:95}), and requires characterizing the set of discontinuities as a union of an intersection of open sets.
 
 Conventional reasoning about limits was ubiquitous in our formalization. Everyday mathematics requires one to deal with expressions such as the following:
 \begin{itemize}
@@ -226,9 +227,9 @@ Conventional reasoning about limits was ubiquitous in our formalization. Everyda
 \end{itemize}
 Here, the source and target spaces can be any topological space, including metric spaces or the natural numbers with the order topology. One can consider limits as $x$ approaches a value $a$, or $\infty$, or $-\infty$. One can also restrict the allowed values for $x$ and consider the limit as $x$ approaches $a$ within a set $s$; saying $x$ approaches $a$ from the left (where $x$ and $a$ are real-valued, for example) is equivalent to saying that $x$ approaches $a$ within the interval $(-\infty, a)$. There is a similar range of variations on the output: $f(x)$ can approach a value, $b$, or $\infty$, or $-\infty$; and it can approach the value from the left, or from the right, or within any subset of the range of $f$. Not only does this threaten a combinatorial explosion of definitions, but also redundancy. For example, assuming $f(x)$ and $g(x)$ converge as $x$ approaches $a$, we have the identity $\lim_{x \to a} (f(x) + g(x)) = \lim_{x \to a} f(x) + \lim_{x \to a} g(x)$, but this also holds under all the variations of convergence in the source.
 
-To handle the many instances of convergence that arose in the formalization, we used Isabelle's elegant library for dealing with limits via filters, as described in \cite{hoelzl:et:al:13}. The idea is that when dealing with any notion of limit, the relevant notions of convergence in the source and the target can be represented by \emph{filters}. A {\em filter} over $X$ is a nonempty set $\mathcal F \subseteq \mathcal P(X)$ such that if $A \subseteq B$ and $A \in \mathcal F$, then $B \in \mathcal F$, and if $A, B \in \mathcal F$, then $A \cap B \in \mathcal F$. The general notion of limit in Isabelle, {\tt filterlim f F1 F2}, says, roughly, that the function $f$ converges in the sense of $F_2$ as the input converges in the sense of $F_1$. By specializing $F_1$ and $F_2$ appropriately, we obtain all the variations described in the last paragraph, and more. In addition, theorems can be proved at the appropriate level of generality. For example, we have:
+To handle the many instances of convergence that arose in the formalization, we used Isabelle's elegant library for dealing with limits via filters \cite{hoelzl:et:al:13}. The idea is that when dealing with any notion of limit, the relevant notions of convergence in the source and the target can be represented by \emph{filters}. A {\em filter} over $X$ is a nonempty set $\mathcal F \subseteq \mathcal P(X)$ such that if $A \subseteq B$ and $A \in \mathcal F$, then $B \in \mathcal F$, and if $A, B \in \mathcal F$, then $A \cap B \in \mathcal F$. The general notion of limit in Isabelle, {\tt filterlim f F1 F2}, says, roughly, that the function $f$ converges in the sense of $F_2$ as the input converges in the sense of $F_1$. By specializing $F_1$ and $F_2$ appropriately, we obtain all the variations described in the last paragraph, and more. In addition, theorems can be proved at the appropriate level of generality. For example, we have:
 \Snippet{tendstoadd} 
-Here \isamath{(f \xrightarrow{\hphantom{AAA}} x)~F} is an abbreviation for {\tt filterlim f F (nhds x)}, where {\tt nhds x} is the filter of topological neighborhoods of $x$. This avoids the need to formalize endless variations of the same theorem; we only need to instantiate the general version to ehe relevant filters. Details can be found in \cite{hoelzl:et:al:13}.
+Here \isamath{(f \xrightarrow{\hphantom{AAA}} x)~F} is an abbreviation for {\tt filterlim f F (nhds x)}, where {\tt nhds x} is the filter of topological neighborhoods of $x$. This avoids the need to formalize endless variations of the same theorem; we only need to instantiate the general version to the relevant filters. Details can be found in \cite{hoelzl:et:al:13}.
 
 In the Isabelle library, topological facts are found in the standard \texttt{HOL} library, in files such as \texttt{Filter}, \texttt{Topological\_Spaces}, and \texttt{Limits}. Topological notions for the reals, and vector spaces over the reals, can be found in \texttt{Real\_Vector\_Spaces}.
 
@@ -258,7 +259,7 @@ The fundamentals of measure theory are found in the \texttt{HOL-Probability} lib
 
 Our initial formalization of the Central Limit Theorem relied on the theory of Lebesgue integration, described in \cite{hoelzl:heller:11}. This provides a notion of integration for suitable functions $f : X \to \RR$, where $X$ is any space on which a measure is defined. After we completed the proof, however, the second author, H\"olzl, generalized the construction to the \emph{Bochner integral}. This provides a theory of integration for functions $f : X \to B$, where now $B$ is any second-countable Banach space. In particular, $B$ can be any of the spaces $\RR^n$, or the complex numbers, $\CC$. Our formalization made extensive use of integration of functions from $\RR$ to $\CC$, as discussed in Section~\ref{subsection:real:analysis}.
 
-Similar to the Lebesgue integral, the Bochner integral approximates a function $f$ by a sequence of simple functions $s$. Each simple function has a finite range, and hence its integral can be expressed by finite summation. When a function can be approximated by simple functions, its  integral is the limit of the integrals of those simple functions. Whereas approximations for Lebesgue integration are taken with respect to the pointwise order on $\ennRR$, approximations for Bochner integration are taken with respect to the $L^1$-norm, defined using the Lebesgue integral by $\lVert f \rVert = \int_x^+ |f~x| d\mu$.
+Similar to the Lebesgue integral, the Bochner integral approximates a function $f$ by a sequence of simple functions $s$. Each simple function has a finite range, and hence its integral can be expressed by finite summation. When a function can be approximated by simple functions, its  integral is the limit of the integrals of those simple functions. Whereas approximations for Lebesgue integration are taken with respect to the pointwise order on $\ennRR$, approximations for Bochner integration are taken with respect to the $L^1$-norm, defined using the Lebesgue integral by $\lVert f \rVert = \int^+ |f| d\mu$.
 
 More formally, a function $s$ is \emph{simple Bochner-integrable} if $s$ is Borel-measurable on $\mdl M$, has a finite range $f[\mdl M]$, and a support $\{x \in \mdl M \mid f~x \not= 0\}$ with finite measure. The integral of a simple Bochner function $s$ is a finite sum over the vectors of the range of $s$ times the measure of their support:
 \[ \int s~d\mu = \sum_{ y \in f[\mdl M]} \mu~(f^{-1}[y]) \cdot y\]
@@ -275,7 +276,7 @@ From the definition it follows that each Bochner-integrable function $f$ is Bore
 
 As one would expect of an integral, the Bochner integral respects scalar multiplication and addition. As with the Lebesgue integral, we obtain a version of the dominated convergence theorem:
 \Snippet{dominatedconvergence}
-We have the monotone convergence theorem, which applies to sequences of functions taking values in the real numbers. We also obtain Fubini's theorem. These are all staples of the theory of integration, and were used throughout our formalization.
+Here the quantifier \texttt{AE x in M} expresses that the subsequent statement holds for almost every element $x$ of the measure space $M$, which is to say, the set of examples where it doesn't hold has measure zero. We have the monotone convergence theorem, which applies to sequences of functions taking values in the real numbers. We also obtain Fubini's theorem. These are all staples of the theory of integration, and were used throughout our formalization.
 
 If $f : X \to B$ is any measurable function on a space $X$ with measure $\mu$, and $S$ is any measurable set, one can define the integral over the set $S$ by $\int_S f \, d\mu = \int f \chi_S \, d\mu$. Here $\chi_S$ is the \emph{characteristic function} of $S$, also called the \emph{indicator function}. Rather than introduce a new definition, we took notation for integration over sets to be an abbreviation for the definition in terms of indicators, with the notation \isa{LINT x:S|M. f x}. But because reasoning about integrals over sets is so fundamental, we found it helpful to develop a small library to support it. For example, the following is a consequence of the dominated convergence theorem:
 \Snippet{lebesgueintegralcountableadd}
@@ -290,9 +291,9 @@ Modern probability is based on measure theory, although probabilists and statist
 The Isabelle library defines a locale for \emph{finite measures}, which are simply measures for which the measure of the entire space, \texttt{emeasure M (space M)}, is not infinity. For such spaces, one can work more conveniently with the associated real-valued function, \texttt{measure}, which casts the value of \texttt{emeasure} to a real. There is also a locale for \emph{probability measures}, which are finite measures where the measure of the entire space is equal to $1$. When working with cumulative distribution functions, as described in Section~\ref{subsection:distribution:functions}, we found it convenient to define a locale for \emph{real distributions}; a real distribution is a probability space in which the space is the set of real numbers and the measurable sets consist of exactly the Borel subsets of the reals. To capture the language of informal probability theory, the library defines all of the following abbreviations:
 \Snippet{probspace}
 
-If $X$ is a random variable on a measure space $\mdl M$ with measure $\mu$, the distribution of $X$, as described in the last section, has the following interpretation: it is the measure $\nu$ on the Borel sets of $\RR$ such that for every $A$, $\nu(A)$ is the probability that $X$ takes a value in $A$. Even though we think of $X$ as depending on some underlying source of randomness, represented by $\mdl M$, often we only care about the induced probability on the real numbers that is given by its distribution. Notice that the word ``distribution'' is used in probability theory in at least three distinct but related ways. In addition to the uses of the term described in this paragraph and the previous one, one also often speaks of the (cumulative) distribution function of a real distribution, as described in Section~\ref{subsection:distribution:functions}. Thus, if $X$ is a random variable, its distribution is a real distribution, which in turn has a distribution function.
+If $X$ is a random variable on a measure space $\mdl M$ with measure $\mu$, the distribution of $X$, as described in the previous section, has the following interpretation: it is the measure $\nu$ on the Borel sets of $\RR$ such that for every $A$, $\nu(A)$ is the probability that $X$ takes a value in $A$. Even though we think of $X$ as depending on some underlying source of randomness, represented by $\mdl M$, often we only care about the induced probability on the real numbers that is given by its distribution. Notice that the word ``distribution'' is used in probability theory in at least three distinct but related ways. In addition to the uses of the term described in this paragraph and the previous one, one also often speaks of the (cumulative) distribution function of a real distribution, as described in Section~\ref{subsection:distribution:functions}. Thus, if $X$ is a random variable, its distribution is a real distribution, which in turn has a distribution function.
 
-In probability theory, real distributions are often specified as densities, as described in the last section. Thus the normal distribution with mean $\mu$ and variance $\sigma$ is defined formally as follows:
+In probability theory, real distributions are often specified as densities, as described in the previous section. Thus the normal distribution with mean $\mu$ and variance $\sigma$ is defined formally as follows:
 \Snippet{normaldistr}
 
 Various notions of independence are used in probability. Perhaps the most general is the following: suppose that for every $i$ in some index set $I$, $F_i$ is a collection of events (measurable sets) from some fixed measure space. Then the sequence $(F_i)_{i \in I}$ is said to be \emph{independent} if for every finite subset $J \subseteq I$ and every choice of a set $A_j \in F_j$ for each $j$, the probability of the intersection $\bigcap_{j \in J} A_j$, i.e.~the probability that all of the $A_j$'s occur, is the product of the individual probabilities.
@@ -331,10 +332,7 @@ Our formalization required extensive use of calculus at an undergraduate level, 
 \[
  \left| e^{ix} - \sum_{k=0}^n \frac{(ix)^k}{k!} \right| \le \min\left(\frac{|x|^{n+1}}{(n+1)!}, \frac{2 x^n}{n!}\right).
 \]
-We followed Billingsley~\cite[Section 26]{billingsley:95} in obtaining this using an inductive argument and integration by parts. Notice that this involves reasoning about functions from the real to complex numbers; as explained in the last section, the relevant properties generally follow from the corresponding properties for real-valued functions, upon splitting functions to the real and imaginary parts. 
-%\fxnote*{move to the section on the Bochner integral?}{
-% JDA: I think it makes sense to keep it here. The paper reads fine this way.
-In addition, we have the general inequality $\| \int_A f \; d\mu \| \le \int_A \| f \| d\mu$, which allows us to bound the modulus of a complex interval by bounding the real-valued integral of the norm. This is an instance of a more general fact about the Bochner integral:
+We followed Billingsley~\cite[Section 26]{billingsley:95} in obtaining this using an inductive argument and integration by parts. Notice that this involves reasoning about functions from the real to complex numbers; as explained in the previous section, the relevant properties generally follow from the corresponding properties for real-valued functions, upon splitting functions to the real and imaginary parts. In addition, we have the general inequality $\| \int_A f \; d\mu \| \le \int_A \| f \| d\mu$, which allows us to bound the modulus of a complex integral by bounding the real-valued integral of the norm. This is an instance of a more general fact about the Bochner integral:
 %}
 \Snippet{integralnormbound}
 
@@ -405,20 +403,21 @@ The cumulative distribution function (or \emph{cdf}) is sometimes also called, m
 
 \Snippet{cdf}
 
-It is not hard to see that the distribution function $F_\mu$ of a finite measure $\mu$ is nondecreasing and right-continuous, and satisfies $\lim_{x \rightarrow -\infty} F_\mu(x) = 0$ and \linebreak $\lim_{x \rightarrow \infty} F_\mu(x) = 1$.
+It is not hard to see that the distribution function $F_\mu$ of a measure $\mu$ is nondecreasing and right-continuous, and satisfies $\lim_{x \rightarrow -\infty} F_\mu(x) = 0$.
 
 \Snippet{cdfprop1}
 \Snippet{cdfprop2}
 \Snippet{cdfprop3}
+
+Conversely, it turns out that any function with these properties is the distribution of a Borel measure on $\RR$. The requisite measure $\mu$ is constructed by defining $\mu (a,b] = F(b) - F(a)$ and extending this to the Borel $\sigma$-algebra using the Carath\'eodory extension theorem. To that end, we defined an operation, \texttt{interval\_measure}, that generates a measure from a nondecreasing, right-continuous function. To use the Carath\'eodory extension theorem, the key property that needs to be verified is that if a half-open interval $(a, b]$ is written as a disjoint union of countably many intervals $(a_i, b_i]$, then $b - a = \sum_i (b_i - a_i)$. This is trickier than it sounds. For example, the interval $(0, 1]$ can be written as a countable union of intervals $(1/2^{i+1}, 1/2^i]$, and any one of \emph{those} intervals could similarly be replaced by a countable union. It is not hard to show that the infinite sum $\sum_i (b_i - a_i]$ is bounded by $b - a$. In the other direction, one picks a small $\varepsilon$, enlarges each interval $(a_i, b_i]$ to a slightly larger interval $(a_i - \varepsilon/2^i, b_i + \varepsilon / 2^i)$, argues that the union of the enlargements covers the closed interval $[a, b]$, and then appeals to the compactness of $[a,b]$. The measure associated to a right-continuous, nondecreasing function in this way is called the \emph{Lebesgue-Stieltjes measure}. When the function $F(x)$ is the identity function, we obtain the Lebesgue-Borel measure \isa{lborel}, and, in fact, this now serves as the definition of Lebesgue-Borel measure in the Isabelle library.
+
+In the case of a probability measure, we have the additional property that $\lim_{x \rightarrow \infty} F_\mu(x) = 1$:
 \Snippet{cdfprop4}
-
-Conversely, it turns out that any function with these properties is the distribution of a Borel probability measure on $\RR$. The requisite measure $\mu$ is constructed by defining $\mu (a,b] = F(b) - F(a)$ and extending this to the Borel $\sigma$-algebra using the Carath\'eodory extension theorem.
+Conversely, any function $F$ satisfying all four properties is a probability measure:
 \Snippet{intervalmeasure}
-Recall that \texttt{real\_distribution} is the name of the locale for probability measures on the Borel subsets of the reals. Moreover, \texttt{interval\_measure} is the function that generates a measure from a nondecreasing, right-continuous function. To apply the Carath\'eodory extension theorem, the key property that needs to be verified is that if a half-open interval $(a, b]$ is written as a disjoint union of countably many intervals $(a_i, b_i]$, then $b - a = \sum_i (b_i - a_i)$. This is tricker than it sounds. For example, the interval $(0, 1]$ can be written as a countable union of intervals $(1/2^{i+1}, 1/2^i]$, and any one of \emph{those} intervals could similarly be replaced by a countable union. It is not hard to show that the infinite sum $\sum_i (b_i - a_i]$ is bounded by $b - a$. In the other direction, one picks a small $\varepsilon$, enlarges each interval $(a_i, b_i]$ to a slightly larger interval $(a_i - \varepsilon/2^i, b_i + \varepsilon / 2^i)$, argues that the union of the enlargements covers the closed interval $[a, b]$, and then appeals to the compactness of $[a,b]$.
-
-The measure associated to a right-continuous, nondecreasing function in this way is called the \emph{Lebesgue-Stieltjes measure}. The use of the word ``the'' is justified by the fact that the association is unique, in the sense that if two real distributions have the same cumulative distribution function, then they are equal: 
+Recall that \texttt{real\_distribution} is the name of the locale for probability measures on the Borel subsets of the reals. So, for any function \texttt{F} satisfying the four properties above, \texttt{interval\_measure F} is the measure whose cdf is exactly \texttt{F}. The use of the word ``the'' is justified by the fact that the association is unique, in the sense that if two real distributions have the same cumulative distribution function, then they are equal: 
 \Snippet{cdfunique}
-Thus one can pass freely between talk of measures on $\RR$ and of their distribution functions, a key fact in the proof of the CLT. When the function $F(x)$ is the identity function, we obtain the Lebesgue-Borel measure \isa{lborel}, and, in fact, this now serves as the definition of Lebesgue-Borel measure in the Isabelle library.
+Thus one can pass freely between talk of measures on $\RR$ and of their distribution functions, a key fact in the proof of the CLT. 
 
 In the Isabelle 2016 distribution, the construction of Lebesgue measure on the reals as a Lebesgue-Stieltjes measure is in the theory \texttt{Lebesgue\_Measure}, and the correspondence between measures and their distribution functions is developed in \texttt{Distributions}.
 
@@ -460,7 +459,7 @@ Then the proof that this is measurable is a straightforward application of rules
 Recall from Section~\ref{subsection:background} that if $(\mu_n)$ is a sequence of real distributions and $\mu$ is a real distribution, then $(\mu_n)$ converges weakly $\mu$, written $\mu_n \Rightarrow \mu$, if $F_{\mu_n}(x)$ approaches $F_\mu(x)$ at each point $x$ where $F_\mu$ is continuous. In Isabelle, this is expressed by the following two definitions:
 
 \Snippet{weakconv}
-In other words, a sequence of functions $(F_n)_{n \in \NN}$ converges weakly to $F$ if $(F_n(x))_{n \in \NN}$ converges to $F(x)$ for each point $x$ where $F$ is continuous, and the sequence of measures $(\mu_n)$ converges weakly to $\mu$ is the corresponding cumulative distribution functions converge weakly.
+In other words, a sequence of functions $(F_n)_{n \in \NN}$ converges weakly to $F$ if $(F_n(x))_{n \in \NN}$ converges to $F(x)$ for each point $x$ where $F$ is continuous, and the sequence of measures $(\mu_n)$ converges weakly to $\mu$ if the corresponding cumulative distribution functions converge weakly.
 
 That the notion of weak convergence is robust is supported by the fact that there are a number of equivalent characterizations. The following theorem is sometimes known as the \emph{Portmanteau Theorem}:
 \begin{theorem}
@@ -494,7 +493,7 @@ In our formalization, the characteristic function of a measure is defined as fol
 \Snippet{char}
 The characteristic function of a random variable \texttt{X} defined on a measure space \texttt{M} is then written \texttt{char (distr M borel X)}, since \texttt{distr M borel X} denotes the distribution of \texttt{X} with respect to the usual Borel measure on the real numbers.
 
-The characteristic function $\ph$ of a measure is continuous, and satisfies $\ph(0) = 1$ and $\ph(t) \leq 1$ for every $t$:
+The characteristic function $\ph$ of a measure is continuous, and satisfies $\ph(0) = 1$ and $|\ph(t)| \leq 1$ for every $t$:
 \Snippet{charprop1}
 \Snippet{charprop2}
 \Snippet{charprop3}
@@ -505,8 +504,13 @@ As noted above, a key property of characteristic functions is this: if $X_1$ and
                    &= \left(\int e^{i t X_1} \, dM\right) \left(\int e^{i t X_2} \, dM\right) \\
                    &= \ph_{X_1}(t) \ph_{X_2}(t).
 \end{align*}
-Here, $X_1$ and $X_2$ are really functions over the underlying probability space $M$, and the third equation follows from the independence of $X_1$ and $X_2$. We reproduce our formal proof, as well as the generalization to arbitrary finite sums, in full:
+Here, $X_1$ and $X_2$ are really functions over the underlying probability space $M$, and the third equation follows from the independence of $X_1$ and $X_2$. We reproduce our formal proof in full:
 \Snippet{chardistrsum}
+By induction, we have that for any finite set $A$ and any sequence $(X_i)_{i \in A}$ of mutually independent random variables,
+\[
+\ph_{\sum_{i \in A} X_i}(t) = \prod_{i \in A} (\ph_{X_i}(t)).
+\]
+The formal proof is as follows:
 \Snippet{chardistrsetsum}
 
 We also needed explicit approximations to the characteristic functions of a random variable, obtained using the calculation described at the beginning of Section~\ref{subsection:calculus}. One of the results we used is as follows:
@@ -526,7 +530,7 @@ In Fourier analysis, an ``inversion theorem'' says that a function can be recove
 
 More precisely, the L\'evy Inversion Theorem states the following:
 \begin{theorem}
-Let $\mu$ be a probability measure, and $\phi$ be the characteristic function of $\mu$. If $a$ and $b$ are continuity points of $\mu$ and $a < b$, then
+Let $\mu$ be a probability measure, and $\ph$ be the characteristic function of $\mu$. If $a$ and $b$ are continuity points of $\mu$ and $a < b$, then
 \[ 
 \mu (a,b] = \lim_{T \rightarrow \infty} \frac{1}{2\pi} \int_{-T}^T \frac{e^{-ita} - e^{-itb}}{it} \ph(t) \, dt. 
 \]
@@ -536,7 +540,7 @@ The proof is a long and subtle calculation. Let $I(T)$ denote the expression aft
 \[
 I(T) = \frac{1}{2\pi} \int_{-\infty}^\infty \int_{-T}^T \frac{e^{it(x-a)} - e^{it(x-b)}}{it} \, dt \, \mu(dx). 
 \]
-The idea is that as $T$ approaches $\infty$, the inner integral approaches a step function which jumps from $0$ to $1$ at $a$ and then back down to $0$ at $b$. This is shown by expanding the complex exponential in terms of $\sin$ and $\cos$, using properties of the sine integral, and messing around with integrals and limits.
+The idea is that as $T$ approaches $\infty$, the inner integral approaches a step function which jumps from $0$ to $1$ at $a$ and then back down to $0$ at $b$. This is shown by expanding the complex exponential in terms of $\sin$ and $\cos$, using properties of the sine integral, and manipulating integrals and limits.
 
 It is not hard to show that fixing the values of a measure on intervals $(a, b]$ as above is enough to determine the measure on all Borel sets. Thus the Inversion Theorem has the following result, known as the Uniqueness Theorem, as an important corollary:
 \begin{theorem}
@@ -564,13 +568,13 @@ The other direction is a lot harder. Here is an outline of the proof:
 
 The necessary compactness principle is a consequence of the \emph{Helly Selection Theorem}, which we now describe. Although the proof of this theorem and its consequence take up only a page-and-a-half in Billingsley's textbook, these were among the most subtle components of our formalization. The theorem states the following:
 \begin{theorem}
-Let $(F_n)$ be a uniformly bounded sequence of nondecreasing, right continuous functions. Then there is a subsequence $(F_{n_k})$ and a nondecreasing, right-continuous function $F$ such that $\lim_k F_{n_k}(x) = F(x)$ at continuity points of $F$.  
+Let $(f_n)_{n \in \NN}$ be a uniformly bounded sequence of nondecreasing, right continuous functions. Then there are a subsequence $(f_{n_k})_{k \in \NN}$ and a nondecreasing, right-continuous function $F$ such that $\lim_k f_{n_k}(x) = F(x)$ at continuity points of $F$.  
 \end{theorem}
 In our formalization, this is expressed as follows:
 \Snippet{helly}
-Note that the subsequence $(F_{n_k})$ is represented by a strictly increasing function $s : \NN \to \NN$ which returns, for each $k$, the value $n_k$. The proof involves a diagonalization argument: for each rational $r$, we thin the sequence to guarantee convergence at $r$, and then take a ``diagonal limit'' to construct the required subsequence and limit. To that end, we used a general framework for such diagonalization arguments, provided by Fabian Immler.
+Saying that $(f_{n_k})$ is a subsequence of $(f_n)$ really means that the map $k \mapsto n_k$ is strictly increasing. The statement is represented formally by explicitly asserting the existence of the strictly increasing function $s : \NN \to \NN$ which returns, for each $k$, the value $n_k$. The proof involves a diagonalization argument: for each rational $r$, we thin the sequence to guarantee convergence at $r$, and then take a ``diagonal limit'' to construct the required subsequence and limit. To that end, we used a general framework for such diagonalization arguments, provided by Fabian Immler.
 
-To describe the relevant corollary, we need to introduce a definition. A sequence $(\mu_n)$ of real measures is said to be \emph{tight} if for every $\varepsilon > 0$, there is a finite interval $(a, b]$ such that $\mu_n(a, b] > 1 - \varepsilon$ for all $n$. Roughly, a sequence of probability measures is tight if no mass ``escapes to infinity''; the sequence $(\mu_n)$, where $\mu_n$ is a unit mass at $n$, is an example of a sequence that is \emph{not} tight. Helly's theorem can be used to show that if $(\mu_n)$ is a tight sequence of measures, then for every subsequence $(\mu_{n_k})$ there is a further subsequence $(\mu_{n_{k(j)}})$ and a probability measure $\mu$ such that $(\mu_{n_{k(j)}})$ converges weakly $\mu$ as $j$ approaches infinity.
+To describe the relevant corollary, we need to introduce a definition. A sequence $(\mu_n)$ of real measures is said to be \emph{tight} if for every $\varepsilon > 0$, there is a finite interval $(a, b]$ such that $\mu_n(a, b] > 1 - \varepsilon$ for all $n$. Roughly, a sequence of probability measures is tight if no mass ``escapes to infinity''; the sequence $(\mu_n)$, where $\mu_n$ is a unit mass at $n$, is an example of a sequence that is \emph{not} tight. Helly's theorem can be used to show that if $(\mu_n)$ is a tight sequence of measures, then for every subsequence $(\mu_{n_k})$ there is a further subsequence $(\mu_{n_{k(j)}})$ and a probability measure $\mu$ such that $(\mu_{n_{k(j)}})$ converges weakly to $\mu$ as $j$ approaches infinity.
 \Snippet{thight}
 
 In the Isabelle 2016 distribution, the Helly Selection Theorem and its corollary are proved in \texttt{Helly\_Selection}, and the L\'evy Continuity Theorem is proved in \texttt{Levy}. Immler's general framework for diagonal arguments can be found in the theory \texttt{Diagonal\_Sequence} in \texttt{HOL-Library}.
@@ -597,15 +601,17 @@ Now some of the explicit calculations described in Section~\ref{subsection:calcu
 \]
 which is equal to $1 - t^2\sigma^2 / 2$, since we are assuming $X$ has mean $0$ and variance $\sigma^2$. Plugging $t / \sqrt{n \sigma^2}$ in for $t$, we obtain an approxation to $\psi(t / \sqrt{n \sigma^2})$, and substituting that in the expression for $\ph_n(t)$, we see that $\ph_n(t)$ is approximated by $(1 - \frac{t^2}{2n})^n$. This last expression approaches $e^{-t^2/2}$ as $t$ approaches infinity, as required.
 
-The Central Limit Theorem is found in the file \texttt{Central\_Limit\_Theorem}. The formal version of the proof we have just sketched is given in its entirety in the appendix. 
+The Central Limit Theorem is found in the file \texttt{Central\_Limit\_Theorem}. The formal version of the proof we have just sketched is given in its entirety in the appendix. (As above, we derive the mean zero case first, and then derive Theorem~\ref{theorem:clt} as a corollary.)
 
 \section{Reflections}
 \label{section:reflections}
 
+We are by no means the first to formalize substantial portions of analysis in an interactive theorem prover. Both HOL4 and HOL Light have extensive theories of multivariate real analysis, and HOL Light has a substantial theory of complex analysis as well \cite{harrison:07a}. The real analysis library in HOL Light played an important part in the Flyspeck project formalization of Thomas Hales' proof of the Kepler conjecture \cite{hales:et:al:15}, and Isabelle's real analysis library has also been used to formalize properties of dynamical systems \cite{immler:traut:16}. Substantial portions of measure theory and measure-theoretic probability have been formalized in HOL4 \cite{mhamdi:et:al:11,qasim:et:al:16}. The C-CoRN and Coquelicot projects \cite{krebbers:spitters:11,boldo:et:al:12} provide a libraries for real analysis based on dependent type theory for the Coq proof assistant. It would take us too far afield to discuss all this work and compare their approaches to ours, so, instead, we will focus on our own formalization efforts and try to convey some of the lessons we learned.
+
 \subsection{Dealing with partial functions}
 \label{subsection:partial}
 
-In the logical framework of type theory, where every function is assumed to be total, one often has to deal with partial functions, such as limits, derivatives, integrals, and so on. One common way of proceeding is to represent partial functions as relations. For example, in Isabelle one can write \texttt{f~sums~l} to indicate that the finite partial sums $\sum_{i < n} f i$ converge to $l$ as $n$ approaches infinity. Another option is to make the function question total by assigning an arbitrary value at inputs where it would otherwise be undefined, and use a predicate to pick out the ``real'' values. For example, \texttt{summable f} is defined to mean that there exists an \texttt{l} such that \texttt{f sums l}, and \texttt{suminf f} specifies that value of \texttt{l}, if it exists, and $0$ otherwise. It is not hard to see that the expression \texttt{f sums l} is then equivalent to the conjunction $\mathtt{summable~f} \wedge \mathtt{suminf~f } = \mathtt{l}$. The expression \texttt{suminf f} allows us to refer to the value of the infinite sum, as we do when we write $\sum_{i = 0}^\infty f(i)$ in ordinary mathematics. In particular, this expression can occur in a more complicated expression; for example, we can write $\mathtt{suminf \; f} + \mathtt{suminf \; g}$. But one typically also wants to know that \texttt{summable f} holds, since otherwise the value of \texttt{suminf f} may be meaningless.
+In the logical framework of type theory, where every function is assumed to be total, one often has to deal with partial functions, such as limits, derivatives, integrals, and so on. One common way of proceeding is to represent partial functions as relations. For example, in Isabelle one can write \texttt{f~sums~l} to indicate that the finite partial sums $\sum_{i < n} f i$ converge to $l$ as $n$ approaches infinity. Another option is to make the function in question total by assigning an arbitrary value at inputs where it would otherwise be undefined, and use a predicate to pick out the ``real'' values. For example, \texttt{summable f} is defined to mean that there exists an \texttt{l} such that \texttt{f sums l}, and \texttt{suminf f} specifies that value of \texttt{l}, if it exists, and $0$ otherwise. It is not hard to see that the expression \texttt{f sums l} is then equivalent to the conjunction $\mathtt{summable~f} \wedge \mathtt{suminf~f } = \mathtt{l}$. The expression \texttt{suminf f} allows us to refer to the value of the infinite sum, as we do when we write $\sum_{i = 0}^\infty f(i)$ in ordinary mathematics. In particular, this expression can occur in a more complicated expression; for example, we can write $\mathtt{suminf \; f} + \mathtt{suminf \; g}$. But one typically also wants to know that \texttt{summable f} holds, since otherwise the value of \texttt{suminf f} may be meaningless.
 
 In Isabelle, many partial functions related to analysis, such as limits and derivatives, are represented in this way, with a relation, a predicate asserting the existence of a value, and a function that returns an arbitrary value when the predicate fails. An exception is the notion of a measure on a measure space: the expression $\mathtt{s} \in \mathtt{sets \; M}$ expresses that $s$ is a measurable set for the measure \texttt{M}, in which case, \texttt{measure M s} is the measure of \texttt{s}.
 
@@ -614,7 +620,7 @@ In the measure theory library, however, integration is handled in the usual way:
 \Snippet{integrableadd}
 This sometimes got us into trouble. A couple of times, we used theorems in the library, only to realize that the accompanying integrability assertions were missing; we then had to revise the library to provide these additional assertions. We often made the same mistake in our own developments, and in proofs we often found that we had to carry out parallel calculations: after calculating an integral, we had to go back and prove that the expression we began with was in fact integrable. In some cases, Isabelle's automation could dispel integrability claims for us, but typically in those cases the calculations could also be carried out automatically. On the other hand, writing formulas with integrals rather than the \texttt{has\_integral} predicate makes them look much more like the formulas one finds in an ordinary mathematical textbook.
 
-We do not know the ideal solution to the problem. In a dependent type theory with propositions as types, one could require \texttt{integrable f} as a ``precondition'' --- a hidden argument --- to an expression \texttt{integral f}, though that might give rise to other difficulties. In simple type theory, it seems that one has to choose between using a relational version or using a function together with a definedness predicate. In the latter case, one has to take care to keep the two pieces of information close together.
+We do not know the ideal solution to the problem. In a dependent type theory with propositions as types, one could require \texttt{integrable f} as a ``precondition'' --- a hidden argument --- to an expression \texttt{integral f}. Coq's constructive C-CoRN library uses such an approach \cite{krebbers:spitters:11}, but the Coquelicot project uses a classical axiomatization of the real numbers to totalize limits \cite{boldo:et:al:12}. In simple type theory, it seems that one has to choose between using a relational version or using a function together with a definedness predicate. In the latter case, one has to take care to keep the two pieces of information close together.
 
 \subsection{Strategies for limit proofs}
 
@@ -622,13 +628,13 @@ It is not always obvious how to carry out limit proofs at the right level of for
 
 Even using $\varepsilon$-proofs in a metric-space setting can be formally inconvenient. Many textbook proofs adopt a style whereby various $\varepsilon$'s are obtained in the course of the argument, for example, as diameters of neighborhoods in open sets or neighborhoods in the range of continuous functions. The properties and all these $\varepsilon$'s are combined by computing a minimal $\varepsilon$ value and proving it correct. Textbooks often elide such details by taking an $\varepsilon$ that is ``sufficiently small.'' 
 
-Formally, it is often better to avoid the uses of $\varepsilon$ values entirely, showing instead that the required properties give rise to a set in the relevant filter. For example, suppose that the functions $f$ and $g_i$, for $i < n$, are continuous at $x$, and that $1 < f~x$ and $f~y \le g_i~y$ around $x$. Suppose further that we want to obtain a neighborhood of $x$ where $f$ is above $1$ and below all the $g_i$s. One approach is to obtain $\varepsilon$ and $\varepsilon_i$'s where $1 < f~y$ where $f~y \le g_i~y$ in the corresponding balls around $x$, and then to compute the minimum of these values, with the special case where $n = 0$. But working with these $\varepsilon$'s is completely auxiliary to our original goal. Instead, we can easily show that $\{ y \mid 1 < f~y \} \cap \bigcap_{i < n} \{ y \mid f~y \le g_i~y \}$ is in the neighborhood filter at $y$, simply using the fact that a filter is closed under finite intersections.
+Formally, it is often better to avoid the uses of $\varepsilon$ values entirely, showing instead that the required properties give rise to a set in the relevant filter. For example, suppose that the functions $f$ and $g_i$, for $i < n$, are continuous at $x$, and that $1 < f~x$ and $f~y \le g_i~y$ around $x$. Suppose further that we want to obtain a neighborhood of $x$ where $f$ is above $1$ and below all the $g_i$s. One approach is to obtain $\varepsilon$ and $\varepsilon_i$'s where $1 < f~y$ where $f~y \le g_i~y$ in the corresponding balls around $x$, and then to compute the minimum of these values, with the special case where $n = 0$. But working with these $\varepsilon$'s is completely auxiliary to our original goal. Instead, we can easily show that $\{ y \mid 1 < f~y \} \cap \bigcap_{i < n} \{ y \mid f~y \le g_i~y \}$ is in the neighborhood filter at $x$, simply using the fact that a filter is closed under finite intersections.
 
 \subsection{Strategies for integrals}
 
 Measure theory gives us two different integrals on measure spaces, the nonnegative Lebesgue integral and the Bochner integral, as described in Section~\ref{subsection:bochner}. The distinction is clear: the Lebesgue integral only requires a measurable function, and handles functions into the nonnegative extended reals $\ennRR$, while the Bochner integral requires an integrable function, but handles functions into arbitrary second-countable Banach spaces. There are two important advantages to using the Lebesgue integral: (1)~measurability is compositional, supporting different measurable spaces, while this is not the case for integrability, and (2)~the extended nonnegative reals include $\infty$, and so no integrability condition is needed for the integral to be closed under addition and constant multiplication. The property \isa{integrable\_iff\_bounded}, which states that a function is integrable if and only if it is bounded, provides a key way to prove integrability. Similarly, a function is integrable if it is measurable and has integrable upper and lower bounds.
 
-A small trick that results in more conveninent proof rules for the Bochner integral is to fix the value of \isa{integral $\mu$ $f$} to $0$ for a non-integrable function $f$. In interactive theorem proving, this is a common way to totalizing a function taking values in a numeric domain. Exploiting this fact avoids some auxiliary integrability rules. For the constant multiplication rules (i.e. multiplication with a real or complex value, scalar multiplication and the inner vector product) we get a rule of the form 
+A small trick that results in more convenient proof rules for the Bochner integral is to fix the value of \isa{integral $\mu$ $f$} to $0$ for a non-integrable function $f$. In interactive theorem proving, this is a common to totalize a function taking values in a numeric domain. Exploiting this fact avoids some auxiliary integrability rules. For the constant multiplication rules (i.e. multiplication with a real or complex value, scalar multiplication and the inner vector product) we get a rule of the form 
 \begin{quote}
 \isa{integral $\mu$ ($\lambda x.~c * f~x$) = $c$ * integral $\mu$ $f$}
 \end{quote}
@@ -642,7 +648,7 @@ with the assumption that $f$ and $g$ are measurable. Similarly, we allow the aff
 \end{quote}
 with the only assumption $c \not= 0$.
 
-Of course, we still have the problems mentioned in Subsection~\ref{subsection:partial}, i.e.~we need to prove integrability separately. But in many analytical proofs, integrability is often proved separately anyhow, with a proof that may have little to do with the calculation of the integral value.
+Of course, we still have the problems mentioned in Subsection~\ref{subsection:partial}, i.e.~we need to prove integrability separately. (Without a proof of integrability, the results may not mean what we think they mean, and they are generally unusable.) But in many analytical proofs, integrability is often proved separately anyhow, with a proof that may have little to do with the calculation of the integral value.
 
 \subsection{Cleanup and length}
 
