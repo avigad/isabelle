@@ -221,24 +221,26 @@ where
 text_raw \<open>}%EndSnippet\<close>
 end
 
-context real_distribution begin
 text_raw \<open>\DefineSnippet{cdfprop1}{\<close>
-lemma cdf_nondecreasing:   "x \<le> y \<Longrightarrow> cdf M x \<le> cdf M y"
+lemma (in finite_borel_measure) cdf_nondecreasing:
+  "x \<le> y \<Longrightarrow> cdf M x \<le> cdf M y"
 text_raw \<open>}%EndSnippet\<close>
   by (rule cdf_nondecreasing)
 
 text_raw \<open>\DefineSnippet{cdfprop2}{\<close>
-lemma cdf_is_right_cont:   "continuous (at_right a) (cdf M)"
+lemma (in finite_borel_measure) cdf_is_right_cont:
+  "continuous (at_right a) (cdf M)"
 text_raw \<open>}%EndSnippet\<close>
   by (rule cdf_is_right_cont)
 
 text_raw \<open>\DefineSnippet{cdfprop3}{\<close>
-lemma cdf_lim_at_bot:      "(cdf M \<longlongrightarrow> 0) at_bot"
+lemma (in finite_borel_measure) cdf_lim_at_bot:
+  "(cdf M \<longlongrightarrow> 0) at_bot"
 text_raw \<open>}%EndSnippet\<close>
   by (rule cdf_lim_at_bot)
 
 text_raw \<open>\DefineSnippet{cdfprop4}{\<close>
-lemma cdf_lim_at_top_prob: "(cdf M \<longlongrightarrow> 1) at_top"
+lemma (in real_distribution) cdf_lim_at_top_prob: "(cdf M \<longlongrightarrow> 1) at_top"
 text_raw \<open>}%EndSnippet\<close>
   by (rule cdf_lim_at_top_prob)
 
@@ -259,7 +261,6 @@ lemma cdf_unique:
   shows "M1 = M2"
 text_raw \<open>}%EndSnippet\<close>
   using assms by (rule cdf_unique)
-end
 
 text_raw \<open>\DefineSnippet{lebesgueintegralcountableadd}{\<close>
 lemma integral_countable_add:

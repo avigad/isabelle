@@ -92,7 +92,7 @@ Here we report on a formalization of the Central Limit Theorem that was carried 
 
 The formalization is also a good test for Isabelle's libraries, proof language, and automated reasoning tools. As we will make clear, the proof draws on a very broad base of facts from analysis, topology, measure theory, and probability theory, providing a useful evaluation of the robustness and completeness of the supporting libraries. Moreover, the concepts build on one another. For example, a measure is a function from a class of sets to the reals, and reasoning about convergence of measures involves reasoning about sequences of such functions. The operation of forming the characteristic function is a functional taking a measure to a function from the reals to the complex numbers, and the convergence of such functionals is used to deduce convergence of measures. The conceptual underpinnings are thus as deep as they are broad, and working with them tests Isabelle's mechanisms for handling abstract mathematical notions.
 
-In Section~\ref{section:overview} we provide an overview of the Central Limit Theorem and the proof that we formalized, following the textbook presentation of Billingsley~\cite{billingsley:95}. In Section~\ref{section:isabelle} we describe the Isabelle proof assistant, and the parts of the library that supported our formalization. In Section~\ref{section:formal} we describe the formal proof itself, and in Section~\ref{section:reflections} we reflect on what we have learned from the effort. 
+In Section~\ref{section:overview} we provide an overview of the Central Limit Theorem and the proof that we formalized, following the textbook presentation of Billingsley~\cite{billingsley:95}. In Section~\ref{section:isabelle} we describe the Isabelle proof assistant, and the parts of the library that supported our formalization. In Section~\ref{section:formal} we describe the formal proof itself, and in Section~\ref{section:reflections} we reflect on what we have learned from the effort.
 
 Our formalization is currently part of the Isabelle library, which can be found online at \url{https://isabelle.in.tum.de/}.\footnote{The probability library in particular can be found at \url{https://isabelle.in.tum.de/dist/library/HOL/HOL-Probability/index.html}.} A preliminary, unpublished report on the formalization can be found on arXiv \cite{avigad:hoelzl:serafin:14}. Our presentation also draws heavily on Serafin's Carnegie Mellon MS thesis \cite{serafin:15}, which provides additional information.
 
@@ -123,21 +123,21 @@ More details on the history of the Central Limit Theorem and its proof can be fo
 
 A \emph{measure space} $(\Omega, \mdl F)$ consists of a set $\Omega$ and a \emph{$\sigma$-algebra $\mdl F$ of subsets of $\Omega$}, that is, a collection of subsets of $\Omega$ containing the empty set and closed under complements and countable unions. Think of $\Omega$ as the set of possible states of affairs, or possible outcomes of an action or experiment, and each element $E$ of $\mdl F$ as representing the set of states or outcomes in which some \emph{event} occurs --- for example, that a card drawn is a face card, or that Spain wins the World Cup. A \emph{probability measure} $\mu$ on this space is a function that assigns a value $\mu(E)$ in $[0, 1]$ to each event $E$, subject to the following conditions:
 \begin{enumerate}
- \item $\mu(\emptyset) = 0$, 
+ \item $\mu(\emptyset) = 0$,
  \item $\mu(\Omega) = 1$, and
  \item $\mu$ is countably additive: if $(E_i)$ is any sequence of disjoint events in $\mdl F$, then $\mu(\bigcup_i E_i) = \sum_i \mu(E_i)$.
 \end{enumerate}
-Intuitively, $\mu(E)$ is the ``probability'' that $E$ occurs. 
+Intuitively, $\mu(E)$ is the ``probability'' that $E$ occurs.
 
 The collection $\mdl B$ of \emph{Borel subsets} of the real numbers is the smallest $\sigma$-algebra containing all intervals $(a, b)$. A \emph{random variable} $X$ on the measure space $(\Omega, \mdl F)$ is a measurable function from $(\Omega, \mdl F)$ to $(\RR, \mdl B)$. Saying $X$ is measurable means that for every Borel subset $B$ of the real numbers, the set $\{ \omega \in \Omega \; | \; X(\omega) \in B \}$ is in $\mdl F$. Think of $X$ as some real-valued measurement that one can perform on the outcome of the experiment, in which case, the measurability of $X$ means that if we are given any probability measure $\mu$ on $(\Omega, \mdl F)$, then for any Borel set $B$ it makes sense to talk about ``the probability that $X$ is in $B$.'' In fact, if $X$ is a random variable, then any measure $\mu$ on $(\Omega, \mdl F)$ gives rise to a measure $\nu$ on $(\RR, \mdl B)$, defined by $\nu(B) = \mu ( \{ \omega \in \Omega \; | \; X (\omega) \in B \})$. A probability measure on $(\RR, \mdl B)$ is called a \emph{real distribution}, or, more simply, a \emph{distribution}, and the measure $\nu$ just described is called \emph{the distribution of $X$}.
 
 If $X$ is a random variable, the \emph{mean} or \emph{expected value} of $X$ with respect to a probability measure $\mu$ is $\int X d\mu$, the integral of $X$ with respect to $\mu$. If $m$ is the mean, the \emph{variance} of $X$ is $\int (X - m)^2 d\mu$, a measure of how far, on average, we should expect $X$ to be from its mean.
 
-Note that passing from $\mu$ and $X$ to its distribution $\nu$ means that instead of worrying about the probability that some abstract event occurs, we focus more concretely on the probability that some measurement on the outcome lands in some set of real numbers. In fact, many theorems of probability theory do not really depend on the abstract space $(\Omega, \mdl F)$ on which $X$ is defined, but rather the associated distribution on the real numbers. Nonetheless, it is often more intuitive and convenient to think of the real distribution as being the distribution of a random variable (and, indeed, any real distribution can be represented that way). 
+Note that passing from $\mu$ and $X$ to its distribution $\nu$ means that instead of worrying about the probability that some abstract event occurs, we focus more concretely on the probability that some measurement on the outcome lands in some set of real numbers. In fact, many theorems of probability theory do not really depend on the abstract space $(\Omega, \mdl F)$ on which $X$ is defined, but rather the associated distribution on the real numbers. Nonetheless, it is often more intuitive and convenient to think of the real distribution as being the distribution of a random variable (and, indeed, any real distribution can be represented that way).
 
 One way to define a real distribution is in terms of a \emph{density}. For example, in the case where $\Omega = \{1, 2, 3, 4, 5, 6\}$, we can specify a probability on all the subsets of $\Omega$ by specifying the probability of each of the events $\{1\}, \{2\}, \ldots, \{6\}$. More generally, we can specify a distribution $\mu$ on $\RR$ by specifying a function $f$ such that for every interval $(a, b)$, $\mu((a, b)) = \int_a^b f x \; \mathit{dx}$. The measure $\mu$ is then said to be the real distribution with density $f$. In particular, the \emph{normal distribution} with mean $m$ and variance $\sigma^2$ is defined to be the real distribution with density function
 \[
-f(x) = \frac{1}{\sigma \sqrt{2 \pi}} e^\frac{-(x - m)^2}{2 \sigma^2}. 
+f(x) = \frac{1}{\sigma \sqrt{2 \pi}} e^\frac{-(x - m)^2}{2 \sigma^2}.
 \]
 The graph of $f$ is the bell-shaped curve centered at $m$. When $m = 0$ and $\sigma = 1$, the associate real distribution is called the \emph{standard normal distribution}.
 
@@ -183,7 +183,7 @@ Contemporary proofs of the Central Limit Theorem rely on the use of \emph{charac
 \]
 In words, $\ph(t)$ is the integral of the function $f(x) = e^{itx}$ over the whole real line, with respect to the measure $\mu$. Notice that for each $t \neq 0$, the function $e^{itx}$ is periodic with period $2 \pi / t$. It might be helpful to think of $e^{itx}$ as like a sine or cosine; indeed, $e^{itx}= \cos (t x) + i \sin (t x)$. Notice that $\ph(0)$ is equal to $1$, the measure of the entire real line. The characteristic function of a real distribution $\mu$ is a Fourier transform of the measure $\mu$, and when $t \neq 0$, $\ph(t)$ ``detects'' periodicity in the way that the real distribution $\mu$ distributes its ``weight'' over different parts of the real line.
 
-A key property of characteristic functions is the fact that if $X_1$ and $X_2$ are independent random variables, then the characteristic function of $X_1 + X_2$ is the product of the characteristic function of $X_1$ and the characteristic function of $X_2$. Of course, this extends to sums with any finite number of terms, and the resulting products are often convenient to work with. 
+A key property of characteristic functions is the fact that if $X_1$ and $X_2$ are independent random variables, then the characteristic function of $X_1 + X_2$ is the product of the characteristic function of $X_1$ and the characteristic function of $X_2$. Of course, this extends to sums with any finite number of terms, and the resulting products are often convenient to work with.
 
 The \emph{L\'evy Uniqueness Theorem} asserts that if $\mu_1$ and $\mu_2$ have the same characteristic function, then $\mu_1 = \mu_2$. In other words, a measure $\mu$ can be ``reconstructed'' from its characteristic function, and the characteristic function of a measure determines the measure uniquely.  Let $(\mu_n)$ be a sequence of distributions, where each $\mu_n$ has characteristic function $\ph_n$, and let $\mu$ be a distribution with characteristic function $\ph$. The \emph{L\'evy Continuity Theorem} states that $\mu_n$ converges to $\mu$ weakly if and only if $\ph_n(t)$ converges to $\ph(t)$ for every $t$.
 
@@ -210,7 +210,7 @@ Isabelle has two mechanisms for reasoning algebraically and generically. The fir
 
 Type classes are limited by the fact that they can only be parameterized by a single type parameter. An even more serious limitation is that, in simple type theory, types cannot depend on elements of other types. For example, there is no way of using type classes to reason about $\ZZ_n$, the integers modulo a parameter $n$, as an instance of a ring. For that purpose, Isabelle has a more flexible mechanism, \emph{locales} \cite{ballarin:06}, which, however, cannot take advantage of all of the benefits of the ambient type theory. Locales do \emph{not} constitute an axiomatic extension; in terms of the underlying logic, a locale is nothing more than a predicate on some data. But Isabelle provides mechanisms for reasoning ``in'' such a locale, that is, fixing some data and the locale assumptions, and reasoning on that basis. Locales can also introduce notation that implicitly depends on the locale parameters. Isabelle provides mechanisms for instantiating locales, either with fixed types, or on the fly in a proof: one shows (typically with the help of automation) that some data satisfy the locale axioms, at which point all the definitions and theorems of the locale are made available, pre-instantiated with the relevant data and facts. For example, once we show that a relation satisfies the axioms of the \texttt{partial\_order} locale, we can use notation and facts about partial orders freely for that relation, without having to repeatedly cite the fact that the relation is a partial order.
 
-In the measure theory library, as described in Sections~\ref{subsection:measure:theory} and \ref{subsection:probability}, locales are used to reason about algebras and $\sigma$-algebras, for example. Moreover, once the type of measurable spaces has been introduced, locales are used to introduce extra hypotheses, for example, the hypothesis that a measure space is finite, or is a probability space. 
+In the measure theory library, as described in Sections~\ref{subsection:measure:theory} and \ref{subsection:probability}, locales are used to reason about algebras and $\sigma$-algebras, for example. Moreover, once the type of measurable spaces has been introduced, locales are used to introduce extra hypotheses, for example, the hypothesis that a measure space is finite, or is a probability space.
 
 \subsection{Topology and Limits}
 \label{subsection:topology}
@@ -228,7 +228,7 @@ Conventional reasoning about limits was ubiquitous in our formalization. Everyda
 Here, the source and target spaces can be any topological space, including metric spaces or the natural numbers with the order topology. One can consider limits as $x$ approaches a value $a$, or $\infty$, or $-\infty$. One can also restrict the allowed values for $x$ and consider the limit as $x$ approaches $a$ within a set $s$; saying $x$ approaches $a$ from the left (where $x$ and $a$ are real-valued, for example) is equivalent to saying that $x$ approaches $a$ within the interval $(-\infty, a)$. There is a similar range of variations on the output: $f(x)$ can approach a value, $b$, or $\infty$, or $-\infty$; and it can approach the value from the left, or from the right, or within any subset of the range of $f$. Not only does this threaten a combinatorial explosion of definitions, but also redundancy. For example, assuming $f(x)$ and $g(x)$ converge as $x$ approaches $a$, we have the identity $\lim_{x \to a} (f(x) + g(x)) = \lim_{x \to a} f(x) + \lim_{x \to a} g(x)$, but this also holds under all the variations of convergence in the source.
 
 To handle the many instances of convergence that arose in the formalization, we used Isabelle's elegant library for dealing with limits via filters \cite{hoelzl:et:al:13}. The idea is that when dealing with any notion of limit, the relevant notions of convergence in the source and the target can be represented by \emph{filters}. A {\em filter} over $X$ is a nonempty set $\mathcal F \subseteq \mathcal P(X)$ such that if $A \subseteq B$ and $A \in \mathcal F$, then $B \in \mathcal F$, and if $A, B \in \mathcal F$, then $A \cap B \in \mathcal F$. The general notion of limit in Isabelle, {\tt filterlim f F1 F2}, says, roughly, that the function $f$ converges in the sense of $F_2$ as the input converges in the sense of $F_1$. By specializing $F_1$ and $F_2$ appropriately, we obtain all the variations described in the last paragraph, and more. In addition, theorems can be proved at the appropriate level of generality. For example, we have:
-\Snippet{tendstoadd} 
+\Snippet{tendstoadd}
 Here \isamath{(f \xrightarrow{\hphantom{AAA}} x)~F} is an abbreviation for {\tt filterlim f F (nhds x)}, where {\tt nhds x} is the filter of topological neighborhoods of $x$. This avoids the need to formalize endless variations of the same theorem; we only need to instantiate the general version to the relevant filters. Details can be found in \cite{hoelzl:et:al:13}.
 
 In the Isabelle library, topological facts are found in the standard \texttt{HOL} library, in files such as \texttt{Filter}, \texttt{Topological\_Spaces}, and \texttt{Limits}. Topological notions for the reals, and vector spaces over the reals, can be found in \texttt{Real\_Vector\_Spaces}.
@@ -239,9 +239,9 @@ In the Isabelle library, topological facts are found in the standard \texttt{HOL
 
 Our formalization required the fundamentals of measure theory and integration, as described in any introductory textbook on the subject (including Billingsley). The fundamental development of the subject is well described in the paper ``Three chapters of measure theory'' \cite{hoelzl:heller:11}. Therefore we only summarize key features of this development here, and indicate some of the ways the library has changed as a result of our formalization.
 
-Measure theory requires the use of the \emph{extended nonnegative reals} $\ennRR$, obtained by restricting the usual reals $\RR$ to their non-negative part and adding the value $\infty$. A \emph{$\sigma$-algebra} is represented in Isabelle as a record \texttt{S} depending on a type $\alpha$, which specifies an underlying subset of $\alpha$, a set of elements \texttt{space S}, and a collection of subsets \texttt{sets S} of \texttt{space S} that contains the empty set and is closed under countable unions and complements. These assumptions are specified as a locale. 
+Measure theory requires the use of the \emph{extended nonnegative reals} $\ennRR$, obtained by restricting the usual reals $\RR$ to their non-negative part and adding the value $\infty$. A \emph{$\sigma$-algebra} is represented in Isabelle as a record \texttt{S} depending on a type $\alpha$, which specifies an underlying subset of $\alpha$, a set of elements \texttt{space S}, and a collection of subsets \texttt{sets S} of \texttt{space S} that contains the empty set and is closed under countable unions and complements. These assumptions are specified as a locale.
 
-A \emph{measure space} \texttt{M} extends the notion of a $\sigma$-algebra with a function \texttt{emeasure M} from subsets of $\alpha$ to the extended nonnegative reals, satisfying the usual axioms: the measure of the empty set is $0$, and the measure of a countable disjoint union of sets in the underlying $\sigma$-algebra is equal to sum of the measures of each set in the union (which might be $\infty$). The underlying $\sigma$ algebra corresponds to the usual notion of the collection of \emph{measurable subsets} corresponding to the measure. In Isabelle, for any type $\alpha$, the \texttt{typedef} mechanism is used to specify a new type, $\mathtt{measure} \; \alpha$, consisting of measure spaces on some subset of $\alpha$. 
+A \emph{measure space} \texttt{M} extends the notion of a $\sigma$-algebra with a function \texttt{emeasure M} from subsets of $\alpha$ to the extended nonnegative reals, satisfying the usual axioms: the measure of the empty set is $0$, and the measure of a countable disjoint union of sets in the underlying $\sigma$-algebra is equal to sum of the measures of each set in the union (which might be $\infty$). The underlying $\sigma$ algebra corresponds to the usual notion of the collection of \emph{measurable subsets} corresponding to the measure. In Isabelle, for any type $\alpha$, the \texttt{typedef} mechanism is used to specify a new type, $\mathtt{measure} \; \alpha$, consisting of measure spaces on some subset of $\alpha$.
 
 If $\mdl M$ and $\mdl N$ are two measure spaces, a \emph{measurable function} $f$ from $\mdl M$ to $\mdl N$ (written $f \in \mdl{M} \rightarrow_M \mdl{N}$) is a function between the underlying sets that has the property that the inverse image of any measurable subset of the codomain is a measurable subset of the domain. Note that, in fact, the property of being measurable has nothing to do with the measure; it is really a property of the function with respect to the two associated $\sigma$-algebras. Given a measurable function $f : \mdl M \to \mdl N$, a measure $\mu$ on $\mdl M$ gives rise to a new measure $\nu$ on $\mdl N$, defined by $\nu(A) = \mu(f^{-1} A)$. This is sometimes called a \emph{pushforward measure}, but in Isabelle it is denoted \texttt{distr M N f}, for reasons that are explained in Section~\ref{subsection:probability}. It is defined formally as follows:
 \Snippet{distr}
@@ -250,7 +250,7 @@ Another way to define a measure $\nu$ in terms of a measure $\mu$ on $\mdl M$ is
 \Snippet{density}
 The integral $\int_A^+ f \; d\mu$ is the \emph{nonnegative Lebesgue integral}, defined for functions into $\ennRR$. For measurable functions it has the expected properties: it is closed under addition, constant multiplication, and monotone convergence. It is monotone even for non-measurable functions, which simplifies certain proofs, since measurability is not always easy to prove. Because the nonnegative Lebesgue integral takes values in $\ennRR$, it is well-defined for all measurable functions, even when the integral is infinite.
 
-The library includes a construction of the Borel sets in any topology, and the Carath\'eodory extension theorem. In Isabelle, Lebesgue measure on the reals was initially constructed from the gauge integral, which is discussed in Section~\ref{subsection:real:analysis}. After our formalization, however, the construction was replaced by the more common textbook definition as the $\sigma$-extension of the measure on finite intervals, as described in Section~\ref{subsection:distribution:functions} below. The measure space consisting of Lebesgue measure on the Borel subsets of the reals is denoted \texttt{lborel} in the Isabelle library. 
+The library includes a construction of the Borel sets in any topology, and the Carath\'eodory extension theorem. In Isabelle, Lebesgue measure on the reals was initially constructed from the gauge integral, which is discussed in Section~\ref{subsection:real:analysis}. After our formalization, however, the construction was replaced by the more common textbook definition as the $\sigma$-extension of the measure on finite intervals, as described in Section~\ref{subsection:distribution:functions} below. The measure space consisting of Lebesgue measure on the Borel subsets of the reals is denoted \texttt{lborel} in the Isabelle library.
 
 The fundamentals of measure theory are found in the \texttt{HOL-Probability} library, including \texttt{Sigma\_Algebra}, \texttt{Measure\_Space}, \texttt{Caratheodory}, and \texttt{Lebesgue\_Measure}.
 
@@ -266,8 +266,8 @@ More formally, a function $s$ is \emph{simple Bochner-integrable} if $s$ is Bore
 A Borel-measurable function $f$ is Bochner-integrable if there is a sequence $(s_i)$ of simple Bochner-integrable functions such that:
 \begin{enumerate}
  \item $f$ is the limit of $(s_i)$ in the $L^1$ norm, i.e.~$\lim_{i \rightarrow \infty} \lVert s_i - f \rVert = 0$; and
- \item the sequence of integrals of the functions $s_i$ converges, i.e.~$\lim_{i \rightarrow \infty} \int s_i ~d\mu$ exists. 
-\end{enumerate} 
+ \item the sequence of integrals of the functions $s_i$ converges, i.e.~$\lim_{i \rightarrow \infty} \int s_i ~d\mu$ exists.
+\end{enumerate}
 In that case, the Bochner integral, denoted \isa{LINT x|M. f x} in Isabelle, is defined by
 \[ \int f~d\mu = \lim_{i \rightarrow \infty} \int s_i ~d\mu \]
 
@@ -300,7 +300,7 @@ Various notions of independence are used in probability. Perhaps the most genera
 \Snippet{indepsets}
 If now $(A_i)_{i \in I}$ is a sequence of \emph{events} (rather than collections of events), saying that the sequence $(A_i)$ is independent amounts to saying that the sequence of singletons $(\{A_i\})_{i \in I}$ is an independent sequence of collections.
 \Snippet{indepevents}
-Finally, if $(X_i)_{i \in I}$ is a sequence of random variables with inputs in one measure space, $\mdl M$, and values in another space, $\mdl M'$ (typically, but not necessarily, the reals), saying that the sequence $X_i$ is independent amounts to saying that the sequence of collections of measurable sets 
+Finally, if $(X_i)_{i \in I}$ is a sequence of random variables with inputs in one measure space, $\mdl M$, and values in another space, $\mdl M'$ (typically, but not necessarily, the reals), saying that the sequence $X_i$ is independent amounts to saying that the sequence of collections of measurable sets
 \[
 (\{ X_i^{-1}(A) \; | \; \mbox{$A$ is a measurable subset of $\mdl M'$}\})_{i \in I}.
 \]
@@ -319,7 +319,7 @@ Isabelle's general notion of the derivative is the \emph{Fr\'echet derivative}, 
 
 The characteristic function of a measure is a function from the reals, $\RR$, to the complex numbers, $\CC$. The theory of such functions is much simpler than the theory of functions from $\CC$ to $\CC$, which is the subject of complex analysis. One can view a function $f : \RR \to \CC$ as essentially two functions from $\RR$ to $\RR$, $f^\mathit{re}$ and $f^\mathit{im}$, the first returning the real part and the second returning the imaginary part of the output. Integrals and derivatives of such functions can be understood in terms of the integrals and derivatives of these two parts.
 
-In fact, for differentiation, we did not have to define a new notion of derivative: if we view the complex numbers as a two-dimensional real Banach space, the derivative we need is nothing more than the Fr\'echet derivative. 
+In fact, for differentiation, we did not have to define a new notion of derivative: if we view the complex numbers as a two-dimensional real Banach space, the derivative we need is nothing more than the Fr\'echet derivative.
 
 For integration, the story is more involved. Isabelle's library now has two forms of the integral. The multivariate analysis library generally relies on the gauge integral, which is defined for functions from $\RR^n$ to $\RR$. When we consider the reals, $\RR$, with the usual Lebesgue measure, the Bochner integral and the gauge integral agree on finite intervals, but otherwise the gauge integral is slightly more general: for a function $f : \RR \to \RR$ to be Bochner-integrable, both the positive and negative parts of $f$ have to have a finite Bochner integral, whereas the gauge integral can accommodate some functions whose positive and negative parts cancel each other out in a suitable fashion. Nonetheless, for the vast majority of applications, the Bochner integral is quite sufficient. Since our formalization required integration with general measures and spaces in addition to the usual integration over $\RR^n$, we used the Bochner integral throughout.
 
@@ -356,19 +356,19 @@ Manuel Eberl later generalized this to arbitrary Borel measurable functions $f$,
 Another version assumes instead that $f$ is nonnegative, and concludes that $f$ is therefore integrable.
 
 As an example where various uses of these components came together, consider the \emph{sine integral function}. The function $\sin x / x$ is undefined at $0$, but it can be made continuous at $0$ by giving it the value $1$ there. The resulting function is called $\sinc$. The sine integral function is (confusingly) defined to be the indefinite integral of the $\sinc$ function, starting at $0$:
-\[ 
-\fn{Si}(t) = \int_0^t \sinc x \, dx. 
+\[
+\fn{Si}(t) = \int_0^t \sinc x \, dx.
 \]
-The proof of the L\'evy inversion formula uses the fact that 
-\[ 
+The proof of the L\'evy inversion formula uses the fact that
+\[
 \lim_{t \rightarrow \infty} \fn{Si}(t) = \frac{\pi}{2}.
 \]
 A textbook proof (sketched in \cite[Example 18.4]{billingsley:95}) runs as follows. By the fundamental theorem of calculus, we can verify that
-\[ 
-\int_0^t e^{-ux} \sin x \, dx = \frac{1}{1+u^2}[1 - e^{-ut}(u \sin t + \cos t)] 
+\[
+\int_0^t e^{-ux} \sin x \, dx = \frac{1}{1+u^2}[1 - e^{-ut}(u \sin t + \cos t)]
 \]
 by taking the derivative of both sides. Calculating, we can also show that
-\[ 
+\[
 \int_0^t \left( \int_0^\infty |e^{-ux} \sin x| \, du\right) \, dx = \int_0^t x^{-1} |\sin x| \, dx \le t.
 \]
 The fact that the double-integral on the left is finite means that Fubini's theorem may be used to change the order of integration of $e^{-ux} \sin x$ over $(0,t) \times (0, \infty)$. So we have
@@ -382,10 +382,10 @@ Substituting $u = \tan x$ in the first term yields
  \int_0^\infty \frac{du}{1+u^2} = \int_0^{\pi/2} \frac{1}{1 + \tan^2 x} (1 + \tan^2 x) \, dx = \pi/2,
 \]
 and the change of variable $v = ut$ can be used to show that the second integral converges to $0$ as $t \rightarrow \infty$. Hence
-\[ 
+\[
 \lim_{t \rightarrow \infty} \fn{Si}(t) = \lim_{t \rightarrow \infty} \int_0^t \frac{\sin x}{x} \, dx = \frac{\pi}{2},
 \]
-as required. 
+as required.
 
 Proving this result required a tremendous amount of formal machinery: not only suitable forms of substitution, but also Fubini's theorem, the fundamental theorem of calculus, integration by parts, integral comparisons, properties of limits, and properties of the tangent function. It also required a lot of work, establishing that the relevant functions were continuous, integrable, and so on. It was somewhat demoralizing that a small calculus exercise required so much effort, but it is a good illustration of the infrastructure that is needed to carry out the kinds of calculus computations that come up routinely in engineering, modeling, and the sciences. We faced a similar calculus exercise in computing the moments of the normal distribution, as described in Section~\ref{subsection:characteristic}.
 
@@ -403,7 +403,7 @@ The cumulative distribution function (or \emph{cdf}) is sometimes also called, m
 
 \Snippet{cdf}
 
-It is not hard to see that the distribution function $F_\mu$ of a measure $\mu$ is nondecreasing and right-continuous, and satisfies $\lim_{x \rightarrow -\infty} F_\mu(x) = 0$.
+It is not hard to see that the distribution function $F_\mu$ of a finite Borel measure~$\mu$ is nondecreasing and right-continuous, and satisfies $\lim_{x \rightarrow -\infty} F_\mu(x) = 0$.
 
 \Snippet{cdfprop1}
 \Snippet{cdfprop2}
@@ -415,16 +415,16 @@ In the case of a probability measure, we have the additional property that $\lim
 \Snippet{cdfprop4}
 Conversely, any function $F$ satisfying all four properties is a probability measure:
 \Snippet{intervalmeasure}
-Recall that \texttt{real\_distribution} is the name of the locale for probability measures on the Borel subsets of the reals. So, for any function \texttt{F} satisfying the four properties above, \texttt{interval\_measure F} is the measure whose cdf is exactly \texttt{F}. The use of the word ``the'' is justified by the fact that the association is unique, in the sense that if two real distributions have the same cumulative distribution function, then they are equal: 
+Recall that \texttt{real\_distribution} is the name of the locale for probability measures on the Borel subsets of the reals. So, for any function \texttt{F} satisfying the four properties above, \texttt{interval\_measure F} is the measure whose cdf is exactly \texttt{F}. The use of the word ``the'' is justified by the fact that the association is unique, in the sense that if two real distributions have the same cumulative distribution function, then they are equal:
 \Snippet{cdfunique}
-Thus one can pass freely between talk of measures on $\RR$ and of their distribution functions, a key fact in the proof of the CLT. 
+Thus one can pass freely between talk of measures on $\RR$ and of their distribution functions, a key fact in the proof of the CLT.
 
 In the Isabelle 2016 distribution, the construction of Lebesgue measure on the reals as a Lebesgue-Stieltjes measure is in the theory \texttt{Lebesgue\_Measure}, and the correspondence between measures and their distribution functions is developed in \texttt{Distributions}.
 
 \subsection{Automation}
 \label{subsection:automation}
 
-To improve automation, Isabelle's multivariate analysis library provides a large set of introduction rules, to establish things like openness or closedness of sets or continuity of functions. Continuity is nicely reduced by compositionality; if we know that two functions are continuous, their composition is again continuous. Applying this as a rule requires matching terms of the form $f~(g~x)$ where both $f$ and $g$ are variables. But this is often not the right choice. The straightfoward way to express that functions like multiplication and $\ln$ are continuous is to write $\mathtt{continuous\_on}~(\RR \times \RR)~(\lambda (x, y).~x * y)$ and $\mathtt{continuous\_on}~(0, \infty]~\ln$. The composition rule is then not sufficient to prove continuity of $\lambda x.~\ln (1 + x * x)$, because it does not accommodate binary operations like $+$ and $*$. In addition, the composition rule does not allow for the fact that the domain of $\ln$ has to be restricted to the nonnegative integers. 
+To improve automation, Isabelle's multivariate analysis library provides a large set of introduction rules, to establish things like openness or closedness of sets or continuity of functions. Continuity is nicely reduced by compositionality; if we know that two functions are continuous, their composition is again continuous. Applying this as a rule requires matching terms of the form $f~(g~x)$ where both $f$ and $g$ are variables. But this is often not the right choice. The straightfoward way to express that functions like multiplication and $\ln$ are continuous is to write $\mathtt{continuous\_on}~(\RR \times \RR)~(\lambda (x, y).~x * y)$ and $\mathtt{continuous\_on}~(0, \infty]~\ln$. The composition rule is then not sufficient to prove continuity of $\lambda x.~\ln (1 + x * x)$, because it does not accommodate binary operations like $+$ and $*$. In addition, the composition rule does not allow for the fact that the domain of $\ln$ has to be restricted to the nonnegative integers.
 
 A simple solution to these two problems is to state continuity rules \emph{precomposed} with arbitrary continuous functions. For example, we can state the following rules for arbitrary $f$ and $g$:
 \begin{mathpar}
@@ -448,7 +448,7 @@ An example of the power of such rule sets is given by the proof that the predica
 \[ \forall i>0.~ \exists j>0.~ \forall y\,z.~ d(x, y) < \frac{1}{j} \land
   d(x, z) < \frac{1}{j} \implies d(f(y), f(z)) \le \frac{1}{i}~. \]
 %
-Then the proof that this is measurable is a straightforward application of rules, as follows: (1) the quantifiers over $i$ and $j$ are countable, hence measurable; (2) we get into a closed set by eliminating the quantifiers over $y$ and $z$; (3) for the implication, the right-hand side is constant, hence closed; and (4) the left-hand side is open, as it is a strict inequality between two continuous functions. 
+Then the proof that this is measurable is a straightforward application of rules, as follows: (1) the quantifiers over $i$ and $j$ are countable, hence measurable; (2) we get into a closed set by eliminating the quantifiers over $y$ and $z$; (3) for the implication, the right-hand side is constant, hence closed; and (4) the left-hand side is open, as it is a strict inequality between two continuous functions.
 
 \section{The proof of the Central Limit Theorem}
 \label{section:formal}
@@ -468,14 +468,14 @@ The following are equivalent:
  \item $\mu_n \Rightarrow \mu$.
  \item $\int f \; d\mu_n$ approaches $\int f \; d\mu$ for every bounded function $f$ that is continuous almost everywhere.
  \item $\int f \; d\mu_n$ approaches $\int f \; d\mu$ for every bounded, continuous function $f$.
- \item If $A$ is any Borel set, $\partial A$ denotes the topological boundary of $A$, and $\mu(\partial A) = 0$, then $\mu_n(A)$ approaches $\mu(A)$. 
+ \item If $A$ is any Borel set, $\partial A$ denotes the topological boundary of $A$, and $\mu(\partial A) = 0$, then $\mu_n(A)$ approaches $\mu(A)$.
 \end{enumerate}
 \end{theorem}
-The theorem is interesting in that it combines measure-theoretic notions (measures and the integral) with topological notions (continuity and topological boundaries). The proof from 1 to 2 uses Skorohod's theorem. This states that if $(\mu_n)$ is a sequence of real distributions that converges to a real distribution $\mu$, there is a sequence $(Y_n)$ of random variables and another random variable $Y$, all defined on a common probability space, such that each $Y_n$ has distribution $\mu_n$, $Y$ has distribution $\mu$, and $Y_n$ converges to $Y$ pointwise. In other words, Skorohod's theorem tells us that $(\mu_n)$ and $\mu$ can be represented in a particularly nice way. 
+The theorem is interesting in that it combines measure-theoretic notions (measures and the integral) with topological notions (continuity and topological boundaries). The proof from 1 to 2 uses Skorohod's theorem. This states that if $(\mu_n)$ is a sequence of real distributions that converges to a real distribution $\mu$, there is a sequence $(Y_n)$ of random variables and another random variable $Y$, all defined on a common probability space, such that each $Y_n$ has distribution $\mu_n$, $Y$ has distribution $\mu$, and $Y_n$ converges to $Y$ pointwise. In other words, Skorohod's theorem tells us that $(\mu_n)$ and $\mu$ can be represented in a particularly nice way.
 \Snippet{skorohod}
 Proving Skorohod's theorem formally presented a number of technical challenges. One was that we needed to choose a continuity point of an arbitrary probability measure in an arbitrary open interval, that is, a real number $x$ in an open interval $I$ such that the measure of $\{x\}$ is zero. To that end, we showed that the number of atoms of a measure (that is, points $x$ such that $\{x\}$ has strictly positive measure) is countable:
 \Snippet{countableatoms}
-The result then follows from the fact that any open interval in the reals is uncountable. 
+The result then follows from the fact that any open interval in the reals is uncountable.
 
 The implication from 2 to 3 is immediate. Notice that 1 is equivalent to saying that for every point $x$ of continuity of the measure $\mu$, $\int \chi_{(-\infty,x]} \; d\mu_n$ approaches $\int \chi_{(-\infty,x]} \; d\mu$, where $\chi_{(-\infty,x]}$ is the characteristic function of the interval $(-\infty,x]$. The implication from 3 to 1 is obtained by approximating this characteristic function by continuous step functions whenever $x$ is a point of continuity. The implication from 4 to 1 is easy, noticing that $(-\infty,x]$ is a set of the specified type, whenever $x$ is a point of continuity of $\mu$. To complete the proof of the theorem, it is enough to prove that 2 implies 4. This implication is also not hard, once we show that the characteristic function $\chi_A$ is bounded and continuous at any point not on the boundary.
 
@@ -516,7 +516,7 @@ The formal proof is as follows:
 We also needed explicit approximations to the characteristic functions of a random variable, obtained using the calculation described at the beginning of Section~\ref{subsection:calculus}. One of the results we used is as follows:
 \Snippet{charapprox}
 
-Finally, we needed to compute the characteristic function $\ph$ of the standard normal distribution, and show $\ph(t) = e^{-t^2/2}$. Establishing this fact took more work than we thought it would. Many textbook proofs of this invoke facts from complex analysis that were unavailable to us. Billingsley \cite[page 344]{billingsley:95} sketches an elementary proof, which required calculating the moments and absolute moments of the standard normal distribution. This is where the calculations of $\int_{-\infty}^\infty x^k e^{-x^2 / t} \; dx$, mentioned in Section~\ref{subsection:calculus}, were needed. Specifically, we have for even $k$, 
+Finally, we needed to compute the characteristic function $\ph$ of the standard normal distribution, and show $\ph(t) = e^{-t^2/2}$. Establishing this fact took more work than we thought it would. Many textbook proofs of this invoke facts from complex analysis that were unavailable to us. Billingsley \cite[page 344]{billingsley:95} sketches an elementary proof, which required calculating the moments and absolute moments of the standard normal distribution. This is where the calculations of $\int_{-\infty}^\infty x^k e^{-x^2 / t} \; dx$, mentioned in Section~\ref{subsection:calculus}, were needed. Specifically, we have for even $k$,
 \Snippet{momenteven}
 and for odd $k$,
 \Snippet{momentodd}
@@ -526,25 +526,25 @@ In the Isabelle 2016 distribution, characteristic functions are defined in the t
 
 \subsection{L\'evy Inversion and Uniqueness}
 
-In Fourier analysis, an ``inversion theorem'' says that a function can be recovered from its Fourier transform, under suitable hypotheses and in a suitable sense. Along those lines, the L\'evy Inversion and Uniqueness Theorems say that a measure can be recovered from its characteristic function. 
+In Fourier analysis, an ``inversion theorem'' says that a function can be recovered from its Fourier transform, under suitable hypotheses and in a suitable sense. Along those lines, the L\'evy Inversion and Uniqueness Theorems say that a measure can be recovered from its characteristic function.
 
 More precisely, the L\'evy Inversion Theorem states the following:
 \begin{theorem}
 Let $\mu$ be a probability measure, and $\ph$ be the characteristic function of $\mu$. If $a$ and $b$ are continuity points of $\mu$ and $a < b$, then
-\[ 
-\mu (a,b] = \lim_{T \rightarrow \infty} \frac{1}{2\pi} \int_{-T}^T \frac{e^{-ita} - e^{-itb}}{it} \ph(t) \, dt. 
+\[
+\mu (a,b] = \lim_{T \rightarrow \infty} \frac{1}{2\pi} \int_{-T}^T \frac{e^{-ita} - e^{-itb}}{it} \ph(t) \, dt.
 \]
 \end{theorem}
 
 The proof is a long and subtle calculation. Let $I(T)$ denote the expression after the limit. Expanding the definition of $\ph(t)$ and appealing to Fubini's theorem to switch the order of the two integrals, we obtain
 \[
-I(T) = \frac{1}{2\pi} \int_{-\infty}^\infty \int_{-T}^T \frac{e^{it(x-a)} - e^{it(x-b)}}{it} \, dt \, \mu(dx). 
+I(T) = \frac{1}{2\pi} \int_{-\infty}^\infty \int_{-T}^T \frac{e^{it(x-a)} - e^{it(x-b)}}{it} \, dt \, \mu(dx).
 \]
 The idea is that as $T$ approaches $\infty$, the inner integral approaches a step function which jumps from $0$ to $1$ at $a$ and then back down to $0$ at $b$. This is shown by expanding the complex exponential in terms of $\sin$ and $\cos$, using properties of the sine integral, and manipulating integrals and limits.
 
 It is not hard to show that fixing the values of a measure on intervals $(a, b]$ as above is enough to determine the measure on all Borel sets. Thus the Inversion Theorem has the following result, known as the Uniqueness Theorem, as an important corollary:
 \begin{theorem}
-If $\mu_1$ and $\mu_2$ are probability measures and $\ph_{\mu_1} = \ph_{\mu_2}$, then $\mu_1 = \mu_2$. 
+If $\mu_1$ and $\mu_2$ are probability measures and $\ph_{\mu_1} = \ph_{\mu_2}$, then $\mu_1 = \mu_2$.
 \end{theorem}
 In our formalization, this is expressed simply as follows:
 \Snippet{levyunique}
@@ -560,7 +560,7 @@ The other direction is a lot harder. Here is an outline of the proof:
 \begin{enumerate}
  \item Use a compactness argument to show that every subsequence $(\mu_{n_k})$ of $(\mu_n)$ has a weakly convergent subsequence.
  \item Suppose, for the sake of contradiction, $(\mu_n)$ does not converge weakly to $\mu$. Then there is a subsequence $(\mu_{n_k})$ such that no subsequence of \emph{that} can converge weakly to $\mu$.
- \item By 1, this particular sequence $(\mu_{n_k})$ converges weakly to some measure, $\nu$. 
+ \item By 1, this particular sequence $(\mu_{n_k})$ converges weakly to some measure, $\nu$.
  \item By the ``only if'' direction, already proved, $\ph_{n_k}$ converges pointwise to the characteristic function of $\nu$.
  \item Since, by hypothesis, $\ph_n(t)$ converges to $\ph(t)$ for every $t$, the characteristic function of $\nu$ must be $\ph$.
  \item By the Uniqueness Theorem, this implies that $\nu = \mu$, contrary to the choice of $(\mu_{n_k})$ in 2.
@@ -568,7 +568,7 @@ The other direction is a lot harder. Here is an outline of the proof:
 
 The necessary compactness principle is a consequence of the \emph{Helly Selection Theorem}, which we now describe. Although the proof of this theorem and its consequence take up only a page-and-a-half in Billingsley's textbook, these were among the most subtle components of our formalization. The theorem states the following:
 \begin{theorem}
-Let $(f_n)_{n \in \NN}$ be a uniformly bounded sequence of nondecreasing, right continuous functions. Then there are a subsequence $(f_{n_k})_{k \in \NN}$ and a nondecreasing, right-continuous function $F$ such that $\lim_k f_{n_k}(x) = F(x)$ at continuity points of $F$.  
+Let $(f_n)_{n \in \NN}$ be a uniformly bounded sequence of nondecreasing, right continuous functions. Then there are a subsequence $(f_{n_k})_{k \in \NN}$ and a nondecreasing, right-continuous function $F$ such that $\lim_k f_{n_k}(x) = F(x)$ at continuity points of $F$.
 \end{theorem}
 In our formalization, this is expressed as follows:
 \Snippet{helly}
@@ -585,7 +585,7 @@ Proving the Central Limit Theorem is now just a matter of putting the pieces tog
 \[
  S'_n = \sum_{i < n} X_i / \sqrt {n \sigma^2}
 \]
-be the normalized sums. Our goal is to show that the distributions of $S'_n$ converge weakly to the standard normal distribution. 
+be the normalized sums. Our goal is to show that the distributions of $S'_n$ converge weakly to the standard normal distribution.
 
 For each $n$, let $\ph_n$ be the characteristic function of $S'_n$. By the L\'evy continuity theorem, it suffices to show that $\ph_n$ approaches the characteristic function of the standard normal distribution pointwise. In other words, we need to show that for every $t$, $\ph_n(t)$ approaches $e^{-t^2/2}$.
 
@@ -597,7 +597,7 @@ Since each $X_i$ has the same distribution, all the $X_i$'s have the same charac
 \end{align*}
 Now some of the explicit calculations described in Section~\ref{subsection:calculus} can be used to show that $\psi(t)$ is well approximated by
 \[
-1 + it \int X \, d\mu + \frac{t^2}{2} \int X^2 d\mu, 
+1 + it \int X \, d\mu + \frac{t^2}{2} \int X^2 d\mu,
 \]
 which is equal to $1 - t^2\sigma^2 / 2$, since we are assuming $X$ has mean $0$ and variance $\sigma^2$. Plugging $t / \sqrt{n \sigma^2}$ in for $t$, we obtain an approxation to $\psi(t / \sqrt{n \sigma^2})$, and substituting that in the expression for $\ph_n(t)$, we see that $\ph_n(t)$ is approximated by $(1 - \frac{t^2}{2n})^n$. This last expression approaches $e^{-t^2/2}$ as $t$ approaches infinity, as required.
 
@@ -626,7 +626,7 @@ We do not know the ideal solution to the problem. In a dependent type theory wit
 
 It is not always obvious how to carry out limit proofs at the right level of formal abstraction. With measure theory, it is often advantageous to adopt an order-theoretic point of view: instead of proving that a function approaches a certain point in a $\varepsilon$-environment, it is sometimes preferable to do this separately for an upper and lower bound. This is contrary to what is done in Billingsley~\cite{billingsley:95}, where many proofs, like that of the Helly section theorem, are performed by choosing $\varepsilon$'s. That approach works when the domain is the set of real numbers or at least a metric space. But we often needed to use the extended real number structures $\eRR$ or $\ennRR$, for two reasons: (1) we reason about measures which are not necessarily finite, and (2) we reason about $\liminf$'s and $\limsup$'s, which are defined on complete lattices but not on the real numbers. Working with $\varepsilon$'s typically requires us to compute differences, which is difficult on $\eRR$ or $\ennRR$, where subtraction and addition are not as well behaved as they are on $\RR$. For example, if we use metric limits to prove a property on a neighborhood of $f~x$, we may obtain a $\varepsilon > 0$, but we do not immediately have the property $f~x < f~x + \varepsilon$, since this fails for $f~x = \infty$. Using the order topology on extended real number structures, however, we still have limits and filters, but instead of obtaining a $\varepsilon$-neighborhood of a specific point, we get upper and lower bounds on values for which the property still holds. In the previous example, using an order-theoretic limit we instead get an upper bound $y$ with $f~x < y$, and this moreover implies $f~x < \infty$.
 
-Even using $\varepsilon$-proofs in a metric-space setting can be formally inconvenient. Many textbook proofs adopt a style whereby various $\varepsilon$'s are obtained in the course of the argument, for example, as diameters of neighborhoods in open sets or neighborhoods in the range of continuous functions. The properties and all these $\varepsilon$'s are combined by computing a minimal $\varepsilon$ value and proving it correct. Textbooks often elide such details by taking an $\varepsilon$ that is ``sufficiently small.'' 
+Even using $\varepsilon$-proofs in a metric-space setting can be formally inconvenient. Many textbook proofs adopt a style whereby various $\varepsilon$'s are obtained in the course of the argument, for example, as diameters of neighborhoods in open sets or neighborhoods in the range of continuous functions. The properties and all these $\varepsilon$'s are combined by computing a minimal $\varepsilon$ value and proving it correct. Textbooks often elide such details by taking an $\varepsilon$ that is ``sufficiently small.''
 
 Formally, it is often better to avoid the uses of $\varepsilon$ values entirely, showing instead that the required properties give rise to a set in the relevant filter. For example, suppose that the functions $f$ and $g_i$, for $i < n$, are continuous at $x$, and that $1 < f~x$ and $f~y \le g_i~y$ around $x$. Suppose further that we want to obtain a neighborhood of $x$ where $f$ is above $1$ and below all the $g_i$s. One approach is to obtain $\varepsilon$ and $\varepsilon_i$'s where $1 < f~y$ where $f~y \le g_i~y$ in the corresponding balls around $x$, and then to compute the minimum of these values, with the special case where $n = 0$. But working with these $\varepsilon$'s is completely auxiliary to our original goal. Instead, we can easily show that $\{ y \mid 1 < f~y \} \cap \bigcap_{i < n} \{ y \mid f~y \le g_i~y \}$ is in the neighborhood filter at $x$, simply using the fact that a filter is closed under finite intersections.
 
@@ -634,15 +634,15 @@ Formally, it is often better to avoid the uses of $\varepsilon$ values entirely,
 
 Measure theory gives us two different integrals on measure spaces, the nonnegative Lebesgue integral and the Bochner integral, as described in Section~\ref{subsection:bochner}. The distinction is clear: the Lebesgue integral only requires a measurable function, and handles functions into the nonnegative extended reals $\ennRR$, while the Bochner integral requires an integrable function, but handles functions into arbitrary second-countable Banach spaces. There are two important advantages to using the Lebesgue integral: (1)~measurability is compositional, supporting different measurable spaces, while this is not the case for integrability, and (2)~the extended nonnegative reals include $\infty$, and so no integrability condition is needed for the integral to be closed under addition and constant multiplication. The property \isa{integrable\_iff\_bounded}, which states that a function is integrable if and only if it is bounded, provides a key way to prove integrability. Similarly, a function is integrable if it is measurable and has integrable upper and lower bounds.
 
-A small trick that results in more convenient proof rules for the Bochner integral is to fix the value of \isa{integral $\mu$ $f$} to $0$ for a non-integrable function $f$. In interactive theorem proving, this is a common to totalize a function taking values in a numeric domain. Exploiting this fact avoids some auxiliary integrability rules. For the constant multiplication rules (i.e. multiplication with a real or complex value, scalar multiplication and the inner vector product) we get a rule of the form 
+A small trick that results in more convenient proof rules for the Bochner integral is to fix the value of \isa{integral $\mu$ $f$} to $0$ for a non-integrable function $f$. In interactive theorem proving, this is a common to totalize a function taking values in a numeric domain. Exploiting this fact avoids some auxiliary integrability rules. For the constant multiplication rules (i.e. multiplication with a real or complex value, scalar multiplication and the inner vector product) we get a rule of the form
 \begin{quote}
 \isa{integral $\mu$ ($\lambda x.~c * f~x$) = $c$ * integral $\mu$ $f$}
 \end{quote}
-without any assumptions. Also, integrability is invariant under the transformations \isa{distr} and \isa{density}: 
+without any assumptions. Also, integrability is invariant under the transformations \isa{distr} and \isa{density}:
 \begin{quote}
 \isa{integral (distr $\mu$ $\nu$ $f$) $g$ = integral $\mu$ $(g \circ f)$}
 \end{quote}
-with the assumption that $f$ and $g$ are measurable. Similarly, we allow the affine transformation under the integral: 
+with the assumption that $f$ and $g$ are measurable. Similarly, we allow the affine transformation under the integral:
 \begin{quote}
 \isa{integral lborel $f$ = $|c|$ * integral lborel $(\lambda x.~f~(t + c * x))$}
 \end{quote}
@@ -652,7 +652,7 @@ Of course, we still have the problems mentioned in Subsection~\ref{subsection:pa
 
 \subsection{Cleanup and length}
 
-It is impossible to give a meaningful estimate of the time involved in the formalization, as the work was carried out intermittently over a long period of time, and includes time spent learning to use Isabelle by the third author, Serafin, who was an undergraduate student at Carnegie Mellon at the time. When we first obtained a proof of the CLT, we reported that our repository contained about 13,000 lines \cite{avigad:hoelzl:serafin:14}. This included all the general infrastructure and additions to Isabelle's libraries as well as the core parts of the proof. Since then, we have cleaned up and refactored most of our proof scripts, and many of them have been shortened considerably. Subsequently, H\"olzl implemented the Bochner integral, eliminating the need for a separate notion of integration for functions from the reals to the complex numbers. In addition, many of the supporting theorems and facts have been moved to other parts of the Isabelle libraries. 
+It is impossible to give a meaningful estimate of the time involved in the formalization, as the work was carried out intermittently over a long period of time, and includes time spent learning to use Isabelle by the third author, Serafin, who was an undergraduate student at Carnegie Mellon at the time. When we first obtained a proof of the CLT, we reported that our repository contained about 13,000 lines \cite{avigad:hoelzl:serafin:14}. This included all the general infrastructure and additions to Isabelle's libraries as well as the core parts of the proof. Since then, we have cleaned up and refactored most of our proof scripts, and many of them have been shortened considerably. Subsequently, H\"olzl implemented the Bochner integral, eliminating the need for a separate notion of integration for functions from the reals to the complex numbers. In addition, many of the supporting theorems and facts have been moved to other parts of the Isabelle libraries.
 
 The proof of the CLT is now part of the Isabelle distribution. One interesting observation is that, in terms of the number of lines, the majority of effort went into developing the background and general infrastructure. For example, some of our longest files involve general facts about integration:
 \begin{center}
