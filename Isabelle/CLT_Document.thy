@@ -32,13 +32,12 @@ proof -
   interpret \<mu>: real_distribution \<mu>
     by (subst X_distrib [symmetric, of 0], rule real_distribution_distr, simp)
 
-  (* these are equivalent to the hypotheses on X, given X_distr *)
   have \<mu>_integrable [simp]: "integrable \<mu> (\<lambda>x. x)"
     and \<mu>_mean_integrable [simp]: "\<mu>.expectation (\<lambda>x. x) = 0"
     and \<mu>_square_integrable [simp]: "integrable \<mu> (\<lambda>x. x^2)"
     and \<mu>_variance [simp]: "\<mu>.expectation (\<lambda>x. x^2) = \<sigma>\<^sup>2"
-    using assms by (simp_all add: X_distrib [symmetric, of 0] integrable_distr_eq
-                                  integral_distr)
+    using assms by (simp_all add: X_distrib [symmetric, of 0]
+                                  integrable_distr_eq integral_distr)
 
   let ?I = "\<lambda>n t. LINT x|\<mu>. ?m x (\<bar>t / sqrt (\<sigma>\<^sup>2 * n)\<bar> * \<bar>x\<bar> ^ 3)"
   have main: "\<forall>\<^sub>F n in sequentially.
@@ -58,17 +57,17 @@ proof -
 
     have "\<phi> n t = char (distr M borel
        (\<lambda>x. \<Sum>i<n. X i x / sqrt (\<sigma>\<^sup>2 * real n))) t"
-      by (auto simp: \<phi>_def S_def setsum_divide_distrib ac_simps)
+      by (auto simp: \<phi>_def S_def sum_divide_distrib ac_simps)
     also have "\<dots> = (\<Prod> i < n. \<psi>' n i t)"
       unfolding \<psi>'_def
-      apply (rule char_distr_setsum)
+      apply (rule char_distr_sum)
       apply (rule indep_vars_compose2[where X=X])
       apply (rule indep_vars_subset)
       apply (rule X_indep)
       apply auto
       done
     also have "\<dots> = (\<psi> n t)^n"
-      by (auto simp add: * setprod_constant)
+      by (auto simp add: * prod_constant)
     finally have \<phi>_eq: "\<phi> n t = (\<psi> n t)^n" .
 
     have "norm (\<psi> n t - (1 - ?t^2 * \<sigma>\<^sup>2 / 2)) \<le> ?t\<^sup>2 / 6 * ?I n t"
@@ -83,9 +82,9 @@ proof -
 
     have "norm (\<phi> n t - (complex_of_real (1 + (-(t^2) / 2) / n))^n) \<le>
          n * norm (\<psi> n t - (complex_of_real (1 + (-(t^2) / 2) / n)))"
-      using n
-      by (auto intro!: norm_power_diff \<mu>.cmod_char_le_1 abs_leI simp del: of_real_diff
-               simp: of_real_diff[symmetric] divide_le_eq \<phi>_eq \<psi>_def)
+      using n unfolding \<phi>_eq \<psi>_def
+      by (auto intro!: norm_power_diff \<mu>.cmod_char_le_1 abs_leI
+               simp del: of_real_diff simp: of_real_diff[symmetric] divide_le_eq)
     also have "\<dots> \<le> n * (?t\<^sup>2 / 6 * ?I n t)"
       by (rule mult_left_mono [OF **], simp)
     also have "\<dots> = (t\<^sup>2 / (6 * \<sigma>\<^sup>2) * ?I n t)"
@@ -101,9 +100,12 @@ proof -
     have "\<And>x. (\<lambda>n. ?m x (\<bar>t\<bar> * \<bar>x\<bar> ^ 3 / \<bar>sqrt (\<sigma>\<^sup>2 * real n)\<bar>)) \<longlonglongrightarrow> 0"
       using \<sigma>_pos
       by (auto simp: real_sqrt_mult min_absorb2
-               intro!: tendsto_min[THEN tendsto_eq_rhs] sqrt_at_top[THEN filterlim_compose]
-                       filterlim_tendsto_pos_mult_at_top filterlim_at_top_imp_at_infinity
-                       tendsto_divide_0 filterlim_real_sequentially)
+               intro!: tendsto_min[THEN tendsto_eq_rhs]
+                       sqrt_at_top[THEN filterlim_compose]
+                       filterlim_tendsto_pos_mult_at_top
+                       filterlim_at_top_imp_at_infinity
+                       tendsto_divide_0
+                       filterlim_real_sequentially)
     then have "(\<lambda>n. ?I n t) \<longlonglongrightarrow> (LINT x|\<mu>. 0)"
       by (intro integral_dominated_convergence [where w = "\<lambda>x. 6 * x^2"]) auto
     then have *: "(\<lambda>n. t\<^sup>2 / (6 * \<sigma>\<^sup>2) * ?I n t) \<longlonglongrightarrow> 0"
@@ -128,24 +130,36 @@ theorem (in prob_space) central_limit_theorem:
     and S :: "nat \<Rightarrow> 'a \<Rightarrow> real"
   assumes X_indep: "indep_vars (\<lambda>i. borel) X UNIV"
     and X_integrable: "\<And>n. integrable M (X n)"
-    and X_mean: "\<And>n. expectation (X n) = m"
+    and X_mean: "\<And>n. expectation (X n) = c"
     and \<sigma>_pos: "\<sigma> > 0"
     and X_square_integrable: "\<And>n. integrable M (\<lambda>x. (X n x)\<^sup>2)"
     and X_variance: "\<And>n. variance (X n) = \<sigma>\<^sup>2"
     and X_distrib: "\<And>n. distr M borel (X n) = \<mu>"
-  defines "X' i x \<equiv> X i x - m"
-  shows "weak_conv_m (\<lambda>n. distr M borel (\<lambda>x. (\<Sum>i<n. X' i x) / sqrt (n*\<sigma>\<^sup>2))) std_normal_distribution"
-proof (intro central_limit_theorem_zero_mean)
-  show "indep_vars (\<lambda>i. borel) X' UNIV"
-    unfolding X'_def[abs_def] using X_indep by (rule indep_vars_compose2) auto
-  show "integrable M (X' n)" "expectation (X' n) = 0" for n
-    using X_integrable X_mean by (auto simp: X'_def[abs_def] prob_space)
-  show "\<sigma> > 0" "integrable M (\<lambda>x. (X' n x)\<^sup>2)" "variance (X' n) = \<sigma>\<^sup>2" for n
-    using \<open>0 < \<sigma>\<close> X_integrable X_mean X_square_integrable X_variance unfolding X'_def
-    by (auto simp: prob_space power2_diff)
-  show "distr M borel (X' n) = distr \<mu> borel (\<lambda>x. x - m)" for n
-    unfolding X_distrib[of n, symmetric] using X_integrable
-    by (subst distr_distr) (auto simp: X'_def[abs_def] comp_def)
+  defines "S n x \<equiv> \<Sum>i<n. X i x"
+  shows "weak_conv_m (\<lambda>n. distr M borel (\<lambda>x. (S n x - n * c) / sqrt (n*\<sigma>\<^sup>2)))
+    std_normal_distribution"
+proof -
+  have "weak_conv_m
+    (\<lambda>n. distr M borel (\<lambda>x. (\<Sum>i<n. X i x - c) / sqrt (n * \<sigma>\<^sup>2)))
+    std_normal_distribution"
+  proof (intro central_limit_theorem_zero_mean)
+    show "indep_vars (\<lambda>i. borel) (\<lambda>i x. X i x - c) UNIV"
+      using X_indep by (rule indep_vars_compose2) auto
+    show "integrable M (\<lambda>x. X n x - c)"
+      "expectation (\<lambda>x. X n x - c) = 0" for n
+      using X_integrable X_mean by (auto simp: prob_space)
+    show "\<sigma> > 0" "integrable M (\<lambda>x. (X n x - c)\<^sup>2)"
+      "variance (\<lambda>x. X n x - c) = \<sigma>\<^sup>2" for n
+      using \<open>0 < \<sigma>\<close> X_integrable X_mean X_square_integrable X_variance
+      by (auto simp: prob_space power2_diff)
+    show "distr M borel (\<lambda>x. X n x - c) = distr \<mu> borel (\<lambda>x. x - c)" for n
+      unfolding X_distrib[of n, symmetric] using X_integrable
+      by (subst distr_distr) (auto simp: comp_def)
+  qed
+  moreover have "(\<Sum>i<n. X i x - c) = S n x - n * c" for n x
+    by (simp add: sum_subtractf S_def)
+  ultimately show ?thesis
+    by simp
 qed
 text_raw \<open>}%EndSnippet\<close>
 
@@ -155,7 +169,7 @@ lemma tendsto_add:
   assumes "(f \<longlongrightarrow> a) F" and "(g \<longlongrightarrow> b) F"
   shows "((\<lambda>x. f x + g x) \<longlongrightarrow> a + b) F"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  using assms by (rule tendsto_add)
 
 text_raw \<open>\DefineSnippet{skorohod}{\<close>
 theorem Skorohod:
@@ -167,16 +181,17 @@ theorem Skorohod:
     prob_space \<Omega> \<and>
     (\<forall>n. Y_seq n \<in> \<Omega> \<rightarrow>\<^sub>M borel) \<and>
     (\<forall>n. distr \<Omega> borel (Y_seq n) = \<mu> n) \<and>
-    Y \<in> \<Omega> \<rightarrow>\<^sub>M b lborel \<and>
+    Y \<in> \<Omega> \<rightarrow>\<^sub>M lborel \<and>
     distr \<Omega> borel Y = M \<and>
     (\<forall>x \<in> space \<Omega>. (\<lambda>n. Y_seq n x) \<longlonglongrightarrow> Y x)"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  using assms by (rule Skorohod)
 
 text_raw \<open>\DefineSnippet{countableatoms}{\<close>
-lemma countable_atoms: "countable {x. measure M {x} > 0}"
+lemma countable_atoms:
+  "finite_borel_measure M \<Longrightarrow> countable {x. measure M {x} > 0}"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  by (rule finite_borel_measure.countable_atoms)
 
 text_raw \<open>\DefineSnippet{clt}{\<close>
 theorem (in prob_space) central_limit_theorem:
@@ -186,43 +201,46 @@ theorem (in prob_space) central_limit_theorem:
     and S :: "nat \<Rightarrow> 'a \<Rightarrow> real"
   assumes X_indep: "indep_vars (\<lambda>i. borel) X UNIV"
     and X_integrable: "\<And>n. integrable M (X n)"
-    and X_mean_0: "\<And>n. expectation (X n) = 0"
+    and X_mean: "\<And>n. expectation (X n) = c"
     and \<sigma>_pos: "\<sigma> > 0"
     and X_square_integrable: "\<And>n. integrable M (\<lambda>x. (X n x)\<^sup>2)"
     and X_variance: "\<And>n. variance (X n) = \<sigma>\<^sup>2"
     and X_distrib: "\<And>n. distr M borel (X n) = \<mu>"
-  defines "S n \<equiv> \<lambda>x. \<Sum>i<n. X i x"
-  shows "weak_conv_m (\<lambda>n. distr M borel (\<lambda>x. S n x / sqrt (n * \<sigma>\<^sup>2)))
+  defines "S n x \<equiv> \<Sum>i<n. X i x"
+  shows "weak_conv_m (\<lambda>n. distr M borel (\<lambda>x. (S n x - n * c) / sqrt (n*\<sigma>\<^sup>2)))
     std_normal_distribution"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  using central_limit_theorem[OF assms(1,2,3,4,5,6,7)] unfolding S_def apply (assumption; fail) oops
 
+locale cdf_namespace begin
 text_raw \<open>\DefineSnippet{cdf}{\<close>
 definition
   cdf :: "real measure \<Rightarrow> real \<Rightarrow> real"
 where
   "cdf M \<equiv> \<lambda>x. measure M {..x}"
 text_raw \<open>}%EndSnippet\<close>
+end
 
+context real_distribution begin
 text_raw \<open>\DefineSnippet{cdfprop1}{\<close>
 lemma cdf_nondecreasing:   "x \<le> y \<Longrightarrow> cdf M x \<le> cdf M y"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  by (rule cdf_nondecreasing)
 
 text_raw \<open>\DefineSnippet{cdfprop2}{\<close>
 lemma cdf_is_right_cont:   "continuous (at_right a) (cdf M)"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  by (rule cdf_is_right_cont)
 
 text_raw \<open>\DefineSnippet{cdfprop3}{\<close>
 lemma cdf_lim_at_bot:      "(cdf M \<longlongrightarrow> 0) at_bot"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  by (rule cdf_lim_at_bot)
 
 text_raw \<open>\DefineSnippet{cdfprop4}{\<close>
 lemma cdf_lim_at_top_prob: "(cdf M \<longlongrightarrow> 1) at_top"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  by (rule cdf_lim_at_top_prob)
 
 text_raw \<open>\DefineSnippet{intervalmeasure}{\<close>
 lemma real_distribution_interval_measure:
@@ -231,7 +249,7 @@ lemma real_distribution_interval_measure:
     and "(F \<longlongrightarrow> 0) at_bot" "(F \<longlongrightarrow> 1) at_top"
   shows "real_distribution (interval_measure F)"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  using assms(1) by (intro real_distribution_interval_measure[OF _ assms(2-)]) (auto simp: mono_def)
 
 text_raw \<open>\DefineSnippet{cdfunique}{\<close>
 lemma cdf_unique:
@@ -240,7 +258,8 @@ lemma cdf_unique:
     and "cdf M1 = cdf M2"
   shows "M1 = M2"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  using assms by (rule cdf_unique)
+end
 
 text_raw \<open>\DefineSnippet{lebesgueintegralcountableadd}{\<close>
 lemma integral_countable_add:
@@ -250,7 +269,7 @@ lemma integral_countable_add:
     and "set_integrable M (\<Union>i. A i) f"
   shows "LINT x:(\<Union>i. A i)|M. f x = (\<Sum>i. (LINT x:(A i)|M. f x))"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  using assms by (rule lebesgue_integral_countable_add)
 
 text_raw \<open>\DefineSnippet{dominatedconvergence}{\<close>
 lemma dominated_convergence:
@@ -262,7 +281,10 @@ lemma dominated_convergence:
   shows "integrable M f" and "\<And>i. integrable M (s i)"
     and "(\<lambda>i. LINT x|M. s i x) \<longlonglongrightarrow> (LINT x|M. f x)"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  apply (rule integrable_dominated_convergence[OF assms])
+  apply (rule integrable_dominated_convergence2[OF assms])
+  apply (rule integral_dominated_convergence[OF assms])
+  done
 
 text_raw \<open>\DefineSnippet{integrablebounded}{\<close>
 lemma integrable_iff_bounded:
@@ -276,7 +298,7 @@ lemma integral_norm_bound:
   fixes f :: "_ \<Rightarrow> 'a :: {banach, second_countable_topology}"
   shows "integrable M f \<Longrightarrow> norm (LINT x|M. f x) \<le> (LINT x|M. norm (f x))"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  by (rule integral_norm_bound)
 
 text_raw \<open>\DefineSnippet{ftcfinite}{\<close>
 lemma interval_integral_FTC_finite:
@@ -286,7 +308,7 @@ lemma interval_integral_FTC_finite:
     (F has_vector_derivative (f x)) (at x within {min a b..max a b})"
   shows "(LBINT x=a..b. f x) = F b - F a"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  using assms by (rule interval_integral_FTC_finite)
 
 text_raw \<open>\DefineSnippet{ftcintegrable}{\<close>
 lemma interval_integral_FTC_integrable:
@@ -300,7 +322,7 @@ lemma interval_integral_FTC_integrable:
     and "((F \<circ> real_of_ereal) \<longlongrightarrow> B) (at_left b)"
   shows "(LBINT x=a..b. f x) = B - A"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  using assms by (rule interval_integral_FTC_integrable)
 
 text_raw \<open>\DefineSnippet{ftc2}{\<close>
 lemma interval_integral_FTC2:
@@ -309,7 +331,7 @@ lemma interval_integral_FTC2:
   shows "((\<lambda>u. LBINT y=c..u. f y) has_vector_derivative (f x))
     (at x within {a..b})"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  using assms by (rule interval_integral_FTC2)
 
 text_raw \<open>\DefineSnippet{substfinite}{\<close>
 lemma interval_integral_substitution_finite:
@@ -319,7 +341,7 @@ lemma interval_integral_substitution_finite:
     and "continuous_on (g ` {a..b}) f" "continuous_on {a..b} g'"
   shows "LBINT x=a..b. g' x *\<^sub>R f (g x) = LBINT y=g a..g b. f y"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  using assms by (rule interval_integral_substitution_finite)
 
 text_raw \<open>\DefineSnippet{substintegrable}{\<close>
 lemma interval_integral_substitution_integrable:
@@ -335,22 +357,22 @@ lemma interval_integral_substitution_integrable:
     and "set_integrable lborel (einterval A B) (\<lambda>x. f x)"
   shows "(LBINT x=A..B. f x) = (LBINT x=a..b. g' x *\<^sub>R f (g x))"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  using assms by (rule interval_integral_substitution_integrable)
 
 text_raw \<open>\DefineSnippet{charprop1}{\<close>
 lemma (in real_distribution) continuous_char: "continuous (at t) (char M)"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  by (rule isCont_char)
 
 text_raw \<open>\DefineSnippet{charprop2}{\<close>
 lemma (in real_distribution) char_zero: "char M 0 = 1"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  by (rule char_zero)
 
 text_raw \<open>\DefineSnippet{charprop3}{\<close>
 lemma (in real_distribution) cmod_char_le_1: "norm (char M t) \<le> 1"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  by (rule cmod_char_le_1)
 
 text_raw \<open>\DefineSnippet{chardistrsum}{\<close>
 lemma (in prob_space) char_distr_sum:
@@ -358,8 +380,8 @@ lemma (in prob_space) char_distr_sum:
   shows "char (distr M borel (\<lambda>\<omega>. X1 \<omega> + X2 \<omega>)) t =
     char (distr M borel X1) t * char (distr M borel X2) t"
 proof -
-  from assms have [measurable]: "random_variable borel X1" by (elim indep_var_rv1)
-  from assms have [measurable]: "random_variable borel X2" by (elim indep_var_rv2)
+  have [measurable]: "random_variable borel X1" "random_variable borel X2"
+    using assms by (auto dest: indep_var_rv1 indep_var_rv2)
 
   have "char (distr M borel (\<lambda>\<omega>. X1 \<omega> + X2 \<omega>)) t =
       (LINT x|M. iexp (t * (X1 x + X2 x)))"
@@ -384,7 +406,7 @@ lemma (in prob_space) char_distr_setsum:
 proof (induct A rule: infinite_finite_induct)
   case (insert x F) then show ?case
     using indep_vars_subset[of "\<lambda>_. borel" X "insert x F" F]
-    by (auto simp add: char_distr_sum indep_vars_setsum)
+    by (auto simp add: char_distr_sum indep_vars_sum)
 qed (simp_all add: char_def integral_distr prob_space del: distr_const)
 text_raw \<open>}%EndSnippet\<close>
 
@@ -398,20 +420,20 @@ lemma (in prob_space) char_approx3':
   shows "cmod (char \<mu> t - (1 - t^2 * \<sigma>2 / 2)) \<le>
     (t^2 / 6) * expectation (\<lambda>x. min (6 * (X x)^2) (\<bar>t\<bar> * \<bar>X x\<bar>^3))"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  using assms by (rule char_approx3')
 
 text_raw \<open>\DefineSnippet{momenteven}{\<close>
 lemma std_normal_moment_even:
   "has_bochner_integral lborel (\<lambda>x. std_normal_density x * x ^ (2 * k))
     (fact (2 * k) / (2^k * fact k))"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  by (rule std_normal_moment_even)
 
 text_raw \<open>\DefineSnippet{momentodd}{\<close>
 lemma std_normal_moment_odd:
   "has_bochner_integral lborel (\<lambda>x. std_normal_density x * x^(2 * k + 1)) 0"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  by (rule std_normal_moment_odd)
 
 text_raw \<open>\DefineSnippet{levyunique}{\<close>
 theorem Levy_uniqueness:
@@ -420,20 +442,20 @@ theorem Levy_uniqueness:
     and "char M1 = char M2"
   shows "M1 = M2"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  using assms by (rule Levy_uniqueness)
 
 text_raw \<open>\DefineSnippet{levycont}{\<close>
-theorem levy_continuity:
+theorem Levy_continuity:
   fixes M :: "nat \<Rightarrow> real measure" and M' :: "real measure"
   assumes "\<And>n. real_distribution (M n)"
     and "real_distribution M'"
     and "\<And>t. (\<lambda>n. char (M n) t) \<longlonglongrightarrow> char M' t"
   shows "weak_conv_m M M'"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  using assms by (rule levy_continuity)
 
 text_raw \<open>\DefineSnippet{levycont1}{\<close>
-theorem levy_continuity1:
+theorem Levy_continuity1:
   "(\<And>n. real_distribution (M n)) \<Longrightarrow> real_distribution M' \<Longrightarrow>
     weak_conv_m M M' \<Longrightarrow>
     (\<lambda>n. char (M n) t) \<longlonglongrightarrow> char M' t"
@@ -446,32 +468,33 @@ theorem Helly_selection:
   assumes "\<And>n x. continuous (at_right x) (f n)"
     and "\<And>n. mono (f n)"
     and "\<And>n x. \<bar>f n x\<bar> \<le> M"
-  shows "\<exists>s. subseq s \<and> mono F \<and> (\<forall>x. \<bar>F x\<bar> \<le> M) \<and>
-    (\<exists>F. (\<forall>x. continuous (at_right x) F) \<and>
-    (\<forall>x. continuous (at x) F \<longrightarrow> (\<lambda>n. f (s n) x) \<longlonglongrightarrow> F x))"
+  shows "\<exists>s. subseq s \<and>
+    (\<exists>F. (\<forall>x. continuous (at_right x) F) \<and> mono F \<and> (\<forall>x. \<bar>F x\<bar> \<le> M) \<and>
+      (\<forall>x. isCont F x \<longrightarrow> (\<lambda>n. f (s n) x) \<longlonglongrightarrow> F x))"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  using assms by (rule Helly_selection)
 
 text_raw \<open>\DefineSnippet{thight}{\<close>
 theorem tight_imp_convergent_subsubsequence:
   assumes \<mu>: "tight \<mu>" "subseq s"
   shows "\<exists>r M. subseq r \<and> real_distribution M \<and> weak_conv_m (\<mu> \<circ> s \<circ> r) M"
 text_raw \<open>}%EndSnippet\<close>
-oops
+  using assms by (rule tight_imp_convergent_subsubsequence)
 
 text_raw \<open>\DefineSnippet{integraladd}{\<close>
 lemma integral_add:
   "integrable M f \<Longrightarrow> integrable M g \<Longrightarrow>
     (LINT x|M. f x + g x) = (LINT x|M. f x) + (LINT x|M. g x)"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  by (rule Bochner_Integration.integral_add)
 
 text_raw \<open>\DefineSnippet{integrableadd}{\<close>
 lemma integrable_add:
   "integrable M f \<Longrightarrow> integrable M g \<Longrightarrow> integrable M (\<lambda>x. f x + g x)"
 text_raw \<open>}%EndSnippet\<close>
-  oops
+  by (rule Bochner_Integration.integrable_add)
 
+locale weak_conv_namespace begin
 text_raw \<open>\DefineSnippet{weakconv}{\<close>
 definition
   weak_conv :: "(nat \<Rightarrow> (real \<Rightarrow> real)) \<Rightarrow> (real \<Rightarrow> real) \<Rightarrow> bool"
@@ -484,7 +507,9 @@ definition
 where
   "weak_conv_m M_seq M \<equiv> weak_conv (\<lambda>n. cdf (M_seq n)) (cdf M)"
 text_raw \<open>}%EndSnippet\<close>
+end
 
+locale distr_namespace begin
 text_raw \<open>\DefineSnippet{distr}{\<close>
 definition
   distr :: "'a measure \<Rightarrow> 'b measure \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> 'b measure"
@@ -492,7 +517,9 @@ where
   "distr M N f =
     measure_of (space N) (sets N) (\<lambda>A. emeasure M (f -` A \<inter> space M))"
 text_raw \<open>}%EndSnippet\<close>
+end
 
+locale density_namespace begin
 text_raw \<open>\DefineSnippet{density}{\<close>
 definition
   density :: "'a measure \<Rightarrow> ('a \<Rightarrow> ennreal) \<Rightarrow> 'a measure"
@@ -500,7 +527,7 @@ where
   "density M f =
     measure_of (space M) (sets M) (\<lambda>A. \<integral>\<^sup>+ x. f x * indicator A x \<partial>M)"
 text_raw \<open>}%EndSnippet\<close>
-
+end
 
 
 text_raw \<open>\DefineSnippet{probspace}{\<close>
@@ -514,7 +541,6 @@ begin
   abbreviation "variance X \<equiv> (LINT x|M. (X x - expectation X)\<^sup>2)"
 end
 text_raw \<open>}%EndSnippet\<close>
-
 
 text_raw \<open>\DefineSnippet{indepsets}{\<close>
 definition (in prob_space)
