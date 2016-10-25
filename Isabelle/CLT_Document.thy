@@ -126,7 +126,7 @@ qed
 theorem (in prob_space) central_limit_theorem:
   fixes X :: "nat \<Rightarrow> 'a \<Rightarrow> real"
     and \<mu> :: "real measure"
-    and \<sigma> :: real
+    and c \<sigma> :: real
     and S :: "nat \<Rightarrow> 'a \<Rightarrow> real"
   assumes X_indep: "indep_vars (\<lambda>i. borel) X UNIV"
     and X_integrable: "\<And>n. integrable M (X n)"
@@ -197,7 +197,7 @@ text_raw \<open>\DefineSnippet{clt}{\<close>
 theorem (in prob_space) central_limit_theorem:
   fixes X :: "nat \<Rightarrow> 'a \<Rightarrow> real"
     and \<mu> :: "real measure"
-    and \<sigma> :: real
+    and \<sigma> c :: real
     and S :: "nat \<Rightarrow> 'a \<Rightarrow> real"
   assumes X_indep: "indep_vars (\<lambda>i. borel) X UNIV"
     and X_integrable: "\<And>n. integrable M (X n)"
