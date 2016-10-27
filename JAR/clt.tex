@@ -282,7 +282,7 @@ Here the quantifier \isa{AE x in M} expresses that the subsequent statement hold
 If $f : X \to B$ is any measurable function on a space $X$ with measure $\mu$, and $S$ is any measurable set, one can define the integral over the set $S$ by $\int_S f \, d\mu = \int f \chi_S \, d\mu$. Rather than introduce a new definition, we took notation for integration over sets to be an abbreviation for the definition in terms of indicators, with the notation \isa{LINT x:S|M. f x}. But because reasoning about integrals over sets is so fundamental, we found it helpful to develop a small library to support it. For example, the following is a consequence of the dominated convergence theorem:
 \Snippet{lebesgueintegralcountableadd}
 
-The theory for Bochner integration is included in the \texttt{HOL-Probability} library, in \texttt{Bochner\_Integration} and \texttt{Set\_Integral}.
+The theory of Bochner integration is included in the \texttt{HOL-Probability} library, in \texttt{Bochner\_Integration} and \texttt{Set\_Integral}.
 
 \subsection{Probability}
 \label{subsection:probability}
@@ -425,7 +425,7 @@ In the Isabelle 2016 distribution, the construction of the Lebesgue measure on t
 \subsection{Automation}
 \label{subsection:automation}
 
-To improve automation, Isabelle's multivariate analysis library provides a large set of introduction rules, to establish things like openness or closedness of sets or continuity of functions. Continuity is nicely reduced by compositionality; if we know that two functions are continuous, their composition is again continuous. Applying this as a rule requires matching terms of the form $f~(g~x)$ where both $f$ and $g$ are variables. But this is often not the right choice. The straightfoward way to express that functions like multiplication and $\ln$ are continuous is to write $\isa{continuous\_on}~(\RR \times \RR)~(\lambda (x, y).~x * y)$ and $\isa{continuous\_on}~(0, \infty)~\ln$. The composition rule is then not sufficient to prove continuity of $\lambda x.~\ln (1 + x * x)$, because it does not accommodate binary operations like $+$ and $*$. In addition, the composition rule does not allow for the fact that the domain of $\ln$ has to be restricted to the positive reals.
+To improve automation, Isabelle's multivariate analysis library provides a large set of introduction rules, to establish things like openness or closedness of sets or continuity of functions. Continuity is nicely reduced by compositionality; if we know that two functions are continuous, their composition is again continuous. Applying this as a rule requires matching terms of the form $f~(g~x)$ where both $f$ and $g$ are variables. But this is often not the right choice. The straightforward way to express that functions like multiplication and $\ln$ are continuous is to write $\isa{continuous\_on}~(\RR \times \RR)~(\lambda (x, y).~x * y)$ and $\isa{continuous\_on}~(0, \infty)~\ln$. The composition rule is then not sufficient to prove continuity of $\lambda x.~\ln (1 + x * x)$, because it does not accommodate binary operations like $+$ and $*$. In addition, the composition rule does not allow for the fact that the domain of $\ln$ has to be restricted to the positive reals.
 
 A simple solution to these two problems is to state continuity rules \emph{precomposed} with arbitrary continuous functions. For example, we can state the following rules for arbitrary $f$ and $g$:
 \begin{mathpar}
@@ -508,8 +508,9 @@ By induction, we have that for any finite set $A$ and any sequence $(X_i)_{i \in
 \[
 \ph_{\sum_{i \in A} X_i}(t) = \prod_{i \in A} \ph_{X_i}(t).
 \]
-The formal proof is as follows:\footnote{We do not require finiteness of \isa{A}. If \isa{A} is infinite the sum over \isa{A} is $0$ and the product over \isa{A} is $1$ fulfilling the equation. }
+The formal proof is as follows:
 \Snippet{chardistrsetsum}
+(We do not require finiteness of \isa{A}: by definition, if \isa{A} is infinite, the sum over \isa{A} is $0$ and the product over \isa{A} is $1$, and the equation still holds.)
 
 We also needed explicit approximations to the characteristic functions of a random variable, obtained using the calculation described at the beginning of Section~\ref{subsection:calculus}. One of the results we used is as follows:
 \Snippet{charapprox}
