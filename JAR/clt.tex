@@ -172,7 +172,7 @@ This is Theorem 27.1 in Billingsley's book \cite{billingsley:95}. Our formulatio
 %\caption{The Central Limit Theorem}
 %\label{fig:clt}
 %\end{figure}
-Here, \isa{M} denotes the underlying probability space, that is a triple $(\Omega,\mathcal F,\mu)$ with the requisite properties. We present a formal proof of the mean zero case in the appendix to this paper, and then derive the version above as a corollary (applying the mean zero case to the shifted random variables $X_i - c$).
+Here, \isa{M} denotes the underlying probability space, that is, a triple $(\Omega,\mathcal F,\mu)$ with the requisite properties. We present a formal proof of the mean zero case in the appendix to this paper, and then derive the version above as a corollary (applying the mean zero case to the shifted random variables $X_i - c$).
 
 \subsection{An overview of the proof}
 \label{subsection:overview}
@@ -529,11 +529,12 @@ In Fourier analysis, an ``inversion theorem'' says that a function can be recove
 
 More precisely, the L\'evy Inversion Theorem states the following:
 \begin{theorem}
-Let $\mu$ be a probability measure, and $\ph$ be the characteristic function of $\mu$. If $a$ and $b$ are continuity points\footnote{A point $p$ is a continuity point of a measure $\mu$ if $\mu(\{p\}) = 0$.} of $\mu$ and $a < b$, then
+Let $\mu$ be a probability measure, and $\ph$ be the characteristic function of $\mu$. If $a$ and $b$ are continuity points of $\mu$ and $a < b$, then
 \[
 \mu (a,b] = \lim_{T \rightarrow \infty} \frac{1}{2\pi} \int_{-T}^T \frac{e^{-ita} - e^{-itb}}{it} \ph(t) \, dt.
 \]
 \end{theorem}
+By definition, saying that a point $p$ is a continuity point of a measure $\mu$ means that $\mu(\{p\}) = 0$.
 
 The proof is a long and subtle calculation. Let $I(T)$ denote the expression after the limit. Expanding the definition of $\ph(t)$ and appealing to Fubini's theorem to switch the order of the two integrals, we obtain
 \[
