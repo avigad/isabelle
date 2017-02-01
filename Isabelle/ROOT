@@ -3,6 +3,7 @@ session CLT_Document = "HOL-Probability" +
   options [ document = "pdf", document_output = "generated" ]
   theories
     CLT_Document
+    CLT_Document_Arxiv
   document_files
     "root.tex"
     "build"

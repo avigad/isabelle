@@ -1,0 +1,159 @@
+\begin{thebibliography}{10}
+
+\bibitem{avigad:hoelzl:serafin:14}
+Jeremy Avigad, Johannes H\"olzl, and Luke Serafin.
+\newblock A formally verified proof of the central limit theorem (preliminary
+  announcement).
+\newblock 2014.
+
+\bibitem{ballarin:06}
+Clemens Ballarin.
+\newblock {Interpretation of Locales in Isabelle: Theories and Proof Contexts}.
+\newblock In J.M. Borwein and W.M. Farmer, editors, {\em {Mathematical
+  Knowledge Management 2006}}, {Lecture Notes in Artificial Intelligence},
+  pages 31--43. Springer, 2006.
+
+\bibitem{billingsley:95}
+Patrick Billingsley.
+\newblock {\em Probability and measure}.
+\newblock Wiley Series in Probability and Mathematical Statistics. John Wiley
+  \& Sons Inc., New York, third edition, 1995.
+\newblock A Wiley-Interscience Publication.
+
+\bibitem{boldo:et:al:12}
+Sylvie Boldo, Catherine Lelay, and Guillaume Melquiond.
+\newblock Improving real analysis in coq: {A} user-friendly approach to
+  integrals and derivatives.
+\newblock In Chris Hawblitzel and Dale Miller, editors, {\em Certified Programs
+  and Proofs - Second International Conference, {CPP} 2012, Kyoto, Japan,
+  December 13-15, 2012. Proceedings}, volume 7679 of {\em Lecture Notes in
+  Computer Science}, pages 289--304. Springer, 2012.
+
+\bibitem{boldo:et:al:16}
+Sylvie Boldo, Catherine Lelay, and Guillaume Melquiond.
+\newblock Formalization of real analysis: a survey of proof assistants and
+  libraries.
+\newblock {\em Mathematical Structures in Computer Science}, 26(7):1196--1233,
+  2016.
+
+\bibitem{church:40}
+Alonzo Church.
+\newblock {A formulation of the simple theory of types}.
+\newblock {\em J. Symbolic Logic}, 5:56--68, 1940.
+
+\bibitem{fischer:11}
+Hans Fischer.
+\newblock {\em A History of the Central Limit Theorem: From Classical to Modern
+  Probability Theory}.
+\newblock Springer, New York, 2011.
+
+\bibitem{galton:89}
+Francis Galton.
+\newblock {\em Natural Inheritance}.
+\newblock Macmillan, London, 1889.
+
+\bibitem{gottliebsen:00}
+Hanne Gottliebsen.
+\newblock Transcendental functions and continuity checking in {PVS}.
+\newblock In {\em Theorem Proving in Higher-Order Logics (TPHOLs) 2000}, pages
+  197--214. Springer, 2000.
+
+\bibitem{hales:et:al:15}
+Thomas Hales, Mark Adams, Gertrud Bauer, Dat~Tat Dang, John Harrison, Truong~Le
+  Hoang, Cezary Kaliszyk, Victor Magron, Sean McLaughlin, Thang~Tat Nguyen,
+  Truong~Quang Nguyen, Tobias Nipkow, Steven Obua, Joseph Pleso, Jason Rute,
+  Alexey Solovyev, An~Hoai~Thi Ta, Trung~Nam Tran, Diep~Thi Trieu, Josef Urban,
+  Ky~Khac Vu, and Roland Zumkeller.
+\newblock A formal proof of the {K}epler conjecture.
+\newblock http://arxiv.org/abs/1501.02155.
+
+\bibitem{harrison:07a}
+John Harrison.
+\newblock Formalizing basic complex analysis.
+\newblock In R.~Matuszewski and A.~Zalewska, editors, {\em From Insight to
+  Proof: Festschrift in Honour of Andrzej Trybulec}, volume 10(23) of {\em
+  Studies in Logic, Grammar and Rhetoric}, pages 151--165. University of
+  Bia{\l}ystok, 2007.
+
+\bibitem{hoelzl:heller:11}
+Johannes H\"{o}lzl and Armin Heller.
+\newblock {Three Chapters of Measure Theory in Isabelle/{HOL}}.
+\newblock In Marko C. J.~D. van Eekelen, Herman Geuvers, Julien Schmaltz, and
+  Freek Wiedijk, editors, {\em {Interactive Theorem Proving (ITP) 2011}},
+  volume 6898 of {\em {Lecture Notes in Computer Science}}, pages 135--151.
+  Springer, 2011.
+
+\bibitem{hoelzl:et:al:13}
+Johannes H\"olzl, Fabian Immler, and Brian Huffman.
+\newblock Type classes and filters for mathematical analysis in
+  {I}sabelle/{HOL}.
+\newblock In Sandrine Blazy, Christine Paulin-Mohring, and David Pichardie,
+  editors, {\em Interactive Theorem Proving}, volume 7998 of {\em Lecture Notes
+  in Computer Science}, pages 279--294. Springer Berlin Heidelberg, 2013.
+
+\bibitem{immler:traut:16}
+Fabian Immler and Christoph Traut.
+\newblock The flow of odes.
+\newblock In Jasmin~Christian Blanchette and Stephan Merz, editors, {\em
+  Interactive Theorem Proving - 7th International Conference, {ITP} 2016,
+  Nancy, France, August 22-25, 2016, Proceedings}, volume 9807 of {\em Lecture
+  Notes in Computer Science}, pages 184--199. Springer, 2016.
+
+\bibitem{krebbers:spitters:11}
+Robbert Krebbers and Bas Spitters.
+\newblock Type classes for efficient exact real arithmetic in coq.
+\newblock {\em Logical Methods in Computer Science}, 9(1), 2011.
+
+\bibitem{mhamdi:et:al:11}
+Tarek Mhamdi, Osman Hasan, and Sofi{\`{e}}ne Tahar.
+\newblock Formalization of entropy measures in {HOL}.
+\newblock In Marko C. J.~D. van Eekelen, Herman Geuvers, Julien Schmaltz, and
+  Freek Wiedijk, editors, {\em Interactive Theorem Proving - Second
+  International Conference, {ITP} 2011, Berg en Dal, The Netherlands, August
+  22-25, 2011. Proceedings}, volume 6898 of {\em Lecture Notes in Computer
+  Science}, pages 233--248. Springer, 2011.
+
+\bibitem{nipkow:et:al:02}
+Tobias Nipkow, Lawrence~C. Paulson, and Markus Wenzel.
+\newblock {\em {Isabelle/{HOL}. A proof assistant for higher-order logic}},
+  volume 2283 of {\em {Lecture Notes in Computer Science}}.
+\newblock Springer Verlag, Berlin, 2002.
+
+\bibitem{paulson:10}
+Lawrence~C. Paulson.
+\newblock Three years of experience with sledgehammer, a practical link between
+  automatic and interactive theorem provers.
+\newblock In Renate~A. Schmidt, Stephan Schulz, and Boris Konev, editors, {\em
+  Proceedings of the 2nd Workshop on Practical Aspects of Automated Reasoning,
+  PAAR-2010, Edinburgh, Scotland, UK, July 14, 2010}, volume~9 of {\em EPiC
+  Series}, pages 1--10. EasyChair, 2010.
+
+\bibitem{qasim:et:al:16}
+Muhammad Qasim, Osman Hasan, Maissa Elleuch, and Sofi{\`{e}}ne Tahar.
+\newblock Formalization of normal random variables in {HOL}.
+\newblock In Michael Kohlhase, Moa Johansson, Bruce~R. Miller, Leonardo de~de
+  Moura, and Frank~Wm. Tompa, editors, {\em Intelligent Computer Mathematics -
+  9th International Conference, {CICM} 2016, Bialystok, Poland, July 25-29,
+  2016, Proceedings}, volume 9791 of {\em Lecture Notes in Computer Science},
+  pages 44--59. Springer, 2016.
+
+\bibitem{serafin:15}
+Luke Serafin.
+\newblock A formally verified proof of the {C}entral {L}imit {T}heorem.
+\newblock Master's thesis, Carnegie Mellon University, 2015.
+
+\bibitem{wenzel:97}
+Markus Wenzel.
+\newblock {Type Classes and Overloading in Higher-Order Logic}.
+\newblock In E.~Gunter and A.~Felty, editors, {\em {Proceedings of the 10th
+  International Conference on Theorem Proving in Higher Order Logics
+  ({TPHOLs}'97)}}, pages 307--322, Murray Hill, New Jersey, 1997.
+
+\bibitem{wenzel:02}
+Markus Wenzel.
+\newblock {\em {Isabelle/Isar---a versatile environment for human-readable
+  formal proof documents}}.
+\newblock PhD thesis, Institut f\"{u}r Informatik, Technische Universit\"{a}t
+  M\"{u}nchen, 2002.
+
+\end{thebibliography}

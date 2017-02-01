@@ -1,5 +1,6 @@
 #!/bin/bash
 
 pwd
-find . -type f -name "*.tex" -exec sed -n '/DefineSnippet/,/EndSnippet/p' {} + > ../../../JAR/snippets-generated.tex
+find . -type f -name "CLT_Document.tex" -exec sed -n '/DefineSnippet/,/EndSnippet/p' {} + > ../../../JAR/snippets-generated.tex
+find . -type f -name "CLT_Document_Arxiv.tex" -exec sed -n '/DefineSnippet/,/EndSnippet/p' {} + > ../../../arxiv/snippets-generated.tex
 touch ../document.pdf
