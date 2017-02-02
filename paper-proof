@@ -1,0 +1,117 @@
+
+Query 1: The cities of the Carnegie Mellon University (i.e. Pittsburgh) and
+  of the Technische Universität München (i.e. Munich) are correct.
+
+Query 2: Jeremy Avigad's email is correct.
+
+Query 3: The journal Logical Methods in Computer Science (LMCS) is a purely
+  electronical journal. There is no published book, hence no page numbers.
+
+Additional Metadata:
+
+  ORCID for Johannes Hölzl is http://orcid.org/0000-0003-0869-9250
+
+
+Some lines in the listings aparently changed length, so new line breaks were
+introduced. We suggest the following changes:
+
+l 492 change the last word on the line from "space" to "set".
+
+l 456 / 457: Linebreak directly after the left-right-arrow <->, and an additional
+indentation:
+
+  shows "integrable M f ←→
+    f ∈ M →_M borel ∧ ...
+
+l533 / 534: Linebreak directly after the equality symbol =, and an additional
+indentation:
+  "normal_density μ σ x =
+    1 / sqrt (2 * pi * σ 2 ) * exp (-(x - μ ) 2 / (2 * σ 2 ))"
+
+l639 / 640: Linebreak directly after the implication symbol ==>, and an
+additional indentation:
+
+  shows "integrable M f =⇒
+    norm (LINT x|M. f x) ≤ (LINT x|M. norm (f x))
+
+l782: To avoid the dangling "1", change "=" to "is equal to".
+
+l784 / 785: Linebreak between the colon and the quotation mark ", and an
+additional indentation:
+
+lemma ( in real_distribution) cdf_lim_at_top_prob:
+  "(cdf M −−−→ 1) at_top"
+
+l931 / 932: Linebreak between the colon and the quotation mark ", and an
+additional indentation:
+
+lemma ( in real_distribution) continuous_char:
+  "continuous (at t) (char M)"
+
+l953 / 954: Linebreak between the colon and the quotation mark ", and an
+additional indentation:
+
+  have [measurable]:
+    "random_variable borel X1" "random_variable borel X2"
+
+l991 / 992: Linebreak between last two quotation marks ", and an
+additional indentation:
+
+    and "integrable M X" "integrable M ( λ x. (X x)ˆ2)"
+      "expectation X = 0"
+
+
+l1009: Linebreak between "lborel" and "("
+
+l1108 / 1109: Linebreak directly after the last conjunction symbol, and an
+additional indentation:
+
+  shows " ∃ r M. subseq r ∧ real_distribution M ∧
+    weak_conv_m (μ ◦ s ◦ r) M"
+
+l1348: remove empty line
+
+l1349: An additional identation for `std_normal_distribution"`
+
+l1351: linebreak before the "and".
+
+l1359 / 1360: Linebreak between the second comma and `rule`, and additional
+indentation:
+
+  by (subst X_distrib [symmetric, of 0],
+    rule real_distribution_distr, simp)
+
+l1371 / 1372: Linebreak after the less-than symbol ≤, and additional indentation:
+
+    cmod ( φ n t - (1 + (-(tˆ2) / 2) / n)ˆn) ≤
+      t 2 / (6 * σ 2 ) * ?I n t"
+
+
+l1414 / 1415 / 1416: Linebreak between `of_real_diff` and `simp:`:
+
+by (auto intro!: norm_power_diff μ .cmod_char_le_1 abs_leI
+         simp del: of_real_diff
+         simp: of_real_diff[symmetric] divide_le_eq)
+
+
+l1440: Indent `w = ` one more than `by` from line 1439.
+
+l1447: Line break between `isCont_tendsto_compose` and `[OF ...`, indent
+`[OF..` in the next line one more than `auto` from line 1448.
+
+l1488: Indent `for n` the same as `unfolding` in line 1489.
+
+l1499: reference arXiv
+article{DBLP:journals/corr/AvigadHS14,
+  author    = {Jeremy Avigad and
+               Johannes H{\"{o}}lzl and
+               Luke Serafin},
+  title     = {A formally verified proof of the Central Limit Theorem (preliminary version)},
+  journal   = {CoRR},
+  volume    = {abs/1405.7012v1},
+  year      = {2014},
+  url       = {http://arxiv.org/abs/1405.7012v1}
+}
+
+
+
