@@ -4,8 +4,7 @@ Query 1: The cities of the Carnegie Mellon University (i.e. Pittsburgh) and
 
 Query 2: Jeremy Avigad's email is correct.
 
-Query 3: The journal Logical Methods in Computer Science (LMCS) is a purely
-  electronical journal. There is no published book, hence no page numbers.
+Query 3: The page numbers are 1-27.
 
 Additional Metadata:
 
@@ -13,7 +12,7 @@ Additional Metadata:
 
 
 Some lines in the listings aparently changed length, so new line breaks were
-introduced. We suggest the following changes:
+introduced. We request the following changes:
 
 l 492 change the last word on the line from "space" to "set".
 
@@ -101,7 +100,7 @@ l1447: Line break between `isCont_tendsto_compose` and `[OF ...`, indent
 
 l1488: Indent `for n` the same as `unfolding` in line 1489.
 
-l1499: reference arXiv
+l1499: Please add a refernece to arXiv. The arXiv publication data is below.
 article{DBLP:journals/corr/AvigadHS14,
   author    = {Jeremy Avigad and
                Johannes H{\"{o}}lzl and
